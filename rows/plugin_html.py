@@ -42,6 +42,7 @@ def import_from_html(html, table_index=0, encoding='utf-8'):
     table._rows = rows[1:]
     table.input_encoding = encoding
     table.identify_data_types(sample_size=None)
+    table._rows = [table.convert_row(row) for row in table._rows]
 
     return table
 

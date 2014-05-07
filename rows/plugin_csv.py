@@ -57,6 +57,9 @@ def import_from_csv(filename, encoding='utf-8', lazy=False, sample_size=None,
     else:
         table.identify_data_types(sample_size)
 
+    if not lazy:
+        table._rows = [table.convert_row(row) for row in table._rows]
+
     return table
 
 def export_to_csv(table, filename, encoding='utf-8', callback=None,

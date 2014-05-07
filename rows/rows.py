@@ -54,25 +54,24 @@ class BaseTable(object):
             self.logger.addHandler(handler)
 
     def convert_row(self, row):
-        row = dict(zip(self.fields, row))
         encoding = self.input_encoding
         converters = self.converters
-        converted = {}
+        converted = []
         error_message = ('Could not convert field value "{value}" '
                          '(field {field}, type {type})')
         not_converted = self._fields_not_converted
-        for field in self.fields:
+        for index, field in enumerate(self.fields):
             try:
                 converted_value = \
-                        converters[self.types[field]](row[field], encoding)
+                        converters[self.types[field]](row[index], encoding)
             except ValueError:
                 converted_value = None
                 self._fields_not_converted += 1
                 if self.logger is not None:
-                    data = {'field': field, 'value': repr(row[field]),
+                    data = {'field': field, 'value': repr(row[index]),
                             'type': self.types[field]}
                     self.logger.warning(error_message.format(**data))
-            converted[field] = converted_value
+            converted.append(converted_value)
         if self._fields_not_converted > not_converted:
             self._rows_not_converted += 1
         return converted
@@ -144,7 +143,7 @@ class LazyTable(BaseTable):
         return self
 
     def next(self):
-        return self.convert_row(self._rows.next())
+        return dict(zip(self.fields, self.convert_row(self._rows.next())))
 
     def _get_sample(self, sample_size):
         if sample_size is not None:
@@ -234,7 +233,7 @@ class Table(BaseTable):
             else:
                 return list(columns[self.fields.index(item)])
         elif isinstance(item, (int, slice)):
-            return self.convert_row(self._rows[item])
+            return dict(zip(self.fields, self.convert_row(self._rows[item])))
         else:
             raise ValueError()
 

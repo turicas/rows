@@ -58,8 +58,8 @@ def export_to_text(table, filename, encoding='utf-8'):
                 for field in fields]
         result.append(u'{} {} {}'.format(PIPE,
             u' {} '.format(PIPE).join(row_data), PIPE))
-    result.append(split_line)
+    result.extend([split_line, u'\n'])
 
-    data = u'\n'.join(result).encode(encoding) + u'\n'
+    data = u'\n'.join(result).encode(encoding)
     with open(filename, 'w') as fobj:
         fobj.write(data)
