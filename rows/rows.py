@@ -53,6 +53,11 @@ class BaseTable(object):
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
+    def rename_field(self, old_name, new_name):
+        self.fields[self.fields.index(old_name)] = new_name
+        self.types[new_name] = self.types[old_name]
+        del self.types[old_name]
+
     def convert_row(self, row):
         encoding = self.input_encoding
         converters = self.converters
