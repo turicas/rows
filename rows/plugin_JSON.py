@@ -8,6 +8,7 @@ from .rows import LazyTable, Table
 
 __all__ = ['import_from_JSON', 'export_to_JSON']
 
+
 def export_to_JSON(table, filename=None):
     base_object = {'rows': []}
     for row in table:
@@ -17,6 +18,7 @@ def export_to_JSON(table, filename=None):
             f.write(json.dumps(base_object))
     else:
         return json.dumps(base_object)
+
 
 def import_from_JSON(JSON, lazy=False):
     fields = JSON['rows'][0]['json'].keys()
