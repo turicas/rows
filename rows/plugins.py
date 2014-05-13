@@ -33,3 +33,8 @@ try:
     from .plugin_mysql import *
 except ImportError:
     pass
+
+try:
+    from .plugin_JSON import *
+except ImportError:
+    pass

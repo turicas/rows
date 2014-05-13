@@ -6,10 +6,10 @@ This plugin exports to a JSON file formatted according to the specifications of 
 import json
 from .rows import LazyTable, Table
 
-__all__ = ['import_from_JSON', 'export_to_JSON']
+__all__ = ['import_from_json', 'export_to_json']
 
 
-def export_to_JSON(table, filename=None):
+def export_to_json(table, filename=None):
     base_object = {'rows': []}
     for row in table:
         base_object['rows'].append({'json': row})
@@ -20,7 +20,7 @@ def export_to_JSON(table, filename=None):
         return json.dumps(base_object)
 
 
-def import_from_JSON(JSON, lazy=False):
+def import_from_json(JSON, lazy=False):
     fields = JSON['rows'][0]['json'].keys()
     rows_iter = (row['json'] for row in JSON['rows'])
 
