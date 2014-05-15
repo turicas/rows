@@ -29,12 +29,16 @@ __all__ = ['import_from_csv', 'export_to_csv']
 # TODO: lazy=True|False
 # TODO: use locale on output and/or .utils.convert_output
 
-def import_from_csv(filename=None, data=None, encoding='utf-8', lazy=False, sample_size=None,
+def import_from_csv(filename_or_fobj, encoding='utf-8', lazy=False, sample_size=None,
         log_level=logging.INFO, converters=None, force_types=None,
         delimiter=',', quotechar='"'):
 
-    if filename:
+    if not hasattr(filename_or_fobj, 'read'):
+        # It is a filename
         data = open(filename)
+    else:
+        # It is a file-like object
+        data = filename_or_fobj
 
     csv_reader = csv.reader(data, delimiter=delimiter,
             quotechar=quotechar)
