@@ -5,7 +5,7 @@ from setuptools import setup
 setup(name='rows',
     description='Import and export tabular data easily with Python',
     long_description='',
-    version='0.1.0a0',
+    version='0.1.0.dev0',
     author=u'Álvaro Justen',
     author_email='alvarojusten@gmail.com',
     url='https://github.com/turicas/rows/',
