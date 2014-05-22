@@ -35,7 +35,7 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', lazy=False, sample_size=
 
     if not hasattr(filename_or_fobj, 'read'):
         # It is a filename
-        data = open(filename)
+        data = open(filename_or_fobj)
     else:
         # It is a file-like object
         data = filename_or_fobj
