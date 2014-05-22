@@ -29,11 +29,18 @@ __all__ = ['import_from_csv', 'export_to_csv']
 # TODO: lazy=True|False
 # TODO: use locale on output and/or .utils.convert_output
 
-def import_from_csv(filename, encoding='utf-8', lazy=False, sample_size=None,
+def import_from_csv(filename_or_fobj, encoding='utf-8', lazy=False, sample_size=None,
         log_level=logging.INFO, converters=None, force_types=None,
         delimiter=',', quotechar='"'):
 
-    csv_reader = csv.reader(open(filename), delimiter=delimiter,
+    if not hasattr(filename_or_fobj, 'read'):
+        # It is a filename
+        data = open(filename_or_fobj)
+    else:
+        # It is a file-like object
+        data = filename_or_fobj
+
+    csv_reader = csv.reader(data, delimiter=delimiter,
             quotechar=quotechar)
     unicode_csv_reader = ([field.decode(encoding) for field in row]
             for row in csv_reader)
