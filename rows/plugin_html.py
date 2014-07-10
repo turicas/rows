@@ -16,7 +16,7 @@
 
 import HTMLParser
 
-from lxml.etree import HTML as html_element_tree
+from lxml.etree import HTML as html_element_tree, tostring as to_string
 
 from .rows import Table
 
@@ -30,19 +30,48 @@ __all__ = ['import_from_html', 'export_to_html']
 
 html_parser = HTMLParser.HTMLParser()
 
-def import_from_html(html, table_index=0, encoding='utf-8'):
-    html = html_parser.unescape(html.decode(encoding))
+def import_from_html(html, table_index=1, encoding='utf-8'):
+    # TODO: unescape before returning
+    # html = html_parser.unescape(html.decode(encoding))
+
+    if isinstance(html, str):
+        html = html.decode(encoding)
+        # TODO: support Python 3
+
     html_tree = html_element_tree(html)
 
-    html_table = html_tree.xpath('//table')[table_index]
-    rows = [[list(child.itertext())[0] for child in tr.getchildren()]
-            for tr in html_table.xpath('//tr')]
+    if isinstance(table_index, int):
+        table_index = (table_index, )
 
-    table = Table(fields=rows[0])
+    # select all tables with this depth
+    table_tree = html_tree.xpath('//table[{}]'.format(table_index[0] + 1))[0]
+    table_html = to_string(table_tree[0])
+    # TODO: what about table_index[x > 0]?
+
+    table_children = table_tree.getchildren()
+    rows = []
+    for row_child in table_children:
+
+        # TODO: tbody, thead
+        if row_child.tag != 'tr':
+            continue
+
+        new_row = []
+        for column_child in row_child.getchildren():
+            # TODO: what about th?
+            if column_child.tag != 'td':
+                continue
+            new_row.append(list(column_child.itertext())[0])
+        rows.append(new_row)
+
+    # TODO: lxml -> unicode?
+
+    table = Table(fields=[x.strip() for x in rows[0]]) # TODO: unescape
     table._rows = rows[1:]
     table.input_encoding = encoding
     table.identify_data_types(sample_size=None)
-    table._rows = [table.convert_row(row) for row in table._rows]
+    table._rows = [table.convert_row([x.strip() for x in row])
+            for row in table._rows] # TODO: unescape
 
     return table
 
