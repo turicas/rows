@@ -1,0 +1,6 @@
+-r production.txt
+
+nose
+yanc
+coverage
+pylint
