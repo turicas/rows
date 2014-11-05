@@ -18,6 +18,7 @@ import datetime
 
 import MySQLdb
 
+from .rows import Table
 from .utils import ipartition, slug
 
 
@@ -83,8 +84,8 @@ def _get_mysql_config(connection_str):
 def _connect_to_mysql(config):
     return MySQLdb.connect(**config)
 
-def import_from_mysql(table, connection_string, limit=None, order_by=None,
-        query=''):
+def import_from_mysql(connection_string, limit=None, order_by=None, query=''):
+    #TODO: add 'lazy' option
     config, table_name = _get_mysql_config(connection_string)
     connection = _connect_to_mysql(config)
     cursor = connection.cursor()
@@ -98,17 +99,20 @@ def import_from_mysql(table, connection_string, limit=None, order_by=None,
             sql += ' ORDER BY ' + order_by
     cursor.execute(sql)
     column_info = [(x[0], x[1]) for x in cursor.description]
-    table.fields = [x[0] for x in cursor.description]
+    table = Table(fields=[x[0] for x in cursor.description])
     table.types = {name: MYSQLDB_TO_PYTHON[MYSQLDB_TYPE[type_]] \
                    for name, type_ in column_info}
-    table._rows = [list(row) for row in cursor.fetchall()]
+    table_rows = [list(row) for row in cursor.fetchall()]
+
     encoding = connection.character_set_name()
-    for row_index, row in enumerate(table):
+    for row in table_rows:
         for column_index, value in enumerate(row):
             if type(value) is str:
-                table[row_index][column_index] = value.decode(encoding)
+                row[column_index] = value.decode(encoding)
+    table._rows = table_rows
     cursor.close()
     connection.close()
+    return table
 
 def export_to_mysql(table, connection_string, encoding=None, batch_size=1000,
         commit_every=10000, callback=None, callback_every=10000):
@@ -128,8 +132,10 @@ def export_to_mysql(table, connection_string, encoding=None, batch_size=1000,
 
     # Insert items
     columns = ', '.join(field_slugs)
-    placeholders = ['%s' if types[field] in (int, float, bool) else '"%s"'
-                    for field in fields]
+    #placeholders = ['%s' if types[field] in (int, float, bool) else '"%s"'
+    #                for field in fields]
+    # TODO: fix this string/formatting problem
+    placeholders = ['%s' for field in fields]
     sql = 'INSERT INTO {} ({}) VALUES ({})'.format(table_name, columns,
             ', '.join(placeholders))
 
