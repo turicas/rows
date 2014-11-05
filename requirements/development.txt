@@ -1,5 +1,8 @@
 -r production.txt
 
+lxml
+MySQL-Python
+
 nose
 yanc
 coverage

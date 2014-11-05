@@ -2,6 +2,7 @@
 
 from setuptools import setup
 
+
 setup(name='rows',
     description='Import and export tabular data easily with Python',
     long_description='',
@@ -16,7 +17,7 @@ setup(name='rows',
         'mysql': ['MySQL-Python'], # apt: libmariadbclient-dev libssl-dev
         'all': ['lxml', 'MySQL-Python'],
     },
-    keywords=['tabular', 'csv'],
+    keywords=['tabular', 'csv', 'rows'],
     entry_points = {
         'console_scripts': [
             'rows = rows.cli:main',
