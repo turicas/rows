@@ -1,9 +1,14 @@
 -r production.txt
 
-lxml
-MySQL-Python
-
+# Test tools
 nose
 yanc
 coverage
 pylint
+
+# HTML
+lxml
+requests
+
+# MySQL
+MySQL-Python
