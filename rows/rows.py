@@ -136,6 +136,22 @@ class BaseTable(object):
 
         self.samples_read = len(sample_rows)
 
+    def filter(self, func):
+        # TODO: may use (and create) Table.copy?
+        filtered = Table(fields=self.fields)
+
+        filtered._rows = []
+        for row in self._rows:
+            row_as_dict = dict(zip(self.fields, self.convert_row(row)))
+            if func(row_as_dict):
+                filtered._rows.append(row)
+
+        filtered.input_encoding = self.input_encoding
+        filtered.converters = self.converters.copy()
+        filtered.types = self.types
+
+        return filtered
+
 
 class LazyTable(BaseTable):
     def __init__(self, fields, iterable, log_filename=None,
@@ -163,16 +179,20 @@ class LazyTable(BaseTable):
             self._rows = iter(sample)
         return sample
 
+
 class Table(BaseTable):
+
     def _get_sample(self, sample_size):
         if sample_size is not None:
             return self._rows[:sample_size]
         else:
             return self._rows
 
+
     def append(self, item):
         item = self._prepare_to_append(item)
         self._rows.append(item)
+
 
     def _prepare_to_append(self, item):
         if isinstance(item, dict):
@@ -193,6 +213,7 @@ class Table(BaseTable):
             raise ValueError()
         return [_str_decode(value, self.input_encoding) for value in row]
 
+
     def extend(self, items):
         """Append a lot of items.
         ``items`` should be a list of new rows, each row can be represented as
@@ -207,9 +228,11 @@ class Table(BaseTable):
         for item in new_items:
             self.append(item)
 
+
     def __len__(self):
         """Returns the number of rows. Same as ``len(list)``."""
         return len(self._rows)
+
 
     def __setitem__(self, item, value):
         if isinstance(item, (str, unicode)):
@@ -228,6 +251,7 @@ class Table(BaseTable):
         else:
             raise ValueError()
 
+
     def __getitem__(self, item):
         if isinstance(item, (str, unicode)):
             if item not in self.fields:
@@ -242,6 +266,7 @@ class Table(BaseTable):
         else:
             raise ValueError()
 
+
     def __delitem__(self, item):
         if isinstance(item, (str, unicode)):
             columns = zip(*self._rows)
@@ -254,11 +279,13 @@ class Table(BaseTable):
         else:
             raise ValueError()
 
+
     def count(self, row):
         """Returns how many rows are equal to ``row`` in ``Table``.
         Same as ``list.count``.
         """
         return self._rows.count(self._prepare_to_append(row))
+
 
     def index(self, x, i=None, j=None):
         """Returns the index of row ``x`` in table (starting from zero).
@@ -272,11 +299,13 @@ class Table(BaseTable):
         else:
             return self._rows.index(x, i, j)
 
+
     def insert(self, index, row):
         """Insert ``row`` in the position ``index``. Same as ``list.insert``.
         ``row`` can be ``list``, ``tuple`` or ``dict``.
         """
         self._rows.insert(index, self._prepare_to_append(row))
+
 
     def pop(self, index=-1):
         """Removes and returns row in position ``index``. ``index`` defaults
@@ -284,11 +313,13 @@ class Table(BaseTable):
         """
         return self._rows.pop(index)
 
+
     def remove(self, row):
         """Removes first occurrence of ``row``. Raises ``ValueError`` if
         ``row`` is not found. Same as ``list.remove``.
         """
         self._rows.remove(self._prepare_to_append(row))
+
 
     def reverse(self):
         """Reverse the order of rows *in place* (does not return a new
@@ -297,9 +328,13 @@ class Table(BaseTable):
         """
         self._rows.reverse()
 
-    def append_column(self, name, values, position=None, row_as_dict=False):
-        """Append a column at posision ``posision`` (defaults to end of
-        table)"""
+
+    def add_field(self, name, values, position=None, row_as_dict=False):
+        """Append a field to the table
+
+        If `posision` is None, the field is added to the end
+        """
+
         if (type(values) != types.FunctionType and \
             len(values) != len(self)) or \
            name in self.fields:
@@ -320,8 +355,20 @@ class Table(BaseTable):
                     value = values(row)
             else:
                 value = values[index]
-            insert_data(row, _str_decode(value, self.input_encoding))
+            if not row_as_dict:
+                insert_data(row, _str_decode(value, self.input_encoding))
+            else:
+                row[name] = _str_decode(value, self.input_encoding)
         insert_header(name)
+        self.types[name] = str
+
+
+    def remove_field(self, field):
+        field_index = self.fields.index(field)
+        for row in self._rows:
+            row.pop(field_index)
+        self.fields.pop(field_index)
+        del self.types[field]
 
 
     def order_by(self, column, ordering='asc'):
@@ -332,10 +379,21 @@ class Table(BaseTable):
             sort_function = lambda x, y: cmp(x[index], y[index])
         self._rows.sort(sort_function)
 
+
+    def transpose(self):
+        everything = [self.fields] + self._rows
+        new = zip(*everything)
+        self.fields = new[0]
+        self._rows = new[1:]
+        self.types = {}
+        self.identify_data_types(sample_size=None)
+
+
     def __radd__(self, other):
         if other == 0:
             return self
         raise ValueError()
+
 
     def __add__(self, other):
         if other == 0:
@@ -343,14 +401,17 @@ class Table(BaseTable):
 
         if type(self) != type(other) or self.fields != other.fields or \
                 self.types != other.types:
-            raise ValueError('Tables are incompatible')
+            raise ValueError('iTables are incompatible '
+                    '(fields or its types are different)')
         table = Table(fields=self.fields)
         table._rows = self._rows + other._rows
         table.types = self.types
         return table
 
+
 def join(keys, *tables):
-    '''Merge them all using `keys` to group rows'''
+    '''Merge a list of tables, using `keys` to group rows'''
+
     if isinstance(keys, (str, unicode)):
         keys = (keys, )
 
