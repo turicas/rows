@@ -25,18 +25,23 @@ from .rows import Table, LazyTable, BaseTable, join
 this = sys.modules[__name__]
 import_methods = []
 
+# take all available import/export methods from plugins
 for attribute in dir(this):
     if attribute.startswith('import_from_'):
         import_methods.append(attribute)
     elif attribute.startswith('export_to_'):
         setattr(BaseTable, attribute,
                 types.MethodType(getattr(this, attribute), None, BaseTable))
+        # TODO: this line should be changed for python 3
         delattr(this, attribute)
     elif attribute.startswith('plugin_'):
         delattr(this, attribute)
 
+# explicitly export Table, LazyTable and all import methods (for available
+# plugins)
 __all__ = ['Table', 'LazyTable'] + import_methods
 
+# cleanup namespace
 del BaseTable
 del attribute
 del import_methods
