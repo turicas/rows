@@ -23,50 +23,46 @@ import unittest
 import rows
 
 
+sample_table = textwrap.dedent(u'''
+    +----+--------------+------------+
+    | id |   username   |  birthday  |
+    +----+--------------+------------+
+    |  1 |      turicas | 1987-04-29 |
+    |  2 | another-user | 2000-01-01 |
+    |  3 |       álvaro | 1900-01-01 |
+    +----+--------------+------------+
+''').strip()
+
 class ExportToTextTestCase(unittest.TestCase):
+
 
     def setUp(self):
         self.table = rows.Table(fields=['id', 'username', 'birthday'])
-        self.table._rows = [
+        data = [
                 [1, u'turicas', datetime.date(1987, 4, 29)],
                 [2, u'another-user', datetime.date(2000, 1, 1)],
-                [3, u'álvaro', datetime.date(1900, 1, 1)], ]
-        #TODO: should use .append instead of writing directly to _rows?
+                [3, u'álvaro', datetime.date(1900, 1, 1)],
+        ]
+        for row in data:
+            self.table.append(row)
 
-        self.table.identify_data_types(sample_size=None)
-        self.expected = textwrap.dedent(u'''
-        +----+--------------+------------+
-        | id |   username   |  birthday  |
-        +----+--------------+------------+
-        |  1 |      turicas | 1987-04-29 |
-        |  2 | another-user | 2000-01-01 |
-        |  3 |       álvaro | 1900-01-01 |
-        +----+--------------+------------+
-        ''').strip()
-        self.custom_expected = textwrap.dedent(u'''
-        -++++-++++++++++++++-++++++++++++-
-        * id *   username   *  birthday  *
-        -++++-++++++++++++++-++++++++++++-
-        *  1 *      turicas * 1987-04-29 *
-        *  2 * another-user * 2000-01-01 *
-        *  3 *       álvaro * 1900-01-01 *
-        -++++-++++++++++++++-++++++++++++-
-        ''').strip()
 
     def test_return_simple_test(self):
         returned = self.table.export_to_text()
-        self.assertEqual(returned.strip(), self.expected)
+        self.assertEqual(returned.strip(), sample_table)
         self.assertEqual(type(returned), unicode)
+
 
     def test_column_sizes(self):
         table = rows.Table(fields=['id', 'username', 'big-column-name'])
-        table._rows = [
+        data = [
                 [1, u'a', datetime.date(1987, 4, 29)],
                 [2, u'b', datetime.date(2000, 1, 1)],
-                [3, u'c', datetime.date(1900, 1, 1)], ]
-        #TODO: should use .append instead of writing directly to _rows?
+                [3, u'c', datetime.date(1900, 1, 1)],
+        ]
+        for row in data:
+            table.append(row)
 
-        table.identify_data_types(sample_size=None)
         expected = textwrap.dedent(u'''
         +----+----------+-----------------+
         | id | username | big-column-name |
@@ -81,15 +77,26 @@ class ExportToTextTestCase(unittest.TestCase):
 
 
     def test_return_custom_elements(self):
+        expected = textwrap.dedent(u'''
+            -++++-++++++++++++++-++++++++++++-
+            * id *   username   *  birthday  *
+            -++++-++++++++++++++-++++++++++++-
+            *  1 *      turicas * 1987-04-29 *
+            *  2 * another-user * 2000-01-01 *
+            *  3 *       álvaro * 1900-01-01 *
+            -++++-++++++++++++++-++++++++++++-
+        ''').strip()
         returned = self.table.export_to_text(dash='+', plus='-', pipe='*')
-        self.assertEqual(returned.strip(), self.custom_expected)
+        self.assertEqual(returned.strip(), expected)
         self.assertEqual(type(returned), unicode)
+
 
     def test_return_custom_encoding(self):
         encoding = 'iso-8859-1'
         returned = self.table.export_to_text(encoding=encoding)
-        self.assertEqual(returned.strip(), self.expected.encode(encoding))
+        self.assertEqual(returned.strip(), sample_table.encode(encoding))
         self.assertEqual(type(returned), str)
+
 
     def test_filename_simple_test(self):
         tmp = tempfile.NamedTemporaryFile(delete=True)
@@ -101,7 +108,8 @@ class ExportToTextTestCase(unittest.TestCase):
         returned = tmp.file.read()
         tmp.close()
 
-        self.assertEqual(returned.strip(), self.expected.encode('utf-8'))
+        self.assertEqual(returned.strip(), sample_table.encode('utf-8'))
+
 
     def test_fobj_simple_test(self):
         tmp = tempfile.NamedTemporaryFile(delete=True)
@@ -113,4 +121,4 @@ class ExportToTextTestCase(unittest.TestCase):
         returned = tmp.file.read()
         tmp.close()
 
-        self.assertEqual(returned.strip(), self.expected.encode('utf-8'))
+        self.assertEqual(returned.strip(), sample_table.encode('utf-8'))

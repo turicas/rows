@@ -31,6 +31,12 @@ def _str_decode(element, codec):
     else:
         return element
 
+def get_type(value):
+    key_type = type(value)
+    if key_type == unicode:
+        return str
+    return key_type
+
 
 class BaseTable(object):
     '''Base class for the really useful table classes'''
@@ -182,6 +188,7 @@ class LazyTable(BaseTable):
 
 class Table(BaseTable):
 
+
     def _get_sample(self, sample_size):
         if sample_size is not None:
             return self._rows[:sample_size]
@@ -189,9 +196,22 @@ class Table(BaseTable):
             return self._rows
 
 
-    def append(self, item):
-        item = self._prepare_to_append(item)
-        self._rows.append(item)
+    def append(self, row):
+        row = self._prepare_to_append(row)
+        self._rows.append(row)
+        if not self.types:
+            self.types = {key: get_type(value)
+                    for key, value in zip(self.fields, row)}
+            self.append = self._append
+
+
+    def _append(self, row):
+        row = self._prepare_to_append(row)
+        row_types = [get_type(value) for value in row]
+        table_types = [self.types[key] for key in self.fields]
+        if row_types != table_types:
+            raise ValueError('Incorrect types')
+        self._rows.append(row)
 
 
     def _prepare_to_append(self, item):
