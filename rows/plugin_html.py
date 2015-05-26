@@ -19,6 +19,7 @@ import HTMLParser
 from lxml.etree import HTML as html_element_tree, tostring as to_string
 
 from .rows import Table
+from .converters import TYPE_CONVERTERS
 
 
 __all__ = ['import_from_html', 'export_to_html']
@@ -30,48 +31,62 @@ __all__ = ['import_from_html', 'export_to_html']
 
 html_parser = HTMLParser.HTMLParser()
 
-def import_from_html(html, table_index=1, encoding='utf-8'):
+def import_from_html(html, fields=None, table_index=0, include_fields=None,
+                     exclude_fields=None, converters=None, force_types=None):
     # TODO: unescape before returning
     # html = html_parser.unescape(html.decode(encoding))
 
-    if isinstance(html, str):
-        html = html.decode(encoding)
-        # TODO: support Python 3
-
     html_tree = html_element_tree(html)
+    table_tree = html_tree.xpath('//table')
+    try:
+        table_tree = table_tree[table_index]
+    except IndexError:
+        raise IndexError('Table index {} not found'.format(table_index))
 
-    if isinstance(table_index, int):
-        table_index = (table_index, )
-
-    # select all tables with this depth
-    table_tree = html_tree.xpath('//table[{}]'.format(table_index[0] + 1))[0]
-    table_html = to_string(table_tree[0])
-    # TODO: what about table_index[x > 0]?
-
-    table_children = table_tree.getchildren()
+    table_html = to_string(table_tree)
+    tr_elements = html_element_tree(table_html).xpath('//tr')
     rows = []
-    for row_child in table_children:
-
-        # TODO: tbody, thead
-        if row_child.tag != 'tr':
-            continue
-
+    for tr_element in tr_elements:
+        td_elements = html_element_tree(to_string(tr_element)).xpath('//td')
         new_row = []
-        for column_child in row_child.getchildren():
-            # TODO: what about th?
-            if column_child.tag != 'td':
-                continue
-            new_row.append(list(column_child.itertext())[0])
+        for td_element in td_elements:
+            data = u'\n'.join([x.strip()
+                    for x in list(td_element.itertext(with_tail=False))])
+            new_row.append(data)
         rows.append(new_row)
 
     # TODO: lxml -> unicode?
 
-    table = Table(fields=[x.strip() for x in rows[0]]) # TODO: unescape
-    table._rows = rows[1:]
-    table.input_encoding = encoding
-    table.identify_data_types(sample_size=None)
+    # TODO: unescape
+    if fields is None:
+        fields = [x.strip() for x in rows[0]]
+        rows = rows[1:]
+
+    table = Table(fields=fields)
+    table._rows = rows
+    table.input_encoding = 'utf-8' # TODO: change this
+
+    custom_converters = TYPE_CONVERTERS.copy()
+    if converters is not None:
+        custom_converters.update(converters)
+    table.converters = custom_converters
+
+    if force_types is not None:
+        table.identify_data_types(sample_size=None, skip=force_types.keys())
+        table.types.update(force_types)
+    else:
+        table.identify_data_types(sample_size=None)
+
     table._rows = [table.convert_row([x.strip() for x in row])
             for row in table._rows] # TODO: unescape
+
+    to_exclude = set()
+    if include_fields is not None:
+        to_exclude = set(table.fields) - set(include_fields)
+    elif exclude_fields is not None:
+        to_exclude = exclude_fields
+    for field in to_exclude:
+        table.remove_field(field)
 
     return table
 
