@@ -14,6 +14,7 @@ setup(name='rows',
     install_requires=[],
     extras_require = {
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
+        'cli': ['requests'],
         'mysql': ['MySQL-Python'], # apt: libmariadbclient-dev libssl-dev
         'all': ['lxml', 'MySQL-Python'],
     },
