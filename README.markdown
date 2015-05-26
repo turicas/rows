@@ -313,3 +313,23 @@ Will create the file `examples/data.txt` with the content as:
 
 This library is released under the [GNU General Public License version
 3](http://www.gnu.org/licenses/gpl-3.0.html).
+
+
+## Related projects
+
+- <https://github.com/scraperwiki/scrumble/>
+- <https://nytlabs.github.io/streamtools/>
+- Kettle/Pentaho?
+- Talend?
+
+## Possible new formats (to support)
+
+- .sif
+- sql
+- excel
+- json
+- msgpack
+- hdf
+- gbq
+- stata
+- protocol buffers
