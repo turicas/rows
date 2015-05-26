@@ -5,6 +5,7 @@ nose
 yanc
 coverage
 pylint
+ipdb
 
 # HTML
 lxml
