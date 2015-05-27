@@ -78,7 +78,7 @@ class TableTestCase(unittest.TestCase):
         self.files_to_delete.append(fobj.name)
 
         # TODO: should support file object also?
-        table = rows.import_from_csv(fobj.name)
+        table = rows.import_from_csv(fobj.name, encoding='utf-8')
         expected_fields = {'name': rows.fields.UnicodeField,
                            'birthdate': rows.fields.DateField, }
         self.assertDictEqual(OrderedDict(expected_fields), table.fields)
@@ -145,6 +145,7 @@ class FieldsTestCase(unittest.TestCase):
     def test_DateField(self):
         from rows.fields import DateField
 
+        # TODO: test timezone-aware datetime.date
         # TODO: should use a locale-aware converter?
         self.assertEqual(DateField.TYPE, datetime.date)
         self.assertIs(type(DateField.deserialize('2015-05-27')),
@@ -174,13 +175,36 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(StringField.deserialize('Álvaro'), 'Álvaro')
         self.assertIs(StringField.serialize('Álvaro'), 'Álvaro')
 
-    @unittest.skip('TODO: implement')
     def test_BoolField(self):
-        pass
+        from rows.fields import BoolField
 
-    @unittest.skip('TODO: implement')
+        self.assertEqual(BoolField.TYPE, bool)
+        self.assertIs(type(BoolField.deserialize('true')),
+                      BoolField.TYPE)
+
+        self.assertIs(BoolField.deserialize('0'), False)
+        self.assertIs(BoolField.deserialize('false'), False)
+        self.assertIs(BoolField.deserialize('no'), False)
+        self.assertEqual(BoolField.serialize(False), 'false')
+
+        self.assertIs(BoolField.deserialize('1'), True)
+        self.assertIs(BoolField.deserialize('true'), True)
+        self.assertIs(BoolField.deserialize('yes'), True)
+        self.assertEqual(BoolField.serialize(True), 'true')
+
     def test_DatetimeField(self):
-        pass
+        from rows.fields import DatetimeField
+
+        # TODO: test timezone-aware datetime.date
+        # TODO: should use a locale-aware converter?
+        self.assertEqual(DatetimeField.TYPE, datetime.datetime)
+        self.assertIs(type(DatetimeField.deserialize('2015-05-27T01:02:03')),
+                      DatetimeField.TYPE)
+
+        value = datetime.datetime(2015, 5, 27, 1, 2, 3)
+        serialized = '2015-05-27T01:02:03'
+        self.assertEqual(DatetimeField.deserialize(serialized), value)
+        self.assertEqual(DatetimeField.serialize(value), serialized)
 
     @unittest.skip('TODO: implement')
     def test_DecimalField(self):

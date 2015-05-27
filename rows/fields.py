@@ -2,14 +2,12 @@
 
 import datetime
 import locale
+import re
 
 
 # Order matters here
-__all__ = ['IntegerField', 'FloatField', 'DateField', 'UnicodeField',
-           'StringField', 'Field']
-# TYPES = (bool, int, float, datetime.date, datetime.datetime, str)
-# TODO: implement BoolField
-# TODO: implement DatetimeField
+__all__ = ['BoolField', 'IntegerField', 'FloatField', 'DateField',
+           'DatetimeField', 'UnicodeField', 'StringField', 'Field']
 # TODO: implement DecimalField
 # TODO: implement PercentField
 
@@ -25,6 +23,21 @@ class Field(object):
     def deserialize(cls, value, *args, **kwargs):
         raise NotImplementedError('Should be implemented')
 
+class BoolField(Field):
+    TYPE = bool
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        return str(value).lower()
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        if value in ('true', '1', 'yes'):
+            return True
+        elif value in ('false', '0', 'no'):
+            return False
+        else:
+            raise ValueError()
 
 class IntegerField(Field):
     TYPE = int
@@ -65,6 +78,25 @@ class DateField(Field):
         return datetime.date(dt_object.year, dt_object.month, dt_object.day)
 
 
+class DatetimeField(Field):
+    TYPE = datetime.datetime
+    DATETIME_REGEXP = re.compile('^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]'
+                                 '([0-9]{2}):([0-9]{2}):([0-9]{2})$')
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        return value.isoformat()
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        # TODO: may use iso8601
+        groups = cls.DATETIME_REGEXP.findall(value)
+        if not groups:
+            raise ValueError("Can't be datetime")
+        else:
+            return datetime.datetime(*[int(x) for x in groups[0]])
+
+
 class UnicodeField(Field):
     TYPE = unicode
 
@@ -77,7 +109,9 @@ class UnicodeField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if 'encoding' in kwargs:
+        if type(value) is unicode:
+            return value
+        elif 'encoding' in kwargs:
             return value.decode(kwargs['encoding'])
         else:
             return unicode(value)
