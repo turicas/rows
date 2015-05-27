@@ -1,6 +1,8 @@
 # coding: utf-8
 
 from collections import Mapping, OrderedDict, namedtuple
+from contextlib import contextmanager
+
 import fields
 
 
@@ -104,3 +106,15 @@ def import_from_csv(filename, delimiter=',', quotechar='"', encoding='utf-8'):
                       for field_name, value in zip(header, row)})
     return table
 
+
+import locale
+
+@contextmanager
+def locale_context(name, category=locale.LC_ALL):
+
+    old_name = locale.getlocale(category)
+    locale.setlocale(category, name)
+    try:
+        yield
+    finally:
+        locale.setlocale(category, old_name)

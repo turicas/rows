@@ -97,4 +97,14 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(table_rows[2].birthdate,
                          datetime.date(1952, 3, 11))
 
+    def test_locale_context(self):
+        import locale
+
+        with rows.locale_context('pt_BR.UTF-8'):
+            inside_context = locale.getlocale(locale.LC_ALL)
+        self.assertEqual(('pt_BR', 'UTF-8'), inside_context)
+
+        with rows.locale_context('en_US.UTF-8'):
+            inside_context = locale.getlocale(locale.LC_ALL)
+        self.assertEqual(('en_US', 'UTF-8'), inside_context)
         pass
