@@ -13,6 +13,7 @@ setup(name='rows',
     packages=['rows'],
     install_requires=[],
     extras_require = {
+        'csv': ['unicodecsv'],
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
         'cli': ['requests'],
         'mysql': ['MySQL-Python'], # apt: libmariadbclient-dev libssl-dev

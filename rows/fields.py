@@ -3,6 +3,11 @@
 import datetime
 
 
+# Order matters here
+__all__ = ['DateField', 'UnicodeField', 'StringField', 'Field']
+# TYPES = (bool, int, float, datetime.date, datetime.datetime, str)
+
+
 class Field(object):
     TYPE = type(None)
 
@@ -13,7 +18,7 @@ class Field(object):
         raise NotImplementedError('Should be implemented')
 
 
-class StringField(Field):
+class UnicodeField(Field):
     TYPE = unicode
 
     @classmethod
@@ -29,6 +34,18 @@ class StringField(Field):
             return value.decode(encoding)
         else:
             return unicode(value)
+
+
+class StringField(Field):
+    TYPE = str
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        return value
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        return value
 
 
 class DateField(Field):
