@@ -41,7 +41,7 @@ class Table(object):
         return self.Row(*self._rows[item])
 
 
-def detect_field_types(field_names, sample_rows):
+def detect_field_types(field_names, sample_rows, *args, **kwargs):
     """Where the magic happens"""
 
     # TODO: should expect data in unicode or will be able to use binary data?
@@ -57,13 +57,8 @@ def detect_field_types(field_names, sample_rows):
     for index, field_name in enumerate(field_names):
         possible_types = list(available_types)
         column_data = set(columns[index])
-        all_types = set(type(value) for value in column_data)
-        all_types = list(all_types - none_type)
 
-        if len(all_types) == 1 and all_types[0] not in (str, unicode):
-            # all values in this column have the same type (!= str, unicode)
-            identified_type = all_types[0]
-        elif not [value for value in column_data if unicode(value).strip()]:
+        if not [value for value in column_data if unicode(value).strip()]:
             # all rows with an empty field -> str (can't identify)
             identified_type = fields.StringField
         else:
@@ -74,16 +69,14 @@ def detect_field_types(field_names, sample_rows):
                     # TODO: should test 'value in NULL'?
                     continue
 
-                cant_be = None
+                cant_be = set()
                 for type_ in possible_types:
                     try:
-                        type_.deserialize(value)
+                        type_.deserialize(value, *args, **kwargs)
                     except (ValueError, TypeError):
-                        cant_be = type_
-                        continue
-                if cant_be is not None:
-                    possible_types.remove(cant_be)
-
+                        cant_be.add(type_)
+                for type_to_remove in cant_be:
+                    possible_types.remove(type_to_remove)
             identified_type = possible_types[0]  # priorities matter
         detected_types[field_name] = identified_type
     return detected_types
@@ -99,7 +92,7 @@ def import_from_csv(filename, delimiter=',', quotechar='"', encoding='utf-8'):
     table_rows = [row for row in csv_reader]
     header, table_rows = table_rows[0], table_rows[1:]
 
-    field_types = detect_field_types(header, table_rows)
+    field_types = detect_field_types(header, table_rows, encoding=encoding)
     table = Table(fields=field_types)
     for row in table_rows:
         table.append({field_name: value
