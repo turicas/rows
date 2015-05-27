@@ -1,52 +1,41 @@
 # coding: utf-8
 
-# Copyright 2014 Álvaro Justen <https://github.com/turicas/rows/>
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-import sys
-import types
-
-from .plugins import *
-
-from .rows import Table, LazyTable, BaseTable, join
+from collections import Mapping, OrderedDict, namedtuple
 
 
-this = sys.modules[__name__]
-import_methods = []
+class Table(object):
 
-# take all available import/export methods from plugins
-for attribute in dir(this):
-    if attribute.startswith('import_from_'):
-        import_methods.append(attribute)
-    elif attribute.startswith('export_to_'):
-        setattr(BaseTable, attribute,
-                types.MethodType(getattr(this, attribute), None, BaseTable))
-        # TODO: this line should be changed for python 3
-        delattr(this, attribute)
-    elif attribute.startswith('plugin_'):
-        delattr(this, attribute)
+    def __init__(self, fields):
+        self.fields = OrderedDict(fields)
+        self.field_names, self.field_types = [], []
+        for field_name, field_type in self.fields.items():
+            self.field_names.append(field_name)
+            self.field_types.append(field_type)
+        # TODO: should be able to customize row return type (namedtuple, dict etc.)
+        self.Row = namedtuple('Row', self.field_names)
+        self._rows = []
 
-# explicitly export Table, LazyTable and all import methods (for available
-# plugins)
-__all__ = ['Table', 'LazyTable'] + import_methods
+    def append(self, row):
+        """Add a row to the table. Should be a dict"""
 
-# cleanup namespace
-del BaseTable
-del attribute
-del import_methods
-del plugins
-del rows
-del sys
-del this
-del types
+        # TODO: should be able to customize row type (namedtuple, dict etc.)
+        row_data = []
+        for field_name, field_type in self.fields.items():
+            value = row.get(field_name, None)
+            if not isinstance(value, field_type.TYPE):
+                value = field_type.deserialize(value)
+            row_data.append(value)
+        self._rows.append(row_data)
+
+    def __len__(self):
+        return len(self._rows)
+
+    def __getitem__(self, item):
+        # TODO: should support slice also?
+        if not isinstance(item, int):
+            raise ValueError('Type not recognized: {}'.format(type(item)))
+
+        return self.Row(*self._rows[item])
+
+
+# TODO: implement with rows.locale('pt_BR.UTF-8'): ...
