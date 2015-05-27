@@ -1,51 +1,53 @@
 # coding: utf-8
 
 import datetime
+import locale
 
 
 # Order matters here
-__all__ = ['DateField', 'UnicodeField', 'StringField', 'Field']
+__all__ = ['IntegerField', 'FloatField', 'DateField', 'UnicodeField',
+           'StringField', 'Field']
 # TYPES = (bool, int, float, datetime.date, datetime.datetime, str)
+# TODO: implement BoolField
+# TODO: implement DatetimeField
+# TODO: implement DecimalField
+# TODO: implement PercentField
 
 
 class Field(object):
     TYPE = type(None)
 
-    def serialize(self, value, *args, **kwargs):
-        raise NotImplementedError('Should be implemented')
-
-    def deserialize(self, value, *args, **kwargs):
-        raise NotImplementedError('Should be implemented')
-
-
-class UnicodeField(Field):
-    TYPE = unicode
-
     @classmethod
     def serialize(cls, value, *args, **kwargs):
-        if 'encoding' in kwargs:
-            return value.encode(encoding)
-        else:
-            return str(value)
+        raise NotImplementedError('Should be implemented')
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if 'encoding' in kwargs:
-            return value.decode(encoding)
-        else:
-            return unicode(value)
+        raise NotImplementedError('Should be implemented')
 
 
-class StringField(Field):
-    TYPE = str
+class IntegerField(Field):
+    TYPE = int
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
-        return value
+        return locale.format('%d', value, *args, **kwargs)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        return value
+        return locale.atoi(value)
+
+
+class FloatField(Field):
+    TYPE = float
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        return locale.format('%f', value, *args, **kwargs)
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        return locale.atof(value)
 
 
 class DateField(Field):
@@ -62,8 +64,32 @@ class DateField(Field):
         dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
         return datetime.date(dt_object.year, dt_object.month, dt_object.day)
 
-# TODO: implement IntegerField
-# TODO: implement DatetimeField
-# TODO: implement FloatField
-# TODO: implement DecimalField
-# TODO: implement PercentField
+
+class UnicodeField(Field):
+    TYPE = unicode
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        if 'encoding' in kwargs:
+            return value.encode(kwargs['encoding'])
+        else:
+            return str(value)
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        if 'encoding' in kwargs:
+            return value.decode(kwargs['encoding'])
+        else:
+            return unicode(value)
+
+
+class StringField(Field):
+    TYPE = str
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        return value
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        return value

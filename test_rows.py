@@ -107,4 +107,85 @@ class TableTestCase(unittest.TestCase):
         with rows.locale_context('en_US.UTF-8'):
             inside_context = locale.getlocale(locale.LC_ALL)
         self.assertEqual(('en_US', 'UTF-8'), inside_context)
+
+
+class FieldsTestCase(unittest.TestCase):
+
+    def test_IntegerField(self):
+        from rows.fields import IntegerField
+
+        self.assertEqual(IntegerField.TYPE, int)
+        self.assertIs(type(IntegerField.deserialize('42')),
+                      IntegerField.TYPE)
+        self.assertEqual(IntegerField.deserialize('42'), 42)
+        self.assertEqual(IntegerField.serialize(42), '42')
+
+        with rows.locale_context('pt_BR.UTF-8'):
+            self.assertEqual(IntegerField.serialize(42000), '42000')
+            self.assertEqual(IntegerField.serialize(42000, grouping=True),
+                             '42.000')
+            self.assertEqual(IntegerField.deserialize('42.000'), 42000)
+
+    def test_FloatField(self):
+        from rows.fields import FloatField
+
+        self.assertEqual(FloatField.TYPE, float)
+        self.assertIs(type(FloatField.deserialize('42.0')),
+                      FloatField.TYPE)
+        self.assertEqual(FloatField.deserialize('42.0'), 42.0)
+        self.assertEqual(FloatField.serialize(42.0), '42.000000')
+
+        with rows.locale_context('pt_BR.UTF-8'):
+            self.assertEqual(FloatField.serialize(42000.0),
+                             '42000,000000')
+            self.assertEqual(FloatField.serialize(42000, grouping=True),
+                             '42.000,000000')
+            self.assertEqual(FloatField.deserialize('42.000,00'), 42000.0)
+
+    def test_DateField(self):
+        from rows.fields import DateField
+
+        # TODO: should use a locale-aware converter?
+        self.assertEqual(DateField.TYPE, datetime.date)
+        self.assertIs(type(DateField.deserialize('2015-05-27')),
+                      DateField.TYPE)
+        self.assertEqual(DateField.deserialize('2015-05-27'),
+                         datetime.date(2015, 5, 27))
+        self.assertEqual(DateField.serialize(datetime.date(2015, 5, 27)),
+                         '2015-05-27')
+
+    def test_UnicodeField(self):
+        from rows.fields import UnicodeField
+
+        self.assertEqual(UnicodeField.TYPE, unicode)
+        self.assertIs(type(UnicodeField.deserialize('test')),
+                      UnicodeField.TYPE)
+        self.assertEqual(UnicodeField.deserialize('Álvaro', encoding='utf-8'),
+                         u'Álvaro')
+        self.assertEqual(UnicodeField.serialize(u'Álvaro', encoding='utf-8'),
+                         'Álvaro')
+
+    def test_StringField(self):
+        from rows.fields import StringField
+
+        self.assertEqual(StringField.TYPE, str)
+        self.assertIs(type(StringField.deserialize('test')),
+                      StringField.TYPE)
+        self.assertIs(StringField.deserialize('Álvaro'), 'Álvaro')
+        self.assertIs(StringField.serialize('Álvaro'), 'Álvaro')
+
+    @unittest.skip('TODO: implement')
+    def test_BoolField(self):
+        pass
+
+    @unittest.skip('TODO: implement')
+    def test_DatetimeField(self):
+        pass
+
+    @unittest.skip('TODO: implement')
+    def test_DecimalField(self):
+        pass
+
+    @unittest.skip('TODO: implement')
+    def test_PercentField(self):
         pass
