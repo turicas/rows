@@ -12,9 +12,9 @@ __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DateField',
            'DatetimeField', 'DecimalField', 'UnicodeField', 'StringField',
            'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
-# TODO: implement PercentField
-# TODO: all fields must accept `consider_locale=True` parameter so we can set
-#       it fo False and convert more quickly if not using specific locale
+# TODO: all fields must accept `consider_locale=False` parameter so we can set
+#       it fo True if want to use locale but if not it won't slow down the
+#       process of serializing/deserializing data
 
 
 class Field(object):
@@ -96,7 +96,7 @@ class DecimalField(Field):
         interesting_chars = ''.join(set(chars))
         regexp = re.compile(r'[^0-9{} ]'.format(interesting_chars))
         if regexp.findall(value):
-            raise ValueError("Can't be Decimal")
+            raise ValueError("Can't be {}".format(cls.__name__))
 
         parts = [REGEXP_ONLY_NUMBERS.subn('', number)[0]
                  for number in value.split(decimal_separator)]
@@ -108,7 +108,7 @@ class DecimalField(Field):
                 decimal_places = len(parts[1])
                 value = value + (Decimal(parts[1]) / decimal_places)
         except InvalidOperation:
-            raise ValueError("Can't be Decimal")
+            raise ValueError("Can't be {}".format(cls.__name__))
         return value
 
 
@@ -141,7 +141,7 @@ class DatetimeField(Field):
         # TODO: may use iso8601
         groups = cls.DATETIME_REGEXP.findall(value)
         if not groups:
-            raise ValueError("Can't be datetime")
+            raise ValueError("Can't be {}".format(cls.__name__))
         else:
             return datetime.datetime(*[int(x) for x in groups[0]])
 
