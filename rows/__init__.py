@@ -1,5 +1,7 @@
 # coding: utf-8
 
+import locale
+
 from collections import Mapping, OrderedDict, namedtuple
 from contextlib import contextmanager
 
@@ -103,7 +105,18 @@ def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
     return table
 
 
-import locale
+def export_to_csv(table, filename, encoding='utf-8'):
+    import csv  # TODO: may use unicodecsv here
+
+    with open(filename, mode='w') as fobj:
+        fields = table.fields.items()
+        csv_writer = csv.writer(fobj)
+        csv_writer.writerow([field.encode(encoding) for field, _ in fields])
+
+        for row in table:
+            # TODO: will work only if table.fields is OrderedDict
+            csv_writer.writerow([type_.serialize(getattr(row, field))
+                                 for field, type_ in fields])
 
 @contextmanager
 def locale_context(name, category=locale.LC_ALL):
