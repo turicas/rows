@@ -9,8 +9,8 @@ from decimal import Decimal, InvalidOperation
 
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DateField',
-           'DatetimeField', 'DecimalField', 'UnicodeField', 'StringField',
-           'Field']
+           'DatetimeField', 'DecimalField', 'PercentField', 'UnicodeField',
+           'StringField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 # TODO: all fields must accept `consider_locale=False` parameter so we can set
 #       it fo True if want to use locale but if not it won't slow down the
@@ -110,6 +110,22 @@ class DecimalField(Field):
         except InvalidOperation:
             raise ValueError("Can't be {}".format(cls.__name__))
         return value
+
+
+class PercentField(DecimalField):
+    TYPE = Decimal
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        value = super(PercentField, cls).serialize(value * 100)
+        return '{}%'.format(value)
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        if '%' not in value:
+            raise ValueError("Can't be {}".format(cls.__name__))
+        value = value.replace('%', '')
+        return super(PercentField, cls).deserialize(value) / 100
 
 
 class DateField(Field):
