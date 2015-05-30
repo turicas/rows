@@ -44,7 +44,8 @@ class IntegerField(Field):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
-        return locale.format('%d', value, *args, **kwargs)
+        grouping = kwargs.get('grouping', None)
+        return locale.format('%d', value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -56,7 +57,8 @@ class FloatField(Field):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
-        return locale.format('%f', value, *args, **kwargs)
+        grouping = kwargs.get('grouping', None)
+        return locale.format('%f', value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
