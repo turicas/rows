@@ -217,6 +217,8 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(DecimalField.serialize(Decimal('42.010')), '42.010')
 
         with rows.locale_context('pt_BR.UTF-8'):
+            self.assertEqual(DecimalField.serialize(Decimal('4200')),
+                             '4200')
             self.assertEqual(DecimalField.serialize(Decimal('42.0')),
                              '42,0')
             self.assertEqual(DecimalField.serialize(Decimal('42000.0')),
@@ -224,7 +226,7 @@ class FieldsTestCase(unittest.TestCase):
             self.assertEqual(DecimalField.deserialize('42.000,00'),
                              Decimal('42000.00'))
             self.assertEqual(DecimalField.serialize(Decimal('42000.0'),
-                                                            grouping=True),
+                                                    grouping=True),
                              '42.000,0')
 
     def test_PercentField(self):

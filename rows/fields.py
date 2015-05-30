@@ -77,9 +77,10 @@ class DecimalField(Field):
     def serialize(cls, value, *args, **kwargs):
         grouping = kwargs.get('grouping', None)
         value_as_string = str(value)
-        string_format = '%f'
         has_decimal_places = value_as_string.find('.') != -1
-        if has_decimal_places:
+        if not has_decimal_places:
+            string_format = '%d'
+        else:
             decimal_places = len(value_as_string.split('.')[1])
             string_format = '%.{}f'.format(decimal_places)
         return locale.format(string_format, value, grouping=grouping)
