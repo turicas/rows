@@ -215,6 +215,8 @@ class FieldsTestCase(unittest.TestCase):
                       DecimalField.TYPE)
         self.assertEqual(DecimalField.deserialize('42.0'), Decimal('42.0'))
         self.assertEqual(DecimalField.serialize(Decimal('42.010')), '42.010')
+        self.assertEqual(DecimalField.deserialize('21.21657469231'),
+                         Decimal('21.21657469231'))
 
         with rows.locale_context('pt_BR.UTF-8'):
             self.assertEqual(DecimalField.serialize(Decimal('4200')),

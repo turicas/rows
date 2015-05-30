@@ -107,7 +107,7 @@ class DecimalField(Field):
             value = Decimal(parts[0])
             if len(parts) == 2:
                 decimal_places = len(parts[1])
-                value = value + (Decimal(parts[1]) / decimal_places)
+                value = value + (Decimal(parts[1]) / (10 ** decimal_places))
         except InvalidOperation:
             raise ValueError("Can't be {}".format(cls.__name__))
         return value
