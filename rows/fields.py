@@ -4,12 +4,17 @@ import datetime
 import locale
 import re
 
+from decimal import Decimal, InvalidOperation
+
 
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DateField',
-           'DatetimeField', 'UnicodeField', 'StringField', 'Field']
-# TODO: implement DecimalField
+           'DatetimeField', 'DecimalField', 'UnicodeField', 'StringField',
+           'Field']
+REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 # TODO: implement PercentField
+# TODO: all fields must accept `consider_locale=True` parameter so we can set
+#       it fo False and convert more quickly if not using specific locale
 
 
 class Field(object):
@@ -63,6 +68,48 @@ class FloatField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         return locale.atof(value)
+
+
+class DecimalField(Field):
+    TYPE = Decimal
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        grouping = kwargs.get('grouping', None)
+        value_as_string = str(value)
+        string_format = '%f'
+        has_decimal_places = value_as_string.find('.') != -1
+        if has_decimal_places:
+            decimal_places = len(value_as_string.split('.')[1])
+            string_format = '%.{}f'.format(decimal_places)
+        return locale.format(string_format, value, grouping=grouping)
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        locale_vars = locale.localeconv()
+        decimal_separator = locale_vars['decimal_point']
+        interesting_vars = ['decimal_point', 'mon_decimal_point',
+                            'mon_thousands_sep', 'negative_sign',
+                            'positive_sign', 'thousands_sep']
+        chars = (locale_vars[x].replace('.', '\.').replace('-', '\-')
+                 for x in interesting_vars)
+        interesting_chars = ''.join(set(chars))
+        regexp = re.compile(r'[^0-9{} ]'.format(interesting_chars))
+        if regexp.findall(value):
+            raise ValueError("Can't be Decimal")
+
+        parts = [REGEXP_ONLY_NUMBERS.subn('', number)[0]
+                 for number in value.split(decimal_separator)]
+        if len(parts) > 2:
+            raise ValueError("Can't deserialize with this locale.")
+        try:
+            value = Decimal(parts[0])
+            if len(parts) == 2:
+                decimal_places = len(parts[1])
+                value = value + (Decimal(parts[1]) / decimal_places)
+        except InvalidOperation:
+            raise ValueError("Can't be Decimal")
+        return value
 
 
 class DateField(Field):

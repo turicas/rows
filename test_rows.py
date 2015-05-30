@@ -22,6 +22,7 @@ import textwrap
 import unittest
 
 from collections import OrderedDict
+from decimal import Decimal
 
 import rows
 
@@ -206,9 +207,25 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(DatetimeField.deserialize(serialized), value)
         self.assertEqual(DatetimeField.serialize(value), serialized)
 
-    @unittest.skip('TODO: implement')
     def test_DecimalField(self):
-        pass
+        from rows.fields import DecimalField
+
+        self.assertEqual(DecimalField.TYPE, Decimal)
+        self.assertIs(type(DecimalField.deserialize('42.0')),
+                      DecimalField.TYPE)
+        self.assertEqual(DecimalField.deserialize('42.0'), Decimal('42.0'))
+        self.assertEqual(DecimalField.serialize(Decimal('42.010')), '42.010')
+
+        with rows.locale_context('pt_BR.UTF-8'):
+            self.assertEqual(DecimalField.serialize(Decimal('42.0')),
+                             '42,0')
+            self.assertEqual(DecimalField.serialize(Decimal('42000.0')),
+                             '42000,0')
+            self.assertEqual(DecimalField.deserialize('42.000,00'),
+                             Decimal('42000.00'))
+            self.assertEqual(DecimalField.serialize(Decimal('42000.0'),
+                                                            grouping=True),
+                             '42.000,0')
 
     @unittest.skip('TODO: implement')
     def test_PercentField(self):

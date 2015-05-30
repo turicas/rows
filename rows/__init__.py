@@ -10,6 +10,7 @@ class Table(object):
 
     def __init__(self, fields):
         self.fields = OrderedDict(fields)
+        # TODO: should we really use OrderedDict here?
         self.field_names, self.field_types = [], []
         for field_name, field_type in self.fields.items():
             self.field_names.append(field_name)
