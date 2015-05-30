@@ -238,16 +238,16 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(type(PercentField.deserialize('42.0%')),
                       PercentField.TYPE)
         self.assertEqual(PercentField.deserialize('42.0%'), Decimal('0.420'))
-        self.assertEqual(PercentField.serialize(Decimal('0.42010')), '42.010%')
-        self.assertEqual(PercentField.serialize(Decimal('42.010')), '4201.0%')
+        self.assertEqual(PercentField.serialize(Decimal('0.42010')), '0.42010')
+        self.assertEqual(PercentField.serialize(Decimal('42.010')), '42.010')
 
         with rows.locale_context('pt_BR.UTF-8'):
             self.assertEqual(PercentField.serialize(Decimal('42.0')),
-                             '4200%')
+                             '42,0')
             self.assertEqual(PercentField.serialize(Decimal('42000.0')),
-                             '4200000%')
+                             '42000,0')
             self.assertEqual(PercentField.deserialize('42.000,00%'),
                              Decimal('420.0000'))
             self.assertEqual(PercentField.serialize(Decimal('42000.00'),
                                                     grouping=True),
-                             '4.200.000%')
+                             '42.000,00')

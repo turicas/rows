@@ -147,10 +147,7 @@ class PercentField(DecimalField):
             return ''  # TODO: should always be this way?
 
         grouping = kwargs.get('grouping', None)
-        # Multiply by 100 and cut 2 zeroes (added by '* 100')
-        value = Decimal(str(value * 100)[:-2])
-        value = super(PercentField, cls).serialize(value, grouping=grouping)
-        return '{}%'.format(value)
+        return super(PercentField, cls).serialize(value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
