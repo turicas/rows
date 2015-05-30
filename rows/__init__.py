@@ -82,7 +82,8 @@ def detect_field_types(field_names, sample_rows, *args, **kwargs):
         detected_types[field_name] = identified_type
     return detected_types
 
-def import_from_csv(filename, delimiter=',', quotechar='"', encoding='utf-8'):
+def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
+                    encoding='utf-8'):
     # TODO: add auto_detect_types=True parameter
     # this import will be moved in the future (to another module, actually)
     import unicodecsv
@@ -93,8 +94,9 @@ def import_from_csv(filename, delimiter=',', quotechar='"', encoding='utf-8'):
     table_rows = [row for row in csv_reader]
     header, table_rows = table_rows[0], table_rows[1:]
 
-    field_types = detect_field_types(header, table_rows, encoding=encoding)
-    table = Table(fields=field_types)
+    if fields is None:
+        fields = detect_field_types(header, table_rows, encoding=encoding)
+    table = Table(fields=fields)
     for row in table_rows:
         table.append({field_name: value
                       for field_name, value in zip(header, row)})
