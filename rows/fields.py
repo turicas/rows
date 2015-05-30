@@ -33,10 +33,16 @@ class BoolField(Field):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''  # TODO: should always be this way?
+
         return str(value).lower()
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
+        if isinstance(value, cls.TYPE) or value is None:
+            return value
+
         if value in ('true', '1', 'yes'):
             return True
         elif value in ('false', '0', 'no'):
@@ -49,11 +55,17 @@ class IntegerField(Field):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''  # TODO: should always be this way?
+
         grouping = kwargs.get('grouping', None)
         return locale.format('%d', value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
+        if isinstance(value, cls.TYPE) or value is None:
+            return value
+
         return locale.atoi(value)
 
 
@@ -62,11 +74,17 @@ class FloatField(Field):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''  # TODO: should always be this way?
+
         grouping = kwargs.get('grouping', None)
         return locale.format('%f', value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
+        if isinstance(value, cls.TYPE) or value is None:
+            return value
+
         return locale.atof(value)
 
 
@@ -75,6 +93,10 @@ class DecimalField(Field):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''  # TODO: should always be this way?
+        # TODO: test None on all Field.serialize
+
         grouping = kwargs.get('grouping', None)
         value_as_string = str(value)
         has_decimal_places = value_as_string.find('.') != -1
@@ -87,6 +109,9 @@ class DecimalField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
+        if isinstance(value, cls.TYPE) or value is None:
+            return value
+
         locale_vars = locale.localeconv()
         decimal_separator = locale_vars['decimal_point']
         interesting_vars = ['decimal_point', 'mon_decimal_point',
@@ -118,6 +143,9 @@ class PercentField(DecimalField):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''  # TODO: should always be this way?
+
         grouping = kwargs.get('grouping', None)
         # Multiply by 100 and cut 2 zeroes (added by '* 100')
         value = Decimal(str(value * 100)[:-2])
@@ -126,6 +154,10 @@ class PercentField(DecimalField):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
+        # TODO: do it in all classes (and maybe use on serialize)
+        if isinstance(value, cls.TYPE) or value is None:
+            return value
+
         if '%' not in value:
             raise ValueError("Can't be {}".format(cls.__name__))
         value = value.replace('%', '')
@@ -139,10 +171,16 @@ class DateField(Field):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''  # TODO: should always be this way?
+
         return value.strftime(cls.OUTPUT_FORMAT)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
+        if isinstance(value, cls.TYPE) or value is None:
+            return value
+
         dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
         return datetime.date(dt_object.year, dt_object.month, dt_object.day)
 
@@ -154,10 +192,16 @@ class DatetimeField(Field):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''  # TODO: should always be this way?
+
         return value.isoformat()
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
+        if isinstance(value, cls.TYPE) or value is None:
+            return value
+
         # TODO: may use iso8601
         groups = cls.DATETIME_REGEXP.findall(value)
         if not groups:
@@ -171,6 +215,9 @@ class UnicodeField(Field):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''  # TODO: should always be this way?
+
         if 'encoding' in kwargs:
             return value.encode(kwargs['encoding'])
         else:
@@ -178,6 +225,9 @@ class UnicodeField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
+        if isinstance(value, cls.TYPE) or value is None:
+            return value
+
         if type(value) is unicode:
             return value
         elif 'encoding' in kwargs:
@@ -191,8 +241,14 @@ class StringField(Field):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''  # TODO: should always be this way?
+
         return value
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
+        if isinstance(value, cls.TYPE) or value is None:
+            return value
+
         return value
