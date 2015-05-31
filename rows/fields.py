@@ -15,7 +15,8 @@ REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 # TODO: all fields must accept `consider_locale=False` parameter so we can set
 #       it fo True if want to use locale but if not it won't slow down the
 #       process of serializing/deserializing data
-
+# TODO: should test 'None' directly on Field.deserialize and create a test for
+#       it
 
 class Field(object):
     TYPE = type(None)
@@ -42,6 +43,8 @@ class BoolField(Field):
     def deserialize(cls, value, *args, **kwargs):
         if isinstance(value, cls.TYPE) or value is None:
             return value
+        elif not value.strip():
+            return None
 
         if value in ('true', '1', 'yes'):
             return True
@@ -65,6 +68,8 @@ class IntegerField(Field):
     def deserialize(cls, value, *args, **kwargs):
         if isinstance(value, cls.TYPE) or value is None:
             return value
+        elif not value.strip():
+            return None
 
         return locale.atoi(value)
 
@@ -84,6 +89,8 @@ class FloatField(Field):
     def deserialize(cls, value, *args, **kwargs):
         if isinstance(value, cls.TYPE) or value is None:
             return value
+        elif not value.strip():
+            return None
 
         return locale.atof(value)
 
@@ -111,6 +118,8 @@ class DecimalField(Field):
     def deserialize(cls, value, *args, **kwargs):
         if isinstance(value, cls.TYPE) or value is None:
             return value
+        elif not value.strip():
+            return None
 
         locale_vars = locale.localeconv()
         decimal_separator = locale_vars['decimal_point']
@@ -154,6 +163,8 @@ class PercentField(DecimalField):
         # TODO: do it in all classes (and maybe use on serialize)
         if isinstance(value, cls.TYPE) or value is None:
             return value
+        elif not value.strip():
+            return None
 
         if '%' not in value:
             raise ValueError("Can't be {}".format(cls.__name__))
@@ -177,6 +188,8 @@ class DateField(Field):
     def deserialize(cls, value, *args, **kwargs):
         if isinstance(value, cls.TYPE) or value is None:
             return value
+        elif not value.strip():
+            return None
 
         dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
         return datetime.date(dt_object.year, dt_object.month, dt_object.day)
@@ -198,6 +211,8 @@ class DatetimeField(Field):
     def deserialize(cls, value, *args, **kwargs):
         if isinstance(value, cls.TYPE) or value is None:
             return value
+        elif not value.strip():
+            return None
 
         # TODO: may use iso8601
         groups = cls.DATETIME_REGEXP.findall(value)
@@ -224,6 +239,8 @@ class UnicodeField(Field):
     def deserialize(cls, value, *args, **kwargs):
         if isinstance(value, cls.TYPE) or value is None:
             return value
+        elif not value.strip():
+            return None
 
         if type(value) is unicode:
             return value
@@ -247,5 +264,7 @@ class StringField(Field):
     def deserialize(cls, value, *args, **kwargs):
         if isinstance(value, cls.TYPE) or value is None:
             return value
+        elif not value.strip():
+            return None
 
         return value
