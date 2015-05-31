@@ -148,7 +148,6 @@ class DecimalField(Field):
 
 
 class PercentField(DecimalField):
-    TYPE = Decimal
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
