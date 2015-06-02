@@ -4,8 +4,12 @@ import locale
 
 from collections import Mapping, OrderedDict, namedtuple
 from contextlib import contextmanager
+from unicodedata import normalize
 
 import fields
+
+
+SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
 
 class Table(object):
@@ -13,6 +17,7 @@ class Table(object):
     def __init__(self, fields):
         self.fields = OrderedDict(fields)
         # TODO: should we really use OrderedDict here?
+        # TODO: slug field names
         self.field_names, self.field_types = [], []
         for field_name, field_type in self.fields.items():
             self.field_names.append(field_name)
@@ -43,10 +48,16 @@ class Table(object):
 
         return self.Row(*self._rows[item])
 
+def _get_string(value):
+    if isinstance(value, (unicode, str)):
+        return value
+    else:
+        return str(value)
 
 def detect_field_types(field_names, sample_rows, *args, **kwargs):
     """Where the magic happens"""
 
+    # TODO: should support receiving unicode objects directly
     # TODO: should expect data in unicode or will be able to use binary data?
     columns = zip(*sample_rows)
     # TODO: raise a ValueError exception instead
@@ -57,18 +68,19 @@ def detect_field_types(field_names, sample_rows, *args, **kwargs):
     none_type = set([type(None)])
     detected_types = OrderedDict([(field_name, None)
                                   for field_name in field_names])
+    encoding = kwargs.get('encoding', None)
     for index, field_name in enumerate(field_names):
         possible_types = list(available_types)
         column_data = set(columns[index])
 
-        if not [value for value in column_data if unicode(value).strip()]:
+        if not [value for value in column_data if _get_string(value).strip()]:
             # all rows with an empty field -> str (can't identify)
             identified_type = fields.StringField
         else:
             # ok, let's try to identify the type of this column by
             # converting every value in the sample
             for value in column_data:
-                if unicode(value).strip() == '' or value is None:
+                if value is None or not _get_string(value).strip():
                     # TODO: should test 'value in NULL'?
                     continue
 
@@ -84,6 +96,37 @@ def detect_field_types(field_names, sample_rows, *args, **kwargs):
         detected_types[field_name] = identified_type
     return detected_types
 
+
+# Utilities
+
+def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
+         replace_with_separator=' -_'):
+    if isinstance(text, str):
+        text = text.decode(encoding or 'ascii')
+    clean_text = text.strip()
+    for char in replace_with_separator:
+        clean_text = clean_text.replace(char, separator)
+    double_separator = separator + separator
+    while double_separator in clean_text:
+        clean_text = clean_text.replace(double_separator, separator)
+    ascii_text = normalize('NFKD', clean_text).encode('ascii', 'ignore')
+    strict_text = [x for x in ascii_text if x in permitted_chars]
+
+    return ''.join(strict_text)
+
+@contextmanager
+def locale_context(name, category=locale.LC_ALL):
+
+    old_name = locale.getlocale(category)
+    locale.setlocale(category, name)
+    try:
+        yield
+    finally:
+        locale.setlocale(category, old_name)
+
+
+# CSV plugin
+
 def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
                     encoding='utf-8'):
     # TODO: add auto_detect_types=True parameter
@@ -95,6 +138,7 @@ def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
                                    quotechar='"')
     table_rows = [row for row in csv_reader]
     header, table_rows = table_rows[0], table_rows[1:]
+    header = [slug(field_name).lower() for field_name in header]
 
     if fields is None:
         fields = detect_field_types(header, table_rows, encoding=encoding)
@@ -103,7 +147,6 @@ def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
         table.append({field_name: value
                       for field_name, value in zip(header, row)})
     return table
-
 
 def export_to_csv(table, filename, encoding='utf-8'):
     import csv  # TODO: may use unicodecsv here
@@ -118,12 +161,4 @@ def export_to_csv(table, filename, encoding='utf-8'):
             csv_writer.writerow([type_.serialize(getattr(row, field))
                                  for field, type_ in fields])
 
-@contextmanager
-def locale_context(name, category=locale.LC_ALL):
 
-    old_name = locale.getlocale(category)
-    locale.setlocale(category, name)
-    try:
-        yield
-    finally:
-        locale.setlocale(category, old_name)
