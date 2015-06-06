@@ -150,14 +150,6 @@ class DecimalField(Field):
 class PercentField(DecimalField):
 
     @classmethod
-    def serialize(cls, value, *args, **kwargs):
-        if value is None:
-            return ''  # TODO: should always be this way?
-
-        grouping = kwargs.get('grouping', None)
-        return super(PercentField, cls).serialize(value, grouping=grouping)
-
-    @classmethod
     def deserialize(cls, value, *args, **kwargs):
         # TODO: do it in all classes (and maybe use on serialize)
         if isinstance(value, cls.TYPE) or value is None:
