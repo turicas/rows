@@ -225,12 +225,14 @@ def import_from_html(html, fields=None, table_index=0, include_fields=None,
         table_rows.append(new_row)
 
     # TODO: lxml -> unicode?
-
     # TODO: unescape
+
+    header = [x.strip() for x in table_rows[0]]
+    table_rows = table_rows[1:]
     if fields is None:
-        header = [x.strip() for x in table_rows[0]]
-        table_rows = table_rows[1:]
         fields = detect_field_types(header, table_rows, encoding='utf-8')
+    else:
+        header = fields.keys()
 
     table = Table(fields=fields)
     for row in table_rows:
