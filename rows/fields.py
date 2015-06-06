@@ -6,6 +6,8 @@ import re
 
 from decimal import Decimal, InvalidOperation
 
+from utils import as_string, is_null
+
 
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DateField',
@@ -18,6 +20,7 @@ REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 # TODO: should test 'None' directly on Field.deserialize and create a test for
 #       it
 
+
 class Field(object):
     TYPE = type(None)
 
@@ -27,7 +30,12 @@ class Field(object):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        raise NotImplementedError('Should be implemented')
+        if isinstance(value, cls.TYPE):
+            return value
+        elif is_null(value):
+            return None
+        else:
+            return as_string(value)
 
 class BoolField(Field):
     TYPE = bool
@@ -41,9 +49,8 @@ class BoolField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if isinstance(value, cls.TYPE) or value is None:
-            return value
-        elif not value.strip():
+        value = super(BoolField, cls).deserialize(value)
+        if value is None:
             return None
 
         if value in ('true', '1', 'yes'):
@@ -66,9 +73,8 @@ class IntegerField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if isinstance(value, cls.TYPE) or value is None:
-            return value
-        elif not value.strip():
+        value = super(IntegerField, cls).deserialize(value)
+        if value is None:
             return None
 
         return locale.atoi(value)
@@ -87,9 +93,8 @@ class FloatField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if isinstance(value, cls.TYPE) or value is None:
-            return value
-        elif not value.strip():
+        value = super(FloatField, cls).deserialize(value)
+        if value is None:
             return None
 
         return locale.atof(value)
@@ -116,9 +121,8 @@ class DecimalField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if isinstance(value, cls.TYPE) or value is None:
-            return value
-        elif not value.strip():
+        value = super(DecimalField, cls).deserialize(value)
+        if value is None:
             return None
 
         locale_vars = locale.localeconv()
@@ -151,10 +155,9 @@ class PercentField(DecimalField):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        # TODO: do it in all classes (and maybe use on serialize)
-        if isinstance(value, cls.TYPE) or value is None:
+        if isinstance(value, cls.TYPE):
             return value
-        elif not value.strip():
+        elif is_null(value):
             return None
 
         if '%' not in value:
@@ -177,9 +180,8 @@ class DateField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if isinstance(value, cls.TYPE) or value is None:
-            return value
-        elif not value.strip():
+        value = super(DateField, cls).deserialize(value)
+        if value is None:
             return None
 
         dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
@@ -200,9 +202,8 @@ class DatetimeField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if isinstance(value, cls.TYPE) or value is None:
-            return value
-        elif not value.strip():
+        value = super(DatetimeField, cls).deserialize(value)
+        if value is None:
             return None
 
         # TODO: may use iso8601
@@ -228,9 +229,8 @@ class UnicodeField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if isinstance(value, cls.TYPE) or value is None:
-            return value
-        elif not value.strip():
+        value = super(UnicodeField, cls).deserialize(value)
+        if value is None:
             return None
 
         if type(value) is unicode:
@@ -253,9 +253,8 @@ class StringField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if isinstance(value, cls.TYPE) or value is None:
-            return value
-        elif not value.strip():
+        value = super(StringField, cls).deserialize(value)
+        if value is None:
             return None
 
         return value
