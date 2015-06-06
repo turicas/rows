@@ -7,6 +7,8 @@ from unicodedata import normalize
 
 
 SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
+NULL = ('-', 'null', 'none', 'nil')
+
 
 def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
          replace_with_separator=' -_'):
@@ -22,6 +24,19 @@ def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
     strict_text = [x for x in ascii_text if x in permitted_chars]
 
     return ''.join(strict_text)
+
+
+def as_string(value):
+    if isinstance(value, (unicode, str)):
+        return value
+    else:
+        return str(value)
+
+
+def is_null(value):
+    value_str = as_string(value).strip().lower()
+    return value is None or not value_str or value_str in NULL
+
 
 def ipartition(iterable, n):
     if not isinstance(iterable, collections.Iterator):
@@ -39,15 +54,3 @@ def ipartition(iterable, n):
                 finished = True
                 break
         yield data
-
-def convert_output(value, grouping=True):
-    value_type = type(value)
-
-    if value is None:
-        return u''
-    elif value_type == int:
-        return locale.format('%d', value, grouping=grouping)
-    elif value_type == float:
-        return locale.format('%f', value, grouping=grouping)
-    else:
-        return unicode(value)

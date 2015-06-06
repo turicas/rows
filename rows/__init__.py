@@ -8,8 +8,7 @@ from unicodedata import normalize
 
 import fields
 
-
-SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
+from utils import as_string, is_null, slug
 
 
 class Table(object):
@@ -48,11 +47,6 @@ class Table(object):
 
         return self.Row(*self._rows[item])
 
-def _get_string(value):
-    if isinstance(value, (unicode, str)):
-        return value
-    else:
-        return str(value)
 
 def detect_field_types(field_names, sample_rows, *args, **kwargs):
     """Where the magic happens"""
@@ -73,15 +67,14 @@ def detect_field_types(field_names, sample_rows, *args, **kwargs):
         possible_types = list(available_types)
         column_data = set(columns[index])
 
-        if not [value for value in column_data if _get_string(value).strip()]:
+        if not [value for value in column_data if as_string(value).strip()]:
             # all rows with an empty field -> str (can't identify)
             identified_type = fields.StringField
         else:
             # ok, let's try to identify the type of this column by
             # converting every value in the sample
             for value in column_data:
-                if value is None or not _get_string(value).strip():
-                    # TODO: should test 'value in NULL'?
+                if is_null(value):
                     continue
 
                 cant_be = set()
@@ -98,21 +91,6 @@ def detect_field_types(field_names, sample_rows, *args, **kwargs):
 
 
 # Utilities
-
-def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
-         replace_with_separator=' -_'):
-    if isinstance(text, str):
-        text = text.decode(encoding or 'ascii')
-    clean_text = text.strip()
-    for char in replace_with_separator:
-        clean_text = clean_text.replace(char, separator)
-    double_separator = separator + separator
-    while double_separator in clean_text:
-        clean_text = clean_text.replace(double_separator, separator)
-    ascii_text = normalize('NFKD', clean_text).encode('ascii', 'ignore')
-    strict_text = [x for x in ascii_text if x in permitted_chars]
-
-    return ''.join(strict_text)
 
 @contextmanager
 def locale_context(name, category=locale.LC_ALL):
