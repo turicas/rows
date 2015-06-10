@@ -321,6 +321,8 @@ This library is released under the [GNU General Public License version
 
 - <https://github.com/scraperwiki/scrumble/>
 - <https://nytlabs.github.io/streamtools/>
+- <https://github.com/okfn/messytables>
+- <http://goodtables.okfnlabs.org>
 - Kettle/Pentaho?
 - Talend?
 
