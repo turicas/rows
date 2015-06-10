@@ -107,6 +107,7 @@ def locale_context(name, category=locale.LC_ALL):
 
 def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
                     encoding='utf-8'):
+    'Import data from a CSV file'
     # TODO: add auto_detect_types=True parameter
     # this import will be moved in the future (to another module, actually)
     import unicodecsv
@@ -228,6 +229,14 @@ def import_from_html(html, fields=None, table_index=0, include_fields=None,
     # TODO: unescape
 
     header = [x.strip() for x in table_rows[0]]
+    # TODO: test this feature
+    new_header = []
+    for index, field_name in enumerate(header):
+        if not field_name:
+            field_name = 'field_{}'.format(index)
+        new_header.append(field_name)
+    header = new_header
+
     table_rows = table_rows[1:]
     if fields is None:
         fields = detect_field_types(header, table_rows, encoding='utf-8')
