@@ -1,5 +1,7 @@
 # rows
 
+[![Join the chat at https://gitter.im/turicas/rows](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/turicas/rows?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This library is intended to be the easiest way to access tabular data using
 Python, regardless of the format it's stored or will be extracted to; some
 examples include CSV, HTML, XLS and ODS.
