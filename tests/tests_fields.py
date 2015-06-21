@@ -27,7 +27,34 @@ from rows import fields
 
 class FieldsTestCase(unittest.TestCase):
 
-     # TODO: test rows.fields.Field
+    def byte_asserts(self, field_class):
+        # Field and ByteField are actually the same thing
+        self.assertEqual(field_class.TYPE, str)
+        self.assertIs(type(field_class.deserialize('test')),
+                      field_class.TYPE)
+        self.assertIs(field_class.deserialize('Álvaro'), 'Álvaro')
+        self.assertIs(field_class.serialize('Álvaro'), 'Álvaro')
+
+    def test_Field(self):
+        self.byte_asserts(fields.Field)
+
+    def test_ByteField(self):
+        self.byte_asserts(fields.ByteField)
+
+    def test_BoolField(self):
+        self.assertEqual(fields.BoolField.TYPE, bool)
+        self.assertIs(type(fields.BoolField.deserialize('true')),
+                      fields.BoolField.TYPE)
+
+        self.assertIs(fields.BoolField.deserialize('0'), False)
+        self.assertIs(fields.BoolField.deserialize('false'), False)
+        self.assertIs(fields.BoolField.deserialize('no'), False)
+        self.assertEqual(fields.BoolField.serialize(False), 'false')
+
+        self.assertIs(fields.BoolField.deserialize('1'), True)
+        self.assertIs(fields.BoolField.deserialize('true'), True)
+        self.assertIs(fields.BoolField.deserialize('yes'), True)
+        self.assertEqual(fields.BoolField.serialize(True), 'true')
 
     def test_IntegerField(self):
         self.assertEqual(fields.IntegerField.TYPE, int)
@@ -79,28 +106,6 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.UnicodeField.serialize(u'Álvaro',
                                                        encoding='utf-8'),
                          'Álvaro')
-
-    def test_StringField(self):
-        self.assertEqual(fields.StringField.TYPE, str)
-        self.assertIs(type(fields.StringField.deserialize('test')),
-                      fields.StringField.TYPE)
-        self.assertIs(fields.StringField.deserialize('Álvaro'), 'Álvaro')
-        self.assertIs(fields.StringField.serialize('Álvaro'), 'Álvaro')
-
-    def test_BoolField(self):
-        self.assertEqual(fields.BoolField.TYPE, bool)
-        self.assertIs(type(fields.BoolField.deserialize('true')),
-                      fields.BoolField.TYPE)
-
-        self.assertIs(fields.BoolField.deserialize('0'), False)
-        self.assertIs(fields.BoolField.deserialize('false'), False)
-        self.assertIs(fields.BoolField.deserialize('no'), False)
-        self.assertEqual(fields.BoolField.serialize(False), 'false')
-
-        self.assertIs(fields.BoolField.deserialize('1'), True)
-        self.assertIs(fields.BoolField.deserialize('true'), True)
-        self.assertIs(fields.BoolField.deserialize('yes'), True)
-        self.assertEqual(fields.BoolField.serialize(True), 'true')
 
     def test_DatetimeField(self):
         # TODO: test timezone-aware datetime.date

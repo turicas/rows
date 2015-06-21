@@ -69,7 +69,7 @@ def detect_field_types(field_names, sample_rows, *args, **kwargs):
 
         if not [value for value in column_data if as_string(value).strip()]:
             # all rows with an empty field -> str (can't identify)
-            identified_type = fields.StringField
+            identified_type = fields.ByteField
         else:
             # ok, let's try to identify the type of this column by
             # converting every value in the sample

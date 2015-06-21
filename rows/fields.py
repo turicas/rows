@@ -12,7 +12,7 @@ from utils import as_string, is_null
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DateField',
            'DatetimeField', 'DecimalField', 'PercentField', 'UnicodeField',
-           'StringField', 'Field']
+           'ByteField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 # TODO: all fields must accept `consider_locale=False` parameter so we can set
 #       it fo True if want to use locale but if not it won't slow down the
@@ -22,11 +22,16 @@ REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 
 
 class Field(object):
-    TYPE = type(None)
+    '''Base Field class - all fields should inherit from this
+
+    As the fallback for all other field types are the ByteField, this Field
+    actually implements what is expected in the ByteField'''
+
+    TYPE = str
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
-        raise NotImplementedError('Should be implemented')
+        return str(value)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -36,6 +41,7 @@ class Field(object):
             return None
         else:
             return as_string(value)
+
 
 class BoolField(Field):
     TYPE = bool
@@ -59,6 +65,7 @@ class BoolField(Field):
             return False
         else:
             raise ValueError()
+
 
 class IntegerField(Field):
     TYPE = int
@@ -241,20 +248,5 @@ class UnicodeField(Field):
             return unicode(value)
 
 
-class StringField(Field):
-    TYPE = str
-
-    @classmethod
-    def serialize(cls, value, *args, **kwargs):
-        if value is None:
-            return ''  # TODO: should always be this way?
-
-        return value
-
-    @classmethod
-    def deserialize(cls, value, *args, **kwargs):
-        value = super(StringField, cls).deserialize(value)
-        if value is None:
-            return None
-
-        return value
+class ByteField(Field):
+    pass
