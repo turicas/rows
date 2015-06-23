@@ -44,24 +44,33 @@ class Field(object):
 
 
 class BoolField(Field):
+    '''Base class for representing boolean type
+
+    BoolField does not take locale into account.
+    You can customize class behaviour by changing its attributes
+    '''
+
     TYPE = bool
+    SERIALIZE_VALUES = {True: 'true', False: 'false'}
+    TRUE_VALUES = ('true', '1', 'yes')
+    FALSE_VALUES = ('false', '0', 'no')
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is None:
             return ''  # TODO: should always be this way?
 
-        return str(value).lower()
+        return cls.SERIALIZE_VALUES[value]
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value, consider_locale=False, *args, **kwargs):
         value = super(BoolField, cls).deserialize(value)
         if value is None:
             return None
 
-        if value in ('true', '1', 'yes'):
+        if value in cls.TRUE_VALUES:
             return True
-        elif value in ('false', '0', 'no'):
+        elif value in cls.FALSE_VALUES:
             return False
         else:
             raise ValueError()

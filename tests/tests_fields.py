@@ -38,8 +38,12 @@ class FieldsTestCase(unittest.TestCase):
     def test_Field(self):
         self.byte_asserts(fields.Field)
 
+        # rows.fields.Field should not care about locale
+
     def test_ByteField(self):
         self.byte_asserts(fields.ByteField)
+
+        # rows.fields.ByteField should not care about locale
 
     def test_BoolField(self):
         self.assertEqual(fields.BoolField.TYPE, bool)
