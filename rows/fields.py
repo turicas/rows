@@ -14,11 +14,7 @@ __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DateField',
            'DatetimeField', 'DecimalField', 'PercentField', 'UnicodeField',
            'ByteField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
-# TODO: all fields must accept `consider_locale=False` parameter so we can set
-#       it fo True if want to use locale but if not it won't slow down the
-#       process of serializing/deserializing data
-# TODO: should test 'None' directly on Field.deserialize and create a test for
-#       it
+SHOULD_NOT_USE_LOCALE = True  # This variable is changed on rows.locale_manager
 
 
 class Field(object):
@@ -43,11 +39,20 @@ class Field(object):
             return as_string(value)
 
 
-class BoolField(Field):
-    '''Base class for representing boolean type
+class ByteField(Field):
+    '''Field class to represent byte arrays
 
-    BoolField does not take locale into account.
-    You can customize class behaviour by changing its attributes
+    Is not locale-aware (does not need to be)
+    '''
+
+    pass
+
+
+class BoolField(Field):
+    '''Base class to representing boolean
+
+    Is not locale-aware (if you need to, please customize by changing its
+    attributes like `TRUE_VALUES` and `FALSE_VALUES`)
     '''
 
     TYPE = bool
@@ -63,7 +68,7 @@ class BoolField(Field):
         return cls.SERIALIZE_VALUES[value]
 
     @classmethod
-    def deserialize(cls, value, consider_locale=False, *args, **kwargs):
+    def deserialize(cls, value, *args, **kwargs):
         value = super(BoolField, cls).deserialize(value)
         if value is None:
             return None
@@ -77,6 +82,11 @@ class BoolField(Field):
 
 
 class IntegerField(Field):
+    '''Field class to represent integer
+
+    Is locale-aware
+    '''
+
     TYPE = int
 
     @classmethod
@@ -84,8 +94,11 @@ class IntegerField(Field):
         if value is None:
             return ''  # TODO: should always be this way?
 
-        grouping = kwargs.get('grouping', None)
-        return locale.format('%d', value, grouping=grouping)
+        if SHOULD_NOT_USE_LOCALE:
+            return str(value)
+        else:
+            grouping = kwargs.get('grouping', None)
+            return locale.format('%d', value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -93,10 +106,18 @@ class IntegerField(Field):
         if value is None:
             return None
 
-        return locale.atoi(value)
+        if SHOULD_NOT_USE_LOCALE:
+            return int(value)
+        else:
+            return locale.atoi(value)
 
 
 class FloatField(Field):
+    '''Field class to represent float
+
+    Is locale-aware
+    '''
+
     TYPE = float
 
     @classmethod
@@ -104,8 +125,11 @@ class FloatField(Field):
         if value is None:
             return ''  # TODO: should always be this way?
 
-        grouping = kwargs.get('grouping', None)
-        return locale.format('%f', value, grouping=grouping)
+        if SHOULD_NOT_USE_LOCALE:
+            return str(value)
+        else:
+            grouping = kwargs.get('grouping', None)
+            return locale.format('%f', value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -113,10 +137,18 @@ class FloatField(Field):
         if value is None:
             return None
 
-        return locale.atof(value)
+        if SHOULD_NOT_USE_LOCALE:
+            return float(value)
+        else:
+            return locale.atof(value)
 
 
 class DecimalField(Field):
+    '''Field class to represent decimal data (as Python's decimal.Decimal)
+
+    Is locale-aware
+    '''
+
     TYPE = Decimal
 
     @classmethod
@@ -125,15 +157,18 @@ class DecimalField(Field):
             return ''  # TODO: should always be this way?
         # TODO: test None on all Field.serialize
 
-        grouping = kwargs.get('grouping', None)
-        value_as_string = str(value)
-        has_decimal_places = value_as_string.find('.') != -1
-        if not has_decimal_places:
-            string_format = '%d'
+        if SHOULD_NOT_USE_LOCALE:
+            return str(value)
         else:
-            decimal_places = len(value_as_string.split('.')[1])
-            string_format = '%.{}f'.format(decimal_places)
-        return locale.format(string_format, value, grouping=grouping)
+            grouping = kwargs.get('grouping', None)
+            value_as_string = str(value)
+            has_decimal_places = value_as_string.find('.') != -1
+            if not has_decimal_places:
+                string_format = '%d'
+            else:
+                decimal_places = len(value_as_string.split('.')[1])
+                string_format = '%.{}f'.format(decimal_places)
+            return locale.format(string_format, value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -141,33 +176,43 @@ class DecimalField(Field):
         if value is None:
             return None
 
-        locale_vars = locale.localeconv()
-        decimal_separator = locale_vars['decimal_point']
-        interesting_vars = ['decimal_point', 'mon_decimal_point',
-                            'mon_thousands_sep', 'negative_sign',
-                            'positive_sign', 'thousands_sep']
-        chars = (locale_vars[x].replace('.', '\.').replace('-', '\-')
-                 for x in interesting_vars)
-        interesting_chars = ''.join(set(chars))
-        regexp = re.compile(r'[^0-9{} ]'.format(interesting_chars))
-        if regexp.findall(value):
-            raise ValueError("Can't be {}".format(cls.__name__))
+        if SHOULD_NOT_USE_LOCALE:
+            try:
+                return Decimal(value)
+            except InvalidOperation:
+                raise ValueError("Can't be {}".format(cls.__name__))
+        else:
+            locale_vars = locale.localeconv()
+            decimal_separator = locale_vars['decimal_point']
+            interesting_vars = ['decimal_point', 'mon_decimal_point',
+                                'mon_thousands_sep', 'negative_sign',
+                                'positive_sign', 'thousands_sep']
+            chars = (locale_vars[x].replace('.', '\.').replace('-', '\-')
+                    for x in interesting_vars)
+            interesting_chars = ''.join(set(chars))
+            regexp = re.compile(r'[^0-9{} ]'.format(interesting_chars))
+            if regexp.findall(value):
+                raise ValueError("Can't be {}".format(cls.__name__))
 
-        parts = [REGEXP_ONLY_NUMBERS.subn('', number)[0]
-                 for number in value.split(decimal_separator)]
-        if len(parts) > 2:
-            raise ValueError("Can't deserialize with this locale.")
-        try:
-            value = Decimal(parts[0])
-            if len(parts) == 2:
-                decimal_places = len(parts[1])
-                value = value + (Decimal(parts[1]) / (10 ** decimal_places))
-        except InvalidOperation:
-            raise ValueError("Can't be {}".format(cls.__name__))
-        return value
+            parts = [REGEXP_ONLY_NUMBERS.subn('', number)[0]
+                    for number in value.split(decimal_separator)]
+            if len(parts) > 2:
+                raise ValueError("Can't deserialize with this locale.")
+            try:
+                value = Decimal(parts[0])
+                if len(parts) == 2:
+                    decimal_places = len(parts[1])
+                    value = value + (Decimal(parts[1]) / (10 ** decimal_places))
+            except InvalidOperation:
+                raise ValueError("Can't be {}".format(cls.__name__))
+            return value
 
 
 class PercentField(DecimalField):
+    '''Field class to represent percent values
+
+    Is locale-aware (inherit this behaviour from `rows.DecimalField`)
+    '''
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -183,6 +228,11 @@ class PercentField(DecimalField):
 
 
 class DateField(Field):
+    '''Field class to represent date
+
+    Is not locale-aware (does not need to be)
+    '''
+
     TYPE = datetime.date
     INPUT_FORMAT = '%Y-%m-%d'
     OUTPUT_FORMAT = '%Y-%m-%d'
@@ -205,6 +255,11 @@ class DateField(Field):
 
 
 class DatetimeField(Field):
+    '''Field class to represent date-time
+
+    Is not locale-aware (does not need to be)
+    '''
+
     TYPE = datetime.datetime
     DATETIME_REGEXP = re.compile('^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]'
                                  '([0-9]{2}):([0-9]{2}):([0-9]{2})$')
@@ -231,6 +286,11 @@ class DatetimeField(Field):
 
 
 class UnicodeField(Field):
+    '''Field class to represent unicode strings
+
+    Is not locale-aware (does not need to be)
+    '''
+
     TYPE = unicode
 
     @classmethod
@@ -255,7 +315,3 @@ class UnicodeField(Field):
             return value.decode(kwargs['encoding'])
         else:
             return unicode(value)
-
-
-class ByteField(Field):
-    pass

@@ -38,12 +38,8 @@ class FieldsTestCase(unittest.TestCase):
     def test_Field(self):
         self.byte_asserts(fields.Field)
 
-        # rows.fields.Field should not care about locale
-
     def test_ByteField(self):
         self.byte_asserts(fields.ByteField)
-
-        # rows.fields.ByteField should not care about locale
 
     def test_BoolField(self):
         self.assertEqual(fields.BoolField.TYPE, bool)
@@ -79,7 +75,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(type(fields.FloatField.deserialize('42.0')),
                       fields.FloatField.TYPE)
         self.assertEqual(fields.FloatField.deserialize('42.0'), 42.0)
-        self.assertEqual(fields.FloatField.serialize(42.0), '42.000000')
+        self.assertEqual(fields.FloatField.serialize(42.0), '42.0')
 
         with rows.locale_context('pt_BR.UTF-8'):
             self.assertEqual(fields.FloatField.serialize(42000.0),
@@ -89,46 +85,14 @@ class FieldsTestCase(unittest.TestCase):
             self.assertEqual(fields.FloatField.deserialize('42.000,00'),
                              42000.0)
 
-    def test_DateField(self):
-        # TODO: test timezone-aware datetime.date
-        # TODO: should use a locale-aware converter?
-        self.assertEqual(fields.DateField.TYPE, datetime.date)
-        self.assertIs(type(fields.DateField.deserialize('2015-05-27')),
-                      fields.DateField.TYPE)
-        self.assertEqual(fields.DateField.deserialize('2015-05-27'),
-                         datetime.date(2015, 5, 27))
-        self.assertEqual(fields.DateField.serialize(datetime.date(2015, 5, 27)),
-                         '2015-05-27')
-
-    def test_UnicodeField(self):
-        self.assertEqual(fields.UnicodeField.TYPE, unicode)
-        self.assertIs(type(fields.UnicodeField.deserialize('test')),
-                      fields.UnicodeField.TYPE)
-        self.assertEqual(fields.UnicodeField.deserialize('Álvaro',
-                                                         encoding='utf-8'),
-                         u'Álvaro')
-        self.assertEqual(fields.UnicodeField.serialize(u'Álvaro',
-                                                       encoding='utf-8'),
-                         'Álvaro')
-
-    def test_DatetimeField(self):
-        # TODO: test timezone-aware datetime.date
-        # TODO: should use a locale-aware converter?
-        self.assertEqual(fields.DatetimeField.TYPE, datetime.datetime)
-        self.assertIs(type(fields.DatetimeField.deserialize('2015-05-27T01:02:03')),
-                      fields.DatetimeField.TYPE)
-
-        value = datetime.datetime(2015, 5, 27, 1, 2, 3)
-        serialized = '2015-05-27T01:02:03'
-        self.assertEqual(fields.DatetimeField.deserialize(serialized), value)
-        self.assertEqual(fields.DatetimeField.serialize(value), serialized)
-
     def test_DecimalField(self):
         self.assertEqual(fields.DecimalField.TYPE, Decimal)
         self.assertIs(type(fields.DecimalField.deserialize('42.0')),
                       fields.DecimalField.TYPE)
-        self.assertEqual(fields.DecimalField.deserialize('42.0'), Decimal('42.0'))
-        self.assertEqual(fields.DecimalField.serialize(Decimal('42.010')), '42.010')
+        self.assertEqual(fields.DecimalField.deserialize('42.0'),
+                         Decimal('42.0'))
+        self.assertEqual(fields.DecimalField.serialize(Decimal('42.010')),
+                         '42.010')
         self.assertEqual(fields.DecimalField.deserialize('21.21657469231'),
                          Decimal('21.21657469231'))
 
@@ -166,3 +130,35 @@ class FieldsTestCase(unittest.TestCase):
             self.assertEqual(fields.PercentField.serialize(Decimal('42000.00'),
                                                            grouping=True),
                              '42.000,00')
+
+    def test_DateField(self):
+        # TODO: test timezone-aware datetime.date
+        self.assertEqual(fields.DateField.TYPE, datetime.date)
+        self.assertIs(type(fields.DateField.deserialize('2015-05-27')),
+                      fields.DateField.TYPE)
+        self.assertEqual(fields.DateField.deserialize('2015-05-27'),
+                         datetime.date(2015, 5, 27))
+        serialized = fields.DateField.serialize(datetime.date(2015, 5, 27))
+        self.assertEqual(serialized, '2015-05-27')
+
+    def test_DatetimeField(self):
+        # TODO: test timezone-aware datetime.date
+        self.assertEqual(fields.DatetimeField.TYPE, datetime.datetime)
+        deserialized = fields.DatetimeField.deserialize('2015-05-27T01:02:03')
+        self.assertIs(type(deserialized), fields.DatetimeField.TYPE)
+
+        value = datetime.datetime(2015, 5, 27, 1, 2, 3)
+        serialized = '2015-05-27T01:02:03'
+        self.assertEqual(fields.DatetimeField.deserialize(serialized), value)
+        self.assertEqual(fields.DatetimeField.serialize(value), serialized)
+
+    def test_UnicodeField(self):
+        self.assertEqual(fields.UnicodeField.TYPE, unicode)
+        self.assertIs(type(fields.UnicodeField.deserialize('test')),
+                      fields.UnicodeField.TYPE)
+        self.assertEqual(fields.UnicodeField.deserialize('Álvaro',
+                                                         encoding='utf-8'),
+                         u'Álvaro')
+        self.assertEqual(fields.UnicodeField.serialize(u'Álvaro',
+                                                       encoding='utf-8'),
+                         'Álvaro')

@@ -97,10 +97,12 @@ def locale_context(name, category=locale.LC_ALL):
 
     old_name = locale.getlocale(category)
     locale.setlocale(category, name)
+    fields.SHOULD_NOT_USE_LOCALE = False
     try:
         yield
     finally:
         locale.setlocale(category, old_name)
+    fields.SHOULD_NOT_USE_LOCALE = True
 
 
 # CSV plugin
