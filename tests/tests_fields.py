@@ -49,6 +49,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(fields.BoolField.deserialize('0'), False)
         self.assertIs(fields.BoolField.deserialize('false'), False)
         self.assertIs(fields.BoolField.deserialize('no'), False)
+        self.assertEqual(fields.BoolField.deserialize(None), None)
         self.assertEqual(fields.BoolField.serialize(False), 'false')
 
         self.assertIs(fields.BoolField.deserialize('1'), True)
@@ -62,6 +63,7 @@ class FieldsTestCase(unittest.TestCase):
                       fields.IntegerField.TYPE)
         self.assertEqual(fields.IntegerField.deserialize('42'), 42)
         self.assertEqual(fields.IntegerField.serialize(42), '42')
+        self.assertEqual(fields.IntegerField.deserialize(None), None)
 
         with rows.locale_context('pt_BR.UTF-8'):
             self.assertEqual(fields.IntegerField.serialize(42000), '42000')
@@ -75,6 +77,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(type(fields.FloatField.deserialize('42.0')),
                       fields.FloatField.TYPE)
         self.assertEqual(fields.FloatField.deserialize('42.0'), 42.0)
+        self.assertEqual(fields.FloatField.deserialize(None), None)
         self.assertEqual(fields.FloatField.serialize(42.0), '42.0')
 
         with rows.locale_context('pt_BR.UTF-8'):
@@ -95,6 +98,7 @@ class FieldsTestCase(unittest.TestCase):
                          '42.010')
         self.assertEqual(fields.DecimalField.deserialize('21.21657469231'),
                          Decimal('21.21657469231'))
+        self.assertEqual(fields.DecimalField.deserialize(None), None)
 
         with rows.locale_context('pt_BR.UTF-8'):
             self.assertEqual(fields.DecimalField.serialize(Decimal('4200')),
@@ -115,6 +119,7 @@ class FieldsTestCase(unittest.TestCase):
                       fields.PercentField.TYPE)
         self.assertEqual(fields.PercentField.deserialize('42.0%'),
                          Decimal('0.420'))
+        self.assertEqual(fields.PercentField.deserialize(None), None)
         self.assertEqual(fields.PercentField.serialize(Decimal('0.42010')),
                          '0.42010')
         self.assertEqual(fields.PercentField.serialize(Decimal('42.010')),
@@ -138,6 +143,7 @@ class FieldsTestCase(unittest.TestCase):
                       fields.DateField.TYPE)
         self.assertEqual(fields.DateField.deserialize('2015-05-27'),
                          datetime.date(2015, 5, 27))
+        self.assertEqual(fields.DateField.deserialize(None), None)
         serialized = fields.DateField.serialize(datetime.date(2015, 5, 27))
         self.assertEqual(serialized, '2015-05-27')
 
@@ -150,6 +156,7 @@ class FieldsTestCase(unittest.TestCase):
         value = datetime.datetime(2015, 5, 27, 1, 2, 3)
         serialized = '2015-05-27T01:02:03'
         self.assertEqual(fields.DatetimeField.deserialize(serialized), value)
+        self.assertEqual(fields.DatetimeField.deserialize(None), None)
         self.assertEqual(fields.DatetimeField.serialize(value), serialized)
 
     def test_UnicodeField(self):
@@ -159,6 +166,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.UnicodeField.deserialize('Álvaro',
                                                          encoding='utf-8'),
                          u'Álvaro')
+        self.assertEqual(fields.UnicodeField.deserialize(None), None)
         self.assertEqual(fields.UnicodeField.serialize(u'Álvaro',
                                                        encoding='utf-8'),
                          'Álvaro')
