@@ -66,11 +66,11 @@ def main():
     if not argv.locale_in:
         table = import_from(argv.source)
     else:
-        with rows.locale_manager(locale_in):
+        with rows.locale_context(locale_in):
             table = import_from(argv.source)
 
     if not argv.locale_out:
         export_to(table, argv.destination)
     else:
-        with rows.locale_manager(argv.locale_out):
+        with rows.locale_context(argv.locale_out):
             export_to(table, argv.destination)
