@@ -11,5 +11,9 @@ ipdb
 lxml
 requests
 
+# XLS
+xlrd
+xlwt
+
 # MySQL
 MySQL-Python

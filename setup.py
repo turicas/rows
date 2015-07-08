@@ -16,6 +16,7 @@ setup(name='rows',
         'csv': ['unicodecsv'],
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
         'cli': ['requests'],
+        'xls': ['xlrd', 'xlwt'],
         'mysql': ['MySQL-Python'], # apt: libmariadbclient-dev libssl-dev
         'all': ['lxml', 'MySQL-Python'],
     },

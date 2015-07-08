@@ -107,12 +107,15 @@ def locale_context(name, category=locale.LC_ALL):
 
 # CSV plugin
 
+import unicodecsv
+import csv
+
+
 def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
                     encoding='utf-8'):
     'Import data from a CSV file'
     # TODO: add auto_detect_types=True parameter
     # this import will be moved in the future (to another module, actually)
-    import unicodecsv
 
     fobj = open(filename)
     csv_reader = unicodecsv.reader(fobj, encoding=encoding, delimiter=',',
@@ -130,7 +133,7 @@ def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
     return table
 
 def export_to_csv(table, filename, encoding='utf-8'):
-    import csv  # TODO: may use unicodecsv here
+    # TODO: may use unicodecsv here
 
     with open(filename, mode='w') as fobj:
         fields = table.fields.items()
@@ -145,9 +148,12 @@ def export_to_csv(table, filename, encoding='utf-8'):
 
 # XLS plugin
 
+import xlrd
+import xlwt
+
+
 def import_from_xls(filename, fields=None, sheet_name=None, sheet_index=0,
                     start_row=0, start_column=0):
-    import xlrd
 
     book = xlrd.open_workbook(filename)
     if sheet_name is not None:
@@ -193,6 +199,20 @@ def import_from_xls(filename, fields=None, sheet_name=None, sheet_index=0,
                       for field_name, value in zip(header, row)})
     return table
 
+
+def export_to_xls(table, filename, sheet_name='Sheet1'):
+    work_book = xlwt.Workbook()
+    sheet = work_book.add_sheet(sheet_name)
+    fields = [(index, field_name)
+              for index, field_name in enumerate(table.fields)]
+
+    for index, field_name in fields:
+        sheet.write(0, index, field_name)
+    for row_index, row in enumerate(table, start=1):
+        for column_index, field_name in fields:
+            sheet.write(row_index, column_index, getattr(row, field_name))
+
+    work_book.save(filename)
 
 # HTML plugin
 

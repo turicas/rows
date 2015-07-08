@@ -50,6 +50,8 @@ def export_to(table, destination):
     elif destination.lower().endswith('.html') or \
             destination.lower().endswith('.htm'):
         return rows.export_to_html(table, destination)
+    elif destination.lower().endswith('.xls'):
+        return rows.export_to_xls(table, destination)
     else:
         raise ValueError('Destination type not identified')
 
