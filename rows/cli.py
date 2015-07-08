@@ -2,16 +2,15 @@
 # coding: utf-8
 
 import argparse
-import locale
 import os
 import tempfile
 
 import requests
 
-from .plugins import *
+import rows
 
 
-def import_from(source, fields=None, include_fields=None, exclude_fields=None):
+def import_from(source):
     source_lower = source.lower()
     delete_file = False
 
@@ -32,24 +31,12 @@ def import_from(source, fields=None, include_fields=None, exclude_fields=None):
             fobj.write(response.content)
 
     if source_lower.endswith('.csv'):
-        data = import_from_csv(source,
-                               fields=fields,
-                               include_fields=include_fields,
-                               exclude_fields=exclude_fields)
-
+        data = rows.import_from_csv(source)
     elif source_lower.endswith('.html') or source_lower.endswith('.htm'):
         with open(source) as fobj:
-            data = import_from_html(fobj.read(),
-                                    fields=fields,
-                                    include_fields=include_fields,
-                                    exclude_fields=exclude_fields)
-
-    elif source_lower.startswith('mysql://'):
-        data = import_from_mysql(source[8:],
-                                 fields=fields,
-                                 include_fields=include_fields,
-                                 exclude_fields=exclude_fields)
-
+            data = rows.import_from_html(fobj.read())
+    elif source_lower.endswith('.xls'):
+        data = rows.import_from_xls(source)
     else:
         raise ValueError('Source type not identified')
 
@@ -59,14 +46,10 @@ def import_from(source, fields=None, include_fields=None, exclude_fields=None):
 
 def export_to(table, destination):
     if destination.lower().endswith('.csv'):
-        return table.export_to_csv(destination)
+        return rows.export_to_csv(table, destination)
     elif destination.lower().endswith('.html') or \
             destination.lower().endswith('.htm'):
-        return table.export_to_html(destination)
-    if destination.lower().endswith('.txt'):
-        return table.export_to_text(destination)
-    elif destination.lower().startswith('mysql://'):
-        return table.export_to_mysql(destination[8:])
+        return rows.export_to_html(table, destination)
     else:
         raise ValueError('Destination type not identified')
 
@@ -74,35 +57,20 @@ def main():
     args = argparse.ArgumentParser(description='...')
     args.add_argument('--from', dest='source', required=True)
     args.add_argument('--to', dest='destination', required=True)
+    args.add_argument('--encode-in', dest='encode_in', required=False)
+    args.add_argument('--encode-out', dest='encode_out', required=False)
     args.add_argument('--locale-in', dest='locale_in', required=False)
     args.add_argument('--locale-out', dest='locale_out', required=False)
-    args.add_argument('--fields', dest='fields', required=False)
-    args.add_argument('--include-fields', dest='include_fields',
-                      required=False)
-    args.add_argument('--exclude-fields', dest='exclude_fields',
-                      required=False)
     argv = args.parse_args()
 
-    if argv.locale_in:
-        locale.setlocale(locale.LC_ALL, argv.locale_in)
+    if not argv.locale_in:
+        table = import_from(argv.source)
+    else:
+        with rows.locale_manager(locale_in):
+            table = import_from(argv.source)
 
-    fields = None
-    if argv.fields:
-        fields = argv.fields.split(',')
-
-    include_fields = None
-    if argv.include_fields:
-        include_fields = argv.include_fields.split(',')
-
-    exclude_fields = None
-    if argv.exclude_fields:
-        exclude_fields = argv.exclude_fields.split(',')
-
-    table = import_from(argv.source, fields=fields,
-                        include_fields=include_fields,
-                        exclude_fields=exclude_fields)
-
-    if argv.locale_out:
-        locale.setlocale(locale.LC_ALL, argv.locale_out)
-
-    export_to(table, argv.destination)
+    if not argv.locale_out:
+        export_to(table, argv.destination)
+    else:
+        with rows.locale_manager(argv.locale_out):
+            export_to(table, argv.destination)
