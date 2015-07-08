@@ -263,14 +263,22 @@ def export_to_html(table, filename=None, encoding='utf-8'):
         css_class = u'odd' if index % 2 == 1 else u'even'
         result.append(u'    <tr class="{}">'.format(css_class))
         for field in fields:
-            value = table.fields[field].serialize(getattr(row, field))
-            result.append(u'      <td>{}</td>'.format(value))
+            value = table.fields[field].serialize(getattr(row, field),
+                                                  encoding=encoding)
+            result.append(u'      <td>')
+            result.append(value)
+            result.append(u'</td>')
         result.extend([u'    </tr>', u''])
     result.extend([u'  </tbody>', u'</table>', u''])
-    html = u'\n'.join(result)
+    new_result = []
+    for x in result:
+        if isinstance(x, unicode):
+            x = x.encode(encoding)
+        new_result.append(x)
+    html = u'\n'.encode(encoding).join(new_result)
 
     if filename is not None:
         with open(filename, 'w') as fobj:
-            fobj.write(html.encode(encoding))
+            fobj.write(html)
     else:
         return html
