@@ -142,7 +142,8 @@ def export_to_csv(table, filename, encoding='utf-8'):
 
         for row in table:
             # TODO: will work only if table.fields is OrderedDict
-            csv_writer.writerow([type_.serialize(getattr(row, field))
+            csv_writer.writerow([type_.serialize(getattr(row, field),
+                                                 encoding=encoding)
                                  for field, type_ in fields])
 
 
