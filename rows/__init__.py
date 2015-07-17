@@ -303,3 +303,45 @@ def export_to_html(table, filename=None, encoding='utf-8'):
             fobj.write(html)
     else:
         return html
+
+
+# Example plugin: uwsgi log
+
+from collections import OrderedDict
+
+import datetime
+import re
+
+
+REGEXP_UWSGI_LOG = re.compile(r'\[pid: ([0-9]+)\|app: [0-9]+\|req: '
+                              r'[0-9]+/[0-9]+\] '
+                              r'([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) .+ \[(.+)\] '
+                              r'([^ ]+) (.+) => generated .+ in ([0-9]+) '
+                              r'micros \(HTTP/([^ ]+) ([^)]+)\)')
+UWSGI_FIELDS = OrderedDict([('pid', fields.IntegerField),
+                            ('ip', fields.UnicodeField),
+                            ('datetime', fields.DatetimeField),
+                            ('http_verb', fields.UnicodeField),
+                            ('http_path', fields.UnicodeField),
+                            ('generation_time', fields.FloatField),
+                            ('http_version', fields.FloatField),
+                            ('http_status', fields.IntegerField)])
+UWSGI_DATETIME_FORMAT = '%a %b %d %H:%M:%S %Y'
+
+
+def import_from_uwsgi_log(filename):
+    strptime = datetime.datetime.strptime
+    fields = UWSGI_FIELDS.keys()
+    table = Table(fields=UWSGI_FIELDS)
+    with open(filename) as fobj:
+        for line in fobj:
+            result = REGEXP_UWSGI_LOG.findall(line)
+            if result:
+                data = list(result[0])
+                # Convert datetime
+                data[2] = strptime(data[2], UWSGI_DATETIME_FORMAT)
+                # Convert generation time (micros -> seconds)
+                data[5] = float(data[5]) / 1000000
+                table.append({field_name: value
+                              for field_name, value in zip(fields, data)})
+    return table

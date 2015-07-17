@@ -1,0 +1,41 @@
+# coding: utf-8
+
+# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import datetime
+import unittest
+
+import rows
+
+
+class UwsgiLogPluginTestCase(unittest.TestCase):
+
+    def test_import_from_uwsgi_log(self):
+        filename = 'tests/data/uwsgi.log'
+        table = rows.import_from_uwsgi_log(filename)
+        self.assertEqual(len(table), 2)
+        first = table.Row(pid=879, ip=u'127.0.0.1',
+                          datetime=datetime.datetime(2015, 6, 1, 11, 23, 16),
+                          http_verb=u'GET', http_path=u'/something',
+                          generation_time=0.17378, http_version=1.1,
+                          http_status=404)
+        second = table.Row(pid=31460, ip=u'127.0.1.1',
+                           datetime=datetime.datetime(2015, 7, 15, 23, 49, 20),
+                           http_verb=u'OPTIONS', http_path=u'/about',
+                           generation_time=0.000466, http_version=1.1,
+                           http_status=200)
+        self.assertEqual(table[0], first)
+        self.assertEqual(table[1], second)
