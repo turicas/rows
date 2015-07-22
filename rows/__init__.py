@@ -53,7 +53,9 @@ def detect_field_types(field_names, sample_rows, *args, **kwargs):
 
     # TODO: should support receiving unicode objects directly
     # TODO: should expect data in unicode or will be able to use binary data?
-    columns = zip(*sample_rows)
+    number_of_fields = len(field_names)
+    columns = zip(*[row for row in sample_rows
+                        if len(row) == number_of_fields])
     # TODO: raise a ValueError exception instead
     assert len(columns) == len(field_names)
 
@@ -240,7 +242,9 @@ def import_from_html(html, fields=None, table_index=0, include_fields=None,
     tr_elements = html_element_tree(table_html).xpath('//tr')
     table_rows = []
     for tr_element in tr_elements:
+        # TODO: test 'td' and 'th'
         td_elements = html_element_tree(to_string(tr_element)).xpath('//td')
+        td_elements += html_element_tree(to_string(tr_element)).xpath('//th')
         new_row = []
         for td_element in td_elements:
             data = u'\n'.join([x.strip()
