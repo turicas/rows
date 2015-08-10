@@ -14,14 +14,15 @@ from rows.utils import as_string, is_null, slug
 class Table(object):
 
     def __init__(self, fields):
-        self.fields = OrderedDict(fields)
         # TODO: should we really use OrderedDict here?
-        # TODO: slug field names
-        self.field_names, self.field_types = [], []
-        for field_name, field_type in self.fields.items():
-            self.field_names.append(field_name)
-            self.field_types.append(field_type)
-        # TODO: should be able to customize row return type (namedtuple, dict etc.)
+        # TODO: should use slug on each field name automatically or inside each
+        #       plugin?
+        self.fields = OrderedDict(fields)
+        self.field_names = self.fields.keys()
+        self.field_types = self.fields.values()
+
+        # TODO: should be able to customize row return type (namedtuple, dict
+        #       etc.)
         self.Row = namedtuple('Row', self.field_names)
         self._rows = []
 
