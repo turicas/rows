@@ -293,7 +293,7 @@ def import_from_html(html, fields=None, table_index=0):
 
     table = Table(fields=fields)
     for row in table_rows:
-        table.append({field_name: value
+        table.append({field_name: value.strip()
                       for field_name, value in zip(header, row)})
     return table
 
