@@ -2,7 +2,7 @@
 
 import locale
 
-from collections import Mapping, OrderedDict, namedtuple
+from collections import Mapping, OrderedDict, defaultdict, namedtuple
 from contextlib import contextmanager
 from unicodedata import normalize
 
@@ -128,6 +128,31 @@ def locale_context(name, category=locale.LC_ALL):
         locale.setlocale(category, old_name)
     rows.fields.SHOULD_NOT_USE_LOCALE = True
 
+
+def join(keys, tables):
+    '''Merge a list of `row.Table` objects using `keys` to group rows'''
+
+    if isinstance(keys, (str, unicode)):
+        keys = (keys, )
+
+    data = defaultdict(OrderedDict)
+    fields = OrderedDict()
+    for table in tables:
+        fields.update(table.fields)
+
+        for row in table:
+            row_key = tuple([getattr(row, key) for key in keys])
+            data[row_key].update({field: getattr(row, field)
+                                  for field in row._fields})
+
+    merged = Table(fields=fields)
+    for row in data.values():
+        for field in fields:
+            if field not in row:
+                row[field] = None
+        merged.append(row)
+
+    return merged
 
 # CSV plugin
 
