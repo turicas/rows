@@ -6,9 +6,9 @@ from collections import Mapping, OrderedDict, namedtuple
 from contextlib import contextmanager
 from unicodedata import normalize
 
-import fields
+import rows.fields
 
-from utils import as_string, is_null, slug
+from rows.utils import as_string, is_null, slug
 
 
 class Table(object):
@@ -59,7 +59,8 @@ def detect_field_types(field_names, sample_rows, *args, **kwargs):
     # TODO: raise a ValueError exception instead
     assert len(columns) == len(field_names)
 
-    available_types = list([getattr(fields, name) for name in fields.__all__
+    available_types = list([getattr(fields, name)
+                            for name in rows.fields.__all__
                             if name != 'Field'])
     none_type = set([type(None)])
     detected_types = OrderedDict([(field_name, None)
@@ -71,7 +72,7 @@ def detect_field_types(field_names, sample_rows, *args, **kwargs):
 
         if not [value for value in column_data if as_string(value).strip()]:
             # all rows with an empty field -> str (can't identify)
-            identified_type = fields.ByteField
+            identified_type = rows.fields.ByteField
         else:
             # ok, let's try to identify the type of this column by
             # converting every value in the sample
@@ -99,12 +100,12 @@ def locale_context(name, category=locale.LC_ALL):
 
     old_name = locale.getlocale(category)
     locale.setlocale(category, name)
-    fields.SHOULD_NOT_USE_LOCALE = False
+    rows.fields.SHOULD_NOT_USE_LOCALE = False
     try:
         yield
     finally:
         locale.setlocale(category, old_name)
-    fields.SHOULD_NOT_USE_LOCALE = True
+    rows.fields.SHOULD_NOT_USE_LOCALE = True
 
 
 # CSV plugin
@@ -322,14 +323,14 @@ REGEXP_UWSGI_LOG = re.compile(r'\[pid: ([0-9]+)\|app: [0-9]+\|req: '
                               r'([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) .+ \[(.+)\] '
                               r'([^ ]+) (.+) => generated .+ in ([0-9]+) '
                               r'micros \(HTTP/([^ ]+) ([^)]+)\)')
-UWSGI_FIELDS = OrderedDict([('pid', fields.IntegerField),
-                            ('ip', fields.UnicodeField),
-                            ('datetime', fields.DatetimeField),
-                            ('http_verb', fields.UnicodeField),
-                            ('http_path', fields.UnicodeField),
-                            ('generation_time', fields.FloatField),
-                            ('http_version', fields.FloatField),
-                            ('http_status', fields.IntegerField)])
+UWSGI_FIELDS = OrderedDict([('pid', rows.fields.IntegerField),
+                            ('ip', rows.fields.UnicodeField),
+                            ('datetime', rows.fields.DatetimeField),
+                            ('http_verb', rows.fields.UnicodeField),
+                            ('http_path', rows.fields.UnicodeField),
+                            ('generation_time', rows.fields.FloatField),
+                            ('http_version', rows.fields.FloatField),
+                            ('http_status', rows.fields.IntegerField)])
 UWSGI_DATETIME_FORMAT = '%a %b %d %H:%M:%S %Y'
 
 
