@@ -247,8 +247,7 @@ from lxml.etree import HTML as html_element_tree, tostring as to_string
 
 html_parser = HTMLParser.HTMLParser()
 
-def import_from_html(html, fields=None, table_index=0, include_fields=None,
-                     exclude_fields=None, converters=None, force_types=None):
+def import_from_html(html, fields=None, table_index=0):
     # TODO: unescape before returning
     # html = html_parser.unescape(html.decode(encoding))
 
@@ -283,13 +282,13 @@ def import_from_html(html, fields=None, table_index=0, include_fields=None,
         if not field_name:
             field_name = 'field_{}'.format(index)
         new_header.append(field_name)
-    header = new_header
+    header = [slug(field_name) for field_name in new_header]
 
     table_rows = table_rows[1:]
     if fields is None:
         fields = detect_field_types(header, table_rows, encoding='utf-8')
     else:
-        header = fields.keys()
+        header = [slug(field_name) for field_name in fields.keys()]
 
     table = Table(fields=fields)
     for row in table_rows:
