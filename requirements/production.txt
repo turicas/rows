@@ -1,0 +1,6 @@
+unicodecsv
+lxml
+requests
+xlrd
+xlwt
+MySQL-Python

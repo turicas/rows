@@ -18,7 +18,8 @@ setup(name='rows',
         'cli': ['requests'],
         'xls': ['xlrd', 'xlwt'],
         'mysql': ['MySQL-Python'], # apt: libmariadbclient-dev libssl-dev
-        'all': ['lxml', 'MySQL-Python'],
+        'all': ['unicodecsv', 'lxml', 'requests', 'xlrd', 'xlwt',
+                'MySQL-Python'],
     },
     keywords=['tabular', 'csv', 'rows'],
     entry_points = {

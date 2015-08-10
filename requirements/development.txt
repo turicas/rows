@@ -6,14 +6,3 @@ yanc
 coverage
 pylint
 ipdb
-
-# HTML
-lxml
-requests
-
-# XLS
-xlrd
-xlwt
-
-# MySQL
-MySQL-Python
