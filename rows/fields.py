@@ -6,7 +6,7 @@ import re
 
 from decimal import Decimal, InvalidOperation
 
-from utils import as_string, is_null
+from rows.utils import as_string, is_null
 
 
 # Order matters here

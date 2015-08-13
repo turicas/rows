@@ -34,8 +34,11 @@ def as_string(value):
 
 
 def is_null(value):
+    if value is None:
+        return True
+
     value_str = as_string(value).strip().lower()
-    return value is None or not value_str or value_str in NULL
+    return not value_str or value_str in NULL
 
 
 def ipartition(iterable, n):
