@@ -276,7 +276,8 @@ from lxml.etree import HTML as html_element_tree, tostring as to_string
 
 html_parser = HTMLParser.HTMLParser()
 
-def import_from_html(html, fields=None, table_index=0):
+def import_from_html(html, fields=None, table_index=0, ignore_colspan=True,
+                     force_headers=None):
     # TODO: unescape before returning
     # html = html_parser.unescape(html.decode(encoding))
 
@@ -301,23 +302,30 @@ def import_from_html(html, fields=None, table_index=0):
             new_row.append(data)
         table_rows.append(new_row)
 
+    max_columns = max(len(row) for row in table_rows)
+    if ignore_colspan:
+        table_rows = filter(lambda row: len(row) == max_columns, table_rows)
+
     # TODO: lxml -> unicode?
     # TODO: unescape
 
-    header = [x.strip() for x in table_rows[0]]
-    # TODO: test this feature
-    new_header = []
-    for index, field_name in enumerate(header):
-        if not field_name:
-            field_name = 'field_{}'.format(index)
-        new_header.append(field_name)
-    header = [slug(field_name) for field_name in new_header]
-
-    table_rows = table_rows[1:]
-    if fields is None:
-        fields = detect_field_types(header, table_rows, encoding='utf-8')
-    else:
+    if fields is not None:
+        assert len(fields) == max_columns
         header = [slug(field_name) for field_name in fields.keys()]
+    else:
+        if force_headers is None:
+            header = [x.strip() for x in table_rows[0]]
+            # TODO: test this feature
+            new_header = []
+            for index, field_name in enumerate(header):
+                if not field_name:
+                    field_name = 'field_{}'.format(index)
+                new_header.append(field_name)
+            header = [slug(field_name) for field_name in new_header]
+            table_rows = table_rows[1:]
+        else:
+            header = force_headers
+        fields = detect_field_types(header, table_rows, encoding='utf-8')
 
     table = Table(fields=fields)
     for row in table_rows:
