@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import locale
+import types
 
 from collections import Mapping, OrderedDict, defaultdict, namedtuple
 from contextlib import contextmanager
@@ -120,6 +121,8 @@ def detect_field_types(field_names, sample_rows, *args, **kwargs):
 def locale_context(name, category=locale.LC_ALL):
 
     old_name = locale.getlocale(category)
+    if type(name) is types.UnicodeType:
+        name = name.split('.')
     locale.setlocale(category, name)
     rows.fields.SHOULD_NOT_USE_LOCALE = False
     try:
