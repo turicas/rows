@@ -6,6 +6,8 @@ import locale
 from unicodedata import normalize
 
 
+# TODO: create functions to serialize/deserialize data
+
 SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 NULL = ('-', 'null', 'none', 'nil')
 

@@ -205,6 +205,13 @@ import xlrd
 import xlwt
 
 
+# TODO: add more formatting styles for other types such as percent, currency
+# etc.
+# TODO: styles may be influenced by locale
+FORMATTING_STYLES = {
+        datetime.date: xlwt.easyxf(num_format_str='yyyy-mm-dd'),
+        datetime.datetime: xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'), }
+
 def import_from_xls(filename, fields=None, sheet_name=None, sheet_index=0,
                     start_row=0, start_column=0):
 
@@ -263,9 +270,14 @@ def export_to_xls(table, filename, sheet_name='Sheet1'):
         sheet.write(0, index, field_name)
     for row_index, row in enumerate(table, start=1):
         for column_index, field_name in fields:
-            sheet.write(row_index, column_index, getattr(row, field_name))
+            value = getattr(row, field_name)
+            data = {}
+            if type(value) in FORMATTING_STYLES:
+                data['style'] = FORMATTING_STYLES[type(value)]
+            sheet.write(row_index, column_index, value, **data)
 
     work_book.save(filename)
+
 
 # HTML plugin
 
@@ -307,7 +319,6 @@ def import_from_html(html, fields=None, table_index=0, ignore_colspan=True,
         table_rows = filter(lambda row: len(row) == max_columns, table_rows)
 
     # TODO: lxml -> unicode?
-    # TODO: unescape
 
     if fields is not None:
         assert len(fields) == max_columns
