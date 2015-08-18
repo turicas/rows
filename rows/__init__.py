@@ -3,13 +3,11 @@
 import locale
 import types
 
-from collections import Mapping, OrderedDict, defaultdict, namedtuple
+from collections import OrderedDict, defaultdict, namedtuple
 from contextlib import contextmanager
 from unicodedata import normalize
 
 import rows.fields
-
-from rows.utils import as_string, is_null, slug
 
 
 class Table(object):
@@ -70,51 +68,6 @@ class Table(object):
         return table
 
 
-def detect_field_types(field_names, sample_rows, *args, **kwargs):
-    """Where the magic happens"""
-
-    # TODO: should support receiving unicode objects directly
-    # TODO: should expect data in unicode or will be able to use binary data?
-    number_of_fields = len(field_names)
-    columns = zip(*[row for row in sample_rows
-                        if len(row) == number_of_fields])
-    # TODO: raise a ValueError exception instead
-    assert len(columns) == len(field_names)
-
-    available_types = list([getattr(fields, name)
-                            for name in rows.fields.__all__
-                            if name != 'Field'])
-    none_type = set([type(None)])
-    detected_types = OrderedDict([(field_name, None)
-                                  for field_name in field_names])
-    encoding = kwargs.get('encoding', None)
-    for index, field_name in enumerate(field_names):
-        possible_types = list(available_types)
-        column_data = set(columns[index])
-
-        if not [value for value in column_data if as_string(value).strip()]:
-            # all rows with an empty field -> str (can't identify)
-            identified_type = rows.fields.ByteField
-        else:
-            # ok, let's try to identify the type of this column by
-            # converting every value in the sample
-            for value in column_data:
-                if is_null(value):
-                    continue
-
-                cant_be = set()
-                for type_ in possible_types:
-                    try:
-                        type_.deserialize(value, *args, **kwargs)
-                    except (ValueError, TypeError):
-                        cant_be.add(type_)
-                for type_to_remove in cant_be:
-                    possible_types.remove(type_to_remove)
-            identified_type = possible_types[0]  # priorities matter
-        detected_types[field_name] = identified_type
-    return detected_types
-
-
 # Utilities
 
 @contextmanager
@@ -159,8 +112,10 @@ def join(keys, tables):
 
 # CSV plugin
 
-import unicodecsv
 import csv
+
+import unicodecsv
+from rows.utils import slug, detect_field_types
 
 
 def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
@@ -201,8 +156,12 @@ def export_to_csv(table, filename, encoding='utf-8'):
 
 # XLS plugin
 
+import datetime
+
 import xlrd
 import xlwt
+
+from rows.utils import detect_field_types
 
 
 # TODO: add more formatting styles for other types such as percent, currency
@@ -284,6 +243,7 @@ def export_to_xls(table, filename, sheet_name='Sheet1'):
 import HTMLParser
 
 from lxml.etree import HTML as html_element_tree, tostring as to_string
+from rows.utils import detect_field_types
 
 
 html_parser = HTMLParser.HTMLParser()
@@ -336,7 +296,7 @@ def import_from_html(html, fields=None, table_index=0, ignore_colspan=True,
             table_rows = table_rows[1:]
         else:
             header = force_headers
-        fields = detect_field_types(header, table_rows, encoding='utf-8')
+        fields = utils.detect_field_types(header, table_rows, encoding='utf-8')
 
     table = Table(fields=fields)
     for row in table_rows:
@@ -379,10 +339,12 @@ def export_to_html(table, filename=None, encoding='utf-8'):
 
 # Example plugin: uwsgi log
 
-from collections import OrderedDict
-
 import datetime
 import re
+
+from collections import OrderedDict
+
+import rows.fields
 
 
 REGEXP_UWSGI_LOG = re.compile(r'\[pid: ([0-9]+)\|app: [0-9]+\|req: '
