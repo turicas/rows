@@ -6,7 +6,7 @@ import HTMLParser
 
 from lxml.etree import HTML as html_element_tree, tostring as to_string
 
-from rows.fields import detect_field_types
+from rows.fields import detect_types
 from rows.table import Table
 from rows.utils import slug
 
@@ -61,7 +61,7 @@ def import_from_html(html, fields=None, table_index=0, ignore_colspan=True,
             table_rows = table_rows[1:]
         else:
             header = force_headers
-        fields = detect_field_types(header, table_rows, encoding='utf-8')
+        fields = detect_types(header, table_rows, encoding='utf-8')
 
     table = Table(fields=fields)
     for row in table_rows:

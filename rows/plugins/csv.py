@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 import unicodecsv
 
-from rows.fields import detect_field_types
+from rows.fields import detect_types
 from rows.table import Table
 from rows.utils import slug
 
@@ -24,7 +24,7 @@ def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
     header = [slug(field_name).lower() for field_name in header]
 
     if fields is None:
-        fields = detect_field_types(header, table_rows, encoding=encoding)
+        fields = detect_types(header, table_rows, encoding=encoding)
     table = Table(fields=fields)
     for row in table_rows:
         table.append({field_name: value

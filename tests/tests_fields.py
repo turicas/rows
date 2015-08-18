@@ -214,3 +214,36 @@ class FieldsTestCase(unittest.TestCase):
                          'Álvaro')
         self.assertIs(type(fields.UnicodeField.serialize('Álvaro')),
                       types.UnicodeType)
+
+
+class FieldUtilsTestCase(unittest.TestCase):
+
+    maxDiff = None
+
+    def setUp(self):
+        with open('tests/data/all-field-types.csv') as fobj:
+            lines = fobj.read().splitlines()
+        lines = [line.split(','.encode('utf-8')) for line in lines]
+        self.fields = lines[0]
+        self.data = lines[1:]
+        self.expected = {'bool_column': fields.BoolField,
+                         'integer_column': fields.IntegerField,
+                         'float_column': fields.FloatField,
+                         'decimal_column': fields.FloatField,
+                         'percent_column': fields.PercentField,
+                         'date_column': fields.DateField,
+                         'datetime_column': fields.DatetimeField,
+                         'unicode_column': fields.UnicodeField,
+                         'null_column': fields.ByteField,}
+
+    def test_detect_types_utf8(self):
+        result = fields.detect_types(self.fields, self.data,
+                                           encoding='utf-8')
+        self.assertEqual(type(result), collections.OrderedDict)
+        self.assertEqual(result.keys(), self.fields)
+        self.assertDictEqual(dict(result), self.expected)
+
+    def test_detect_types_unicode(self):
+        data = [[field.decode('utf-8') for field in row] for row in self.data]
+        result = fields.detect_types(self.fields, data)
+        self.assertDictEqual(dict(result), self.expected)

@@ -7,7 +7,7 @@ import datetime
 import xlrd
 import xlwt
 
-from rows.fields import detect_field_types
+from rows.fields import detect_types
 from rows.table import Table
 
 
@@ -58,7 +58,7 @@ def import_from_xls(filename, fields=None, sheet_name=None, sheet_index=0,
             row_count += 1
 
     if fields is None:
-        fields = detect_field_types(header, table_rows, encoding='utf-8')
+        fields = detect_types(header, table_rows, encoding='utf-8')
     table = Table(fields=fields)
     for row in table_rows:
         table.append({field_name: value

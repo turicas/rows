@@ -340,14 +340,14 @@ class UnicodeField(Field):
 FIELD_TYPES = [locals()[element] for element in __all__
                                  if 'Field' in element and element != 'Field']
 
-def detect_field_types(field_names, sample_rows, field_types=FIELD_TYPES,
-                       *args, **kwargs):
+def detect_types(field_names, field_values, field_types=FIELD_TYPES, *args,
+                 **kwargs):
     """Where the magic happens"""
 
     # TODO: should support receiving unicode objects directly
     # TODO: should expect data in unicode or will be able to use binary data?
     number_of_fields = len(field_names)
-    columns = zip(*[row for row in sample_rows
+    columns = zip(*[row for row in field_values
                         if len(row) == number_of_fields])
 
     if len(columns) != number_of_fields:
