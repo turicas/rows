@@ -18,14 +18,16 @@
 import datetime
 import unittest
 
-import rows
+from rows.table import Table
+
+from uwsgi_log_plugin import import_from_uwsgi_log
 
 
 class UwsgiLogPluginTestCase(unittest.TestCase):
 
     def test_import_from_uwsgi_log(self):
-        filename = 'tests/data/uwsgi.log'
-        table = rows.import_from_uwsgi_log(filename)
+        filename = 'uwsgi.log'
+        table = import_from_uwsgi_log(filename)
         self.assertEqual(len(table), 2)
         first = table.Row(pid=879, ip=u'127.0.0.1',
                           datetime=datetime.datetime(2015, 6, 1, 11, 23, 16),

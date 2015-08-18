@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import collections
 import datetime
 import locale
 import re
@@ -315,3 +316,52 @@ class UnicodeField(Field):
             return value.decode(kwargs['encoding'])
         else:
             return unicode(value)
+
+
+FIELD_TYPES = [locals()[element] for element in __all__
+                                 if 'Field' in element and element != 'Field']
+
+def detect_field_types(field_names, sample_rows, field_types=FIELD_TYPES,
+                       *args, **kwargs):
+    """Where the magic happens"""
+
+    # TODO: should be able to specify which field types to detect instead of
+    # using directly rows.fields
+    # TODO: should support receiving unicode objects directly
+    # TODO: should expect data in unicode or will be able to use binary data?
+    number_of_fields = len(field_names)
+    columns = zip(*[row for row in sample_rows
+                        if len(row) == number_of_fields])
+
+    if len(columns) != len(field_names):
+        raise ValueError('Number of fields differ')
+
+    none_type = set([type(None)])
+    detected_types = collections.OrderedDict([(field_name, None)
+                                              for field_name in field_names])
+    encoding = kwargs.get('encoding', None)
+    for index, field_name in enumerate(field_names):
+        possible_types = list(FIELD_TYPES)
+        column_data = set(columns[index])
+
+        if not [value for value in column_data if as_string(value).strip()]:
+            # all rows with an empty field -> str (can't identify)
+            identified_type = rows.fields.ByteField
+        else:
+            # ok, let's try to identify the type of this column by
+            # converting every value in the sample
+            for value in column_data:
+                if is_null(value):
+                    continue
+
+                cant_be = set()
+                for type_ in possible_types:
+                    try:
+                        type_.deserialize(value, *args, **kwargs)
+                    except (ValueError, TypeError):
+                        cant_be.add(type_)
+                for type_to_remove in cant_be:
+                    possible_types.remove(type_to_remove)
+            identified_type = possible_types[0]  # priorities matter
+        detected_types[field_name] = identified_type
+    return detected_types
