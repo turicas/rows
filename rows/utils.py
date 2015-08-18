@@ -24,8 +24,14 @@ def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
         clean_text = clean_text.replace(double_separator, separator)
     ascii_text = normalize('NFKD', clean_text).encode('ascii', 'ignore')
     strict_text = [x for x in ascii_text if x in permitted_chars]
+    text = ''.join(strict_text).lower()
 
-    return ''.join(strict_text).lower()
+    if text.startswith(separator):
+        text = text[len(separator):]
+    if text.endswith(separator):
+        text = text[:-len(separator)]
+
+    return text
 
 
 def as_string(value):
