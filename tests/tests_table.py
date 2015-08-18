@@ -16,17 +16,23 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import locale
 import unittest
 
 import rows
+import rows.fields as fields
+
+from rows.table import Table
 
 
 class TableTestCase(unittest.TestCase):
 
+    def test_Table_is_present_on_main_namespace(self):
+        self.assertIn('Table', dir(rows))
+        self.assertIs(Table, rows.Table)
+
     def test_table(self):
-        table = rows.Table(fields={'name': rows.fields.UnicodeField,
-                                   'birthdate': rows.fields.DateField, })
+        table = Table(fields={'name': rows.fields.UnicodeField,
+                              'birthdate': rows.fields.DateField, })
         table.append({'name': u'Álvaro Justen',
                       'birthdate': datetime.date(1987, 4, 29)})
         table.append({'name': u'Somebody',
@@ -53,12 +59,3 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(type(context_manager.exception), ValueError)
         self.assertIn('does not match format',
                       context_manager.exception.message)
-
-    def test_locale_context(self):
-        with rows.locale_context('pt_BR.UTF-8'):
-            inside_context = locale.getlocale(locale.LC_ALL)
-        self.assertEqual(('pt_BR', 'UTF-8'), inside_context)
-
-        with rows.locale_context('en_US.UTF-8'):
-            inside_context = locale.getlocale(locale.LC_ALL)
-        self.assertEqual(('en_US', 'UTF-8'), inside_context)
