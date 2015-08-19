@@ -56,6 +56,9 @@ class FieldsTestCase(unittest.TestCase):
 
     def test_BoolField(self):
         self.assertIs(fields.BoolField.TYPE, bool)
+        self.assertEqual(fields.BoolField.serialize(None), '')
+        self.assertIs(type(fields.BoolField.serialize(None)),
+                      types.UnicodeType)
         self.assertIs(type(fields.BoolField.deserialize('true')),
                       fields.BoolField.TYPE)
 
@@ -76,6 +79,9 @@ class FieldsTestCase(unittest.TestCase):
 
     def test_IntegerField(self):
         self.assertIs(fields.IntegerField.TYPE, int)
+        self.assertEqual(fields.IntegerField.serialize(None), '')
+        self.assertIs(type(fields.IntegerField.serialize(None)),
+                      types.UnicodeType)
         self.assertIs(type(fields.IntegerField.deserialize('42')),
                       fields.IntegerField.TYPE)
         self.assertEqual(fields.IntegerField.deserialize('42'), 42)
@@ -95,6 +101,9 @@ class FieldsTestCase(unittest.TestCase):
 
     def test_FloatField(self):
         self.assertIs(fields.FloatField.TYPE, float)
+        self.assertEqual(fields.FloatField.serialize(None), '')
+        self.assertIs(type(fields.FloatField.serialize(None)),
+                      types.UnicodeType)
         self.assertIs(type(fields.FloatField.deserialize('42.0')),
                       fields.FloatField.TYPE)
         self.assertEqual(fields.FloatField.deserialize('42.0'), 42.0)
@@ -115,6 +124,9 @@ class FieldsTestCase(unittest.TestCase):
 
     def test_DecimalField(self):
         self.assertIs(fields.DecimalField.TYPE, Decimal)
+        self.assertEqual(fields.DecimalField.serialize(None), '')
+        self.assertIs(type(fields.DecimalField.serialize(None)),
+                      types.UnicodeType)
         self.assertIs(type(fields.DecimalField.deserialize('42.0')),
                       fields.DecimalField.TYPE)
         self.assertEqual(fields.DecimalField.deserialize('42.0'),
@@ -149,6 +161,8 @@ class FieldsTestCase(unittest.TestCase):
                       fields.PercentField.TYPE)
         self.assertEqual(fields.PercentField.deserialize('42.0%'),
                          Decimal('0.420'))
+        self.assertEqual(fields.PercentField.deserialize(Decimal('0.420')),
+                         Decimal('0.420'))
         self.assertEqual(fields.PercentField.deserialize(None), None)
         deserialized = Decimal('0.42010')
         self.assertEqual(fields.PercentField.serialize(deserialized),
@@ -176,6 +190,10 @@ class FieldsTestCase(unittest.TestCase):
         serialized = types.StringType('2015-05-27')
         deserialized = datetime.date(2015, 5, 27)
         self.assertIs(fields.DateField.TYPE, datetime.date)
+        self.assertEqual(fields.DateField.serialize(None),
+                         '')
+        self.assertIs(type(fields.DateField.serialize(None)),
+                      types.UnicodeType)
         self.assertIs(type(fields.DateField.deserialize(serialized)),
                       fields.DateField.TYPE)
         self.assertEqual(fields.DateField.deserialize(serialized),
@@ -192,6 +210,9 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(fields.DatetimeField.TYPE, datetime.datetime)
         deserialized = fields.DatetimeField.deserialize(serialized)
         self.assertIs(type(deserialized), fields.DatetimeField.TYPE)
+        self.assertEqual(fields.DatetimeField.serialize(None), '')
+        self.assertIs(type(fields.DatetimeField.serialize(None)),
+                      types.UnicodeType)
 
         value = datetime.datetime(2015, 5, 27, 1, 2, 3)
         self.assertEqual(fields.DatetimeField.deserialize(serialized), value)
@@ -202,14 +223,15 @@ class FieldsTestCase(unittest.TestCase):
 
     def test_UnicodeField(self):
         self.assertIs(fields.UnicodeField.TYPE, unicode)
+        self.assertEqual(fields.UnicodeField.serialize(None), '')
+        self.assertIs(type(fields.UnicodeField.serialize(None)),
+                      types.UnicodeType)
         self.assertIs(type(fields.UnicodeField.deserialize('test')),
                       fields.UnicodeField.TYPE)
         self.assertEqual(fields.UnicodeField.deserialize('Álvaro'.encode('utf-8'),
                                                          encoding='utf-8'),
                          'Álvaro')
         self.assertIs(fields.UnicodeField.deserialize(None), None)
-        self.assertEqual(fields.UnicodeField.serialize(None),
-                         ''.encode('utf-8'))
         self.assertEqual(fields.UnicodeField.serialize('Álvaro'),
                          'Álvaro')
         self.assertIs(type(fields.UnicodeField.serialize('Álvaro')),
