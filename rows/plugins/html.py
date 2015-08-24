@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import HTMLParser
 
 from lxml.html import document_fromstring
-from lxml.etree import tostring as to_string
+from lxml.etree import tostring as to_string, strip_tags
 
 from rows.fields import detect_types
 from rows.table import Table
@@ -18,7 +18,7 @@ html_parser = HTMLParser.HTMLParser()
 def _get_content(element):
     content = to_string(element)
     content = content[content.find('>') + 1:content.rfind('<')].strip()
-    return content
+    return html_parser.unescape(content)
 
 
 def import_from_html(html, fields=None, index=0, ignore_colspan=True,
@@ -34,6 +34,8 @@ def import_from_html(html, fields=None, index=0, ignore_colspan=True,
     except IndexError:
         raise IndexError('Table index {} not found'.format(index))
 
+    strip_tags(table, 'thead')
+    strip_tags(table, 'tbody')
     row_elements = table.xpath(row_tag)
     if not preserve_html:
         table_rows = [[value_element.text_content().strip()
@@ -114,3 +116,8 @@ def tag_to_dict(html):
     attributes = dict(element.attrib)
     attributes['text'] = element.text_content()
     return attributes
+
+
+def tag_text(html):
+    element = document_fromstring(html).xpath('//html/body/child::*')[0]
+    return element.text_content()
