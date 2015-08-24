@@ -57,6 +57,8 @@ def import_from_xls(filename, fields=None, sheet_name=None, sheet_index=0,
             table_rows.append(row)
             row_count += 1
 
+    # could use decorator from here
+
     if fields is None:
         fields = detect_types(header, table_rows, encoding='utf-8')
     table = Table(fields=fields)

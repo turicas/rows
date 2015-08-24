@@ -19,6 +19,9 @@ def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
     csv_reader = unicodecsv.reader(fobj, encoding=encoding,
                                    delimiter=str(delimiter),
                                    quotechar=str(quotechar))
+
+    # could use decorator from here
+
     table_rows = [row for row in csv_reader]
     header, table_rows = table_rows[0], table_rows[1:]
     header = [slug(field_name).lower() for field_name in header]
