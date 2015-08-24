@@ -9,13 +9,18 @@ from rows.table import Table
 from rows.utils import slug
 
 
-def import_from_csv(filename, fields=None, delimiter=',', quotechar='"',
-                    encoding='utf-8'):
+def import_from_csv(filename_or_fobj, fields=None, delimiter=',',
+                    quotechar='"', encoding='utf-8'):
     'Import data from a CSV file'
+
     # TODO: add auto_detect_types=True parameter
     # this import will be moved in the future (to another module, actually)
 
-    fobj = open(filename)
+    if getattr(filename_or_fobj, 'read', None) is None:
+        fobj = open(filename_or_fobj)
+    else:
+        fobj = filename_or_fobj
+
     csv_reader = unicodecsv.reader(fobj, encoding=encoding,
                                    delimiter=str(delimiter),
                                    quotechar=str(quotechar))
