@@ -10,7 +10,7 @@ setup(name='rows',
     author=u'Álvaro Justen',
     author_email='alvarojusten@gmail.com',
     url='https://github.com/turicas/rows/',
-    packages=['rows'],
+    packages=['rows', 'rows.plugins'],
     install_requires=[],
     extras_require = {
         'csv': ['unicodecsv'],
