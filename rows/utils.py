@@ -52,3 +52,36 @@ def ipartition(iterable, n):
                 finished = True
                 break
         yield data
+
+
+def make_header(data):
+    header = [slug(field_name).lower() for field_name in data]
+    return [field_name if field_name else 'field_{}'.format(index)
+            for index, field_name in enumerate(header)]
+
+
+def create_table(data, force_headers=None, fields=None, encoding=None, *args,
+                 **kwargs):
+    # TODO: add auto_detect_types=True parameter
+    table_rows = list(data)
+
+    if fields is None:
+        if force_headers is None:
+            header = make_header(table_rows[0])
+            table_rows = table_rows[1:]
+        else:
+            header = force_headers
+        fields = detect_types(header, table_rows, encoding=encoding)
+    else:
+        # TODO: may reuse max_columns from html
+        max_columns = max(len(row) for row in table_rows)
+        assert len(fields) == max_columns
+        header = make_header(fields.keys())
+
+    # TODO: put this inside Table.__init__
+    table = Table(fields=fields)
+    for row in table_rows:
+        table.append({field_name: value
+                      for field_name, value in zip(header, row)})
+
+    return table

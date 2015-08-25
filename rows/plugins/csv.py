@@ -4,40 +4,25 @@ from __future__ import unicode_literals
 
 import unicodecsv
 
-from rows.fields import detect_types
-from rows.table import Table
-from rows.utils import slug
+import rows.utils
 
 
-def import_from_csv(filename_or_fobj, fields=None, delimiter=',',
-                    quotechar='"', encoding='utf-8'):
+def import_from_csv(filename_or_fobj, delimiter=',', quotechar='"',
+                    *args, **kwargs):
     'Import data from a CSV file'
-
-    # TODO: add auto_detect_types=True parameter
-    # this import will be moved in the future (to another module, actually)
 
     if getattr(filename_or_fobj, 'read', None) is None:
         fobj = open(filename_or_fobj)
     else:
         fobj = filename_or_fobj
 
+    encoding = kwargs.get('encoding', 'utf-8')
     csv_reader = unicodecsv.reader(fobj, encoding=encoding,
                                    delimiter=str(delimiter),
                                    quotechar=str(quotechar))
 
-    # could use decorator from here
+    return rows.utils.create_table(csv_reader, *args, **kwargs)
 
-    table_rows = [row for row in csv_reader]
-    header, table_rows = table_rows[0], table_rows[1:]
-    header = [slug(field_name).lower() for field_name in header]
-
-    if fields is None:
-        fields = detect_types(header, table_rows, encoding=encoding)
-    table = Table(fields=fields)
-    for row in table_rows:
-        table.append({field_name: value
-                      for field_name, value in zip(header, row)})
-    return table
 
 def export_to_csv(table, filename, encoding='utf-8'):
     # TODO: will work only if table.fields is OrderedDict

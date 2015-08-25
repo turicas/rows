@@ -15,57 +15,27 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import datetime
-import locale
-import os
-import tempfile
-import textwrap
+import codecs
 import unittest
 
-from collections import OrderedDict
-
 import rows
+import utils
 
 
-class TableTestCase(unittest.TestCase):
+class PluginCsvTestCase(utils.ExpectedTableMixIn, unittest.TestCase):
 
-    def setUp(self):
-        self.files_to_delete = []
+    filename = 'tests/data/all-field-types.csv'
+    encoding = 'utf-8'
 
-    def tearDown(self):
-        for filename in self.files_to_delete:
-            os.unlink(filename)
+    def test_import_from_csv_filename(self):
+        table = rows.import_from_csv(self.filename, encoding=self.encoding)
+        self.assert_expected_table(table)
 
-    def test_import_from_csv(self):
-        fobj = tempfile.NamedTemporaryFile(delete=False)
-        contents = textwrap.dedent(u'''
-        name,birthdate
-        Álvaro Justen,1987-04-29
-        Somebody,1990-02-01
-        Douglas Adams,1952-03-11
-        ''').strip().encode('utf-8')
-        fobj.write(contents)
-        fobj.close()
-        self.files_to_delete.append(fobj.name)
+    def test_import_from_csv_fobj(self):
+        with open(self.filename) as fobj:
+            table = rows.import_from_csv(fobj, encoding=self.encoding)
+            self.assert_expected_table(table)
 
-        # TODO: should support file object also?
-        table = rows.import_from_csv(fobj.name, encoding='utf-8')
-        expected_fields = {'name': rows.fields.UnicodeField,
-                           'birthdate': rows.fields.DateField, }
-        self.assertDictEqual(OrderedDict(expected_fields), table.fields)
-
-        table_rows = [row for row in table]
-        self.assertEqual(3, len(table))
-        self.assertEqual(3, len(table_rows))
-
-        self.assertEqual(table_rows[0].name, u'Álvaro Justen')
-        self.assertEqual(table_rows[0].birthdate,
-                         datetime.date(1987, 4, 29))
-        self.assertEqual(table_rows[1].name, u'Somebody')
-        self.assertEqual(table_rows[1].birthdate,
-                         datetime.date(1990, 2, 1))
-        self.assertEqual(table_rows[2].name, u'Douglas Adams')
-        self.assertEqual(table_rows[2].birthdate,
-                         datetime.date(1952, 3, 11))
-
-    # TODO: test export_to_csv
+    def test_export_to_csv(self):
+        # TODO: test export_to_csv
+        self.fail()
