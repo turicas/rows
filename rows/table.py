@@ -61,3 +61,12 @@ class Table(object):
         for row in other:
             table.append({field: getattr(row, field) for field in row._fields})
         return table
+
+    def serialize(self, *args, **kwargs):
+        fields = self.fields
+        fields_items = fields.items()
+
+        for row in self:
+            yield [field_type.serialize(getattr(row, field_name),
+                                        *args, **kwargs)
+                   for field_name, field_type in fields_items]

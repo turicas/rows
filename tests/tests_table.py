@@ -31,6 +31,7 @@ class TableTestCase(unittest.TestCase):
         self.assertIs(Table, rows.Table)
 
     def test_table(self):
+        # TODO: may test with all field types (using tests.utils.table)
         table = Table(fields={'name': rows.fields.UnicodeField,
                               'birthdate': rows.fields.DateField, })
         table.append({'name': u'Álvaro Justen',
@@ -59,3 +60,5 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(type(context_manager.exception), ValueError)
         self.assertIn('does not match format',
                       context_manager.exception.message)
+
+    # TODO: test Table.serialize
