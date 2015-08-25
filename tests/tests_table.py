@@ -15,6 +15,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import unicode_literals
+
 import datetime
 import unittest
 
@@ -52,7 +54,8 @@ class TableTestCase(unittest.TestCase):
 
         # TODO: may mock these validations and test only on *Field tests
         with self.assertRaises(ValueError) as context_manager:
-            table.append({'name': 'Álvaro Justen', 'birthdate': '1987-04-29'})
+            table.append({'name': 'Álvaro Justen'.encode('utf-8'),
+                          'birthdate': '1987-04-29'})
         self.assertEqual(type(context_manager.exception), UnicodeDecodeError)
 
         with self.assertRaises(ValueError) as context_manager:

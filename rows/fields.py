@@ -32,7 +32,7 @@ __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DateField',
            'ByteField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
-NULL = ('-', 'null', 'none', 'nil')
+NULL = (b'-', b'null', b'none', b'nil')
 
 
 class Field(object):
@@ -105,8 +105,8 @@ class BoolField(Field):
 
     TYPE = types.BooleanType
     SERIALIZED_VALUES = {True: 'true', False: 'false', None: ''}
-    TRUE_VALUES = ('true', '1', 'yes')
-    FALSE_VALUES = ('false', '0', 'no')
+    TRUE_VALUES = (b'true', b'1', b'yes')
+    FALSE_VALUES = (b'false', b'0', b'no')
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -114,10 +114,10 @@ class BoolField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(BoolField, cls).deserialize(value)
         if value is None:
             return None
 
+        value = as_string(value)
         if value in cls.TRUE_VALUES:
             return True
         elif value in cls.FALSE_VALUES:
@@ -362,10 +362,10 @@ FIELD_TYPES = [locals()[element] for element in __all__
 
 
 def as_string(value):
-    if isinstance(value, (unicode, str)):
+    if isinstance(value, types.StringTypes):
         return value
     else:
-        return str(value)
+        return types.StringType(value)
 
 
 def is_null(value):
