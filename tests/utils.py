@@ -1,25 +1,42 @@
 # coding: utf-8
 
+# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import unicode_literals
 
 import datetime
+import os
 
 from collections import OrderedDict
 from decimal import Decimal
 
-import rows.fields
+import rows.fields as fields
+
+from rows.table import Table
 
 
-expected_fields = OrderedDict([('bool_column', rows.fields.BoolField),
-                               ('integer_column', rows.fields.IntegerField),
-                               ('float_column', rows.fields.FloatField),
-                               ('decimal_column', rows.fields.FloatField),
-                               ('percent_column', rows.fields.PercentField),
-                               ('date_column', rows.fields.DateField),
-                               ('datetime_column', rows.fields.DatetimeField),
-                               ('unicode_column', rows.fields.UnicodeField),
-                               ('null_column', rows.fields.ByteField),])
-
+expected_fields = OrderedDict([('bool_column', fields.BoolField),
+                               ('integer_column', fields.IntegerField),
+                               ('float_column', fields.FloatField),
+                               ('decimal_column', fields.FloatField),
+                               ('percent_column', fields.PercentField),
+                               ('date_column', fields.DateField),
+                               ('datetime_column', fields.DatetimeField),
+                               ('unicode_column', fields.UnicodeField),
+                               ('null_column', fields.ByteField),])
 expected_rows = [
         {'float_column': 3.141592,
          'decimal_column': 3.141592,
@@ -75,11 +92,21 @@ expected_rows = [
          'percent_column': Decimal('0.02'),
          'unicode_column': 'test',
          'null_column': ''.encode('utf-8')},]
+table = Table(fields=expected_fields)
+for row in expected_rows:
+    table.append(row)
 
 
-class ExpectedTableMixIn(object):
+class RowsTestMixIn(object):
 
     maxDiff = None
+
+    def setUp(self):
+        self.files_to_delete = []
+
+    def tearDown(self):
+        for filename in self.files_to_delete:
+            os.unlink(filename)
 
     def assert_expected_table(self, table):
         self.assertEqual(table.fields, expected_fields)
@@ -92,3 +119,10 @@ class ExpectedTableMixIn(object):
                 value = row[key]
                 self.assertEqual(type(expected_value), type(value))
                 self.assertEqual(expected_value, value)
+
+    def assert_file_contents_equal(self, first_filename, second_filename):
+        with open(first_filename, 'rb') as fobj:
+            first = fobj.read()
+        with open(second_filename, 'rb') as fobj:
+            second = fobj.read()
+        self.assertEqual(first, second)

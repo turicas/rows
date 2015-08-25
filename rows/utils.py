@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import collections
 import locale
 
@@ -85,3 +100,10 @@ def create_table(data, force_headers=None, fields=None, encoding=None, *args,
                       for field_name, value in zip(header, row)})
 
     return table
+
+
+def fobj_from_filename_or_fobj(filename_or_fobj, mode='r'):
+    if getattr(filename_or_fobj, 'read', None) is not None:
+        return filename_or_fobj
+    else:
+        return open(filename_or_fobj, mode=mode)
