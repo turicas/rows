@@ -10,8 +10,6 @@ import types
 
 from decimal import Decimal, InvalidOperation
 
-from rows.utils import as_string, is_null
-
 
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DateField',
@@ -19,6 +17,7 @@ __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DateField',
            'ByteField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
+NULL = ('-', 'null', 'none', 'nil')
 
 
 class Field(object):
@@ -339,6 +338,22 @@ class UnicodeField(Field):
 
 FIELD_TYPES = [locals()[element] for element in __all__
                                  if 'Field' in element and element != 'Field']
+
+
+def as_string(value):
+    if isinstance(value, (unicode, str)):
+        return value
+    else:
+        return str(value)
+
+
+def is_null(value):
+    if value is None:
+        return True
+
+    value_str = as_string(value).strip().lower()
+    return not value_str or value_str in NULL
+
 
 def detect_types(field_names, field_values, field_types=FIELD_TYPES, *args,
                  **kwargs):

@@ -269,3 +269,26 @@ class FieldUtilsTestCase(unittest.TestCase):
         data = [[field.decode('utf-8') for field in row] for row in self.data]
         result = fields.detect_types(self.fields, data)
         self.assertDictEqual(dict(result), self.expected)
+
+
+class FieldsFunctionsTestCase(unittest.TestCase):
+
+    def test_is_null(self):
+        self.assertEqual(fields.is_null(None), True)
+        self.assertEqual(fields.is_null(''), True)
+        self.assertEqual(fields.is_null(' \t '), True)
+        self.assertEqual(fields.is_null('null'), True)
+        self.assertEqual(fields.is_null('nil'), True)
+        self.assertEqual(fields.is_null('none'), True)
+        self.assertEqual(fields.is_null('-'), True)
+
+        self.assertEqual(fields.is_null('Álvaro'), False)
+        self.assertEqual(fields.is_null('Álvaro'.encode('utf-8')), False)
+
+    def test_as_string(self):
+        self.assertEqual(fields.as_string(None), 'None')
+        self.assertEqual(fields.as_string(42), '42')
+        self.assertEqual(fields.as_string(3.141592), '3.141592')
+        self.assertEqual(fields.as_string('Álvaro'), 'Álvaro')
+        self.assertEqual(fields.as_string('Álvaro'.encode('utf-8')),
+                         'Álvaro'.encode('utf-8'))

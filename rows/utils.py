@@ -5,11 +5,13 @@ import locale
 
 from unicodedata import normalize
 
+from rows.fields import detect_types
+from rows.table import Table
+
 
 # TODO: create functions to serialize/deserialize data
 
 SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
-NULL = ('-', 'null', 'none', 'nil')
 
 
 def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
@@ -32,21 +34,6 @@ def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
         text = text[:-len(separator)]
 
     return text
-
-
-def as_string(value):
-    if isinstance(value, (unicode, str)):
-        return value
-    else:
-        return str(value)
-
-
-def is_null(value):
-    if value is None:
-        return True
-
-    value_str = as_string(value).strip().lower()
-    return not value_str or value_str in NULL
 
 
 def ipartition(iterable, n):
