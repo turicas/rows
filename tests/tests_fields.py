@@ -166,24 +166,25 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.PercentField.deserialize(None), None)
         deserialized = Decimal('0.42010')
         self.assertEqual(fields.PercentField.serialize(deserialized),
-                         '0.42010')
+                         '42.010%')
         self.assertEqual(type(fields.PercentField.serialize(deserialized)),
                          types.UnicodeType)
         self.assertEqual(fields.PercentField.serialize(Decimal('42.010')),
-                         '42.010')
+                         '4201.0%')
+        self.assertEqual(fields.PercentField.serialize(Decimal('0.01')), '1%')
 
         with rows.locale_context('pt_BR.UTF-8'):
             self.assertEqual(type(fields.PercentField.serialize(deserialized)),
                             types.UnicodeType)
             self.assertEqual(fields.PercentField.serialize(Decimal('42.0')),
-                             '42,0')
+                             '4200%')
             self.assertEqual(fields.PercentField.serialize(Decimal('42000.0')),
-                             '42000,0')
+                             '4200000%')
             self.assertEqual(fields.PercentField.deserialize('42.000,00%'),
                              Decimal('420.0000'))
             self.assertEqual(fields.PercentField.serialize(Decimal('42000.00'),
                                                            grouping=True),
-                             '42.000,00')
+                             '4.200.000%')
 
     def test_DateField(self):
         # TODO: test timezone-aware datetime.date

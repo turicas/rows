@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import unicode_literals
 
 import collections
@@ -242,6 +257,12 @@ class PercentField(DecimalField):
 
     Is locale-aware (inherit this behaviour from `rows.DecimalField`)
     """
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        value = Decimal(str(value * 100)[:-2])
+        value = super(PercentField, cls).serialize(value, *args, **kwargs)
+        return '{}%'.format(value)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
