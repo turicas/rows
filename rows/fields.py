@@ -349,16 +349,16 @@ class UnicodeField(Field):
         if value is None:
             return None
 
-        if type(value) is types.UnicodeType:
+        if type(value) is cls.TYPE:
             return value
         elif 'encoding' in kwargs:
-            return value.decode(kwargs['encoding'])
+            return as_string(value).decode(kwargs['encoding'])
         else:
-            return types.UnicodeType(value)
+            return cls.TYPE(value)
 
 
-FIELD_TYPES = [locals()[element] for element in __all__
-                                 if 'Field' in element and element != 'Field']
+AVAILABLE_FIELD_TYPES = [locals()[element] for element in __all__
+                         if 'Field' in element and element != 'Field']
 
 
 def as_string(value):
@@ -376,8 +376,8 @@ def is_null(value):
     return not value_str or value_str in NULL
 
 
-def detect_types(field_names, field_values, field_types=FIELD_TYPES, *args,
-                 **kwargs):
+def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
+                 *args, **kwargs):
     """Where the magic happens"""
 
     # TODO: should support receiving unicode objects directly
@@ -394,10 +394,8 @@ def detect_types(field_names, field_values, field_types=FIELD_TYPES, *args,
                                               for field_name in field_names])
     encoding = kwargs.get('encoding', None)
     for index, field_name in enumerate(field_names):
-        possible_types = list(FIELD_TYPES)
-        data = set([value
-                    for value in set(columns[index])
-                    if not is_null(value)])
+        data = set([value for value in set(columns[index])
+                          if not is_null(value)])
 
         if not data:
             # all rows with an empty field -> ByteField (can't identify)
@@ -405,6 +403,7 @@ def detect_types(field_names, field_values, field_types=FIELD_TYPES, *args,
         else:
             # ok, let's try to identify the type of this column by
             # converting every non-null value in the sample
+            possible_types = list(field_types)
             for value in data:
                 cant_be = set()
                 for type_ in possible_types:
@@ -416,4 +415,5 @@ def detect_types(field_names, field_values, field_types=FIELD_TYPES, *args,
                     possible_types.remove(type_to_remove)
             identified_type = possible_types[0]  # priorities matter
         detected_types[field_name] = identified_type
+
     return detected_types

@@ -75,8 +75,8 @@ def make_header(data):
             for index, field_name in enumerate(header)]
 
 
-def create_table(data, force_headers=None, fields=None, encoding=None, *args,
-                 **kwargs):
+def create_table(data, force_headers=None, fields=None, skip_header=True,
+                 *args, **kwargs):
     # TODO: add auto_detect_types=True parameter
     table_rows = list(data)
 
@@ -86,12 +86,20 @@ def create_table(data, force_headers=None, fields=None, encoding=None, *args,
             table_rows = table_rows[1:]
         else:
             header = force_headers
-        fields = detect_types(header, table_rows, encoding=encoding)
+        fields = detect_types(header, table_rows, *args, **kwargs)
     else:
+        if skip_header:
+            header = make_header(table_rows[0])
+            table_rows = table_rows[1:]
+            detected_fields = detect_types(header, table_rows, *args, **kwargs)
+            detected_fields.update(fields)
+            fields = detected_fields
+        else:
+            header = make_header(fields.keys())
+
         # TODO: may reuse max_columns from html
         max_columns = max(len(row) for row in table_rows)
         assert len(fields) == max_columns
-        header = make_header(fields.keys())
 
     # TODO: put this inside Table.__init__
     table = Table(fields=fields)

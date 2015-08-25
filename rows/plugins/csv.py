@@ -22,12 +22,12 @@ import unicodecsv
 import rows.utils
 
 
-def import_from_csv(filename_or_fobj, delimiter=',', quotechar='"',
-                    *args, **kwargs):
+def import_from_csv(filename_or_fobj, encoding='utf-8', delimiter=',',
+                    quotechar='"', *args, **kwargs):
     'Import data from a CSV file'
 
     fobj = rows.utils.fobj_from_filename_or_fobj(filename_or_fobj)
-    encoding = kwargs.get('encoding', 'utf-8')
+    kwargs['encoding'] = encoding
     csv_reader = unicodecsv.reader(fobj, encoding=encoding,
                                    delimiter=str(delimiter),
                                    quotechar=str(quotechar))
