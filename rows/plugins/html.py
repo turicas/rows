@@ -7,9 +7,7 @@ import HTMLParser
 from lxml.html import document_fromstring
 from lxml.etree import tostring as to_string, strip_tags
 
-from rows.fields import detect_types
-from rows.table import Table
-from rows.utils import slug
+from rows.utils import create_table
 
 
 html_parser = HTMLParser.HTMLParser()
@@ -21,18 +19,14 @@ def _get_content(element):
     return html_parser.unescape(content)
 
 
-def import_from_html(html, fields=None, index=0, ignore_colspan=True,
-                     force_headers=None, preserve_html=False,
-                     row_tag='tr', column_tag='td|th'):
+def import_from_html(html, index=0, ignore_colspan=True, preserve_html=False,
+                     row_tag='tr', column_tag='td|th', *args, **kwargs):
     # TODO: unescape before returning
     # html = html_parser.unescape(html.decode(encoding))
 
     html_tree = document_fromstring(html)
     tables = html_tree.xpath('//table')
-    try:
-        table = tables[index]
-    except IndexError:
-        raise IndexError('Table index {} not found'.format(index))
+    table = tables[index]
 
     strip_tags(table, 'thead')
     strip_tags(table, 'tbody')
@@ -52,31 +46,7 @@ def import_from_html(html, fields=None, index=0, ignore_colspan=True,
 
     # TODO: lxml -> unicode?
 
-    # could use decorator from here
-
-    if fields is not None:
-        assert len(fields) == max_columns
-        header = [slug(field_name) for field_name in fields.keys()]
-    else:
-        if force_headers is None:
-            header = [x.strip() for x in table_rows[0]]
-            # TODO: test this feature
-            new_header = []
-            for index, field_name in enumerate(header):
-                if not field_name:
-                    field_name = 'field_{}'.format(index)
-                new_header.append(field_name)
-            header = [slug(field_name) for field_name in new_header]
-            table_rows = table_rows[1:]
-        else:
-            header = force_headers
-        fields = detect_types(header, table_rows, encoding='utf-8')
-
-    table = Table(fields=fields)
-    for row in table_rows:
-        table.append({field_name: value.strip()
-                      for field_name, value in zip(header, row)})
-    return table
+    return create_table(table_rows, *args, **kwargs)
 
 
 # TODO: replace 'None' with '' on export_to_*
