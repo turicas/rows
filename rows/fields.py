@@ -114,11 +114,10 @@ class BoolField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if value is None:
-            return None
-
-        value = as_string(value)
-        if value in cls.TRUE_VALUES:
+        value = super(BoolField, cls).deserialize(value)
+        if value is None or isinstance(value, cls.TYPE):
+            return value
+        elif value in cls.TRUE_VALUES:
             return True
         elif value in cls.FALSE_VALUES:
             return False
@@ -148,8 +147,8 @@ class IntegerField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         value = super(IntegerField, cls).deserialize(value)
-        if value is None:
-            return None
+        if value is None or isinstance(value, cls.TYPE):
+            return value
 
         if SHOULD_NOT_USE_LOCALE:
             return int(value)
@@ -179,8 +178,8 @@ class FloatField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         value = super(FloatField, cls).deserialize(value)
-        if value is None:
-            return None
+        if value is None or isinstance(value, cls.TYPE):
+            return value
 
         if SHOULD_NOT_USE_LOCALE:
             return float(value)
@@ -217,8 +216,8 @@ class DecimalField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         value = super(DecimalField, cls).deserialize(value)
-        if value is None:
-            return None
+        if value is None or isinstance(value, cls.TYPE):
+            return value
 
         if SHOULD_NOT_USE_LOCALE:
             try:
@@ -271,6 +270,7 @@ class PercentField(DecimalField):
         elif is_null(value):
             return None
 
+        value = as_string(value)
         if '%' not in value:
             raise ValueError("Can't be {}".format(cls.__name__))
         value = value.replace('%', '')
@@ -297,9 +297,10 @@ class DateField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         value = super(DateField, cls).deserialize(value)
-        if value is None:
-            return None
+        if value is None or isinstance(value, cls.TYPE):
+            return value
 
+        value = as_string(value)
         dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
         return datetime.date(dt_object.year, dt_object.month, dt_object.day)
 
@@ -324,9 +325,10 @@ class DatetimeField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         value = super(DatetimeField, cls).deserialize(value)
-        if value is None:
-            return None
+        if value is None or isinstance(value, cls.TYPE):
+            return value
 
+        value = as_string(value)
         # TODO: may use iso8601
         groups = cls.DATETIME_REGEXP.findall(value)
         if not groups:

@@ -66,6 +66,8 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(fields.BoolField.deserialize('false'), False)
         self.assertIs(fields.BoolField.deserialize('no'), False)
         self.assertIs(fields.BoolField.deserialize(None), None)
+        self.assertIs(fields.BoolField.deserialize(True), True)
+        self.assertIs(fields.BoolField.deserialize(False), False)
         self.assertEqual(fields.BoolField.serialize(False), 'false')
         self.assertIs(type(fields.BoolField.serialize(False)),
                       types.UnicodeType)
@@ -85,6 +87,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(type(fields.IntegerField.deserialize('42')),
                       fields.IntegerField.TYPE)
         self.assertEqual(fields.IntegerField.deserialize('42'), 42)
+        self.assertEqual(fields.IntegerField.deserialize(42), 42)
         self.assertEqual(fields.IntegerField.serialize(42), '42')
         self.assertIs(type(fields.IntegerField.serialize(42)),
                       types.UnicodeType)
@@ -107,6 +110,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(type(fields.FloatField.deserialize('42.0')),
                       fields.FloatField.TYPE)
         self.assertEqual(fields.FloatField.deserialize('42.0'), 42.0)
+        self.assertEqual(fields.FloatField.deserialize(42.0), 42.0)
         self.assertEqual(fields.FloatField.deserialize(None), None)
         self.assertEqual(fields.FloatField.serialize(42.0), '42.0')
         self.assertIs(type(fields.FloatField.serialize(42.0)),
@@ -123,6 +127,7 @@ class FieldsTestCase(unittest.TestCase):
                              42000.0)
 
     def test_DecimalField(self):
+        deserialized = Decimal('42.010')
         self.assertIs(fields.DecimalField.TYPE, Decimal)
         self.assertEqual(fields.DecimalField.serialize(None), '')
         self.assertIs(type(fields.DecimalField.serialize(None)),
@@ -131,7 +136,8 @@ class FieldsTestCase(unittest.TestCase):
                       fields.DecimalField.TYPE)
         self.assertEqual(fields.DecimalField.deserialize('42.0'),
                          Decimal('42.0'))
-        deserialized = Decimal('42.010')
+        self.assertEqual(fields.DecimalField.deserialize(deserialized),
+                         deserialized)
         self.assertEqual(fields.DecimalField.serialize(deserialized),
                          '42.010')
         self.assertEqual(type(fields.DecimalField.serialize(deserialized)),
@@ -156,6 +162,7 @@ class FieldsTestCase(unittest.TestCase):
                              '42.000,0')
 
     def test_PercentField(self):
+        deserialized = Decimal('0.42010')
         self.assertIs(fields.PercentField.TYPE, Decimal)
         self.assertIs(type(fields.PercentField.deserialize('42.0%')),
                       fields.PercentField.TYPE)
@@ -163,8 +170,9 @@ class FieldsTestCase(unittest.TestCase):
                          Decimal('0.420'))
         self.assertEqual(fields.PercentField.deserialize(Decimal('0.420')),
                          Decimal('0.420'))
+        self.assertEqual(fields.PercentField.deserialize(deserialized),
+                         deserialized)
         self.assertEqual(fields.PercentField.deserialize(None), None)
-        deserialized = Decimal('0.42010')
         self.assertEqual(fields.PercentField.serialize(deserialized),
                          '42.010%')
         self.assertEqual(type(fields.PercentField.serialize(deserialized)),
@@ -185,6 +193,8 @@ class FieldsTestCase(unittest.TestCase):
             self.assertEqual(fields.PercentField.serialize(Decimal('42000.00'),
                                                            grouping=True),
                              '4.200.000%')
+        with self.assertRaises(ValueError):
+            fields.PercentField.deserialize(42)
 
     def test_DateField(self):
         # TODO: test timezone-aware datetime.date
@@ -199,11 +209,15 @@ class FieldsTestCase(unittest.TestCase):
                       fields.DateField.TYPE)
         self.assertEqual(fields.DateField.deserialize(serialized),
                          deserialized)
+        self.assertEqual(fields.DateField.deserialize(deserialized),
+                         deserialized)
         self.assertEqual(fields.DateField.deserialize(None), None)
         self.assertEqual(fields.DateField.serialize(deserialized),
                          serialized)
         self.assertIs(type(fields.DateField.serialize(deserialized)),
                       types.UnicodeType)
+        with self.assertRaises(ValueError):
+            fields.DateField.deserialize(42)
 
     def test_DatetimeField(self):
         # TODO: test timezone-aware datetime.date
@@ -217,10 +231,14 @@ class FieldsTestCase(unittest.TestCase):
 
         value = datetime.datetime(2015, 5, 27, 1, 2, 3)
         self.assertEqual(fields.DatetimeField.deserialize(serialized), value)
+        self.assertEqual(fields.DatetimeField.deserialize(deserialized),
+                         deserialized)
         self.assertEqual(fields.DatetimeField.deserialize(None), None)
         self.assertEqual(fields.DatetimeField.serialize(value), serialized)
         self.assertIs(type(fields.DatetimeField.serialize(value)),
                       types.UnicodeType)
+        with self.assertRaises(ValueError):
+            fields.DatetimeField.deserialize(42)
 
     def test_UnicodeField(self):
         self.assertIs(fields.UnicodeField.TYPE, unicode)
@@ -231,6 +249,8 @@ class FieldsTestCase(unittest.TestCase):
                       fields.UnicodeField.TYPE)
         self.assertEqual(fields.UnicodeField.deserialize('Álvaro'.encode('utf-8'),
                                                          encoding='utf-8'),
+                         'Álvaro')
+        self.assertEqual(fields.UnicodeField.deserialize('Álvaro'),
                          'Álvaro')
         self.assertIs(fields.UnicodeField.deserialize(None), None)
         self.assertEqual(fields.UnicodeField.serialize('Álvaro'),
