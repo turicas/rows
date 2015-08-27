@@ -8,7 +8,6 @@ import xlrd
 import xlwt
 
 from rows.fields import detect_types
-from rows.table import Table
 
 
 # TODO: add more formatting styles for other types such as percent, currency
@@ -18,8 +17,8 @@ FORMATTING_STYLES = {
         datetime.date: xlwt.easyxf(num_format_str='yyyy-mm-dd'),
         datetime.datetime: xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'), }
 
-def import_from_xls(filename, fields=None, sheet_name=None, sheet_index=0,
-                    start_row=0, start_column=0):
+def import_from_xls(filename, sheet_name=None, sheet_index=0, start_row=0,
+                    start_column=0, *args, **kwargs):
 
     book = xlrd.open_workbook(filename)
     if sheet_name is not None:
@@ -41,7 +40,7 @@ def import_from_xls(filename, fields=None, sheet_name=None, sheet_index=0,
             column_value = cell_value(start_row, start_column + column_count)
         except IndexError:
             column_value = ''
-    header = [field.encode('utf-8') for field in header]
+    header = [field for field in header]
 
     # Get sheet rows
     # TODO: may use sheel.col_slice or even sheet.nrows
@@ -57,15 +56,7 @@ def import_from_xls(filename, fields=None, sheet_name=None, sheet_index=0,
             table_rows.append(row)
             row_count += 1
 
-    # could use decorator from here
-
-    if fields is None:
-        fields = detect_types(header, table_rows, encoding='utf-8')
-    table = Table(fields=fields)
-    for row in table_rows:
-        table.append({field_name: value
-                      for field_name, value in zip(header, row)})
-    return table
+    return create_table([header] + table_rows, *args, **kwargs)
 
 
 def export_to_xls(table, filename, sheet_name='Sheet1'):
