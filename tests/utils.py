@@ -108,17 +108,12 @@ class RowsTestMixIn(object):
         for filename in self.files_to_delete:
             os.unlink(filename)
 
-    def assert_expected_table(self, table):
-        self.assertEqual(table.fields, expected_fields)
+    def assert_table_equal(self, first, second):
+        self.assertEqual(first.fields, second.fields)
+        self.assertEqual(len(first), len(second))
 
-        for expected_row, row in zip(expected_rows, table):
-            row = dict(row._asdict())
-            self.assertEqual(set(expected_row.keys()), set(row.keys()))
-            for key in expected_row:
-                expected_value = expected_row[key]
-                value = row[key]
-                self.assertEqual(type(expected_value), type(value))
-                self.assertEqual(expected_value, value)
+        for first_row, second_row in zip(first, second):
+            self.assertEqual(first_row, second_row)
 
     def assert_file_contents_equal(self, first_filename, second_filename):
         with open(first_filename, 'rb') as fobj:

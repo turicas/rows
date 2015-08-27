@@ -36,13 +36,13 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_import_from_csv_filename(self):
         table = rows.import_from_csv(self.filename, encoding=self.encoding)
-        self.assert_expected_table(table)
+        self.assert_table_equal(table, utils.table)
 
     def test_import_from_csv_fobj(self):
         # TODO: may test with codecs.open passing an encoding
         with open(self.filename) as fobj:
             table = rows.import_from_csv(fobj, encoding=self.encoding)
-            self.assert_expected_table(table)
+            self.assert_table_equal(table, utils.table)
 
     def test_export_to_csv_filename(self):
         # TODO: may test file contents
@@ -51,7 +51,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.export_to_csv(utils.table, temp.name)
 
         table = rows.import_from_csv(temp.name)
-        self.assert_expected_table(table)
+        self.assert_table_equal(table, utils.table)
 
     def test_export_to_csv_fobj(self):
         # TODO: may test with codecs.open passing an encoding
@@ -61,4 +61,4 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.export_to_csv(utils.table, temp.file)
 
         table = rows.import_from_csv(temp.name)
-        self.assert_expected_table(table)
+        self.assert_table_equal(table, utils.table)
