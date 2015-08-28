@@ -27,8 +27,8 @@ from decimal import Decimal, InvalidOperation
 
 
 # Order matters here
-__all__ = ['BoolField', 'IntegerField', 'FloatField', 'DateField',
-           'DatetimeField', 'DecimalField', 'PercentField', 'UnicodeField',
+__all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
+           'DateField', 'DecimalField', 'PercentField', 'UnicodeField',
            'ByteField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
@@ -117,7 +117,9 @@ class BoolField(Field):
         value = super(BoolField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
-        elif value in cls.TRUE_VALUES:
+
+        value = as_string(value)
+        if value in cls.TRUE_VALUES:
             return True
         elif value in cls.FALSE_VALUES:
             return False
@@ -150,10 +152,12 @@ class IntegerField(Field):
         if value is None or isinstance(value, cls.TYPE):
             return value
 
-        if SHOULD_NOT_USE_LOCALE:
-            return int(value)
+        converted = int(value) if SHOULD_NOT_USE_LOCALE else locale.atoi(value)
+        float_equivalent = FloatField.deserialize(value, *args, **kwargs)
+        if float_equivalent == converted:
+            return converted
         else:
-            return locale.atoi(value)
+            raise ValueError("It's float, not integer")
 
 
 class FloatField(Field):
@@ -382,6 +386,7 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
                  *args, **kwargs):
     """Where the magic happens"""
 
+    # TODO: may receive 'type hints'
     # TODO: should support receiving unicode objects directly
     # TODO: should expect data in unicode or will be able to use binary data?
     number_of_fields = len(field_names)

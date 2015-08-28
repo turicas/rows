@@ -73,6 +73,7 @@ class FieldsTestCase(unittest.TestCase):
                       types.UnicodeType)
 
         self.assertIs(fields.BoolField.deserialize('1'), True)
+        self.assertIs(fields.BoolField.deserialize(1), True)
         self.assertIs(fields.BoolField.deserialize('true'), True)
         self.assertIs(fields.BoolField.deserialize('yes'), True)
         self.assertEqual(fields.BoolField.serialize(True), 'true')
@@ -101,6 +102,9 @@ class FieldsTestCase(unittest.TestCase):
                                                            grouping=True),
                              '42.000')
             self.assertEqual(fields.IntegerField.deserialize('42.000'), 42000)
+
+        with self.assertRaises(ValueError):
+            fields.IntegerField.deserialize(1.23)
 
     def test_FloatField(self):
         self.assertIs(fields.FloatField.TYPE, float)
@@ -218,6 +222,7 @@ class FieldsTestCase(unittest.TestCase):
                       types.UnicodeType)
         with self.assertRaises(ValueError):
             fields.DateField.deserialize(42)
+            fields.DateField.deserialize(serialized + 'T00:00:00')
 
     def test_DatetimeField(self):
         # TODO: test timezone-aware datetime.date
@@ -239,6 +244,7 @@ class FieldsTestCase(unittest.TestCase):
                       types.UnicodeType)
         with self.assertRaises(ValueError):
             fields.DatetimeField.deserialize(42)
+            fields.DatetimeField.deserialize('2015-01-01')
 
     def test_UnicodeField(self):
         self.assertIs(fields.UnicodeField.TYPE, unicode)
