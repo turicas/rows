@@ -19,30 +19,32 @@ from __future__ import unicode_literals
 
 import unicodecsv
 
-import rows.utils
+from rows.utils import create_table, fobj_from_filename_or_fobj
 
 
 def import_from_csv(filename_or_fobj, encoding='utf-8', delimiter=',',
                     quotechar='"', *args, **kwargs):
     'Import data from a CSV file'
 
-    fobj = rows.utils.fobj_from_filename_or_fobj(filename_or_fobj)
+    fobj = fobj_from_filename_or_fobj(filename_or_fobj)
     kwargs['encoding'] = encoding
     csv_reader = unicodecsv.reader(fobj, encoding=encoding,
                                    delimiter=str(delimiter),
                                    quotechar=str(quotechar))
 
-    return rows.utils.create_table(csv_reader, *args, **kwargs)
+    return create_table(csv_reader, *args, **kwargs)
 
 
 def export_to_csv(table, filename_or_fobj, encoding='utf-8'):
     # TODO: will work only if table.fields is OrderedDict
+    # TODO: should use fobj? What about creating a method like json.dumps?
 
-    fobj = rows.utils.fobj_from_filename_or_fobj(filename_or_fobj, mode='w')
+    fobj = fobj_from_filename_or_fobj(filename_or_fobj, mode='w')
     csv_writer = unicodecsv.writer(fobj, encoding=encoding)
 
     csv_writer.writerow(table.fields.keys())
     for row in table.serialize(encoding=encoding):
         csv_writer.writerow(row)
 
-    fobj.close()
+    fobj.flush()
+    return fobj

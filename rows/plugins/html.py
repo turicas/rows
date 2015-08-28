@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import unicode_literals
 
 import HTMLParser
@@ -7,7 +22,7 @@ import HTMLParser
 from lxml.html import document_fromstring
 from lxml.etree import tostring as to_string, strip_tags
 
-from rows.utils import create_table
+from rows.utils import create_table, fobj_from_filename_or_fobj
 
 
 html_parser = HTMLParser.HTMLParser()
@@ -19,11 +34,15 @@ def _get_content(element):
     return html_parser.unescape(content)
 
 
-def import_from_html(html, index=0, ignore_colspan=True, preserve_html=False,
-                     row_tag='tr', column_tag='td|th', *args, **kwargs):
-    # TODO: unescape before returning
-    # html = html_parser.unescape(html.decode(encoding))
+def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
+                     ignore_colspan=True, preserve_html=False, row_tag='tr',
+                     column_tag='td|th', *args, **kwargs):
+    # TODO: unescape before returning: html_parser.unescape(html)
+    # TODO: lxml -> unicode?
 
+    fobj = fobj_from_filename_or_fobj(filename_or_fobj)
+    kwargs['encoding'] = encoding
+    html = fobj.read().decode(encoding)
     html_tree = document_fromstring(html)
     tables = html_tree.xpath('//table')
     table = tables[index]
@@ -44,39 +63,31 @@ def import_from_html(html, index=0, ignore_colspan=True, preserve_html=False,
     if ignore_colspan:
         table_rows = filter(lambda row: len(row) == max_columns, table_rows)
 
-    # TODO: lxml -> unicode?
-
     return create_table(table_rows, *args, **kwargs)
 
 
-# TODO: replace 'None' with '' on export_to_*
-def export_to_html(table, filename=None, encoding='utf-8'):
+def export_to_html(table, filename_or_fobj=None, encoding='utf-8'):
     fields = table.fields.keys()
     result = ['<table>', '', '  <thead>', '    <tr>']
     header = ['      <th>{}</th>'.format(field) for field in fields]
     result.extend(header)
     result.extend(['    </tr>', '  </thead>', '', '  <tbody>', ''])
-    for index, row in enumerate(table, start=1):
+    for index, row in enumerate(table.serialize(encoding=encoding), start=1):
         css_class = 'odd' if index % 2 == 1 else 'even'
         result.append('    <tr class="{}">'.format(css_class))
-        for field in fields:
-            value = table.fields[field].serialize(getattr(row, field),
-                                                  encoding=encoding)
-            result.append('      <td>')
-            result.append(value)
-            result.append('</td>')
+        for value in row:
+            result.extend(['      <td>', value, '      </td>'])
         result.extend(['    </tr>', ''])
     result.extend(['  </tbody>', '</table>', ''])
-    new_result = []
-    for x in result:
-        if isinstance(x, unicode):
-            x = x.encode(encoding)
-        new_result.append(x)
+    new_result = [value.encode(encoding) if isinstance(value, unicode)
+                                         else value
+                  for value in result]
     html = '\n'.encode(encoding).join(new_result)
 
-    if filename is not None:
-        with open(filename, 'w') as fobj:
-            fobj.write(html)
+    if filename_or_fobj is not None:
+        fobj = fobj_from_filename_or_fobj(filename_or_fobj, mode='w')
+        fobj.write(html)
+        fobj.flush()
     else:
         return html
 
