@@ -115,6 +115,7 @@ class FieldsTestCase(unittest.TestCase):
                       fields.FloatField.TYPE)
         self.assertEqual(fields.FloatField.deserialize('42.0'), 42.0)
         self.assertEqual(fields.FloatField.deserialize(42.0), 42.0)
+        self.assertEqual(fields.FloatField.deserialize(42), 42.0)
         self.assertEqual(fields.FloatField.deserialize(None), None)
         self.assertEqual(fields.FloatField.serialize(42.0), '42.0')
         self.assertIs(type(fields.FloatField.serialize(42.0)),
@@ -129,6 +130,7 @@ class FieldsTestCase(unittest.TestCase):
                              '42.000,000000')
             self.assertEqual(fields.FloatField.deserialize('42.000,00'),
                              42000.0)
+            self.assertEqual(fields.FloatField.deserialize(42), 42.0)
 
     def test_DecimalField(self):
         deserialized = Decimal('42.010')

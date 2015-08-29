@@ -185,6 +185,7 @@ class FloatField(Field):
         if value is None or isinstance(value, cls.TYPE):
             return value
 
+        value = as_string(value)
         if SHOULD_NOT_USE_LOCALE:
             return float(value)
         else:
