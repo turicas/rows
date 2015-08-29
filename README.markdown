@@ -184,9 +184,9 @@ examples.
 - XLS: use `rows.import_from_xls` and `rows.export_to_xls`
 - TXT: use `rows.export_to_csv`
 
-We'll be adding support for more plugins soon (like ODS, PDF, JSON etc.) --
-actually we're going to re-design the plugin interface so you can create your
-own easily.
+We'll be adding support for more plugins soon (like ODS, PDF, SQLite, JSON
+etc.) -- actually we're going to re-design the plugin interface so you can
+create your own easily.
 
 
 ## Command-Line Interface
@@ -212,11 +212,19 @@ This library is released under the [GNU General Public License version
 3](http://www.gnu.org/licenses/gpl-3.0.html).
 
 
-## Related projects
+## Known Issues
+
+- Support Python 3
+- Create a better plugin interface
+- Create a `TableList` (?) interface
+
+
+## Related/Similar projects
 
 - <https://github.com/scraperwiki/scrumble/>
 - <https://nytlabs.github.io/streamtools/>
 - <https://github.com/Kozea/Multicorn>
-- messytables
+- [OKFN's messytables](https://github.com/okfn/messytables)
+- [OKFN's goodtables](https://github.com/okfn/goodtables)
 - tablib
 - pandas' DataFrame
