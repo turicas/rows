@@ -89,6 +89,9 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(row, expected_row)
 
     def test_table_add(self):
+        self.assertIs(self.table + 0, self.table)
+        self.assertIs(0 + self.table, self.table)
+
         new_table = self.table + self.table
         self.assertEqual(new_table.fields, self.table.fields)
         self.assertEqual(len(new_table), 2 * len(self.table))
