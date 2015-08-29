@@ -18,6 +18,9 @@
 from __future__ import unicode_literals
 
 from collections import MutableSequence, namedtuple, OrderedDict
+from operator import itemgetter
+
+import rows.fields as fields
 
 
 class Table(MutableSequence):
@@ -85,3 +88,18 @@ class Table(MutableSequence):
         map(lambda row: table.append(row._asdict()), self)
         map(lambda row: table.append(row._asdict()), other)
         return table
+
+    def order_by(self, key):
+        # TODO: implement locale
+        # TODO: implement for more than one key
+        reverse = False
+        if key.startswith('-'):
+            key = key[1:]
+            reverse = True
+
+        field_names = self.fields.keys()
+        if key not in field_names:
+            raise ValueError('Field "{}" does not exist'.format(key))
+
+        key_index = field_names.index(key)
+        self._rows.sort(key=itemgetter(key_index), reverse=reverse)

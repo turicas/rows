@@ -102,3 +102,25 @@ class TableTestCase(unittest.TestCase):
             self.table + 1
         with self.assertRaises(ValueError):
             1 + self.table
+
+    def test_table_order_by(self):
+        with self.assertRaises(ValueError):
+            self.table.order_by('doesnt_exist')
+
+        before = [row.birthdate for row in self.table]
+        self.table.order_by('birthdate')
+        after = [row.birthdate for row in self.table]
+        self.assertNotEqual(before, after)
+        self.assertEqual(sorted(before), after)
+
+        self.table.order_by('-birthdate')
+        final = [row.birthdate for row in self.table]
+        self.assertEqual(final, list(reversed(after)))
+
+        self.table.order_by('name')
+        expected_rows = [
+            {'name': 'Douglas Adams', 'birthdate': datetime.date(1952, 3, 11)},
+            {'name': 'Somebody', 'birthdate': datetime.date(1990, 2, 1)},
+            {'name': 'Álvaro Justen', 'birthdate': datetime.date(1987, 4, 29)}]
+        for expected_row, row in zip(expected_rows, self.table):
+            self.assertEqual(expected_row, dict(row._asdict()))
