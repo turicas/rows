@@ -44,3 +44,9 @@ def import_from_uwsgi_log(filename):
                 table.append({field_name: value
                               for field_name, value in zip(fields, data)})
     return table
+
+
+if __name__ == '__main__':
+    table = import_from_uwsgi_log('uwsgi.log')
+    for row in table:
+        print row
