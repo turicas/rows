@@ -19,6 +19,8 @@ The library is composed by:
   exactly how to serialize and deserialize data for each object type you'll get
 - A set of utilities (such as field type recognition) to help working with
   tabular data
+- A command-line interface so you can have easy access to the most used
+  features: convert between formats, sum, join and sort tables.
 
 Just `import rows` and relax.
 
@@ -187,14 +189,21 @@ actually we're going to re-design the plugin interface so you can create your
 own easily.
 
 
+## Command-Line Interface
+
+TODO. Run `rows --help` and see `rows/cli.py`.
+
+
 ## Locale
 
-TODO. See `rows.localization`.
+TODO. See `rows/localization.py`.
 
 
 ## Operations
 
-TODO. See `rows.operations`.
+Available operations: `join`, `transform` and `serialize`.
+
+TODO. See `rows/operations.py`.
 
 
 ## License
