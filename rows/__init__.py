@@ -9,6 +9,8 @@ from rows.localization import locale_context
 
 # Plugin imports
 
+from rows.plugins.txt import export_to_txt
+
 try:
     from rows.plugins.csv import import_from_csv, export_to_csv
 except ImportError:
