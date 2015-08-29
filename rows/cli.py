@@ -1,108 +1,122 @@
-#!/usr/bin/env python
 # coding: utf-8
 
-import argparse
-import locale
-import os
-import tempfile
+# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import requests
+# TODO: test this whole module
+# TODO: add option to pass 'create_table' options in command-line (like force
+#       fields)
 
-from .plugins import *
+import click
+
+import rows
+
+from rows.utils import import_from_uri, export_to_uri
 
 
-def import_from(source, fields=None, include_fields=None, exclude_fields=None):
-    source_lower = source.lower()
-    delete_file = False
+@click.group()
+def cli():
+    pass
 
-    if source_lower.startswith('http://') or \
-            source_lower.startswith('https://'):
-        response = requests.get(source)
-        try:
-            content_type = response.headers['content-type']
-            extension = content_type.split(';')[0].split('/')[-1]
-        except (KeyError, IndexError):
-            extension = ''
 
-        tmp = tempfile.NamedTemporaryFile(delete=False)
-        source = '{}.{}'.format(tmp.name, extension)
-        source_lower = source.lower()
-        delete_file = True
-        with open(source, 'w') as fobj:
-            fobj.write(response.content)
+@cli.command(help='Convert table on `source` URI to `destination`')
+@click.option('--input-encoding', default='utf-8')
+@click.option('--output-encoding', default='utf-8')
+@click.option('--input-locale', default='en_US.UTF-8')
+@click.option('--output-locale', default='en_US.UTF-8')
+@click.argument('source')
+@click.argument('destination')
+def convert(input_encoding, output_encoding, input_locale, output_locale,
+            source, destination):
+    input_locale = input_locale.split('.')
+    output_locale = output_locale.split('.')
 
-    if source_lower.endswith('.csv'):
-        data = import_from_csv(source,
-                               fields=fields,
-                               include_fields=include_fields,
-                               exclude_fields=exclude_fields)
+    with rows.locale_context(input_locale):
+        table = import_from_uri(source)
 
-    elif source_lower.endswith('.html') or source_lower.endswith('.htm'):
-        with open(source) as fobj:
-            data = import_from_html(fobj.read(),
-                                    fields=fields,
-                                    include_fields=include_fields,
-                                    exclude_fields=exclude_fields)
+    with rows.locale_context(output_locale):
+        export_to_uri(destination, table)
 
-    elif source_lower.startswith('mysql://'):
-        data = import_from_mysql(source[8:],
-                                 fields=fields,
-                                 include_fields=include_fields,
-                                 exclude_fields=exclude_fields)
 
-    else:
-        raise ValueError('Source type not identified')
+@cli.command(help='Join tables from `source` URIs using `key(s)` to group rows and save into `destination`')
+@click.option('--input-encoding', default='utf-8')
+@click.option('--output-encoding', default='utf-8')
+@click.option('--input-locale', default='en_US.UTF-8')
+@click.option('--output-locale', default='en_US.UTF-8')
+@click.argument('keys')
+@click.argument('sources', nargs=-1, required=True)
+@click.argument('destination')
+def join(input_encoding, output_encoding, input_locale, output_locale, keys,
+         sources, destination):
+    keys = [key.strip() for key in keys.split(',')]
+    input_locale = input_locale.split('.')
+    output_locale = output_locale.split('.')
 
-    if delete_file:
-        os.unlink(source)
-    return data
+    with rows.locale_context(input_locale):
+        tables = [import_from_uri(source) for source in sources]
 
-def export_to(table, destination):
-    if destination.lower().endswith('.csv'):
-        return table.export_to_csv(destination)
-    elif destination.lower().endswith('.html') or \
-            destination.lower().endswith('.htm'):
-        return table.export_to_html(destination)
-    if destination.lower().endswith('.txt'):
-        return table.export_to_text(destination)
-    elif destination.lower().startswith('mysql://'):
-        return table.export_to_mysql(destination[8:])
-    else:
-        raise ValueError('Destination type not identified')
+    result = rows.join(keys, tables)
 
-def main():
-    args = argparse.ArgumentParser(description='...')
-    args.add_argument('--from', dest='source', required=True)
-    args.add_argument('--to', dest='destination', required=True)
-    args.add_argument('--locale-in', dest='locale_in', required=False)
-    args.add_argument('--locale-out', dest='locale_out', required=False)
-    args.add_argument('--fields', dest='fields', required=False)
-    args.add_argument('--include-fields', dest='include_fields',
-                      required=False)
-    args.add_argument('--exclude-fields', dest='exclude_fields',
-                      required=False)
-    argv = args.parse_args()
+    with rows.locale_context(output_locale):
+        export_to_uri(destination, result)
 
-    if argv.locale_in:
-        locale.setlocale(locale.LC_ALL, argv.locale_in)
 
-    fields = None
-    if argv.fields:
-        fields = argv.fields.split(',')
+@cli.command(help='Sort from `source` by `key(s)` and save into `destination`')
+@click.option('--input-encoding', default='utf-8')
+@click.option('--output-encoding', default='utf-8')
+@click.option('--input-locale', default='en_US.UTF-8')
+@click.option('--output-locale', default='en_US.UTF-8')
+@click.argument('key')
+@click.argument('source')
+@click.argument('destination')
+def sort(input_encoding, output_encoding, input_locale, output_locale, key,
+         source, destination):
+    input_locale = input_locale.split('.')
+    output_locale = output_locale.split('.')
+    key = key.replace('^', '-')
 
-    include_fields = None
-    if argv.include_fields:
-        include_fields = argv.include_fields.split(',')
+    with rows.locale_context(input_locale):
+        table = import_from_uri(source)
+        table.order_by(key)
 
-    exclude_fields = None
-    if argv.exclude_fields:
-        exclude_fields = argv.exclude_fields.split(',')
+    with rows.locale_context(output_locale):
+        export_to_uri(destination, table)
 
-    table = import_from(argv.source, fields=fields,
-                        include_fields=include_fields,
-                        exclude_fields=exclude_fields)
 
-    if argv.locale_out:
-        locale.setlocale(locale.LC_ALL, argv.locale_out)
+@cli.command(help='Sum tables from `source` URIs and save into `destination`')
+@click.option('--input-encoding', default='utf-8')
+@click.option('--output-encoding', default='utf-8')
+@click.option('--input-locale', default='en_US.UTF-8')
+@click.option('--output-locale', default='en_US.UTF-8')
+@click.argument('sources', nargs=-1, required=True)
+@click.argument('destination')
+def sum(input_encoding, output_encoding, input_locale, output_locale, sources,
+        destination):
+    input_locale = input_locale.split('.')
+    output_locale = output_locale.split('.')
 
-    export_to(table, argv.destination)
+    with rows.locale_context(input_locale):
+        tables = [import_from_uri(source) for source in sources]
+
+    result = tables[0]
+    for table in tables[1:]:
+        result = result + table
+
+    with rows.locale_context(output_locale):
+        export_to_uri(destination, result)
+
+
+if __name__ == '__main__':
+    cli()

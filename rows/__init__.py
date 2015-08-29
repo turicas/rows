@@ -1,52 +1,27 @@
 # coding: utf-8
 
-# Copyright 2014 Álvaro Justen <https://github.com/turicas/rows/>
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# General imports
 
-import sys
-import types
-
-from .plugins import *
-
-from .rows import Table, LazyTable, BaseTable, join
+from rows.operations import join, serialize, transform
+from rows.table import Table
+from rows.localization import locale_context
 
 
-this = sys.modules[__name__]
-import_methods = []
+# Plugin imports
 
-# take all available import/export methods from plugins
-for attribute in dir(this):
-    if attribute.startswith('import_from_'):
-        import_methods.append(attribute)
-    elif attribute.startswith('export_to_'):
-        setattr(BaseTable, attribute,
-                types.MethodType(getattr(this, attribute), None, BaseTable))
-        # TODO: this line should be changed for python 3
-        delattr(this, attribute)
-    elif attribute.startswith('plugin_'):
-        delattr(this, attribute)
+from rows.plugins.txt import export_to_txt
 
-# explicitly export Table, LazyTable and all import methods (for available
-# plugins)
-__all__ = ['Table', 'LazyTable'] + import_methods
+try:
+    from rows.plugins.csv import import_from_csv, export_to_csv
+except ImportError:
+    pass
 
-# cleanup namespace
-del BaseTable
-del attribute
-del import_methods
-del plugins
-del rows
-del sys
-del this
-del types
+try:
+    from rows.plugins.xls import import_from_xls, export_to_xls
+except ImportError:
+    pass
+
+try:
+    from rows.plugins.html import import_from_html, export_to_html
+except ImportError:
+    pass

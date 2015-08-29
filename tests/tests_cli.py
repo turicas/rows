@@ -1,6 +1,7 @@
 # coding: utf-8
 
-# Copyright 2014 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+#
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
@@ -14,22 +15,13 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-try:
-    from .plugin_text import *
-except ImportError:
-    pass
+from __future__ import unicode_literals
 
-try:
-    from .plugin_csv import *
-except ImportError:
-    pass
+import unittest
 
-try:
-    from .plugin_html import *
-except ImportError:
-    pass
+import rows.cli as cli
 
-try:
-    from .plugin_mysql import *
-except ImportError:
+
+class CliTestCase(unittest.TestCase):
+    # TODO: test everything
     pass

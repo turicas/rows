@@ -10,18 +10,22 @@ setup(name='rows',
     author=u'Álvaro Justen',
     author_email='alvarojusten@gmail.com',
     url='https://github.com/turicas/rows/',
-    packages=['rows'],
+    packages=['rows', 'rows.plugins'],
     install_requires=[],
     extras_require = {
+        'csv': ['unicodecsv'],
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
-        'cli': ['requests'],
-        'mysql': ['MySQL-Python'], # apt: libmariadbclient-dev libssl-dev
-        'all': ['lxml', 'MySQL-Python'],
+        'cli': ['click', 'filemagic', 'requests'],
+        'xls': ['xlrd', 'xlwt'],
+        'all': ['unicodecsv',
+                'lxml',
+                'click', 'filemagic', 'requests',
+                'xlrd', 'xlwt'],
     },
-    keywords=['tabular', 'csv', 'rows'],
+    keywords=['tabular', 'table', 'csv', 'xls', 'html', 'rows'],
     entry_points = {
         'console_scripts': [
-            'rows = rows.cli:main',
+            'rows = rows.cli:cli',
             ],
     },
     classifiers = [
