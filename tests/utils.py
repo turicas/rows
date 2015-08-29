@@ -109,7 +109,7 @@ class RowsTestMixIn(object):
             os.unlink(filename)
 
     def assert_table_equal(self, first, second):
-        self.assertEqual(first.fields, second.fields)
+        self.assertDictEqual(dict(first.fields), dict(second.fields))
         self.assertEqual(len(first), len(second))
 
         for first_row, second_row in zip(first, second):
