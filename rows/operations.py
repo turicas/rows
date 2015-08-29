@@ -58,3 +58,13 @@ def transform(fields, function, *tables):
     for table in tables:
         map(new_table.append, map(lambda row: function(row, table), table))
     return new_table
+
+
+def serialize(table, *args, **kwargs):
+    fields = table.fields
+    fields_items = fields.items()
+
+    for row in table:
+        yield [field_type.serialize(getattr(row, field_name),
+                                    *args, **kwargs)
+                for field_name, field_type in fields_items]

@@ -62,3 +62,14 @@ class TableMergeTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 new = transformation_function(row, utils.table)
                 self.assertEqual(new, result[index]._asdict())
                 index += 1
+
+    def test_serialize_imports(self):
+        self.assertIs(rows.serialize, rows.operations.serialize)
+
+    def test_serialize_feature(self):
+        result = rows.serialize(utils.table)
+        header = utils.table.fields.values()
+        for row, expected_row in zip(result, utils.table._rows):
+            list_of_values = [field.serialize(value)
+                              for field, value in zip(header, expected_row)]
+            self.assertEqual(list_of_values, row)

@@ -22,6 +22,7 @@ import HTMLParser
 from lxml.html import document_fromstring
 from lxml.etree import tostring as to_string, strip_tags
 
+from rows.operations import serialize
 from rows.utils import create_table, get_filename_and_fobj
 
 
@@ -73,7 +74,7 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8'):
     header = ['      <th>{}</th>'.format(field) for field in fields]
     result.extend(header)
     result.extend(['    </tr>', '  </thead>', '', '  <tbody>', ''])
-    for index, row in enumerate(table.serialize(encoding=encoding), start=1):
+    for index, row in enumerate(serialize(table, encoding=encoding), start=1):
         css_class = 'odd' if index % 2 == 1 else 'even'
         result.append('    <tr class="{}">'.format(css_class))
         for value in row:

@@ -222,6 +222,7 @@ class FieldsTestCase(unittest.TestCase):
                       types.UnicodeType)
         with self.assertRaises(ValueError):
             fields.DateField.deserialize(42)
+        with self.assertRaises(ValueError):
             fields.DateField.deserialize(serialized + 'T00:00:00')
 
     def test_DatetimeField(self):

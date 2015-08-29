@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 import unicodecsv
 
+from rows.operations import serialize
 from rows.utils import create_table, get_filename_and_fobj
 
 
@@ -44,7 +45,7 @@ def export_to_csv(table, filename_or_fobj, encoding='utf-8'):
     csv_writer = unicodecsv.writer(fobj, encoding=encoding)
 
     csv_writer.writerow(table.fields.keys())
-    for row in table.serialize(encoding=encoding):
+    for row in serialize(table, encoding=encoding):
         csv_writer.writerow(row)
 
     fobj.flush()
