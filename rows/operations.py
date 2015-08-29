@@ -55,8 +55,11 @@ def transform(fields, function, *tables):
     "Return a new table based on other tables and a transformation function"
 
     new_table = Table(fields=fields)
+
     for table in tables:
-        map(new_table.append, map(lambda row: function(row, table), table))
+        map(new_table.append,
+            filter(bool, map(lambda row: function(row, table), table)))
+
     return new_table
 
 

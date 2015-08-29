@@ -25,7 +25,7 @@ import rows.operations
 import utils
 
 
-class TableMergeTestCase(utils.RowsTestMixIn, unittest.TestCase):
+class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_join_imports(self):
         self.assertIs(rows.join, rows.operations.join)
@@ -44,6 +44,9 @@ class TableMergeTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_transform_feature(self):
 
         def transformation_function(row, table):
+            if row.percent_column < 0.1269:
+                return None  # discard this row
+
             new = row._asdict()
             new['meta'] = ', '.join(['{} => {}'.format(key, value)
                                      for key, value in table._meta.items()])
@@ -54,14 +57,13 @@ class TableMergeTestCase(utils.RowsTestMixIn, unittest.TestCase):
         tables = [utils.table] * 3
         result = rows.transform(fields, transformation_function, *tables)
         self.assertEqual(result.fields, fields)
-        self.assertEqual(len(result), len(utils.table) * 3)
+        not_discarded = [transformation_function(row, utils.table)
+                         for row in utils.table] * 3
+        not_discarded = [row for row in not_discarded if row is not None]
+        self.assertEqual(len(result), len(not_discarded))
 
-        index = 0
-        for _ in range(3):
-            for row in utils.table:
-                new = transformation_function(row, utils.table)
-                self.assertEqual(new, result[index]._asdict())
-                index += 1
+        for expected_row, row in zip(not_discarded, result):
+            self.assertEqual(expected_row, dict(row._asdict()))
 
     def test_serialize_imports(self):
         self.assertIs(rows.serialize, rows.operations.serialize)
