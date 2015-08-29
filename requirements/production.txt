@@ -1,6 +1,7 @@
-unicodecsv
+click
+filemagic
 lxml
 requests
+unicodecsv
 xlrd
 xlwt
-MySQL-Python

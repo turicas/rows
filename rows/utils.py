@@ -16,9 +16,15 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import collections
-import locale
+import os
+import tempfile
 
 from unicodedata import normalize
+
+import magic
+import requests
+
+import rows
 
 from rows.fields import detect_types
 from rows.table import Table
@@ -120,3 +126,72 @@ def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
         filename = filename_or_fobj
 
     return filename, fobj
+
+
+def download_file(uri):
+    response = requests.get(uri)
+    content = response.content
+
+    # TODO: try to guess with uri.split('/')[-1].split('.')[-1].lower()
+    try:
+        content_type = response.headers['content-type']
+        plugin_name = content_type.split('/')[-1]
+    except (KeyError, IndexError):
+        with magic.Magic() as file_type_guesser:
+            file_type = file_type_guesser.id_buffer(content)
+        plugin_name = file_type.strip().split()[0]
+
+    tmp = tempfile.NamedTemporaryFile()
+    filename = '{}.{}'.format(tmp.name, plugin_name)
+    tmp.close()
+    with open(filename, 'wb') as fobj:
+        fobj.write(content)
+
+    return filename
+
+
+def get_uri_information(uri):
+    if uri.startswith('http://') or uri.startswith('https://'):
+        should_delete = True
+        filename = download_file(uri)
+    else:
+        should_delete = False
+        filename = uri
+
+    plugin_name = filename.split('.')[-1].lower()
+    if plugin_name == 'htm':
+        plugin_name = 'html'
+    elif plugin_name == 'text':
+        plugin_name = 'txt'
+
+    return should_delete, filename, plugin_name
+
+
+def import_from_uri(uri):
+    # TODO: support '-' also
+    should_delete, filename, plugin_name = get_uri_information(uri)
+
+    try:
+        import_function = getattr(rows, 'import_from_{}'.format(plugin_name))
+    except AttributeError:
+        raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
+
+    with open(filename) as fobj:
+        table = import_function(fobj)
+
+    if should_delete:
+        os.unlink(filename)
+
+    return table
+
+
+def export_to_uri(uri, table):
+    # TODO: support '-' also
+    plugin_name = uri.split('.')[-1].lower()
+
+    try:
+        export_function = getattr(rows, 'export_to_{}'.format(plugin_name))
+    except AttributeError:
+        raise ValueError('Plugin (export) "{}" not found'.format(plugin_name))
+
+    export_function(table, uri)

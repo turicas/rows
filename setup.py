@@ -15,16 +15,17 @@ setup(name='rows',
     extras_require = {
         'csv': ['unicodecsv'],
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
-        'cli': ['requests'],
+        'cli': ['click', 'filemagic', 'requests'],
         'xls': ['xlrd', 'xlwt'],
-        'mysql': ['MySQL-Python'], # apt: libmariadbclient-dev libssl-dev
-        'all': ['unicodecsv', 'lxml', 'requests', 'xlrd', 'xlwt',
-                'MySQL-Python'],
+        'all': ['unicodecsv',
+                'lxml',
+                'click', 'filemagic', 'requests',
+                'xlrd', 'xlwt'],
     },
-    keywords=['tabular', 'csv', 'rows'],
+    keywords=['tabular', 'table', 'csv', 'xls', 'html', 'rows'],
     entry_points = {
         'console_scripts': [
-            'rows = rows.cli:main',
+            'rows = rows.cli:cli',
             ],
     },
     classifiers = [
