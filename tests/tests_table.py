@@ -28,22 +28,25 @@ from rows.table import Table
 
 class TableTestCase(unittest.TestCase):
 
+    def setUp(self):
+        self.table = Table(fields={'name': rows.fields.UnicodeField,
+                                   'birthdate': rows.fields.DateField, })
+        self.first_row = {'name': u'Álvaro Justen',
+                          'birthdate': datetime.date(1987, 4, 29)}
+        self.table.append(self.first_row)
+        self.table.append({'name': u'Somebody',
+                           'birthdate': datetime.date(1990, 2, 1)})
+        self.table.append({'name': u'Douglas Adams',
+                           'birthdate': '1952-03-11'})
+
     def test_Table_is_present_on_main_namespace(self):
         self.assertIn('Table', dir(rows))
         self.assertIs(Table, rows.Table)
 
-    def test_table(self):
+    def test_table_iteration(self):
         # TODO: may test with all field types (using tests.utils.table)
-        table = Table(fields={'name': rows.fields.UnicodeField,
-                              'birthdate': rows.fields.DateField, })
-        table.append({'name': u'Álvaro Justen',
-                      'birthdate': datetime.date(1987, 4, 29)})
-        table.append({'name': u'Somebody',
-                      'birthdate': datetime.date(1990, 2, 1)})
-        table.append({'name': u'Douglas Adams',
-                      'birthdate': '1952-03-11'})
 
-        table_rows = [row for row in table]
+        table_rows = [row for row in self.table]
         self.assertEqual(len(table_rows), 3)
         self.assertEqual(table_rows[0].name, u'Álvaro Justen')
         self.assertEqual(table_rows[0].birthdate, datetime.date(1987, 4, 29))
@@ -52,16 +55,47 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(table_rows[2].name, u'Douglas Adams')
         self.assertEqual(table_rows[2].birthdate, datetime.date(1952, 3, 11))
 
+    def test_table_append_error(self):
         # TODO: may mock these validations and test only on *Field tests
         with self.assertRaises(ValueError) as context_manager:
-            table.append({'name': 'Álvaro Justen'.encode('utf-8'),
-                          'birthdate': '1987-04-29'})
+            self.table.append({'name': 'Álvaro Justen'.encode('utf-8'),
+                               'birthdate': '1987-04-29'})
         self.assertEqual(type(context_manager.exception), UnicodeDecodeError)
 
         with self.assertRaises(ValueError) as context_manager:
-            table.append({'name': u'Álvaro Justen', 'birthdate': 'WRONG'})
+            self.table.append({'name': u'Álvaro Justen', 'birthdate': 'WRONG'})
         self.assertEqual(type(context_manager.exception), ValueError)
         self.assertIn('does not match format',
                       context_manager.exception.message)
 
-    # TODO: test Table.serialize
+    def test_table_getitem_error(self):
+        with self.assertRaises(ValueError) as context_manager:
+            self.table['test']
+
+    def test_table_setitem(self):
+        self.first_row['name'] = 'turicas'
+        self.first_row['birthdate'] = datetime.date(2000, 1, 1)
+        self.table[0] = self.first_row
+        self.assertEqual(self.table[0].name, 'turicas')
+        self.assertEqual(self.table[0].birthdate, datetime.date(2000, 1, 1))
+
+    def test_table_delitem(self):
+        table_rows = [row for row in self.table]
+        before = len(self.table)
+        del self.table[0]
+        after = len(self.table)
+        self.assertEqual(after, before - 1)
+        for row, expected_row in zip(self.table, table_rows[1:]):
+            self.assertEqual(row, expected_row)
+
+    def test_table_add(self):
+        new_table = self.table + self.table
+        self.assertEqual(new_table.fields, self.table.fields)
+        self.assertEqual(len(new_table), 2 * len(self.table))
+        self.assertEqual(list(new_table), list(self.table) * 2)
+
+    def test_table_add_error(self):
+        with self.assertRaises(ValueError):
+            self.table + 1
+        with self.assertRaises(ValueError):
+            1 + self.table
