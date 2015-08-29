@@ -50,11 +50,14 @@ class Table(MutableSequence):
         return len(self._rows)
 
     def __getitem__(self, key):
-        # TODO: should support slice also?
-        if not isinstance(key, int):
+
+        if isinstance(key, int):
+            return self.Row(*self._rows[key])
+        elif isinstance(key, slice):
+            return [self.Row(*row) for row in self._rows[key]]
+        else:
             raise ValueError('Type not recognized: {}'.format(type(key)))
 
-        return self.Row(*self._rows[key])
 
     def __setitem__(self, key, value):
         self._rows[key] = self._make_row(value)
@@ -70,6 +73,7 @@ class Table(MutableSequence):
             return self
         raise ValueError()
 
+    # TODO: fix "table += other"
     def __add__(self, other):
         if other == 0:
             return self
@@ -78,8 +82,6 @@ class Table(MutableSequence):
             raise ValueError('Tables have incompatible fields')
 
         table = Table(fields=self.fields)
-        for row in self:
-            table.append({field: getattr(row, field) for field in row._fields})
-        for row in other:
-            table.append({field: getattr(row, field) for field in row._fields})
+        map(lambda row: table.append(row._asdict()), self)
+        map(lambda row: table.append(row._asdict()), other)
         return table
