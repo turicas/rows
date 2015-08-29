@@ -70,26 +70,27 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
 
 def export_to_html(table, filename_or_fobj=None, encoding='utf-8'):
     fields = table.fields.keys()
-    result = ['<table>', '', '  <thead>', '    <tr>']
-    header = ['      <th>{}</th>'.format(field) for field in fields]
+    result = ['<table>\n\n', '  <thead>\n', '    <tr>\n']
+    header = ['      <th> {} </th>\n'.format(field) for field in fields]
     result.extend(header)
-    result.extend(['    </tr>', '  </thead>', '', '  <tbody>', ''])
+    result.extend(['    </tr>\n', '  </thead>\n', '\n', '  <tbody>\n', '\n'])
     for index, row in enumerate(serialize(table, encoding=encoding), start=1):
         css_class = 'odd' if index % 2 == 1 else 'even'
-        result.append('    <tr class="{}">'.format(css_class))
+        result.append('    <tr class="{}">\n'.format(css_class))
         for value in row:
-            result.extend(['      <td>', value, '      </td>'])
-        result.extend(['    </tr>', ''])
-    result.extend(['  </tbody>', '</table>', ''])
+            result.extend(['      <td> ', value, ' </td>\n'])
+        result.append('    </tr>\n\n')
+    result.append('  </tbody>\n\n</table>\n')
     new_result = [value.encode(encoding) if isinstance(value, unicode)
                                          else value
                   for value in result]
-    html = '\n'.encode(encoding).join(new_result)
+    html = ''.encode(encoding).join(new_result)
 
     if filename_or_fobj is not None:
         filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
         fobj.write(html)
         fobj.flush()
+        return fobj
     else:
         return html
 

@@ -130,4 +130,5 @@ def export_to_xls(table, filename_or_fobj, sheet_name='Sheet1'):
             sheet.write(row_index, column_index, value, **data)
 
     work_book.save(fobj)
-    fobj.close()
+    fobj.flush()
+    return fobj
