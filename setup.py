@@ -4,7 +4,7 @@ from setuptools import setup
 
 
 setup(name='rows',
-    description='Import and export tabular data easily with Python',
+    description='A common, beautiful interface to tabular data, no matter the format',
     long_description='',
     version='0.1.1-dev',
     author=u'Álvaro Justen',
