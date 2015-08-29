@@ -2,7 +2,7 @@
 
 # General imports
 
-from rows.operations import join
+from rows.operations import join, transform
 from rows.table import Table
 from rows.localization import locale_context
 

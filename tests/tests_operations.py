@@ -37,3 +37,28 @@ class TableMergeTestCase(utils.RowsTestMixIn, unittest.TestCase):
         merged = rows.join(keys=('id', 'username'), tables=tables)
         expected = rows.import_from_csv('tests/data/merged.csv')
         self.assert_table_equal(merged, expected)
+
+    def test_transform_imports(self):
+        self.assertIs(rows.transform, rows.operations.transform)
+
+    def test_transform_feature(self):
+
+        def transformation_function(row, table):
+            new = row._asdict()
+            new['meta'] = ', '.join(['{} => {}'.format(key, value)
+                                     for key, value in table._meta.items()])
+            return new
+
+        fields = utils.table.fields.copy()
+        fields.update({'meta': rows.fields.UnicodeField})
+        tables = [utils.table] * 3
+        result = rows.transform(fields, transformation_function, *tables)
+        self.assertEqual(result.fields, fields)
+        self.assertEqual(len(result), len(utils.table) * 3)
+
+        index = 0
+        for _ in range(3):
+            for row in utils.table:
+                new = transformation_function(row, utils.table)
+                self.assertEqual(new, result[index]._asdict())
+                index += 1

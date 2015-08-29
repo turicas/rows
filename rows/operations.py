@@ -49,3 +49,12 @@ def join(keys, tables):
     merged = Table(fields=fields)
     merged.extend(data.values())
     return merged
+
+
+def transform(fields, function, *tables):
+    "Return a new table based on other tables and a transformation function"
+
+    new_table = Table(fields=fields)
+    for table in tables:
+        map(new_table.append, map(lambda row: function(row, table), table))
+    return new_table
