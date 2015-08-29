@@ -38,11 +38,17 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_csv(self.filename, encoding=self.encoding)
         self.assert_table_equal(table, utils.table)
 
+        expected_meta = {'imported_from': 'csv', 'filename': self.filename,}
+        self.assertEqual(table.meta, expected_meta)
+
     def test_import_from_csv_fobj(self):
         # TODO: may test with codecs.open passing an encoding
         with open(self.filename) as fobj:
             table = rows.import_from_csv(fobj, encoding=self.encoding)
-            self.assert_table_equal(table, utils.table)
+        self.assert_table_equal(table, utils.table)
+
+        expected_meta = {'imported_from': 'csv', 'filename': self.filename,}
+        self.assertEqual(table.meta, expected_meta)
 
     def test_export_to_csv_filename(self):
         # TODO: may test file contents

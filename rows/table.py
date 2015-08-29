@@ -22,7 +22,7 @@ from collections import MutableSequence, namedtuple, OrderedDict
 
 class Table(MutableSequence):
 
-    def __init__(self, fields):
+    def __init__(self, fields, meta=None):
         # TODO: should we really use OrderedDict here?
         # TODO: should use slug on each field name automatically or inside each
         #       plugin?
@@ -34,6 +34,7 @@ class Table(MutableSequence):
         #       etc.)
         self.Row = namedtuple('Row', self.field_names)
         self._rows = []
+        self.meta = dict(meta) if meta is not None else {}
 
     def _make_row(self, row):
         # TODO: should be able to customize row type (namedtuple, dict etc.)

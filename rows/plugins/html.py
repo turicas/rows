@@ -22,7 +22,7 @@ import HTMLParser
 from lxml.html import document_fromstring
 from lxml.etree import tostring as to_string, strip_tags
 
-from rows.utils import create_table, fobj_from_filename_or_fobj
+from rows.utils import create_table, get_filename_and_fobj
 
 
 html_parser = HTMLParser.HTMLParser()
@@ -40,7 +40,7 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
     # TODO: unescape before returning: html_parser.unescape(html)
     # TODO: lxml -> unicode?
 
-    fobj = fobj_from_filename_or_fobj(filename_or_fobj)
+    filename, fobj = get_filename_and_fobj(filename_or_fobj)
     kwargs['encoding'] = encoding
     html = fobj.read().decode(encoding)
     html_tree = document_fromstring(html)
@@ -63,7 +63,8 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
     if ignore_colspan:
         table_rows = filter(lambda row: len(row) == max_columns, table_rows)
 
-    return create_table(table_rows, *args, **kwargs)
+    meta = {'imported_from': 'html', 'filename': filename,}
+    return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
 def export_to_html(table, filename_or_fobj=None, encoding='utf-8'):
@@ -85,7 +86,7 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8'):
     html = '\n'.encode(encoding).join(new_result)
 
     if filename_or_fobj is not None:
-        fobj = fobj_from_filename_or_fobj(filename_or_fobj, mode='w')
+        filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
         fobj.write(html)
         fobj.flush()
     else:

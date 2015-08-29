@@ -50,11 +50,17 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_html(self.filename, encoding=self.encoding)
         self.assert_table_equal(table, utils.table)
 
+        expected_meta = {'imported_from': 'html', 'filename': self.filename,}
+        self.assertEqual(table.meta, expected_meta)
+
     def test_import_from_html_fobj(self):
         # TODO: may test with codecs.open passing an encoding
         with open(self.filename) as fobj:
             table = rows.import_from_html(fobj, encoding=self.encoding)
-            self.assert_table_equal(table, utils.table)
+        self.assert_table_equal(table, utils.table)
+
+        expected_meta = {'imported_from': 'html', 'filename': self.filename,}
+        self.assertEqual(table.meta, expected_meta)
 
     def test_export_to_html_filename(self):
         # TODO: may test file contents

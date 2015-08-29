@@ -95,7 +95,7 @@ expected_rows = [
 table = Table(fields=expected_fields)
 for row in expected_rows:
     table.append(row)
-
+table._meta = {'test': 123}
 
 class RowsTestMixIn(object):
 
@@ -113,7 +113,8 @@ class RowsTestMixIn(object):
         self.assertEqual(len(first), len(second))
 
         for first_row, second_row in zip(first, second):
-            self.assertEqual(first_row, second_row)
+            self.assertDictEqual(dict(first_row._asdict()),
+                                 dict(second_row._asdict()))
 
     def assert_file_contents_equal(self, first_filename, second_filename):
         with open(first_filename, 'rb') as fobj:

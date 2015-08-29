@@ -75,8 +75,8 @@ def make_header(data):
             for index, field_name in enumerate(header)]
 
 
-def create_table(data, force_headers=None, fields=None, skip_header=True,
-                 *args, **kwargs):
+def create_table(data, meta=None, force_headers=None, fields=None,
+                 skip_header=True, *args, **kwargs):
     # TODO: add auto_detect_types=True parameter
     table_rows = list(data)
 
@@ -102,7 +102,7 @@ def create_table(data, force_headers=None, fields=None, skip_header=True,
         assert len(fields) == max_columns
 
     # TODO: put this inside Table.__init__
-    table = Table(fields=fields)
+    table = Table(fields=fields, meta=meta)
     for row in table_rows:
         table.append({field_name: value
                       for field_name, value in zip(header, row)})
@@ -110,8 +110,12 @@ def create_table(data, force_headers=None, fields=None, skip_header=True,
     return table
 
 
-def fobj_from_filename_or_fobj(filename_or_fobj, mode='r'):
+def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
     if getattr(filename_or_fobj, 'read', None) is not None:
-        return filename_or_fobj
+        fobj = filename_or_fobj
+        filename = fobj.name
     else:
-        return open(filename_or_fobj, mode=mode)
+        fobj = open(filename_or_fobj, mode=mode) if not dont_open else None
+        filename = filename_or_fobj
+
+    return filename, fobj

@@ -56,10 +56,12 @@ def import_from_xls(filename, sheet_name=None, sheet_index=0, start_row=0,
             table_rows.append(row)
             row_count += 1
 
-    return create_table([header] + table_rows, *args, **kwargs)
+    meta = {'imported_from': 'xls', 'filename': filename,}
+    return create_table([header] + table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_xls(table, filename, sheet_name='Sheet1'):
+
+    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
     work_book = xlwt.Workbook()
     sheet = work_book.add_sheet(sheet_name)
     fields = [(index, field_name)
@@ -75,4 +77,5 @@ def export_to_xls(table, filename, sheet_name='Sheet1'):
                 data['style'] = FORMATTING_STYLES[type(value)]
             sheet.write(row_index, column_index, value, **data)
 
-    work_book.save(filename)
+    work_book.save(fobj)
+    fobj.close()
