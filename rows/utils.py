@@ -113,7 +113,7 @@ def create_table(data, meta=None, force_headers=None, fields=None,
 def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
     if getattr(filename_or_fobj, 'read', None) is not None:
         fobj = filename_or_fobj
-        filename = fobj.name
+        filename = getattr(fobj, 'name', None)
     else:
         fobj = open(filename_or_fobj, mode=mode) if not dont_open else None
         filename = filename_or_fobj

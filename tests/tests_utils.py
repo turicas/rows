@@ -23,4 +23,4 @@ class UtilsTestCase(unittest.TestCase):
 
     # TODO: test make_header
     # TODO: test create_table
-    # TODO: test get_fobj_and_filename
+    # TODO: test get_fobj_and_filename (BytesIO should return filename = None)
