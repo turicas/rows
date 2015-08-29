@@ -1,312 +1,197 @@
 # rows
 
-This library is intended to be the easiest way to access tabular data using
-Python, regardless of the format it's stored or will be extracted to; some
-examples include CSV, HTML, XLS and ODS.
+No matter in which format your tabular data is: `rows` will import it,
+automatically detect types and give you high-level Python objects so you can
+start **working with the data** instead of **trying to parse it**. It is also
+locale-and-unicode aware. :)
 
-The API is pretty straighforward: it's composed of plugins that can import
-and/or export tabular data to/from one of the supported classes (`Table` and
-`LazyTable` currently); each plugin implements a format, like CSV and HTML. It
-makes the library perfect for converting data between these formats and focus
-on **the data** itself (not on format-specific things).
+## Architecture
+
+The library is composed by:
+
+- A common interface to tabular data (the `Table` class)
+- A set of plugins to populate `Table` objects (CSV, XLS, HTML, TXT -- more
+  coming soon!)
+- A set of common fields (such as `BoolField`, `IntegerField`) which know
+  exactly how to serialize and deserialize data for each object type you'll get
+- A set of utilities (such as field type recognition) to help working with
+  tabular data
+
+Just `import rows` and relax.
 
 
 ## Installation
 
-`rows` is not available on PyPI yet (we need more tests), so you need to
-install using `setup.py`:
+Directly from [PyPI](http://pypi.python.org/pypi/rows):
+
+    pip install rows
+
+
+Or from source:
 
     git clone https://github.com/turicas/rows.git
     cd rows
     python setup.py install
 
 
-## Using
+## Basic Usage
+
+You can create a `Table` object and populate it with some data:
 
-Create a file called `data.csv` with this content:
+```python
+from collections import OrderedDict
+from rows import fields, Table
 
-    id,username,birthday
-    1,turicas,1987-04-29
-    2,kid,2000-01-01
+my_fields = OrderedDict([('name', fields.UnicodeField),
+                         ('age', fields.IntegerField),
+                         ('married', fields.BoolField)])
+table = Table(fields=my_fields)
+table.append({'name': u'Álvaro Justen', 'age': 28, 'married': False})
+table.append({'name': u'Another Guy', 'age': 42, 'married': True})
+```
 
+Then you can iterate over it:
 
-### Importing and Exporing data
+```python
+def print_person(person):
+    married = 'is married' if person.married else 'is not married'
+    print u'{} is {} years old and {}'.format(person.name, person.age, married)
 
-Try this out:
+for person in table:
+    print_person(person)  # namedtuples are returned
+```
 
-    import rows
+You'll see:
 
-    my_table = rows.import_from_csv('data.csv')
-    my_table.export_to_html('data.html')
+```
+Álvaro Justen is 28 years old and is not married
+Another Guy is 42 years old and is married
+```
 
-Then a file `data.html` will be created with the following content:
+As you specified field types (`my_fields`) you don't need to insert data using
+the correct types. Actually you can insert strings and the library you
+automatically convert it for you:
 
-    <table>
+```python
+table.append({'name': '...', 'age': '', 'married': 'false'})
+print_person(table[-1])  # yes, you can index it!
+```
 
-      <thead>
-        <tr>
-          <th>id</th>
-          <th>username</th>
-          <th>birthday</th>
-        </tr>
-      </thead>
+And the output:
 
-      <tbody>
+```
+... is None years old and is not married
+```
 
-        <tr class="odd">
-          <td>1</td>
-          <td>turicas</td>
-          <td>1987-04-29</td>
-        </tr>
 
-        <tr class="even">
-          <td>2</td>
-          <td>kid</td>
-          <td>2000-01-01</td>
-        </tr>
+### Importing Data
 
-      </tbody>
-    </table>
+`rows` will help you importing data: its plugins will do the hard job of
+parsing each supported file format so you don't need to. They can help you
+exporting data also. For example, let's download a CSV from the Web and import
+it:
 
+```python
+import requests
+import rows
+from io import BytesIO
 
-You can also use `rows.import_from_html` and `my_table.export_to_csv` methods.
+url = 'http://unitedstates.sunlightfoundation.com/legislators/legislators.csv'
+csv = requests.get(url).content  # Download CSV data
+legislators = rows.import_from_csv(BytesIO(csv))  # already imported!
 
+print 'Hey, rows automatically identified the types:'
+for field_name, field_type in legislators.fields.items():
+    print '{} is {}'.format(field_name, field_type)
+```
 
-### Iterating over `Table`/`LazyTable` objects
+And you'll see something like this:
 
-The `Table`/`LazyTable` objects are iterable and return a dictionary in each
-iteration:
+```
+[...]
+in_office is <class 'rows.fields.BoolField'>
+gender is <class 'rows.fields.UnicodeField'>
+[...]
+birthdate is <class 'rows.fields.DateField'>
+```
 
-    import rows
+We can then work on this data:
 
-    my_table = rows.import_from_csv('data.csv')
-    for row in my_table:
-        print(row)
+```python
+women_in_office = filter(lambda row: row.in_office and row.gender == 'F',
+                         legislators)
+men_in_office = filter(lambda row: row.in_office and row.gender == 'M',
+                       legislators)
+print 'Women vs Men: {} vs {}'.format(len(women_in_office), len(men_in_office))
+```
 
-Then you'll see:
+Now, let's compare ages:
 
-    {u'username': u'turicas', u'birthday': datetime.date(1987, 4, 29), u'id': 1}
-    {u'username': u'kid', u'birthday': datetime.date(2000, 1, 1), u'id': 2}
+```python
+legislators.order_by('birthdate')
+older, younger = legislators[-1], legislators[0]
+print '{}, {} is older than {}, {}'.format(older.lastname, older.firstname,
+                                           younger.lastname, younger.firstname)
+```
 
+The output:
 
-> Note that **native Python objects** are returned! The library recognizes
-> each field type and convert data *automagically*.
+```
+Stefanik, Elise is older than Byrd, Robert
+```
 
+> Note that **native Python objects** are returned for each row! The library
+> recognizes each field type and convert data *automagically*.
 
-### Supported Plugins
 
-A plugin is just a Python module with one or two functions:
+### Exporting Data
 
-- `import_from_PLUGINNAME`: receives parameters as input data (filename, for
-  example) and return a `Table`/`LazyTable` object; and
-- `export_to_PLUGINNAME`: receives a `Table`/`LazyTable` object (and possibly
-  some options) and export to the format.
+Now it's time to export this data using another plugin: HTML! It's pretty easy:
 
-Currently we have the following plugins:
+```python
+rows.export_to_html(legislators, 'legislators.html')
+```
 
-- Text (export only)
-- CSV (import and export)
-- HTML (import and export)
-- MySQL/MariaDB (import and export)
+And you'll get:
 
+```
+$ head legislators.html
+<table>
 
-The idea is to develop more plugins, such as:
+  <thead>
+    <tr>
+      <th> title </th>
+      <th> firstname </th>
+      <th> middlename </th>
+      <th> lastname </th>
+      <th> name_suffix </th>
+      <th> nickname </th>
+```
 
-- SQLite
-- PostgreSQL
-- JSON
-- BSON
-- Protocol Buffers
-- Message Pack
-- ODS (Open Document Spreadsheet)
-- XLS and XLSX (Excel Spreadsheet)
+Now you have finished the quickstart guide. See the `examples` folder for more
+examples.
 
-If you feel confortable on writting one of these, please create a pull request!
-Don't forget to add your name to `AUTHORS` file. :-)
 
+### Available Plugins
 
-### Custom Types and Converters
+- CSV: use `rows.import_from_csv` and `rows.export_to_csv`
+- HTML: use `rows.import_from_html` and `rows.export_to_html`
+- XLS: use `rows.import_from_xls` and `rows.export_to_xls`
+- TXT: use `rows.export_to_csv`
 
-When importing data from formats that do not specify any kind of metadata about
-the field types, like CSV and HTML, `rows` tries to figure out which type
-belongs to each field. For this to work, **type converters** were implemented:
-they are simple functions that receive raw data (example: `'2014-05-06'`) and
-return Python objects (example: `datetime.date(2014, 5, 6)`).
+We'll be adding support for more plugins soon (like ODS, PDF, JSON etc.) --
+actually we're going to re-design the plugin interface so you can create your
+own easily.
 
-You can specify custom type converters so the library will use your
-functions to convert raw data, instead of the standard ones. It's pretty useful
-if your data is stored using a non-standard format, since the library
-automatically deals with the standard ones (booleans, integers, floating
-points, dates, datetimes and strings).
 
-Example usage: I receive many CSVs with the `date` field in the `dd/mm/yy`
-format (vastly used in Brazil), so I can provide a new function to deal with it
-and return `datetime.date` objects (or actually any object type I want). I just
-need to create a new type converter and specify it when importing data:
+## Locale
 
-    import datetime
+TODO. See `rows.localization`.
 
-    from re import compile as regexp_compile
 
-    import rows
+## Operations
 
-    from rows.converters import NULL
-
-
-    BR_DATE_REGEXP = regexp_compile('^[0-9]{2}/[0-9]{2}/[0-9]{2}$')
-
-    def convert_br_date(value, input_encoding):
-        value = unicode(value).lower().strip()
-        if not value or value in NULL:
-            return None
-
-        if BR_DATE_REGEXP.match(value) is None:
-            raise ValueError("Can't be date")
-        else:
-            day, month, year = [int(x) for x in unicode(value).split('/')]
-            if year < 20: # guessing it's 2000's
-                year += 2000
-            else:
-                year += 1900
-            return datetime.date(year, month, day)
-
-
-Now I can create a file with the dates using the Brazilian date format named
-`data-br.csv`:
-
-    id,username,birthday
-    1,turicas,29/04/87
-    2,kid,01/01/90
-
-...and specify our custom converter function when importing:
-
-
-    import rows
-
-    my_table = rows.import_from_csv('data-br.csv',
-            converters={datetime.date: convert_br_date})
-    for row in my_table:
-        print(row)
-
-Then you'll see:
-
-    {u'username': u'turicas', u'birthday': datetime.date(1987, 4, 29), u'id': 1}
-    {u'username': u'another-user', u'birthday': datetime.date(2000, 1, 1), u'id': 2}
-
-Enjoy the data!
-
-> Note 1: technically each plugin have its own way to deal with `converters`,
-> but a standard way of doing this in all plugins is being researched.
-
-> Note 2: the converters work only for converting input data (raw) to native
-> Python types; we still need to add support for custom converters to
-> export native types (for example: currently `datetime.date` objects will
-> *always* be exported using the `%Y-%m-%d` format).
-
-#### Locale-aware converters
-
-The standard converters are locale-aware, it means that decimal and thousand
-separators can be correctly identified just setting the correct locale. Let's
-go to an example -- create a file named `brazilian-cities.csv` with this
-content:
-
-    state,city_name,inhabitants
-    RJ,Rio de Janeiro,6.320.446
-    RJ,Niterói,487.562
-    RJ,Três Rios,77.432
-
-...and execute this code:
-
-
-    import locale
-
-    import rows
-
-
-    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
-    my_table = rows.import_from_csv('brazilian-cities.csv')
-    for row in my_table:
-        print(row)
-
-Then you'll see:
-
-    {u'city_name': u'Rio de Janeiro', u'inhabitants': 6320446, u'state': u'RJ'}
-    {u'city_name': u'Niter\xf3i', u'inhabitants': 487562, u'state': u'RJ'}
-    {u'city_name': u'Tr\xeas Rios', u'inhabitants': 77432, u'state': u'RJ'}
-
-As `.`  is the thousands separator for `pt_BR` locale, the `inhabitants` field
-is identified to be `int`.
-
-
-> Note: currently, the standard `datetime.date` and `datetime.datetime` do not
-> support locale-aware data (we still need to fix this).
-
-
-### Table Operations
-
-
-#### Sum
-
-If you have more than one `Table`/`LazyTable` object with the same fields
-(`table.fields`) and fields types (`table.types`), you can put all the rows
-together in one table just summing the objects, like this:
-
-    result = some_rows + other_rows
-
-You can also use the built-in `sum` method:
-
-    result = sum([table_1, table_2, table_3, ...])
-
-
-#### Join
-
-There is a simple way to merge tables which share a foreign key but different
-other fields into one table. For example, create the file `city-area.csv` with
-the content:
-
-    state,city_name,area_km2
-    RJ,Rio de Janeiro,1200
-    RJ,Niterói,133
-    RJ,Três Rios,326
-
-Now, import and join the tables:
-
-    import locale
-
-    import rows
-
-
-    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
-    table_1 = rows.import_from_csv('brazilian-cities.csv')
-    table_2 = rows.import_from_csv('city-area.csv')
-
-    # Pass the keys to group rows and the tables to `join`:
-    result = rows.join(('state', 'city_name'), table_1, table_2)
-    for row in result:
-        print(row)
-
-The result:
-
-    {u'city_name': u'Niter\xf3i', u'inhabitants': 487562, u'state': u'RJ', u'area_km2': 133}
-    {u'city_name': u'Tr\xeas Rios', u'inhabitants': 77432, u'state': u'RJ', u'area_km2': 326}
-    {u'city_name': u'Rio de Janeiro', u'inhabitants': 6320446, u'state': u'RJ', u'area_km2': 1200}
-
-
-### Command-Line Interface
-
-You can use simple import-from/export-to functions for all available plugins
-through a CLI:
-
-    rows --from examples/data.csv --to examples/data.txt
-
-Will create the file `examples/data.txt` with the content as:
-
-    +----+--------------+------------+
-    | id |   username   |  birthday  |
-    +----+--------------+------------+
-    |  1 |      turicas | 1987-04-29 |
-    |  2 | another-user | 2000-01-01 |
-    +----+--------------+------------+
+TODO. See `rows.operations`.
 
 
 ## License
@@ -320,17 +205,6 @@ This library is released under the [GNU General Public License version
 - <https://github.com/scraperwiki/scrumble/>
 - <https://nytlabs.github.io/streamtools/>
 - <https://github.com/Kozea/Multicorn>
-- Kettle/Pentaho?
-- Talend?
-
-## Possible new formats (to support)
-
-- .sif
-- sql
-- excel
-- json
-- msgpack
-- hdf
-- gbq
-- stata
-- protocol buffers
+- messytables
+- tablib
+- pandas' DataFrame
