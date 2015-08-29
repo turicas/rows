@@ -89,13 +89,14 @@ def create_table(data, meta=None, force_headers=None, fields=None,
         fields = detect_types(header, table_rows, *args, **kwargs)
     else:
         if skip_header:
-            header = make_header(table_rows[0])
             table_rows = table_rows[1:]
-            detected_fields = detect_types(header, table_rows, *args, **kwargs)
-            detected_fields.update(fields)
-            fields = detected_fields
+            header = make_header(fields.keys())
+            assert type(fields) is collections.OrderedDict
+            fields = {field_name: fields[key]
+                      for field_name, key in zip(header, fields)}
         else:
             header = make_header(fields.keys())
+
 
         # TODO: may reuse max_columns from html
         max_columns = max(len(row) for row in table_rows)
