@@ -48,7 +48,8 @@ another one you need to explicitly install its dependencies, for example:
 
 ## Basic Usage
 
-You can create a `Table` object and populate it with some data:
+You can create a `Table` object and populate it with some data
+programmatically:
 
 ```python
 from collections import OrderedDict
@@ -81,7 +82,7 @@ Another Guy is 42 years old and is married
 ```
 
 As you specified field types (`my_fields`) you don't need to insert data using
-the correct types. Actually you can insert strings and the library you
+the correct types. Actually you can insert strings and the library will
 automatically convert it for you:
 
 ```python
@@ -137,6 +138,12 @@ men_in_office = filter(lambda row: row.in_office and row.gender == 'M',
 print 'Women vs Men: {} vs {}'.format(len(women_in_office), len(men_in_office))
 ```
 
+Then you'll see effects of our sexist society:
+
+```
+Women vs Men: 108 vs 432
+```
+
 Now, let's compare ages:
 
 ```python
@@ -152,13 +159,15 @@ The output:
 Stefanik, Elise is older than Byrd, Robert
 ```
 
-> Note that **native Python objects** are returned for each row! The library
-> recognizes each field type and convert data *automagically*.
+> Note that **native Python objects** are returned for each row inside a
+> `namedtuple`! The library recognizes each field type and converts it
+> *automagically* no matter which plugin you're using to import the data.
 
 
 ### Exporting Data
 
-Now it's time to export this data using another plugin: HTML! It's pretty easy:
+If you have a `Table` object you can export it to all available plugins which
+have the "export" feature. Let's use the HTML plugin:
 
 ```python
 rows.export_to_html(legislators, 'legislators.html')
@@ -186,25 +195,64 @@ examples.
 
 ### Available Plugins
 
-- CSV: use `rows.import_from_csv` and `rows.export_to_csv`
-- HTML: use `rows.import_from_html` and `rows.export_to_html`
-- XLS: use `rows.import_from_xls` and `rows.export_to_xls`
-- TXT: use `rows.export_to_csv`
+The idea behing plugins is very simple: you write a little piece of code which
+extracts data from/to some specific format and the library will do the other
+tasks for you. So writing a plugin is as easy as reading from/writing to the
+file format you want. Currently we have the following plugins:
 
-We'll be adding support for more plugins soon (like ODS, PDF, SQLite, JSON
-etc.) -- actually we're going to re-design the plugin interface so you can
-create your own easily.
+- CSV: use `rows.import_from_csv` and `rows.export_to_csv` (dependencies are
+  installed by default)
+- TXT: use `rows.export_to_txt` (no dependencies)
+- HTML: use `rows.import_from_html` and `rows.export_to_html` (denpendencies
+  must be installed with `pip install rows[html]`)
+- XLS: use `rows.import_from_xls` and `rows.export_to_xls` (dependencies must
+  be installed with `pip install rows[xls]`)
+
+More plugins are coming (like ODS, PDF, SQLite, JSON etc.) and we're going to
+re-design the plugin interface so you can create your own easily. Feel free to
+contribute. :-)
 
 
 ## Command-Line Interface
 
-TODO. Run `rows --help` and see `rows/cli.py`.
+`rows` exposes a command-line interface with the common operations such as
+convert data between plugins, sum, sort and join `Table`s.
+
+Run `rows --help` to see the available commands and take a look at
+`rows/cli.py`. TODO.
 
 
 ## Locale
 
-TODO. See `rows/localization.py`.
+Many fields inside `rows.fields` are locale-aware. If you have some data using
+Brazilian Portuguese number formatting, for example (`,` as decimal separators
+and `.` as thousands separator) you can configure this into the library and
+`rows` will automatically understand these numbers!
 
+Let's see it working by extracting the population of cities in Rio de Janeiro
+state:
+
+```python
+import locale
+import requests
+import rows
+from io import BytesIO
+
+url = 'http://cidades.ibge.gov.br/comparamun/compara.php?idtema=1&codv=v01&coduf=33'
+html = requests.get(url).content
+with rows.locale_context(name='pt_BR.UTF-8', category=locale.LC_NUMERIC):
+    rio = rows.import_from_html(BytesIO(html))
+
+total_population = sum(city.pessoas for city in rio)
+# 'pessoas' is the fieldname related to the number of people in each city
+print 'Rio de Janeiro has {} inhabitants'.format(total_population)
+```
+
+The column `pessoas` will be imported as an `IntegerField` and the result is:
+
+```
+Rio de Janeiro has 15989929 inhabitants
+```
 
 ## Operations
 
@@ -224,6 +272,15 @@ This library is released under the [GNU General Public License version
 - Support Python 3
 - Create a better plugin interface
 - Create a `TableList` (?) interface
+- See [issue #31](https://github.com/turicas/rows/issues/31)
+
+
+## Core Values
+
+- Simple and easy API
+- Code quality
+- Don't Repeat Yourself
+- Flexibility
 
 
 ## Related/Similar projects
@@ -233,5 +290,5 @@ This library is released under the [GNU General Public License version
 - <https://github.com/Kozea/Multicorn>
 - [OKFN's messytables](https://github.com/okfn/messytables)
 - [OKFN's goodtables](https://github.com/okfn/goodtables)
-- tablib
+- [tablib](https://tablib.readthedocs.org/en/latest/)
 - pandas' DataFrame
