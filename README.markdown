@@ -39,6 +39,13 @@ Or from source:
     python setup.py install
 
 
+The plugins `csv` and `txt` are built-in by default but if you want to use
+another one you need to explicitly install its dependencies, for example:
+
+    pip install rows[html]
+    pip install rows[xls]
+
+
 ## Basic Usage
 
 You can create a `Table` object and populate it with some data:
