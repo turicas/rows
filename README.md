@@ -4,7 +4,9 @@
 [![License: GPLv3](https://img.shields.io/pypi/l/rows.svg)](https://github.com/turicas/rows/blob/develop/LICENSE)
 [![Current version at PyPI](https://img.shields.io/pypi/v/rows.svg)](https://pypi.python.org/pypi/rows)
 [![Downloads per month on PyPI](https://img.shields.io/pypi/dm/rows.svg)](https://pypi.python.org/pypi/rows)
-
+![Supported Python Versions](https://img.shields.io/pypi/pyversions/rows.svg)
+![Software status](https://img.shields.io/pypi/status/rows.svg)
+[![Donate](https://img.shields.io/gratipay/turicas.svg?style=social&label=Donate)](https://www.gratipay.com/turicas)
 
 No matter in which format your tabular data is: `rows` will import it,
 automatically detect types and give you high-level Python objects so you can
