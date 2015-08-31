@@ -3,6 +3,14 @@
 from setuptools import setup
 
 
+EXTRA_REQUIREMENTS = {
+        'csv': ['unicodecsv'],
+        'cli': ['click', 'filemagic', 'requests'],
+        'html': ['lxml'], # apt: libxslt-dev libxml2-dev
+        'xls': ['xlrd', 'xlwt'], }
+EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
+INSTALL_REQUIREMENTS = EXTRA_REQUIREMENTS['csv'] + EXTRA_REQUIREMENTS['cli']
+
 setup(name='rows',
     description='A common, beautiful interface to tabular data, no matter the format',
     long_description='',
@@ -11,17 +19,8 @@ setup(name='rows',
     author_email='alvarojusten@gmail.com',
     url='https://github.com/turicas/rows/',
     packages=['rows', 'rows.plugins'],
-    install_requires=['unicodecsv', 'click', 'filemagic', 'requests'],
-    extras_require = {
-        'csv': ['unicodecsv'],
-        'html': ['lxml'], # apt: libxslt-dev libxml2-dev
-        'cli': ['click', 'filemagic', 'requests'],
-        'xls': ['xlrd', 'xlwt'],
-        'all': ['unicodecsv',
-                'lxml',
-                'click', 'filemagic', 'requests',
-                'xlrd', 'xlwt'],
-    },
+    install_requires=INSTALL_REQUIREMENTS,
+    extras_require=EXTRA_REQUIREMENTS,
     keywords=['tabular', 'table', 'csv', 'xls', 'html', 'rows'],
     entry_points = {
         'console_scripts': [
