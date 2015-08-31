@@ -70,8 +70,10 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_serialize_feature(self):
         result = rows.serialize(utils.table)
-        header = utils.table.fields.values()
+        field_types = utils.table.fields.values()
+        self.assertEqual(result.next(), utils.table.fields.keys())
+
         for row, expected_row in zip(result, utils.table._rows):
-            list_of_values = [field.serialize(value)
-                              for field, value in zip(header, expected_row)]
-            self.assertEqual(list_of_values, row)
+            values = [field_type.serialize(value)
+                      for field_type, value in zip(field_types, expected_row)]
+            self.assertEqual(values, row)

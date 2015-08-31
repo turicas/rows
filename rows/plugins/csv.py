@@ -37,16 +37,15 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', delimiter=',',
     return create_table(csv_reader, meta=meta, *args, **kwargs)
 
 
-def export_to_csv(table, filename_or_fobj, encoding='utf-8'):
+def export_to_csv(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
     # TODO: will work only if table.fields is OrderedDict
     # TODO: should use fobj? What about creating a method like json.dumps?
 
+    kwargs['encoding'] = encoding
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
     csv_writer = unicodecsv.writer(fobj, encoding=encoding)
 
-    csv_writer.writerow(table.fields.keys())
-    for row in serialize(table, encoding=encoding):
-        csv_writer.writerow(row)
+    map(csv_writer.writerow, serialize(table, *args, **kwargs))
 
     fobj.flush()
     return fobj

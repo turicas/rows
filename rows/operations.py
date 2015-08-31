@@ -63,11 +63,18 @@ def transform(fields, function, *tables):
     return new_table
 
 
-def serialize(table, *args, **kwargs):
+def serialize(table, field_names=None, *args, **kwargs):
     fields = table.fields
-    fields_items = fields.items()
+    table_field_names = fields.keys()
+    if field_names is None:
+        field_names = fields.keys()
+    elif not set(field_names).issubset(set(table_field_names)):
+        raise ValueError("Invalid field names")
 
-    for row in table:
-        yield [field_type.serialize(getattr(row, field_name),
-                                    *args, **kwargs)
-                for field_name, field_type in fields_items]
+    yield field_names
+
+    fields_items = [(table_field_names.index(field_name), fields[field_name])
+                    for field_name in field_names]
+    for row in table._rows:
+        yield [field_type.serialize(row[field_index], *args, **kwargs)
+               for field_index, field_type in fields_items]

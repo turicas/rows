@@ -112,6 +112,7 @@ FORMATTING_STYLES = {
 
 def export_to_xls(table, filename_or_fobj, sheet_name='Sheet1'):
 
+    # TODO: may use rows.utils.serialize
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
     work_book = xlwt.Workbook()
     sheet = work_book.add_sheet(sheet_name)

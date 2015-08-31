@@ -68,13 +68,16 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_html(table, filename_or_fobj=None, encoding='utf-8'):
-    fields = table.fields.keys()
+def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
+                   **kwargs):
+    kwargs['encoding'] = encoding
+    serialized_table = serialize(table, *args, **kwargs)
+    fields = serialized_table.next()
     result = ['<table>\n\n', '  <thead>\n', '    <tr>\n']
     header = ['      <th> {} </th>\n'.format(field) for field in fields]
     result.extend(header)
     result.extend(['    </tr>\n', '  </thead>\n', '\n', '  <tbody>\n', '\n'])
-    for index, row in enumerate(serialize(table, encoding=encoding), start=1):
+    for index, row in enumerate(serialized_table, start=1):
         css_class = 'odd' if index % 2 == 1 else 'even'
         result.append('    <tr class="{}">\n'.format(css_class))
         for value in row:
