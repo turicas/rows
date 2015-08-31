@@ -273,6 +273,12 @@ This library is released under the [GNU General Public License version
 3](http://www.gnu.org/licenses/gpl-3.0.html).
 
 
+## Semantic Versioning
+
+`rows` uses [semantic versioning](http://semver.org). Note that it means we do
+not guarantee API backwards compatibility on `0.x.y` versions.
+
+
 ## Known Issues
 
 - Support Python 3
