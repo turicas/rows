@@ -23,34 +23,32 @@ from rows.utils import get_filename_and_fobj
 
 DASH, PLUS, PIPE = '-', '+', '|'
 
-def _max_column_sizes(table, encoding, *args, **kwargs):
-    header = table.fields.keys()
-    max_sizes = {field_name: len(field_name) for field_name in header}
-    for row in serialize(table, encoding=encoding, *args, **kwargs):
-        for field_name, value in zip(header, row):
-            length = len(value)
-            if max_sizes[field_name] < length:
-                max_sizes[field_name] = length
-    return max_sizes
+def _max_column_sizes(field_names, table_rows):
+    columns = zip(*([field_names] + table_rows))
+    return {field_name: max(len(value) for value in column)
+            for field_name, column in zip(field_names, columns)}
 
 
 def export_to_txt(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
     # TODO: will work only if table.fields is OrderedDict
     # TODO: should use fobj? What about creating a method like json.dumps?
 
+    kwargs['encoding'] = encoding
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
-    max_sizes = _max_column_sizes(table, encoding, *args, **kwargs)
+    serialized_table = serialize(table, *args, **kwargs)
+    field_names = serialized_table.next()
+    table_rows = list(serialized_table)
+    max_sizes = _max_column_sizes(field_names, table_rows)
 
-    fields = table.fields.keys()
-    dashes = [DASH * (max_sizes[field] + 2) for field in fields]
-    header = [field.center(max_sizes[field]) for field in fields]
+    dashes = [DASH * (max_sizes[field] + 2) for field in field_names]
+    header = [field.center(max_sizes[field]) for field in field_names]
     header = '{} {} {}'.format(PIPE, ' {} '.format(PIPE).join(header), PIPE)
     split_line = PLUS + PLUS.join(dashes) + PLUS
 
     result = [split_line, header, split_line]
-    for row in serialize(table):
+    for row in table_rows:
         values = [value.rjust(max_sizes[field_name])
-                  for field_name, value in zip(fields, row)]
+                  for field_name, value in zip(field_names, row)]
         row_data = ' {} '.format(PIPE).join(values)
         result.append('{} {} {}'.format(PIPE, row_data, PIPE))
     result.extend([split_line, '\n'])

@@ -47,3 +47,29 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.export_to_txt(utils.table, temp.file)
 
         self.assert_file_contents_equal(temp.name, self.filename)
+
+    def test_export_to_txt_fobj_some_fields_only(self):
+        # TODO: this test may be inside `tests_operations.py` (testing
+        # `serialize` instead a plugin which calls it)
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+
+        rows.export_to_txt(utils.table, temp.file)  # all fields
+        fobj.seek(0)
+        table_fields = utils.table.fields.keys()
+        expected_fields = table_fields
+        _, second_line = fobj.readline(), fobj.readline()
+        fields = [field.strip() for field in second_line.split('|')
+                                if field.strip()]
+        self.assertEqual(expected_fields, fields)
+
+        expected_fields = table_fields[2:5]
+        self.assertNotEqual(expected_fields, table_fields)
+        fobj.seek(0)
+        rows.export_to_txt(utils.table, temp.file, field_names=expected_fields)
+        fobj.seek(0)
+        _, second_line = fobj.readline(), fobj.readline()
+        fields = [field.strip() for field in second_line.split('|')
+                                if field.strip()]
+        self.assertEqual(expected_fields, fields)
