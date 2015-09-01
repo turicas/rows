@@ -267,6 +267,14 @@ Available operations: `join`, `transform` and `serialize`.
 TODO. See `rows/operations.py`.
 
 
+## Performance Issues
+
+The automatic type detection algorithm can cost time: it iterates over all rows
+to determine the type of each column. You can disable it by passing `samples=0`
+to any `import_from_*` function or either changing the number of sample rows
+(any positive number is accepted).
+
+
 ## License
 
 This library is released under the [GNU General Public License version
