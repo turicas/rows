@@ -18,7 +18,7 @@
 from __future__ import unicode_literals
 
 import json
-import rows
+from rows.operations import serialize
 from rows.utils import create_table, get_filename_and_fobj
 
 
@@ -41,27 +41,10 @@ def import_from_json(
 
 
 def serialize_json(table, *args, **kwargs):
-    fields = table.fields
-    fields_items = fields.items()
-    for row in table:
-        rec = dict()
-        for field_name, field_type in fields_items:
-            val = getattr(row, field_name)
-            if (
-                field_type in (
-                    rows.fields.DateField,
-                    rows.fields.DatetimeField
-                )
-            ):
-                value = field_type.serialize(
-                    val, *args, **kwargs
-                )
-            elif field_type == rows.fields.PercentField:
-                value = str(val * 100).strip('0').strip('.').strip(',') + '%'
-            else:
-                value = val
-            rec[field_name] = value
-        yield rec
+    serialized = serialize(table, *args, **kwargs)
+    header = serialized.next()
+    for row in serialized:
+        yield {field_name: value for field_name, value in zip(header, row)}
 
 
 def export_to_json(
