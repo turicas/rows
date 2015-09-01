@@ -25,9 +25,14 @@ import types
 from decimal import Decimal
 
 import rows
+import platform
 
 from rows import fields
 
+if platform.system() == 'Windows':
+    locale_name = str('ptb_bra')
+else:
+    locale_name = 'pt_BR.UTF-8'
 
 class FieldsTestCase(unittest.TestCase):
 
@@ -94,7 +99,7 @@ class FieldsTestCase(unittest.TestCase):
                       types.UnicodeType)
         self.assertEqual(fields.IntegerField.deserialize(None), None)
 
-        with rows.locale_context('pt_BR.UTF-8'):
+        with rows.locale_context(locale_name):
             self.assertEqual(fields.IntegerField.serialize(42000), '42000')
             self.assertIs(type(fields.IntegerField.serialize(42000)),
                           types.UnicodeType)
@@ -121,7 +126,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(type(fields.FloatField.serialize(42.0)),
                       types.UnicodeType)
 
-        with rows.locale_context('pt_BR.UTF-8'):
+        with rows.locale_context(locale_name):
             self.assertEqual(fields.FloatField.serialize(42000.0),
                              '42000,000000')
             self.assertIs(type(fields.FloatField.serialize(42000.0)),
@@ -152,9 +157,11 @@ class FieldsTestCase(unittest.TestCase):
                          Decimal('21.21657469231'))
         self.assertEqual(fields.DecimalField.deserialize(None), None)
 
-        with rows.locale_context('pt_BR.UTF-8'):
-            self.assertEqual(types.UnicodeType,
-                    type(fields.DecimalField.serialize(deserialized)))
+        with rows.locale_context(locale_name):
+            self.assertEqual(
+                types.UnicodeType,
+                type(fields.DecimalField.serialize(deserialized))
+            )
             self.assertEqual(fields.DecimalField.serialize(Decimal('4200')),
                              '4200')
             self.assertEqual(fields.DecimalField.serialize(Decimal('42.0')),
@@ -163,9 +170,13 @@ class FieldsTestCase(unittest.TestCase):
                              '42000,0')
             self.assertEqual(fields.DecimalField.deserialize('42.000,00'),
                              Decimal('42000.00'))
-            self.assertEqual(fields.DecimalField.serialize(Decimal('42000.0'),
-                                                    grouping=True),
-                             '42.000,0')
+            self.assertEqual(
+                fields.DecimalField.serialize(
+                    Decimal('42000.0'),
+                    grouping=True
+                ),
+                '42.000,0'
+            )
 
     def test_PercentField(self):
         deserialized = Decimal('0.42010')
@@ -186,10 +197,11 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.PercentField.serialize(Decimal('42.010')),
                          '4201.0%')
         self.assertEqual(fields.PercentField.serialize(Decimal('0.01')), '1%')
-
-        with rows.locale_context('pt_BR.UTF-8'):
-            self.assertEqual(type(fields.PercentField.serialize(deserialized)),
-                            types.UnicodeType)
+        with rows.locale_context(locale_name):
+            self.assertEqual(
+                type(fields.PercentField.serialize(deserialized)),
+                types.UnicodeType
+            )
             self.assertEqual(fields.PercentField.serialize(Decimal('42.0')),
                              '4200%')
             self.assertEqual(fields.PercentField.serialize(Decimal('42000.0')),
@@ -256,9 +268,13 @@ class FieldsTestCase(unittest.TestCase):
                       types.UnicodeType)
         self.assertIs(type(fields.UnicodeField.deserialize('test')),
                       fields.UnicodeField.TYPE)
-        self.assertEqual(fields.UnicodeField.deserialize('Álvaro'.encode('utf-8'),
-                                                         encoding='utf-8'),
-                         'Álvaro')
+        self.assertEqual(
+            fields.UnicodeField.deserialize(
+                'Álvaro'.encode('utf-8'),
+                encoding='utf-8'
+            ),
+            'Álvaro'
+        )
         self.assertEqual(fields.UnicodeField.deserialize('Álvaro'),
                          'Álvaro')
         self.assertIs(fields.UnicodeField.deserialize(None), None)
@@ -286,11 +302,14 @@ class FieldUtilsTestCase(unittest.TestCase):
                          'date_column': fields.DateField,
                          'datetime_column': fields.DatetimeField,
                          'unicode_column': fields.UnicodeField,
-                         'null_column': fields.ByteField,}
+                         'null_column': fields.ByteField, }
 
     def test_detect_types_utf8(self):
-        result = fields.detect_types(self.fields, self.data,
-                                           encoding='utf-8')
+        result = fields.detect_types(
+            self.fields,
+            self.data,
+            encoding='utf-8'
+        )
         self.assertEqual(type(result), collections.OrderedDict)
         self.assertEqual(result.keys(), self.fields)
         self.assertDictEqual(dict(result), self.expected)

@@ -20,7 +20,6 @@ from __future__ import unicode_literals
 from rows.operations import serialize
 from rows.utils import get_filename_and_fobj
 
-
 DASH, PLUS, PIPE = '-', '+', '|'
 
 def _max_column_sizes(table, encoding, *args, **kwargs):
