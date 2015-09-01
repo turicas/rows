@@ -17,6 +17,11 @@ except ImportError:
     pass
 
 try:
+    from rows.plugins.pjson import import_from_json, export_to_json
+except ImportError:
+    pass
+
+try:
     from rows.plugins.xls import import_from_xls, export_to_xls
 except ImportError:
     pass

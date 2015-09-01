@@ -146,7 +146,6 @@ def download_file(uri):
             plugin_name = file_type.strip().split()[0]
         else:
             plugin_name = uri.split('/')[-1].split('.')[-1].lower()
-
     tmp = tempfile.NamedTemporaryFile()
     filename = '{}.{}'.format(tmp.name, plugin_name)
     tmp.close()
@@ -169,7 +168,8 @@ def get_uri_information(uri):
         plugin_name = 'html'
     elif plugin_name == 'text':
         plugin_name = 'txt'
-
+    elif plugin_name == 'json':
+        plugin_name = 'pjson'
     return should_delete, filename, plugin_name
 
 
