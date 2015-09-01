@@ -19,6 +19,7 @@ import collections
 import os
 import tempfile
 
+from itertools import chain, islice
 from unicodedata import normalize
 
 import magic
@@ -82,20 +83,21 @@ def make_header(data):
 
 
 def create_table(data, meta=None, force_headers=None, fields=None,
-                 skip_header=True, *args, **kwargs):
+                 skip_header=True, samples=None, *args, **kwargs):
     # TODO: add auto_detect_types=True parameter
-    table_rows = list(data)
+    table_rows = iter(data)
+    sample_rows = []
 
     if fields is None:
-        if force_headers is None:
-            header = make_header(table_rows[0])
-            table_rows = table_rows[1:]
+        header = force_headers or make_header(table_rows.next())
+        if samples is not None:
+            sample_rows = list(islice(table_rows, 0, samples))
         else:
-            header = force_headers
-        fields = detect_types(header, table_rows, *args, **kwargs)
+            sample_rows = list(table_rows)
+        fields = detect_types(header, sample_rows, *args, **kwargs)
     else:
         if skip_header:
-            table_rows = table_rows[1:]
+            _ = table_rows.next()
             header = make_header(fields.keys())
             assert type(fields) is collections.OrderedDict
             fields = {field_name: fields[key]
@@ -103,14 +105,9 @@ def create_table(data, meta=None, force_headers=None, fields=None,
         else:
             header = make_header(fields.keys())
 
-
-        # TODO: may reuse max_columns from html
-        max_columns = max(len(row) for row in table_rows)
-        assert len(fields) == max_columns
-
     # TODO: put this inside Table.__init__
     table = Table(fields=fields, meta=meta)
-    for row in table_rows:
+    for row in chain(sample_rows, table_rows):
         table.append({field_name: value
                       for field_name, value in zip(header, row)})
 

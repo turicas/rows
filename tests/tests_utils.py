@@ -47,6 +47,7 @@ class UtilsTestCase(unittest.TestCase):
 
     # TODO: test make_header
     # TODO: test all features of create_table
+    # TODO: test if error is raised if len(row) != len(fields)
     # TODO: test get_fobj_and_filename (BytesIO should return filename = None)
     # TODO: test download_file
     # TODO: test get_uri_information

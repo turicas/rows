@@ -267,6 +267,14 @@ Available operations: `join`, `transform` and `serialize`.
 TODO. See `rows/operations.py`.
 
 
+## Performance Issues
+
+The automatic type detection algorithm can cost time: it iterates over all rows
+to determine the type of each column. You can disable it by passing `samples=0`
+to any `import_from_*` function or either changing the number of sample rows
+(any positive number is accepted).
+
+
 ## License
 
 This library is released under the [GNU General Public License version
@@ -297,10 +305,13 @@ not guarantee API backwards compatibility on `0.x.y` versions.
 
 ## Related/Similar projects
 
-- <https://github.com/scraperwiki/scrumble/>
-- <https://nytlabs.github.io/streamtools/>
-- <https://github.com/Kozea/Multicorn>
+- [webscraper.io](http://webscraper.io/)
+- [import.io](http://import.io/)
 - [OKFN's messytables](https://github.com/okfn/messytables)
 - [OKFN's goodtables](https://github.com/okfn/goodtables)
 - [tablib](https://tablib.readthedocs.org/en/latest/)
 - pandas' DataFrame
+- [pandashells](https://github.com/robdmc/pandashells)
+- <https://github.com/scraperwiki/scrumble/>
+- <https://nytlabs.github.io/streamtools/>
+- <https://github.com/Kozea/Multicorn>
