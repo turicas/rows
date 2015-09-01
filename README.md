@@ -305,10 +305,13 @@ not guarantee API backwards compatibility on `0.x.y` versions.
 
 ## Related/Similar projects
 
-- <https://github.com/scraperwiki/scrumble/>
-- <https://nytlabs.github.io/streamtools/>
-- <https://github.com/Kozea/Multicorn>
+- [webscraper.io](http://webscraper.io/)
+- [import.io](http://import.io/)
 - [OKFN's messytables](https://github.com/okfn/messytables)
 - [OKFN's goodtables](https://github.com/okfn/goodtables)
 - [tablib](https://tablib.readthedocs.org/en/latest/)
 - pandas' DataFrame
+- [pandashells](https://github.com/robdmc/pandashells)
+- <https://github.com/scraperwiki/scrumble/>
+- <https://nytlabs.github.io/streamtools/>
+- <https://github.com/Kozea/Multicorn>
