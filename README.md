@@ -209,7 +209,7 @@ file format you want. Currently we have the following plugins:
 - CSV: use `rows.import_from_csv` and `rows.export_to_csv` (dependencies are
   installed by default)
 - TXT: use `rows.export_to_txt` (no dependencies)
-- JSON: use `rows.export_to_json` (no dependencies)
+- JSON: use `rows.import_from_json` and `rows.export_to_json` (no dependencies)
 - HTML: use `rows.import_from_html` and `rows.export_to_html` (denpendencies
   must be installed with `pip install rows[html]`)
 - XLS: use `rows.import_from_xls` and `rows.export_to_xls` (dependencies must
