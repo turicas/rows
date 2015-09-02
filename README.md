@@ -19,8 +19,8 @@ locale-and-unicode aware. :)
 The library is composed by:
 
 - A common interface to tabular data (the `Table` class)
-- A set of plugins to populate `Table` objects (CSV, XLS, HTML, TXT -- more
-  coming soon!)
+- A set of plugins to populate `Table` objects (CSV, XLS, HTML, TXT, JSON
+  -- more coming soon!)
 - A set of common fields (such as `BoolField`, `IntegerField`) which know
   exactly how to serialize and deserialize data for each object type you'll get
 - A set of utilities (such as field type recognition) to help working with
@@ -45,8 +45,8 @@ Or from source:
     python setup.py install
 
 
-The plugins `csv` and `txt` are built-in by default but if you want to use
-another one you need to explicitly install its dependencies, for example:
+The plugins `csv`, `txt` and `json` are built-in by default but if you want to
+use another one you need to explicitly install its dependencies, for example:
 
     pip install rows[html]
     pip install rows[xls]
@@ -209,6 +209,7 @@ file format you want. Currently we have the following plugins:
 - CSV: use `rows.import_from_csv` and `rows.export_to_csv` (dependencies are
   installed by default)
 - TXT: use `rows.export_to_txt` (no dependencies)
+- JSON: use `rows.import_from_json` and `rows.export_to_json` (no dependencies)
 - HTML: use `rows.import_from_html` and `rows.export_to_html` (denpendencies
   must be installed with `pip install rows[html]`)
 - XLS: use `rows.import_from_xls` and `rows.export_to_xls` (dependencies must

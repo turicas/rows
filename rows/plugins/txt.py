@@ -20,8 +20,8 @@ from __future__ import unicode_literals
 from rows.operations import serialize
 from rows.utils import get_filename_and_fobj
 
-
 DASH, PLUS, PIPE = '-', '+', '|'
+
 
 def _max_column_sizes(field_names, table_rows):
     columns = zip(*([field_names] + table_rows))
@@ -34,7 +34,7 @@ def export_to_txt(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
     # TODO: should use fobj? What about creating a method like json.dumps?
 
     kwargs['encoding'] = encoding
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
+    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
     serialized_table = serialize(table, *args, **kwargs)
     field_names = serialized_table.next()
     table_rows = list(serialized_table)

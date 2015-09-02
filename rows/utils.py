@@ -22,7 +22,11 @@ import tempfile
 from itertools import chain, islice
 from unicodedata import normalize
 
-import magic
+try:
+    import magic
+except ImportError:
+    magic = None
+
 import requests
 
 import rows
@@ -134,10 +138,12 @@ def download_file(uri):
         content_type = response.headers['content-type']
         plugin_name = content_type.split('/')[-1]
     except (KeyError, IndexError):
-        with magic.Magic() as file_type_guesser:
-            file_type = file_type_guesser.id_buffer(content)
-        plugin_name = file_type.strip().split()[0]
-
+        if magic:
+            with magic.Magic() as file_type_guesser:
+                file_type = file_type_guesser.id_buffer(content)
+            plugin_name = file_type.strip().split()[0]
+        else:
+            plugin_name = uri.split('/')[-1].split('.')[-1].lower()
     tmp = tempfile.NamedTemporaryFile()
     filename = '{}.{}'.format(tmp.name, plugin_name)
     tmp.close()
@@ -160,7 +166,8 @@ def get_uri_information(uri):
         plugin_name = 'html'
     elif plugin_name == 'text':
         plugin_name = 'txt'
-
+    elif plugin_name == 'json':
+        plugin_name = 'pjson'
     return should_delete, filename, plugin_name
 
 

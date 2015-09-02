@@ -13,7 +13,7 @@ import rows.fields
 def locale_context(name, category=locale.LC_ALL):
 
     old_name = locale.getlocale(category)
-    if type(name) is types.UnicodeType:
+    if isinstance(name, types.UnicodeType) and '.' in name:
         name = name.split('.')
     locale.setlocale(category, name)
     rows.fields.SHOULD_NOT_USE_LOCALE = False
