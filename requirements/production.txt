@@ -1,7 +1,0 @@
-click
-filemagic
-lxml
-requests
-unicodecsv
-xlrd
-xlwt
