@@ -7,19 +7,14 @@ from rows.table import Table
 from rows.localization import locale_context
 
 
-# Plugin imports
+# Don't have dependencies or dependencies installed on `install_requires`
 
+from rows.plugins._json import import_from_json, export_to_json
+from rows.plugins.csv import import_from_csv, export_to_csv
 from rows.plugins.txt import export_to_txt
 
-try:
-    from rows.plugins.csv import import_from_csv, export_to_csv
-except ImportError:
-    pass
 
-try:
-    from rows.plugins.pjson import import_from_json, export_to_json
-except ImportError:
-    pass
+# Have dependencies
 
 try:
     from rows.plugins.xls import import_from_xls, export_to_xls
