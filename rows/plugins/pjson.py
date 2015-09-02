@@ -18,46 +18,36 @@
 from __future__ import unicode_literals
 
 import json
+
 from rows.operations import serialize
 from rows.utils import create_table, get_filename_and_fobj
 
 
-def import_from_json(
-    filename_or_fobj, force_headers=None, encoding='utf-8',
-    *args, **kwargs
-):
+def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
     'Import data from a JSON file'
 
-    filename, fobj = get_filename_and_fobj(filename_or_fobj)
     kwargs['encoding'] = encoding
-    json_obj = json.loads(fobj.read(), encoding=encoding)
-    force_headers = json_obj[0].keys()
-    json_reader = [[item[key] for key in force_headers] for item in json_obj]
+    filename, fobj = get_filename_and_fobj(filename_or_fobj)
 
+    json_obj = json.load(fobj, encoding=encoding)
+    field_names = json_obj[0].keys()
+    table_rows = [[item[key] for key in field_names] for item in json_obj]
+
+    data = [field_names] + table_rows
     meta = {'imported_from': 'json', 'filename': filename, }
-    return create_table(
-        json_reader, meta=meta, force_headers=force_headers, *args, **kwargs
-    )
+    return create_table(data, meta=meta, *args, **kwargs)
 
 
-def serialize_json(table, *args, **kwargs):
-    serialized = serialize(table, *args, **kwargs)
-    header = serialized.next()
-    for row in serialized:
-        yield {field_name: value for field_name, value in zip(header, row)}
-
-
-def export_to_json(
-    table, filename_or_fobj, encoding='utf-8',
-    *args, **kwargs
-):
+def export_to_json(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
     # TODO: will work only if table.fields is OrderedDict
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
 
-    ilist = serialize_json(table, encoding=encoding, *args, **kwargs)
+    serialized = serialize(table, encoding=encoding, *args, **kwargs)
+    field_names = serialized.next()
+    data = [{field_name: value for field_name, value in zip(field_names, row)}
+            for row in serialized]
 
-    fobj.write(json.dumps(list(ilist), encoding=encoding))
-
+    json.dump(data, fobj)
     fobj.flush()
     return fobj
