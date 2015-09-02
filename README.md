@@ -290,29 +290,31 @@ not guarantee API backwards compatibility on `0.x.y` versions.
 
 ## Known Issues
 
-- Support Python 3
-- Create a better plugin interface
-- Create a `TableList` (?) interface
+- [Lack of Python 3 support](https://github.com/turicas/rows/issues/46)
+- [Create a better plugin interface so anyone can benefit of
+  it](https://github.com/turicas/rows/issues/27)
+- [Create `TableSet`](https://github.com/turicas/rows/issues/47)
 - See [issue #31](https://github.com/turicas/rows/issues/31)
 
 
 ## Core Values
 
-- Simple and easy API
+- Simple, easy and flexible API
 - Code quality
 - Don't Repeat Yourself
-- Flexibility
 
 
-## Related/Similar projects
+## Similar Projects
 
-- [webscraper.io](http://webscraper.io/)
-- [import.io](http://import.io/)
 - [OKFN's messytables](https://github.com/okfn/messytables)
 - [OKFN's goodtables](https://github.com/okfn/goodtables)
 - [tablib](https://tablib.readthedocs.org/en/latest/)
-- pandas' DataFrame
-- [pandashells](https://github.com/robdmc/pandashells)
-- <https://github.com/scraperwiki/scrumble/>
-- <https://nytlabs.github.io/streamtools/>
-- <https://github.com/Kozea/Multicorn>
+- [pandashells](https://github.com/robdmc/pandashells) (and pandas DataFrame)
+
+
+## Related Projects
+
+- [streamtools](http://blog.nytlabs.com/streamtools/)
+- [multicorn](https://github.com/Kozea/Multicorn)
+- [webscraper.io](http://webscraper.io/)
+- [import.io](http://import.io/)
