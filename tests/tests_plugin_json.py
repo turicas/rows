@@ -68,8 +68,6 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         with open(temp.name, 'rb') as fobj:
             second_json = json.loads(fobj.read())
             fobj.close()
-        import pprint
-        pprint.pprint([first_json[0], second_json[0]])
         self.assertListEqual(first_json, second_json)
 
     def test_export_to_json_fobj(self):
