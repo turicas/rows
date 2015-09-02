@@ -19,7 +19,7 @@ from __future__ import unicode_literals
 
 import tempfile
 import unittest
-
+import json
 import rows
 import utils
 
@@ -57,6 +57,20 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.export_to_json(utils.table, temp.name)
         table = rows.import_from_json(temp.name)
         self.assert_table_equal(table, utils.table)
+
+    def test_export_to_json_filename_(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+        rows.export_to_json(utils.table, temp.name)
+        with open(self.filename, 'rb') as fobj:
+            first_json = json.loads(fobj.read())
+            fobj.close()
+        with open(temp.name, 'rb') as fobj:
+            second_json = json.loads(fobj.read())
+            fobj.close()
+        import pprint
+        pprint.pprint([first_json[0], second_json[0]])
+        self.assertListEqual(first_json, second_json)
 
     def test_export_to_json_fobj(self):
         # TODO: may test with codecs.open passing an encoding

@@ -18,7 +18,7 @@
 from __future__ import unicode_literals
 
 import json
-
+import rows
 from rows.operations import serialize
 from rows.utils import create_table, get_filename_and_fobj
 
@@ -43,7 +43,9 @@ def export_to_json(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
 
-    serialized = serialize(table, encoding=encoding, *args, **kwargs)
+    serialized = serialize(table, encoding=encoding, ignore_types=[
+                           rows.fields.BoolField, rows.fields.FloatField,
+                           rows.fields.IntegerField], *args, **kwargs)
     field_names = serialized.next()
     data = [{field_name: value for field_name, value in zip(field_names, row)}
             for row in serialized]
