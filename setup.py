@@ -5,7 +5,7 @@ from setuptools import setup
 
 EXTRA_REQUIREMENTS = {
         'csv': ['unicodecsv'],
-        'cli': ['click', 'filemagic', 'requests'],
+        'cli': ['click', 'requests'],
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
         'xls': ['xlrd', 'xlwt'], }
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
