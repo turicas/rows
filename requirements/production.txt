@@ -1,5 +1,4 @@
 click
-filemagic
 lxml
 requests
 unicodecsv
