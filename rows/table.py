@@ -17,7 +17,7 @@
 
 from __future__ import unicode_literals
 
-from collections import MutableSequence, namedtuple, OrderedDict
+from collections import MutableSequence, namedtuple, OrderedDict, Sized
 from operator import itemgetter
 
 import rows.fields as fields
@@ -38,6 +38,16 @@ class Table(MutableSequence):
         self.Row = namedtuple('Row', self.field_names)
         self._rows = []
         self.meta = dict(meta) if meta is not None else {}
+
+    def __repr__(self):
+        length = len(self._rows) if isinstance(self._rows, Sized) else '?'
+
+        imported = ''
+        if 'imported_from' in self.meta:
+            imported = ' (from {})'.format(self.meta['imported_from'])
+
+        return u'<rows.Table{} {} fields, {} rows>'.format(
+                imported, len(self.fields), length)
 
     def _make_row(self, row):
         # TODO: should be able to customize row type (namedtuple, dict etc.)

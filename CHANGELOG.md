@@ -9,6 +9,7 @@
 - Support lazy objects on `create_table`
 - Add `samples` parameter to `create_table`
 - Add plugin JSON (thanks [@sxslex](https://github.com/sxslex))
+- Add `Table.__repr__`
 
 
 ## Version `0.1.1`

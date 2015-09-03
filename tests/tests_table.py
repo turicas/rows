@@ -124,3 +124,7 @@ class TableTestCase(unittest.TestCase):
             {'name': 'Álvaro Justen', 'birthdate': datetime.date(1987, 4, 29)}]
         for expected_row, row in zip(expected_rows, self.table):
             self.assertEqual(expected_row, dict(row._asdict()))
+
+    def test_table_repr(self):
+        expected = '<rows.Table 2 fields, 3 rows>'
+        self.assertEqual(expected, repr(self.table))
