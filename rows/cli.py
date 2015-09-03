@@ -28,8 +28,8 @@ from rows.utils import import_from_uri, export_to_uri
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
 DEFAULT_OUTPUT_ENCODING = 'utf-8'
-DEFAULT_INPUT_LOCALE = 'POSIX'
-DEFAULT_OUTPUT_LOCALE = 'POSIX'
+DEFAULT_INPUT_LOCALE = 'C'
+DEFAULT_OUTPUT_LOCALE = 'C'
 
 @click.group()
 def cli():
