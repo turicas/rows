@@ -10,11 +10,21 @@ EXTRA_REQUIREMENTS = {
         'xls': ['xlrd', 'xlwt'], }
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = EXTRA_REQUIREMENTS['csv'] + EXTRA_REQUIREMENTS['cli']
+LONG_DESCRIPTION = '''
+No matter in which format your tabular data is: rows will import it,
+automatically detect types and give you high-level Python objects so you can
+start working with the data instead of trying to parse it. It is also
+locale-and-unicode aware. :)
+
+See a quick start tutorial at:
+    https://github.com/turicas/rows/blob/develop/README.md
+'''.strip()
+
 
 setup(name='rows',
       description=('A common, beautiful interface to tabular data, '
                    'no matter the format'),
-      long_description='',  # TODO
+      long_description=LONG_DESCRIPTION,
       version='0.2.0-dev',
       author=u'Álvaro Justen',
       author_email='alvarojusten@gmail.com',
