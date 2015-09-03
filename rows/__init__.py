@@ -25,3 +25,6 @@ try:
     from rows.plugins.html import import_from_html, export_to_html
 except ImportError:
     pass
+
+
+__version__ = '0.1.1'
