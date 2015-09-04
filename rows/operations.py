@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 from collections import OrderedDict
 
 from rows.table import Table
+from rows.utils import create_table
 
 
 def join(keys, tables):
@@ -78,3 +79,19 @@ def serialize(table, field_names=None, *args, **kwargs):
     for row in table._rows:
         yield [field_type.serialize(row[field_index], *args, **kwargs)
                for field_index, field_type in fields_items]
+
+
+def transpose(table, fields_column, *args, **kwargs):
+    field_names = []
+    new_rows = [{} for _ in range(len(table.fields) - 1)]
+    for row in table:
+        row = row._asdict()
+        field_name = row[fields_column]
+        field_names.append(field_name)
+        del row[fields_column]
+        for index, value in enumerate(row.values()):
+            new_rows[index][field_name] = value
+
+    table_rows = [[row[field_name] for field_name in field_names]
+                  for row in new_rows]
+    return create_table([field_names] + table_rows, *args, **kwargs)

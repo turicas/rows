@@ -8,6 +8,7 @@ import unittest
 from collections import OrderedDict
 
 import rows.fields as fields
+
 from rows.utils import create_table, ipartition, slug
 
 

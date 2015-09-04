@@ -36,8 +36,9 @@ def _get_content(element):
 
 
 def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
-                     ignore_colspan=True, preserve_html=False, row_tag='tr',
-                     column_tag='td|th', *args, **kwargs):
+                     ignore_colspan=True, preserve_html=False,
+                     table_tag='table', row_tag='tr', column_tag='td|th',
+                     *args, **kwargs):
     # TODO: unescape before returning: html_parser.unescape(html)
     # TODO: lxml -> unicode?
 
@@ -45,7 +46,7 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
     kwargs['encoding'] = encoding
     html = fobj.read().decode(encoding)
     html_tree = document_fromstring(html)
-    tables = html_tree.xpath('//table')
+    tables = html_tree.xpath('//{}'.format(table_tag))
     table = tables[index]
 
     strip_tags(table, 'thead')
