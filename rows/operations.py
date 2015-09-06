@@ -76,8 +76,10 @@ def serialize(table, field_names=None, *args, **kwargs):
 
     fields_items = [(table_field_names.index(field_name), fields[field_name])
                     for field_name in field_names]
+    ignore_types = kwargs.get('ignore_types', [])
     for row in table._rows:
         yield [field_type.serialize(row[field_index], *args, **kwargs)
+               if field_type not in ignore_types else row[field_index]
                for field_index, field_type in fields_items]
 
 
