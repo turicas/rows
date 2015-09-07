@@ -36,10 +36,24 @@ def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
     return filename, fobj
 
 
+def _make_new_field_name(field_name, field_names):
+    new_field_name = field_name
+    index = 2
+    while new_field_name in field_names:
+        new_field_name = '{}_{}'.format(field_name, index)
+        index += 1
+    return new_field_name
+
+
 def make_header(data):
     header = [slug(field_name).lower() for field_name in data]
-    return [field_name if field_name else 'field_{}'.format(index)
-            for index, field_name in enumerate(header)]
+    field_names = []
+    for index, field_name in enumerate(header):
+        field_name = field_name if field_name else 'field_{}'.format(index)
+        if field_name in field_names:
+            field_name = _make_new_field_name(field_name, field_names)
+        field_names.append(field_name)
+    return field_names
 
 
 def create_table(data, meta=None, fields=None, skip_header=True,

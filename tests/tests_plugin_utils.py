@@ -74,6 +74,27 @@ class PluginUtilsTestCase(unittest.TestCase):
         self.assertEqual(table[0]._asdict(),
                          OrderedDict([('field3', 'Álvaro'), ('field2', 3.14)]))
 
+    def test_create_table_repeated_field_names(self):
+        header = ['first', 'first', 'first']
+        table_rows = [['1', 3.14, 'Álvaro'],
+                      ['2', 2.71, 'turicas'],
+                      ['3', 1.23, 'Justen']]
+        table = plugins_utils.create_table([header] + table_rows)
+        self.assertEqual(table.fields.keys(), ['first', 'first_2', 'first_3'])
+        self.assertEqual(table[0].first, 1)
+        self.assertEqual(table[0].first_2, 3.14)
+        self.assertEqual(table[0].first_3, 'Álvaro')
+
+        header = ['field', '', 'field']
+        table_rows = [['1', 3.14, 'Álvaro'],
+                      ['2', 2.71, 'turicas'],
+                      ['3', 1.23, 'Justen']]
+        table = plugins_utils.create_table([header] + table_rows)
+        self.assertEqual(table.fields.keys(), ['field', 'field_1', 'field_2'])
+        self.assertEqual(table[0].field, 1)
+        self.assertEqual(table[0].field_1, 3.14)
+        self.assertEqual(table[0].field_2, 'Álvaro')
+
     def test_prepare_to_export_all_fields(self):
         result = plugins_utils.prepare_to_export(utils.table,
                                                  export_fields=None)
