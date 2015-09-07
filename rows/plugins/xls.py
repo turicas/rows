@@ -46,7 +46,7 @@ def cell_value(sheet, row, col):
         return None
 
     # TODO: this approach will not work if using locale
-    value = sheet.cell_value(row, col)
+    value = cell.value
     if field_type is fields.DatetimeField:
         time_tuple = xlrd.xldate_as_tuple(value, sheet.book.datemode)
         value = field_type.serialize(datetime.datetime(*time_tuple))
