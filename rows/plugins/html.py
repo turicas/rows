@@ -22,8 +22,7 @@ import HTMLParser
 from lxml.html import document_fromstring
 from lxml.etree import tostring as to_string, strip_tags
 
-from rows.operations import serialize
-from rows.utils import create_table, get_filename_and_fobj
+from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
 
 
 html_parser = HTMLParser.HTMLParser()

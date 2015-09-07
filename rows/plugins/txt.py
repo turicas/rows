@@ -17,8 +17,7 @@
 
 from __future__ import unicode_literals
 
-from rows.operations import serialize
-from rows.utils import get_filename_and_fobj
+from rows.plugins.utils import get_filename_and_fobj, serialize
 
 DASH, PLUS, PIPE = '-', '+', '|'
 

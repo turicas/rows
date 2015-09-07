@@ -24,7 +24,7 @@ import xlwt
 
 import rows.fields as fields
 
-from rows.utils import create_table, get_filename_and_fobj
+from rows.plugins.utils import create_table, get_filename_and_fobj
 
 
 CELL_TYPES = {xlrd.XL_CELL_BLANK: fields.ByteField,

@@ -15,19 +15,17 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import collections
+from __future__ import unicode_literals
+
 import os
 import tempfile
 
-from itertools import chain, islice
+from collections import Iterator
 from unicodedata import normalize
 
 import requests
 
 import rows
-
-from rows.fields import detect_types
-from rows.table import Table
 
 
 # TODO: create functions to serialize/deserialize data
@@ -57,8 +55,8 @@ def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
     return text
 
 
-def ipartition(iterable, n):
-    if not isinstance(iterable, collections.Iterator):
+def ipartition(iterable, partition_size):
+    if not isinstance(iterable, Iterator):
         iterator = iter(iterable)
     else:
         iterator = iterable
@@ -66,62 +64,13 @@ def ipartition(iterable, n):
     finished = False
     while not finished:
         data = []
-        for i in range(n):
+        for _ in range(partition_size):
             try:
                 data.append(iterator.next())
             except StopIteration:
                 finished = True
                 break
         yield data
-
-
-def make_header(data):
-    header = [slug(field_name).lower() for field_name in data]
-    return [field_name if field_name else 'field_{}'.format(index)
-            for index, field_name in enumerate(header)]
-
-
-def create_table(data, meta=None, force_headers=None, fields=None,
-                 skip_header=True, samples=None, *args, **kwargs):
-    # TODO: add auto_detect_types=True parameter
-    table_rows = iter(data)
-    sample_rows = []
-
-    if fields is None:
-        header = force_headers or make_header(table_rows.next())
-        if samples is not None:
-            sample_rows = list(islice(table_rows, 0, samples))
-        else:
-            sample_rows = list(table_rows)
-        fields = detect_types(header, sample_rows, *args, **kwargs)
-    else:
-        if skip_header:
-            _ = table_rows.next()
-            header = make_header(fields.keys())
-            assert type(fields) is collections.OrderedDict
-            fields = {field_name: fields[key]
-                      for field_name, key in zip(header, fields)}
-        else:
-            header = make_header(fields.keys())
-
-    # TODO: put this inside Table.__init__
-    table = Table(fields=fields, meta=meta)
-    for row in chain(sample_rows, table_rows):
-        table.append({field_name: value
-                      for field_name, value in zip(header, row)})
-
-    return table
-
-
-def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
-    if getattr(filename_or_fobj, 'read', None) is not None:
-        fobj = filename_or_fobj
-        filename = getattr(fobj, 'name', None)
-    else:
-        fobj = open(filename_or_fobj, mode=mode) if not dont_open else None
-        filename = filename_or_fobj
-
-    return filename, fobj
 
 
 def download_file(uri):

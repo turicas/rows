@@ -20,7 +20,7 @@ from __future__ import unicode_literals
 from collections import OrderedDict
 
 from rows.table import Table
-from rows.utils import create_table
+from rows.plugins.utils import create_table
 
 
 def join(keys, tables):
@@ -62,23 +62,6 @@ def transform(fields, function, *tables):
             filter(bool, map(lambda row: function(row, table), table)))
 
     return new_table
-
-
-def serialize(table, field_names=None, *args, **kwargs):
-    fields = table.fields
-    table_field_names = fields.keys()
-    if field_names is None:
-        field_names = fields.keys()
-    elif not set(field_names).issubset(set(table_field_names)):
-        raise ValueError("Invalid field names")
-
-    yield field_names
-
-    fields_items = [(table_field_names.index(field_name), fields[field_name])
-                    for field_name in field_names]
-    for row in table._rows:
-        yield [field_type.serialize(row[field_index], *args, **kwargs)
-               for field_index, field_type in fields_items]
 
 
 def transpose(table, fields_column, *args, **kwargs):

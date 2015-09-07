@@ -19,8 +19,7 @@ from __future__ import unicode_literals
 
 import unicodecsv
 
-from rows.operations import serialize
-from rows.utils import create_table, get_filename_and_fobj
+from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
 
 
 def import_from_csv(filename_or_fobj, encoding='utf-8', delimiter=',',
