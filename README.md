@@ -31,14 +31,24 @@ The library is composed by:
 Just `import rows` and relax.
 
 
+## Core Values
+
+- Simple, easy and flexible API
+- Code quality
+- Don't Repeat Yourself
+
+
 ## Installation
 
 Directly from [PyPI](http://pypi.python.org/pypi/rows):
 
     pip install rows
 
+But if you have a strong heart, install the bleeding edge version:
 
-Or from source:
+    pip install git+https://github.com/turicas/rows.git@develop
+
+or:
 
     git clone https://github.com/turicas/rows.git
     cd rows
@@ -50,6 +60,10 @@ use another one you need to explicitly install its dependencies, for example:
 
     pip install rows[html]
     pip install rows[xls]
+
+Or you can install all dependencies by running:
+
+    pip install rows[all]
 
 
 ## Basic Usage
@@ -268,40 +282,27 @@ Available operations: `join`, `transform` and `serialize`.
 TODO. See `rows/operations.py`.
 
 
-## Performance Issues
+## Developing
 
-The automatic type detection algorithm can cost time: it iterates over all rows
-to determine the type of each column. You can disable it by passing `samples=0`
-to any `import_from_*` function or either changing the number of sample rows
-(any positive number is accepted).
+Create the virtualenv:
 
+    mkvirtualenv rows
 
-## License
+Install all plugins' dependencies:
 
-This library is released under the [GNU General Public License version
-3](http://www.gnu.org/licenses/gpl-3.0.html).
+    pip install --editable .[all]
 
+Install development dependencies:
 
-## Semantic Versioning
+    pip install -r requirements-development.txt
 
-`rows` uses [semantic versioning](http://semver.org). Note that it means we do
-not guarantee API backwards compatibility on `0.x.y` versions.
+Run tests:
 
+    make test
 
-## Known Issues
+or (if you don't have `make`):
 
-- [Lack of Python 3 support](https://github.com/turicas/rows/issues/46)
-- [Create a better plugin interface so anyone can benefit of
-  it](https://github.com/turicas/rows/issues/27)
-- [Create `TableSet`](https://github.com/turicas/rows/issues/47)
-- See [issue #31](https://github.com/turicas/rows/issues/31)
-
-
-## Core Values
-
-- Simple, easy and flexible API
-- Code quality
-- Don't Repeat Yourself
+    nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/*.py
 
 
 ## Similar Projects
@@ -318,3 +319,28 @@ not guarantee API backwards compatibility on `0.x.y` versions.
 - [multicorn](https://github.com/Kozea/Multicorn)
 - [webscraper.io](http://webscraper.io/)
 - [import.io](http://import.io/)
+
+
+## Known Issues
+
+- [Lack of Python 3 support](https://github.com/turicas/rows/issues/46)
+- [Create a better plugin interface so anyone can benefit of
+  it](https://github.com/turicas/rows/issues/27)
+- [Create `TableSet`](https://github.com/turicas/rows/issues/47)
+- Performance: the automatic type detection algorithm can cost time: it
+  iterates over all rows to determine the type of each column. You can disable
+  it by passing `samples=0` to any `import_from_*` function or either changing
+  the number of sample rows (any positive number is accepted).
+- See [issue #31](https://github.com/turicas/rows/issues/31)
+
+
+## Semantic Versioning
+
+`rows` uses [semantic versioning](http://semver.org). Note that it means we do
+not guarantee API backwards compatibility on `0.x.y` versions.
+
+
+## License
+
+This library is released under the [GNU General Public License version
+3](http://www.gnu.org/licenses/gpl-3.0.html).
