@@ -74,18 +74,31 @@ def create_table(data, meta=None, force_headers=None, fields=None,
     return table
 
 
-def serialize(table, field_names=None, *args, **kwargs):
-    fields = table.fields
-    table_field_names = fields.keys()
-    if field_names is None:
-        field_names = fields.keys()
-    elif not set(field_names).issubset(set(table_field_names)):
-        raise ValueError("Invalid field names")
+def prepare_to_export(table, field_names=None, *args, **kwargs):
+    if field_names is None:  # for performance
+        yield table.fields.keys()
+        for row in table._rows:
+            yield row
+    else:
+        fields = table.fields
+        table_field_names = fields.keys()
+        if not set(field_names).issubset(set(table_field_names)):
+            raise ValueError("Invalid field names")
 
+        field_indexes = map(table_field_names.index, field_names)
+
+        yield field_names
+        for row in table._rows:
+            yield [row[field_index] for field_index in field_indexes]
+
+
+def serialize(table, *args, **kwargs):
+    prepared_table = prepare_to_export(table, *args, **kwargs)
+
+    field_names = prepared_table.next()
     yield field_names
 
-    fields_items = [(table_field_names.index(field_name), fields[field_name])
-                    for field_name in field_names]
-    for row in table._rows:
-        yield [field_type.serialize(row[field_index], *args, **kwargs)
-               for field_index, field_type in fields_items]
+    field_types = [table.fields[field_name] for field_name in field_names]
+    for row in prepared_table:
+        yield [field_type.serialize(value, *args, **kwargs)
+               for value, field_type in zip(row, field_types)]

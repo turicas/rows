@@ -17,12 +17,15 @@
 
 from __future__ import unicode_literals
 
+import random
 import unittest
 
 from collections import OrderedDict
 
+import mock
+
+import rows.plugins.utils as plugins_utils
 from rows import fields
-from rows.plugins.utils import create_table, serialize
 
 import utils
 
@@ -33,8 +36,10 @@ class PluginUtilsTestCase(unittest.TestCase):
         field_types = OrderedDict([('integer', fields.IntegerField),
                                    ('string', fields.UnicodeField),])
         data = [['1', 'Álvaro'], ['2', 'turicas'], ['3', 'Justen']]
-        table_1 = create_table(data, fields=field_types, skip_header=True)
-        table_2 = create_table(data, fields=field_types, skip_header=False)
+        table_1 = plugins_utils.create_table(data, fields=field_types,
+                                             skip_header=True)
+        table_2 = plugins_utils.create_table(data, fields=field_types,
+                                             skip_header=False)
 
         self.assertEqual(field_types, table_1.fields)
         self.assertEqual(table_1.fields, table_2.fields)
@@ -50,8 +55,52 @@ class PluginUtilsTestCase(unittest.TestCase):
         self.assertEqual(dict(table_2[1]._asdict()), second_row)
         self.assertEqual(dict(table_2[2]._asdict()), third_row)
 
+    def test_prepare_to_export_all_fields(self):
+        result = plugins_utils.prepare_to_export(utils.table, field_names=None)
+
+        self.assertEqual(utils.table.fields.keys(), result.next())
+
+        for row in utils.table._rows:
+            self.assertEqual(row, result.next())
+
+        with self.assertRaises(StopIteration):
+            result.next()
+
+    def test_prepare_to_export_some_fields(self):
+        field_names = utils.table.fields.keys()
+        number_of_fields = random.randint(2, len(field_names) - 1)
+        some_field_names = [field_names[index]
+                            for index in range(number_of_fields)]
+        random.shuffle(some_field_names)
+        result = plugins_utils.prepare_to_export(utils.table,
+                                                 field_names=some_field_names)
+
+        self.assertEqual(some_field_names, result.next())
+
+        for row in utils.table:
+            expected_row = [getattr(row, field_name)
+                            for field_name in some_field_names]
+            self.assertEqual(expected_row, result.next())
+
+        with self.assertRaises(StopIteration):
+            result.next()
+
+    @mock.patch('rows.plugins.utils.prepare_to_export')
+    def test_serialize_should_call_prepare_to_export(self,
+            mocked_prepare_to_export):
+        table = utils.table
+        kwargs = {'field_names': 123, 'other_parameter': 3.14, }
+        result = plugins_utils.serialize(table, **kwargs)
+        self.assertFalse(mocked_prepare_to_export.called)
+        field_names = result.next()
+        table_rows = list(result)
+        self.assertTrue(mocked_prepare_to_export.called)
+        self.assertEqual(mocked_prepare_to_export.call_count, 1)
+        self.assertEqual(mock.call(table, **kwargs),
+                         mocked_prepare_to_export.call_args)
+
     def test_serialize(self):
-        result = serialize(utils.table)
+        result = plugins_utils.serialize(utils.table)
         field_types = utils.table.fields.values()
         self.assertEqual(result.next(), utils.table.fields.keys())
 

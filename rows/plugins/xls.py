@@ -24,7 +24,8 @@ import xlwt
 
 import rows.fields as fields
 
-from rows.plugins.utils import create_table, get_filename_and_fobj
+from rows.plugins.utils import (create_table, get_filename_and_fobj,
+                                prepare_to_export)
 
 
 CELL_TYPES = {xlrd.XL_CELL_BLANK: fields.ByteField,
@@ -109,20 +110,22 @@ FORMATTING_STYLES = {fields.DateField: xlwt.easyxf(num_format_str='yyyy-mm-dd'),
                      fields.DatetimeField: xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'),
                      fields.PercentField: xlwt.easyxf(num_format_str='0.00%'),}
 
-def export_to_xls(table, filename_or_fobj, sheet_name='Sheet1'):
+def export_to_xls(table, filename_or_fobj, sheet_name='Sheet1', *args,
+                  **kwargs):
 
-    # TODO: may use rows.utils.serialize
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
+    _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
     work_book = xlwt.Workbook()
     sheet = work_book.add_sheet(sheet_name)
-    fields = [(index, field_name)
-              for index, field_name in enumerate(table.fields)]
 
-    for index, field_name in fields:
-        sheet.write(0, index, field_name)
-    for row_index, row in enumerate(table, start=1):
-        for column_index, field_name in fields:
-            value = getattr(row, field_name)
+    prepared_table = prepare_to_export(table, *args, **kwargs)
+
+    field_names = prepared_table.next()
+    for column_index, field_name in enumerate(field_names):
+        sheet.write(0, column_index, field_name)
+
+    for row_index, row in enumerate(prepared_table, start=1):
+        for column_index, (field_name, value) in \
+                enumerate(zip(field_names, row)):
             field_type = table.fields[field_name]
             data = {}
             if field_type in FORMATTING_STYLES:

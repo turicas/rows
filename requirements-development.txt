@@ -1,8 +1,9 @@
 -r requirements.txt
 
 # Test tools
-nose
-yanc
 coverage
-pylint
 ipdb
+mock
+nose
+pylint
+yanc
