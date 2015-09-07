@@ -98,20 +98,18 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         self.assertListEqual(first_json, second_json)
 
-    @mock.patch('rows.plugins._json.serialize')
-    def test_export_to_json_uses_serialize(self, mocked_serialize):
+    @mock.patch('rows.plugins._json.prepare_to_export')
+    def test_export_to_json_uses_prepare_to_export(self,
+            mocked_prepare_to_export):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        encoding = 'iso-8859-15'
         kwargs = {'test': 123, 'parameter': 3.14, }
-        mocked_serialize.return_value = iter([['field1', 'field2']])
+        mocked_prepare_to_export.return_value = iter([['field1', 'field2']])
 
-        rows.export_to_json(utils.table, temp.name, encoding=encoding,
-                            **kwargs)
-        self.assertTrue(mocked_serialize.called)
-        self.assertEqual(mocked_serialize.call_count, 1)
+        rows.export_to_json(utils.table, temp.name, **kwargs)
+        self.assertTrue(mocked_prepare_to_export.called)
+        self.assertEqual(mocked_prepare_to_export.call_count, 1)
 
-        call = mocked_serialize.call_args
+        call = mocked_prepare_to_export.call_args
         self.assertEqual(call[0], (utils.table, ))
-        kwargs['encoding'] = encoding
         self.assertEqual(call[1], kwargs)

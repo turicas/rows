@@ -17,9 +17,13 @@
 
 from __future__ import unicode_literals
 
+import datetime
+import decimal
 import json
 
-from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
+from rows.fields import DateField, DatetimeField, DecimalField, PercentField
+from rows.plugins.utils import (create_table, get_filename_and_fobj,
+                                prepare_to_export)
 
 
 def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
@@ -37,15 +41,24 @@ def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
     return create_table(data, meta=meta, *args, **kwargs)
 
 
+def _convert(value, field_type, *args, **kwargs):
+    if field_type in (DateField, DatetimeField, DecimalField, PercentField):
+        value = field_type.serialize(value, *args, **kwargs)
+
+    return value
+
+
 def export_to_json(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
     # TODO: will work only if table.fields is OrderedDict
 
     _, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
 
-    serialized = serialize(table, encoding=encoding, *args, **kwargs)
-    field_names = serialized.next()
-    data = [{field_name: value for field_name, value in zip(field_names, row)}
-            for row in serialized]
+    fields = table.fields
+    prepared_table = prepare_to_export(table, *args, **kwargs)
+    field_names = prepared_table.next()
+    data = [{field_name: _convert(value, fields[field_name], *args, **kwargs)
+             for field_name, value in zip(field_names, row)}
+            for row in prepared_table]
 
     json.dump(data, fobj)
     fobj.flush()
