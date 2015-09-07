@@ -96,6 +96,24 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_html(temp.name)
         self.assert_table_equal(table, utils.table)
 
+    @mock.patch('rows.plugins.html.serialize')
+    def test_export_to_html_uses_serialize(self, mocked_serialize):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+        encoding = 'iso-8859-15'
+        kwargs = {'test': 123, 'parameter': 3.14, }
+        mocked_serialize.return_value = iter([['field1', 'field2']])
+
+        rows.export_to_html(utils.table, temp.name, encoding=encoding,
+                            **kwargs)
+        self.assertTrue(mocked_serialize.called)
+        self.assertEqual(mocked_serialize.call_count, 1)
+
+        call = mocked_serialize.call_args
+        self.assertEqual(call[0], (utils.table, ))
+        kwargs['encoding'] = encoding
+        self.assertEqual(call[1], kwargs)
+
     def test_export_to_html_none(self):
         # TODO: may test with codecs.open passing an encoding
         # TODO: may test file contents

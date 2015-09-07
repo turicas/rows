@@ -92,3 +92,22 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table = rows.import_from_xls(temp.name)
         self.assert_table_equal(table, utils.table)
+
+    @mock.patch('rows.plugins.xls.prepare_to_export')
+    def test_export_to_xls_uses_prepare_to_export(self,
+                                                  mocked_prepare_to_export):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+        encoding = 'iso-8859-15'
+        kwargs = {'test': 123, 'parameter': 3.14, }
+        mocked_prepare_to_export.return_value = iter([['field1', 'field2']])
+
+        rows.export_to_xls(utils.table, temp.name, encoding=encoding,
+                           **kwargs)
+        self.assertTrue(mocked_prepare_to_export.called)
+        self.assertEqual(mocked_prepare_to_export.call_count, 1)
+
+        call = mocked_prepare_to_export.call_args
+        self.assertEqual(call[0], (utils.table, ))
+        kwargs['encoding'] = encoding
+        self.assertEqual(call[1], kwargs)

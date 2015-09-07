@@ -20,6 +20,8 @@ from __future__ import unicode_literals
 import tempfile
 import unittest
 
+import mock
+
 import rows
 import rows.plugins.txt
 import utils
@@ -48,28 +50,20 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         self.assert_file_contents_equal(temp.name, self.filename)
 
-    def test_export_to_txt_fobj_some_fields_only(self):
-        # TODO: this test may be inside `tests_operations.py` (testing
-        # `serialize` instead a plugin which calls it)
+    @mock.patch('rows.plugins.txt.serialize')
+    def test_export_to_txt_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        fobj = temp.file
+        encoding = 'iso-8859-15'
+        kwargs = {'test': 123, 'parameter': 3.14, }
+        mocked_serialize.return_value = iter([['field1', 'field2']])
 
-        rows.export_to_txt(utils.table, temp.file)  # all fields
-        fobj.seek(0)
-        table_fields = utils.table.fields.keys()
-        expected_fields = table_fields
-        _, second_line = fobj.readline(), fobj.readline()
-        fields = [field.strip() for field in second_line.split('|')
-                                if field.strip()]
-        self.assertEqual(expected_fields, fields)
+        rows.export_to_txt(utils.table, temp.name, encoding=encoding,
+                           **kwargs)
+        self.assertTrue(mocked_serialize.called)
+        self.assertEqual(mocked_serialize.call_count, 1)
 
-        expected_fields = table_fields[2:5]
-        self.assertNotEqual(expected_fields, table_fields)
-        fobj.seek(0)
-        rows.export_to_txt(utils.table, temp.file, field_names=expected_fields)
-        fobj.seek(0)
-        _, second_line = fobj.readline(), fobj.readline()
-        fields = [field.strip() for field in second_line.split('|')
-                                if field.strip()]
-        self.assertEqual(expected_fields, fields)
+        call = mocked_serialize.call_args
+        self.assertEqual(call[0], (utils.table, ))
+        kwargs['encoding'] = encoding
+        self.assertEqual(call[1], kwargs)
