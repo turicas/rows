@@ -1,4 +1,4 @@
--r production.txt
+-r requirements.txt
 
 # Test tools
 nose
