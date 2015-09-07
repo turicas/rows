@@ -251,6 +251,17 @@ re-design the plugin interface so you can create your own easily. Feel free to
 contribute. :-)
 
 
+#### Common Parameters
+
+Each plugin has its own parameters (like `encoding` in `import_from_html` and
+`sheet_name` in `import_from_xls`) but all plugins use the same mechanism to
+prepare a `rows.Table` before exporting, so they also have some common
+parameters you can pass to `export_to_X`. They are:
+
+- `export_fields`: a `list` with field names to export (other fields will be
+  ignored) -- fields will be exported in this order.
+
+
 ## Command-Line Interface
 
 `rows` exposes a command-line interface with the common operations such as

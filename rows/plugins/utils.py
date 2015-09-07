@@ -83,20 +83,21 @@ def create_table(data, meta=None, fields=None, skip_header=True,
     return table
 
 
-def prepare_to_export(table, field_names=None, *args, **kwargs):
-    if field_names is None:  # for performance
+def prepare_to_export(table, export_fields=None, *args, **kwargs):
+    if export_fields is None:  # for performance
         yield table.fields.keys()
         for row in table._rows:
             yield row
     else:
+        export_fields = make_header(export_fields)
         fields = table.fields
         table_field_names = fields.keys()
-        if not set(field_names).issubset(set(table_field_names)):
-            raise ValueError("Invalid field names")
+        if not set(export_fields).issubset(set(table_field_names)):
+            raise ValueError("Invalid field names in `export_fields`")
 
-        field_indexes = map(table_field_names.index, field_names)
+        field_indexes = map(table_field_names.index, export_fields)
 
-        yield field_names
+        yield export_fields
         for row in table._rows:
             yield [row[field_index] for field_index in field_indexes]
 

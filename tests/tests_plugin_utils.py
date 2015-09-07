@@ -75,7 +75,8 @@ class PluginUtilsTestCase(unittest.TestCase):
                          OrderedDict([('field3', 'Álvaro'), ('field2', 3.14)]))
 
     def test_prepare_to_export_all_fields(self):
-        result = plugins_utils.prepare_to_export(utils.table, field_names=None)
+        result = plugins_utils.prepare_to_export(utils.table,
+                                                 export_fields=None)
 
         self.assertEqual(utils.table.fields.keys(), result.next())
 
@@ -88,17 +89,16 @@ class PluginUtilsTestCase(unittest.TestCase):
     def test_prepare_to_export_some_fields(self):
         field_names = utils.table.fields.keys()
         number_of_fields = random.randint(2, len(field_names) - 1)
-        some_field_names = [field_names[index]
-                            for index in range(number_of_fields)]
-        random.shuffle(some_field_names)
+        some_fields = [field_names[index] for index in range(number_of_fields)]
+        random.shuffle(some_fields)
         result = plugins_utils.prepare_to_export(utils.table,
-                                                 field_names=some_field_names)
+                                                 export_fields=some_fields)
 
-        self.assertEqual(some_field_names, result.next())
+        self.assertEqual(some_fields, result.next())
 
         for row in utils.table:
             expected_row = [getattr(row, field_name)
-                            for field_name in some_field_names]
+                            for field_name in some_fields]
             self.assertEqual(expected_row, result.next())
 
         with self.assertRaises(StopIteration):
@@ -108,7 +108,7 @@ class PluginUtilsTestCase(unittest.TestCase):
     def test_serialize_should_call_prepare_to_export(self,
             mocked_prepare_to_export):
         table = utils.table
-        kwargs = {'field_names': 123, 'other_parameter': 3.14, }
+        kwargs = {'export_fields': 123, 'other_parameter': 3.14, }
         result = plugins_utils.serialize(table, **kwargs)
         self.assertFalse(mocked_prepare_to_export.called)
         field_names = result.next()
