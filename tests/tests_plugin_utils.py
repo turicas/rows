@@ -55,6 +55,25 @@ class PluginUtilsTestCase(unittest.TestCase):
         self.assertEqual(dict(table_2[1]._asdict()), second_row)
         self.assertEqual(dict(table_2[2]._asdict()), third_row)
 
+    def test_create_table_import_fields(self):
+        header = ['field1', 'field2', 'field3']
+        table_rows = [['1', 3.14, 'Álvaro'],
+                      ['2', 2.71, 'turicas'],
+                      ['3', 1.23, 'Justen']]
+        table = plugins_utils.create_table([header] + table_rows,
+                                           import_fields=None)
+        self.assertEqual(table.fields.keys(), header)
+        self.assertEqual(table[0].field1, 1)
+        self.assertEqual(table[0].field2, 3.14)
+        self.assertEqual(table[0].field3, 'Álvaro')
+
+        import_fields = ['field3', 'field2']
+        table = plugins_utils.create_table([header] + table_rows,
+                                           import_fields=import_fields)
+        self.assertEqual(table.fields.keys(), import_fields)
+        self.assertEqual(table[0]._asdict(),
+                         OrderedDict([('field3', 'Álvaro'), ('field2', 3.14)]))
+
     def test_prepare_to_export_all_fields(self):
         result = plugins_utils.prepare_to_export(utils.table, field_names=None)
 

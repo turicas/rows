@@ -184,6 +184,23 @@ Stefanik, Elise is older than Byrd, Robert
 > *automagically* no matter which plugin you're using to import the data.
 
 
+#### Common Parameters
+
+Each plugin has its own parameters (like `index` in `import_from_html` and
+`sheet_name` in `import_from_xls`) but all plugins create a `rows.Table` object
+so they also have some common parameters you can pass to `import_from_X`. They
+are:
+
+- `fields`: an `OrderedDict` with field names and types (disable automatic
+  detection of types).
+- `skip_header`: Ignore header row. Only used if `fields` is not `None`.
+  Default: `True`.
+- `import_fields`: a `list` with field names to import (other fields will be
+  ignored) -- fields will be imported in this order.
+- `samples`: number of sample rows to use on field type autodetect algorithm.
+  Default: `None` (use all rows).
+
+
 ### Exporting Data
 
 If you have a `Table` object you can export it to all available plugins which

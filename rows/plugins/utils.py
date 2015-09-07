@@ -42,31 +42,40 @@ def make_header(data):
             for index, field_name in enumerate(header)]
 
 
-def create_table(data, meta=None, force_headers=None, fields=None,
-                 skip_header=True, samples=None, *args, **kwargs):
+def create_table(data, meta=None, fields=None, skip_header=True,
+                 import_fields=None, samples=None, *args, **kwargs):
     # TODO: add auto_detect_types=True parameter
     table_rows = iter(data)
     sample_rows = []
 
     if fields is None:
-        header = force_headers or make_header(table_rows.next())
+        header = make_header(table_rows.next())
         if samples is not None:
             sample_rows = list(islice(table_rows, 0, samples))
         else:
             sample_rows = list(table_rows)
         fields = detect_types(header, sample_rows, *args, **kwargs)
     else:
+        if not isinstance(fields, OrderedDict):
+            raise ValueError('`fields` must be an `OrderedDict`')
+
         if skip_header:
             _ = table_rows.next()
-            header = make_header(fields.keys())
-            assert isinstance(fields, OrderedDict)
-            fields = {field_name: fields[key]
-                      for field_name, key in zip(header, fields)}
-        else:
-            header = make_header(fields.keys())
 
-    # TODO: put this inside Table.__init__
+        header = make_header(fields.keys())
+        fields = {field_name: fields[key]
+                  for field_name, key in zip(header, fields)}
+
+    if import_fields is not None:
+        # TODO: can optimize if import_fields is not None.
+        #       Example: do not detect all columns
+        new_fields = OrderedDict()
+        for field_name in make_header(import_fields):
+            new_fields[field_name] = fields[field_name]
+        fields = new_fields
+
     table = Table(fields=fields, meta=meta)
+    # TODO: put this inside Table.__init__
     for row in chain(sample_rows, table_rows):
         table.append({field_name: value
                       for field_name, value in zip(header, row)})
