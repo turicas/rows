@@ -20,6 +20,8 @@ from __future__ import unicode_literals
 import tempfile
 import unittest
 
+import mock
+
 import rows
 import utils
 
@@ -49,6 +51,19 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         expected_meta = {'imported_from': 'json', 'filename': self.filename, }
         self.assertEqual(table.meta, expected_meta)
+
+    @mock.patch('rows.plugins._json.create_table')
+    def test_import_from_json_uses_create_table(self, mocked_create_table):
+        mocked_create_table.return_value = 42
+        kwargs = {'encoding': 'iso-8859-15', 'some_key': 123, 'other': 456, }
+        result = rows.import_from_json(self.filename, **kwargs)
+        self.assertTrue(mocked_create_table.called)
+        self.assertEqual(mocked_create_table.call_count, 1)
+        self.assertEqual(result, 42)
+
+        call = mocked_create_table.call_args
+        kwargs['meta'] = {'imported_from': 'json', 'filename': self.filename, }
+        self.assertEqual(call[1], kwargs)
 
     def test_3_export_to_json_filename(self):
         # TODO: may test file contents
