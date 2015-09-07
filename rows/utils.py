@@ -114,7 +114,7 @@ def get_uri_information(uri):
     return should_delete, filename, plugin_name
 
 
-def import_from_uri(uri):
+def import_from_uri(uri, *args, **kwargs):
     # TODO: support '-' also
     should_delete, filename, plugin_name = get_uri_information(uri)
 
@@ -124,7 +124,7 @@ def import_from_uri(uri):
         raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
 
     with open(filename) as fobj:
-        table = import_function(fobj)
+        table = import_function(fobj, *args, **kwargs)
 
     if should_delete:
         os.unlink(filename)
@@ -132,7 +132,7 @@ def import_from_uri(uri):
     return table
 
 
-def export_to_uri(uri, table):
+def export_to_uri(uri, table, *args, **kwargs):
     # TODO: support '-' also
     plugin_name = uri.split('.')[-1].lower()
 
@@ -141,4 +141,4 @@ def export_to_uri(uri, table):
     except AttributeError:
         raise ValueError('Plugin (export) "{}" not found'.format(plugin_name))
 
-    export_function(table, uri)
+    export_function(table, uri, *args, **kwargs)

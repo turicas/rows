@@ -235,15 +235,15 @@ class DecimalField(Field):
             interesting_vars = ['decimal_point', 'mon_decimal_point',
                                 'mon_thousands_sep', 'negative_sign',
                                 'positive_sign', 'thousands_sep']
-            chars = (locale_vars[x].replace('.', '\.').replace('-', '\-')
-                    for x in interesting_vars)
+            chars = (locale_vars[x].replace('.', r'\.').replace('-', r'\-')
+                     for x in interesting_vars)
             interesting_chars = ''.join(set(chars))
             regexp = re.compile(r'[^0-9{} ]'.format(interesting_chars))
             if regexp.findall(value):
                 raise ValueError("Can't be {}".format(cls.__name__))
 
             parts = [REGEXP_ONLY_NUMBERS.subn('', number)[0]
-                    for number in value.split(decimal_separator)]
+                     for number in value.split(decimal_separator)]
             if len(parts) > 2:
                 raise ValueError("Can't deserialize with this locale.")
             try:
@@ -356,7 +356,7 @@ class UnicodeField(Field):
         if value is None:
             return None
 
-        if type(value) is cls.TYPE:
+        if isinstance(value, cls.TYPE):
             return value
         elif 'encoding' in kwargs:
             return as_string(value).decode(kwargs['encoding'])
@@ -392,18 +392,16 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
     # TODO: should expect data in unicode or will be able to use binary data?
     number_of_fields = len(field_names)
     columns = zip(*[row for row in field_values
-                        if len(row) == number_of_fields])
+                    if len(row) == number_of_fields])
 
     if len(columns) != number_of_fields:
         raise ValueError('Number of fields differ')
 
-    none_type = set([type(None)])
     detected_types = collections.OrderedDict([(field_name, None)
                                               for field_name in field_names])
-    encoding = kwargs.get('encoding', None)
     for index, field_name in enumerate(field_names):
         data = set([value for value in set(columns[index])
-                          if not is_null(value)])
+                    if not is_null(value)])
 
         if not data:
             # all rows with an empty field -> ByteField (can't identify)

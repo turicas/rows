@@ -40,7 +40,7 @@ def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
 def export_to_json(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
     # TODO: will work only if table.fields is OrderedDict
 
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
+    _, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
 
     serialized = serialize(table, encoding=encoding, *args, **kwargs)
     field_names = serialized.next()

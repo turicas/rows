@@ -105,10 +105,9 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
 
 # TODO: add more formatting styles for other types such as currency
 # TODO: styles may be influenced by locale
-FORMATTING_STYLES = {
-        fields.DateField: xlwt.easyxf(num_format_str='yyyy-mm-dd'),
-        fields.DatetimeField: xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'),
-        fields.PercentField: xlwt.easyxf(num_format_str='0.00%'),}
+FORMATTING_STYLES = {fields.DateField: xlwt.easyxf(num_format_str='yyyy-mm-dd'),
+                     fields.DatetimeField: xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'),
+                     fields.PercentField: xlwt.easyxf(num_format_str='0.00%'),}
 
 def export_to_xls(table, filename_or_fobj, sheet_name='Sheet1'):
 

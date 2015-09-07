@@ -85,12 +85,12 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
         result.append('    </tr>\n\n')
     result.append('  </tbody>\n\n</table>\n')
     new_result = [value.encode(encoding) if isinstance(value, unicode)
-                                         else value
+                  else value
                   for value in result]
     html = ''.encode(encoding).join(new_result)
 
     if filename_or_fobj is not None:
-        filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
+        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
         fobj.write(html)
         fobj.flush()
         return fobj

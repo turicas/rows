@@ -20,8 +20,6 @@ from __future__ import unicode_literals
 from collections import MutableSequence, namedtuple, OrderedDict, Sized
 from operator import itemgetter
 
-import rows.fields as fields
-
 
 class Table(MutableSequence):
 
@@ -46,8 +44,9 @@ class Table(MutableSequence):
         if 'imported_from' in self.meta:
             imported = ' (from {})'.format(self.meta['imported_from'])
 
-        return u'<rows.Table{} {} fields, {} rows>'.format(
-                imported, len(self.fields), length)
+        return u'<rows.Table{} {} fields, {} rows>'.format(imported,
+                                                           len(self.fields),
+                                                           length)
 
     def _make_row(self, row):
         # TODO: should be able to customize row type (namedtuple, dict etc.)
@@ -91,7 +90,7 @@ class Table(MutableSequence):
         if other == 0:
             return self
 
-        if type(self) != type(other) or self.fields != other.fields:
+        if not isinstance(self, type(other)) or self.fields != other.fields:
             raise ValueError('Tables have incompatible fields')
 
         table = Table(fields=self.fields)

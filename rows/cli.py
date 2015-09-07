@@ -47,13 +47,14 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
             source, destination):
 
     with rows.locale_context(input_locale):
-        table = import_from_uri(source)
+        table = import_from_uri(source, encoding=input_encoding)
 
     with rows.locale_context(output_locale):
-        export_to_uri(destination, table)
+        export_to_uri(destination, table, encoding=output_encoding)
 
 
-@cli.command(help='Join tables from `source` URIs using `key(s)` to group rows and save into `destination`')
+@cli.command(help='Join tables from `source` URIs using `key(s)` to group '
+                  'rows and save into `destination`')
 @click.option('--input-encoding', default=DEFAULT_INPUT_ENCODING)
 @click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
@@ -66,12 +67,13 @@ def join(input_encoding, output_encoding, input_locale, output_locale, keys,
     keys = [key.strip() for key in keys.split(',')]
 
     with rows.locale_context(input_locale):
-        tables = [import_from_uri(source) for source in sources]
+        tables = [import_from_uri(source, encoding=input_encoding)
+                  for source in sources]
 
     result = rows.join(keys, tables)
 
     with rows.locale_context(output_locale):
-        export_to_uri(destination, result)
+        export_to_uri(destination, result, encoding=output_encoding)
 
 
 @cli.command(help='Sort from `source` by `key(s)` and save into `destination`')
@@ -87,11 +89,11 @@ def sort(input_encoding, output_encoding, input_locale, output_locale, key,
     key = key.replace('^', '-')
 
     with rows.locale_context(input_locale):
-        table = import_from_uri(source)
+        table = import_from_uri(source, encoding=input_encoding)
         table.order_by(key)
 
     with rows.locale_context(output_locale):
-        export_to_uri(destination, table)
+        export_to_uri(destination, table, encoding=output_encoding)
 
 
 @cli.command(help='Sum tables from `source` URIs and save into `destination`')
@@ -105,14 +107,15 @@ def sum(input_encoding, output_encoding, input_locale, output_locale, sources,
         destination):
 
     with rows.locale_context(input_locale):
-        tables = [import_from_uri(source) for source in sources]
+        tables = [import_from_uri(source, encoding=input_encoding)
+                  for source in sources]
 
     result = tables[0]
     for table in tables[1:]:
         result = result + table
 
     with rows.locale_context(output_locale):
-        export_to_uri(destination, result)
+        export_to_uri(destination, result, encoding=output_encoding)
 
 
 if __name__ == '__main__':

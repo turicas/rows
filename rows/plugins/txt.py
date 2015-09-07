@@ -33,7 +33,7 @@ def export_to_txt(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
     # TODO: should use fobj? What about creating a method like json.dumps?
 
     kwargs['encoding'] = encoding
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
+    _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
     serialized_table = serialize(table, *args, **kwargs)
     field_names = serialized_table.next()
     table_rows = list(serialized_table)
