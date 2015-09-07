@@ -21,6 +21,8 @@ import json
 import tempfile
 import unittest
 
+from textwrap import dedent
+
 import mock
 
 import rows
@@ -113,3 +115,29 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call = mocked_prepare_to_export.call_args
         self.assertEqual(call[0], (utils.table, ))
         self.assertEqual(call[1], kwargs)
+
+    def test_export_to_json_indent(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+
+        table = rows.Table(fields=utils.table.fields)
+        table.append(utils.table[0]._asdict())
+        rows.export_to_json(table, temp.name, indent=2)
+
+        expected = dedent('''
+        [
+          {
+            "float_column": 3.141592,
+            "decimal_column": 3.141592,
+            "bool_column": true,
+            "integer_column": 1,
+            "date_column": "2015-01-01",
+            "datetime_column": "2015-08-18T15:10:00",
+            "percent_column": "1%",
+            "unicode_column": "\\u00c1lvaro",
+            "null_column": ""
+          }
+        ]''').strip()
+        temp.file.seek(0)
+        result = temp.file.read().strip()
+        self.assertEqual(result, expected)
