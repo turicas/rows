@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import json
 import tempfile
 import unittest
 
@@ -31,19 +32,19 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
     filename = 'tests/data/all-field-types.json'
     encoding = 'utf-8'
 
-    def test_0_imports(self):
+    def test_imports(self):
         self.assertIs(rows.import_from_json,
                       rows.plugins._json.import_from_json)
         self.assertIs(rows.export_to_json,
                       rows.plugins._json.export_to_json)
 
-    def test_1_import_from_json_filename(self):
+    def test_import_from_json_filename(self):
         table = rows.import_from_json(self.filename, encoding=self.encoding)
         self.assert_table_equal(table, utils.table)
         expected_meta = {'imported_from': 'json', 'filename': self.filename, }
         self.assertEqual(table.meta, expected_meta)
 
-    def test_2_import_from_json_fobj(self):
+    def test_import_from_json_fobj(self):
         # TODO: may test with codecs.open passing an encoding
         with open(self.filename) as fobj:
             table = rows.import_from_json(fobj, encoding=self.encoding)
@@ -65,7 +66,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         kwargs['meta'] = {'imported_from': 'json', 'filename': self.filename, }
         self.assertEqual(call[1], kwargs)
 
-    def test_3_export_to_json_filename(self):
+    def test_export_to_json_filename(self):
         # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
@@ -82,6 +83,20 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table = rows.import_from_json(temp.name)
         self.assert_table_equal(table, utils.table)
+
+    def test_export_to_json_filename_(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+
+        rows.export_to_json(utils.table, temp.name)
+
+        with open(self.filename, 'rb') as fobj:
+            first_json = json.load(fobj)
+
+        with open(temp.name, 'rb') as fobj:
+            second_json = json.load(fobj)
+
+        self.assertListEqual(first_json, second_json)
 
     @mock.patch('rows.plugins._json.serialize')
     def test_export_to_json_uses_serialize(self, mocked_serialize):
