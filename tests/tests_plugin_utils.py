@@ -74,6 +74,19 @@ class PluginUtilsTestCase(unittest.TestCase):
         self.assertEqual(table[0]._asdict(),
                          OrderedDict([('field3', 'Álvaro'), ('field2', 3.14)]))
 
+    def test_create_table_import_fields_dont_exist(self):
+        header = ['field1', 'field2', 'field3']
+        table_rows = [['1', 3.14, 'Álvaro'],
+                      ['2', 2.71, 'turicas'],
+                      ['3', 1.23, 'Justen']]
+
+        import_fields = list(header)[:-1] + ['doesnt-exist', 'ruby']
+        with self.assertRaises(ValueError) as exception_context:
+            plugins_utils.create_table([header] + table_rows,
+                                       import_fields=import_fields)
+        self.assertEqual(exception_context.exception.message,
+                         'Invalid field names "ruby", "doesnt_exist"')
+
     def test_create_table_repeated_field_names(self):
         header = ['first', 'first', 'first']
         table_rows = [['1', 3.14, 'Álvaro'],
@@ -124,6 +137,16 @@ class PluginUtilsTestCase(unittest.TestCase):
 
         with self.assertRaises(StopIteration):
             result.next()
+
+    def test_prepare_to_export_some_fields_dont_exist(self):
+        field_names = utils.table.fields.keys()
+        export_fields = field_names + ['does-not-exist', 'java']
+        result = plugins_utils.prepare_to_export(utils.table,
+                                                 export_fields=export_fields)
+        with self.assertRaises(ValueError) as exception_context:
+            result.next()
+        self.assertEqual(exception_context.exception.message,
+                         'Invalid field names "does_not_exist", "java"')
 
     @mock.patch('rows.plugins.utils.prepare_to_export')
     def test_serialize_should_call_prepare_to_export(self,

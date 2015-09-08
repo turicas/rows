@@ -83,8 +83,15 @@ def create_table(data, meta=None, fields=None, skip_header=True,
     if import_fields is not None:
         # TODO: can optimize if import_fields is not None.
         #       Example: do not detect all columns
+        import_fields = make_header(import_fields)
+
+        diff = set(import_fields) - set(header)
+        if diff:
+            field_names = ', '.join('"{}"'.format(field) for field in diff)
+            raise ValueError("Invalid field names {}".format(field_names))
+
         new_fields = OrderedDict()
-        for field_name in make_header(import_fields):
+        for field_name in import_fields:
             new_fields[field_name] = fields[field_name]
         fields = new_fields
 
@@ -106,8 +113,10 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
         export_fields = make_header(export_fields)
         fields = table.fields
         table_field_names = fields.keys()
-        if not set(export_fields).issubset(set(table_field_names)):
-            raise ValueError("Invalid field names in `export_fields`")
+        diff = set(export_fields) - set(table_field_names)
+        if diff:
+            field_names = ', '.join('"{}"'.format(field) for field in diff)
+            raise ValueError("Invalid field names {}".format(field_names))
 
         field_indexes = map(table_field_names.index, export_fields)
 
