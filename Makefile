@@ -1,4 +1,5 @@
 test:
+	coverage erase
 	nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/*.py
 
 clean:
