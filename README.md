@@ -343,6 +343,8 @@ or (if you don't have `make`):
 
 ## Related Projects
 
+- [scrapy](http://scrapy.org/)
+- [grablib](https://github.com/lorien/grab)
 - [streamtools](http://blog.nytlabs.com/streamtools/)
 - [multicorn](https://github.com/Kozea/Multicorn)
 - [webscraper.io](http://webscraper.io/)
