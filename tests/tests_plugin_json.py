@@ -137,7 +137,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
             "unicode_column": "\\u00c1lvaro",
             "null_column": ""
           }
-        ]''').strip()
+        ]''').strip().replace('\r\n', '\n')
         temp.file.seek(0)
-        result = temp.file.read().strip()
+        result = temp.file.read().strip().replace('\r\n', '\n')
         self.assertEqual(result, expected)
