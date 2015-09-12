@@ -48,5 +48,10 @@ try:
 except ImportError:
     pass
 
+try:
+    from rows.plugins.xlsx import import_from_xlsx, export_to_xlsx
+except ImportError:
+    pass
+
 
 __version__ = '0.2.0-dev'
