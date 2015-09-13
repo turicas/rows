@@ -96,14 +96,15 @@ def sort(input_encoding, output_encoding, input_locale, output_locale, key,
         export_to_uri(destination, table, encoding=output_encoding)
 
 
-@cli.command(help='Sum tables from `source` URIs and save into `destination`')
+@cli.command(name='sum',
+             help='Sum tables from `source` URIs and save into `destination`')
 @click.option('--input-encoding', default=DEFAULT_INPUT_ENCODING)
 @click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('destination')
-def sum(input_encoding, output_encoding, input_locale, output_locale, sources,
+def sum_(input_encoding, output_encoding, input_locale, output_locale, sources,
         destination):
 
     with rows.locale_context(input_locale):
