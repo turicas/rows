@@ -84,7 +84,7 @@ def download_file(uri, verify_ssl):
     # TODO: try to guess with file-magic lib
     try:
         content_type = response.headers['content-type']
-        plugin_name = content_type.split('/')[-1]
+        plugin_name = content_type.split('/')[-1].split(';')[0].lower()
     except (KeyError, IndexError):
         try:
             plugin_name = uri.split('/')[-1].split('.')[-1].lower()
