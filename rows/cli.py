@@ -15,11 +15,16 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# TODO: define exit codes
+# TODO: move default options to base command
 # TODO: test this whole module
 # TODO: add option to pass 'create_table' options in command-line (like force
 #       fields)
 
+import sys
+
 import click
+import requests.exceptions
 
 import rows
 
@@ -31,6 +36,19 @@ DEFAULT_OUTPUT_ENCODING = 'utf-8'
 DEFAULT_INPUT_LOCALE = 'C'
 DEFAULT_OUTPUT_LOCALE = 'C'
 
+
+def import_table(source, encoding, verify_ssl=True):
+    try:
+        table = import_from_uri(source, verify_ssl=verify_ssl,
+                                encoding=encoding)
+    except requests.exceptions.SSLError:
+        click.echo('ERROR: SSL verification failed! '
+                   'Use `--verify-ssl=no` if you want to ignore.', err=True)
+        sys.exit(2)
+    else:
+        return table
+
+
 @click.group()
 def cli():
     pass
@@ -41,13 +59,15 @@ def cli():
 @click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
+@click.option('--verify-ssl', default=True, type=bool)
 @click.argument('source')
 @click.argument('destination')
 def convert(input_encoding, output_encoding, input_locale, output_locale,
-            source, destination):
+            verify_ssl, source, destination):
 
     with rows.locale_context(input_locale):
-        table = import_from_uri(source, encoding=input_encoding)
+        table = import_table(source, encoding=input_encoding,
+                             verify_ssl=verify_ssl)
 
     with rows.locale_context(output_locale):
         export_to_uri(destination, table, encoding=output_encoding)
@@ -59,15 +79,17 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
+@click.option('--verify-ssl', default=True, type=bool)
 @click.argument('keys')
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('destination')
-def join(input_encoding, output_encoding, input_locale, output_locale, keys,
-         sources, destination):
+def join(input_encoding, output_encoding, input_locale, output_locale,
+         verify_ssl, keys, sources, destination):
     keys = [key.strip() for key in keys.split(',')]
 
     with rows.locale_context(input_locale):
-        tables = [import_from_uri(source, encoding=input_encoding)
+        tables = [import_table(source, encoding=input_encoding,
+                               verify_ssl=verify_ssl)
                   for source in sources]
 
     result = rows.join(keys, tables)
@@ -81,15 +103,17 @@ def join(input_encoding, output_encoding, input_locale, output_locale, keys,
 @click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
+@click.option('--verify-ssl', default=True, type=bool)
 @click.argument('key')
 @click.argument('source')
 @click.argument('destination')
-def sort(input_encoding, output_encoding, input_locale, output_locale, key,
-         source, destination):
+def sort(input_encoding, output_encoding, input_locale, output_locale,
+         verify_ssl, key, source, destination):
     key = key.replace('^', '-')
 
     with rows.locale_context(input_locale):
-        table = import_from_uri(source, encoding=input_encoding)
+        table = import_table(source, encoding=input_encoding,
+                             verify_ssl=verify_ssl)
         table.order_by(key)
 
     with rows.locale_context(output_locale):
@@ -102,13 +126,15 @@ def sort(input_encoding, output_encoding, input_locale, output_locale, key,
 @click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
+@click.option('--verify-ssl', default=True, type=bool)
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('destination')
-def sum_(input_encoding, output_encoding, input_locale, output_locale, sources,
-        destination):
+def sum_(input_encoding, output_encoding, input_locale, output_locale,
+         verify_ssl, sources, destination):
 
     with rows.locale_context(input_locale):
-        tables = [import_from_uri(source, encoding=input_encoding)
+        tables = [import_table(source, encoding=input_encoding,
+                               verify_ssl=verify_ssl)
                   for source in sources]
 
     result = tables[0]

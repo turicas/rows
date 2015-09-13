@@ -24,12 +24,15 @@ from collections import Iterator
 from unicodedata import normalize
 
 import requests
+try:
+    import urllib3
+except ImportError:
+    from requests.packages import urllib3
 
 import rows
 
 
-# TODO: create functions to serialize/deserialize data
-
+urllib3.disable_warnings()
 SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
 
@@ -73,11 +76,12 @@ def ipartition(iterable, partition_size):
         yield data
 
 
-def download_file(uri):
-    response = requests.get(uri)
+def download_file(uri, verify_ssl):
+    response = requests.get(uri, verify=verify_ssl)
     content = response.content
 
     # TODO: try to guess with uri.split('/')[-1].split('.')[-1].lower()
+    # TODO: try to guess with file-magic lib
     try:
         content_type = response.headers['content-type']
         plugin_name = content_type.split('/')[-1]
@@ -96,10 +100,10 @@ def download_file(uri):
     return filename
 
 
-def get_uri_information(uri):
+def get_data_from_uri(uri, verify_ssl):
     if uri.startswith('http://') or uri.startswith('https://'):
         should_delete = True
-        filename = download_file(uri)
+        filename = download_file(uri, verify_ssl=verify_ssl)
     else:
         should_delete = False
         filename = uri
@@ -114,9 +118,10 @@ def get_uri_information(uri):
     return should_delete, filename, plugin_name
 
 
-def import_from_uri(uri, *args, **kwargs):
+def import_from_uri(uri, verify_ssl=True, *args, **kwargs):
     # TODO: support '-' also
-    should_delete, filename, plugin_name = get_uri_information(uri)
+    should_delete, filename, plugin_name = get_data_from_uri(uri,
+            verify_ssl=verify_ssl)
 
     try:
         import_function = getattr(rows, 'import_from_{}'.format(plugin_name))
