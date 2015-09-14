@@ -335,6 +335,7 @@ or (if you don't have `make`):
 
 ## Similar Projects
 
+- [odo](https://github.com/blaze/odo)
 - [OKFN's messytables](https://github.com/okfn/messytables)
 - [OKFN's goodtables](https://github.com/okfn/goodtables)
 - [tablib](https://tablib.readthedocs.org/en/latest/)
