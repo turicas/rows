@@ -23,12 +23,15 @@
 
 import sys
 
+from io import BytesIO
+
 import click
 import requests.exceptions
 
 import rows
 
 from rows.utils import import_from_uri, export_to_uri
+from rows.plugins.utils import make_header
 
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
@@ -37,7 +40,7 @@ DEFAULT_INPUT_LOCALE = 'C'
 DEFAULT_OUTPUT_LOCALE = 'C'
 
 
-def import_table(source, encoding, verify_ssl=True):
+def _import_table(source, encoding, verify_ssl=True):
     try:
         table = import_from_uri(source, verify_ssl=verify_ssl,
                                 encoding=encoding)
@@ -47,6 +50,22 @@ def import_table(source, encoding, verify_ssl=True):
         sys.exit(2)
     else:
         return table
+
+def _get_field_names(field_names, table_field_names, permit_not=False):
+    new_field_names = make_header(field_names.split(','),
+                                  permit_not=permit_not)
+    if not permit_not:
+        diff = set(new_field_names) - table_field_names
+    else:
+        diff = set(field_name.replace('^', '')
+                   for field_name in new_field_names) - table_field_names
+
+    if diff:
+        missing = ', '.join(['"{}"'.format(field) for field in diff])
+        click.echo('Table does not have fields: {}'.format(missing), err=True)
+        sys.exit(1)
+    else:
+        return new_field_names
 
 
 @click.group()
@@ -66,8 +85,8 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
             verify_ssl, source, destination):
 
     with rows.locale_context(input_locale):
-        table = import_table(source, encoding=input_encoding,
-                             verify_ssl=verify_ssl)
+        table = _import_table(source, encoding=input_encoding,
+                              verify_ssl=verify_ssl)
 
     with rows.locale_context(output_locale):
         export_to_uri(destination, table, encoding=output_encoding)
@@ -88,8 +107,8 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
     keys = [key.strip() for key in keys.split(',')]
 
     with rows.locale_context(input_locale):
-        tables = [import_table(source, encoding=input_encoding,
-                               verify_ssl=verify_ssl)
+        tables = [_import_table(source, encoding=input_encoding,
+                                verify_ssl=verify_ssl)
                   for source in sources]
 
     result = rows.join(keys, tables)
@@ -109,11 +128,12 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
 @click.argument('destination')
 def sort(input_encoding, output_encoding, input_locale, output_locale,
          verify_ssl, key, source, destination):
+    # TODO: `key` can be a list
     key = key.replace('^', '-')
 
     with rows.locale_context(input_locale):
-        table = import_table(source, encoding=input_encoding,
-                             verify_ssl=verify_ssl)
+        table = _import_table(source, encoding=input_encoding,
+                              verify_ssl=verify_ssl)
         table.order_by(key)
 
     with rows.locale_context(output_locale):
@@ -133,8 +153,8 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
          verify_ssl, sources, destination):
 
     with rows.locale_context(input_locale):
-        tables = [import_table(source, encoding=input_encoding,
-                               verify_ssl=verify_ssl)
+        tables = [_import_table(source, encoding=input_encoding,
+                                verify_ssl=verify_ssl)
                   for source in sources]
 
     result = tables[0]
@@ -143,6 +163,44 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 
     with rows.locale_context(output_locale):
         export_to_uri(destination, result, encoding=output_encoding)
+
+
+@cli.command(name='print', help='Print a table')
+@click.option('--input-encoding', default=DEFAULT_INPUT_ENCODING)
+@click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
+@click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
+@click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
+@click.option('--verify-ssl', default=True, type=bool)
+@click.option('--fields')
+@click.option('--order-by')
+@click.argument('source', required=True)
+def print_(input_encoding, output_encoding, input_locale, output_locale,
+           verify_ssl, fields, order_by, source):
+
+    with rows.locale_context(input_locale):
+        table = _import_table(source, encoding=input_encoding,
+                              verify_ssl=verify_ssl)
+
+    table_field_names = set(table.fields.keys())
+
+    export_fields = None
+    if fields is not None:
+        export_fields = _get_field_names(fields, table_field_names)
+
+    if order_by is not None:
+        order_by = _get_field_names(order_by, table_field_names,
+                                    permit_not=True)
+        # TODO: use complete list of `order_by` fields
+        table.order_by(order_by[0].replace('^', '-'))
+
+    fobj = BytesIO()
+    with rows.locale_context(output_locale):
+        rows.export_to_txt(table, fobj, encoding=output_encoding,
+                           export_fields=export_fields)
+    # TODO: may pass unicode to click.echo if output_encoding is not provided
+
+    fobj.seek(0)
+    click.echo(fobj.read())
 
 
 if __name__ == '__main__':

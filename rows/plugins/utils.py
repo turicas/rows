@@ -22,7 +22,7 @@ from itertools import chain, islice
 
 from rows.fields import detect_types
 from rows.table import Table
-from rows.utils import slug
+from rows.utils import slug, SLUG_CHARS
 
 
 def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
@@ -45,8 +45,13 @@ def _make_new_field_name(field_name, field_names):
     return new_field_name
 
 
-def make_header(data):
-    header = [slug(field_name).lower() for field_name in data]
+def make_header(data, permit_not=False):
+    permitted_chars = SLUG_CHARS
+    if permit_not:
+        permitted_chars += '^'
+
+    header = [slug(field_name, permitted_chars=permitted_chars).lower()
+              for field_name in data]
     field_names = []
     for index, field_name in enumerate(header):
         field_name = field_name if field_name else 'field_{}'.format(index)
