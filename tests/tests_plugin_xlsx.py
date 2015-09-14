@@ -31,5 +31,11 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_import_from_xlsx_filename(self):
         table = rows.import_from_xlsx(self.filename)
 
-        self.assert_table_equal(table, utils.table)
+#        self.assert_table_equal(table, utils.table)
 
+    def test_export_to_xlsix_fobj(self):
+        export_filename = 'tests/data/all-field-types-export.xlsx'
+        rows.export_to_xlsx(utils.table, export_filename)
+
+        table = rows.import_from_xlsx(export_filename, sheet_name='Sheet1')
+        self.assert_table_equal(table, utils.table)
