@@ -22,7 +22,8 @@ EXTRA_REQUIREMENTS = {
         'csv': ['unicodecsv'],
         'cli': ['click', 'requests'],
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
-        'xls': ['xlrd', 'xlwt'], }
+        'xls': ['xlrd', 'xlwt'],
+        'xlsx': ['openpyxl'], }
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = EXTRA_REQUIREMENTS['csv']
 LONG_DESCRIPTION = '''
