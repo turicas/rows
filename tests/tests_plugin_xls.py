@@ -36,29 +36,12 @@ def date_to_datetime(value):
 
 class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
+    plugin_name = 'xls'
     filename = 'tests/data/all-field-types.xls'
 
     def test_imports(self):
         self.assertIs(rows.import_from_xls, rows.plugins.xls.import_from_xls)
         self.assertIs(rows.export_to_xls, rows.plugins.xls.export_to_xls)
-
-    def test_import_from_xls_filename(self):
-        table = rows.import_from_xls(self.filename)
-
-        self.assert_table_equal(table, utils.table)
-
-        expected_meta = {'imported_from': 'xls', 'filename': self.filename,}
-        self.assertEqual(table.meta, expected_meta)
-
-    def test_import_from_xls_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
-        with open(self.filename, 'rb') as fobj:
-            table = rows.import_from_xls(fobj)
-
-        self.assert_table_equal(table, utils.table)
-
-        expected_meta = {'imported_from': 'xls', 'filename': self.filename,}
-        self.assertEqual(table.meta, expected_meta)
 
     @mock.patch('rows.plugins.xls.create_table')
     def test_import_from_xls_uses_create_table(self, mocked_create_table):
@@ -72,6 +55,21 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call = mocked_create_table.call_args
         kwargs['meta'] = {'imported_from': 'xls', 'filename': self.filename, }
         self.assertEqual(call[1], kwargs)
+
+    @mock.patch('rows.plugins.xls.create_table')
+    def test_import_from_xls_retrieve_desired_data(self, mocked_create_table):
+        mocked_create_table.return_value = 42
+
+        # import using filename
+        table_1 = rows.import_from_xls(self.filename)
+        call_args = mocked_create_table.call_args_list[0]
+        self.assert_create_table_data(call_args)
+
+        # import using fobj
+        with open(self.filename, 'rb') as fobj:
+            table_2 = rows.import_from_xls(fobj)
+        call_args = mocked_create_table.call_args_list[1]
+        self.assert_create_table_data(call_args)
 
     def test_export_to_xls_filename(self):
         # TODO: may test file contents

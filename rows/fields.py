@@ -32,7 +32,7 @@ __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
            'ByteField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
-NULL = (b'-', b'null', b'none', b'nil')
+NULL = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
 
 
 class Field(object):

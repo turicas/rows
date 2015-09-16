@@ -28,16 +28,18 @@ import rows.fields as fields
 from rows.table import Table
 
 
-expected_fields = OrderedDict([('bool_column', fields.BoolField),
-                               ('integer_column', fields.IntegerField),
-                               ('float_column', fields.FloatField),
-                               ('decimal_column', fields.FloatField),
-                               ('percent_column', fields.PercentField),
-                               ('date_column', fields.DateField),
-                               ('datetime_column', fields.DatetimeField),
-                               ('unicode_column', fields.UnicodeField),
-                               ('null_column', fields.ByteField),])
-expected_rows = [
+NONE_VALUES = list(fields.NULL) + [None]
+FIELDS = OrderedDict([('bool_column', fields.BoolField),
+                      ('integer_column', fields.IntegerField),
+                      ('float_column', fields.FloatField),
+                      ('decimal_column', fields.FloatField),
+                      ('percent_column', fields.PercentField),
+                      ('date_column', fields.DateField),
+                      ('datetime_column', fields.DatetimeField),
+                      ('unicode_column', fields.UnicodeField),
+                      ('null_column', fields.ByteField),])
+FIELD_NAMES = FIELDS.keys()
+EXPECTED_ROWS = [
         {'float_column': 3.141592,
          'decimal_column': 3.141592,
          'bool_column': True,
@@ -92,10 +94,11 @@ expected_rows = [
          'percent_column': Decimal('0.02'),
          'unicode_column': 'test',
          'null_column': ''.encode('utf-8')},]
-table = Table(fields=expected_fields)
-for row in expected_rows:
+table = Table(fields=FIELDS)
+for row in EXPECTED_ROWS:
     table.append(row)
 table._meta = {'test': 123}
+
 
 class RowsTestMixIn(object):
 
@@ -122,3 +125,83 @@ class RowsTestMixIn(object):
         with open(second_filename, 'rb') as fobj:
             second = fobj.read()
         self.assertEqual(first, second)
+
+    def assert_create_table_data(self, call_args):
+        kwargs = call_args[1]
+        expected_meta = {'imported_from': self.plugin_name,
+                         'filename': self.filename, }
+        self.assertEqual(kwargs['meta'], expected_meta)
+        del kwargs['meta']
+        self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs)
+
+    def assert_table_data(self, data, args, kwargs):
+        field_types = {field_name: field_type.TYPE
+                       for field_name, field_type in FIELDS.items()}
+        self.assertEqual(data[0], FIELDS.keys())
+
+        for row_index, row in enumerate(data[1:]):
+            for column_index, value in enumerate(row):
+                field_name = FIELD_NAMES[column_index]
+                expected_value = EXPECTED_ROWS[row_index][field_name]
+                self.field_assert(field_name, expected_value, value, *args,
+                                  **kwargs)
+
+    # Fields asserts: input values we expect from plugins
+
+    def field_assert(self, field_name, expected_value, value, *args, **kwargs):
+        asserts = {'bool_column': self.assert_BoolField,
+                   'integer_column': self.assert_IntegerField,
+                   'float_column': self.assert_FloatField,
+                   'decimal_column': self.assert_DecimalField,
+                   'percent_column': self.assert_PercentField,
+                   'date_column': self.assert_DateField,
+                   'datetime_column': self.assert_DatetimeField,
+                   'unicode_column': self.assert_UnicodeField,
+                   'null_column': self.assert_None_value, }
+        return asserts[field_name](expected_value, value, *args, **kwargs)
+
+    def assert_BoolField(self, expected_value, value, *args, **kwargs):
+        if expected_value is True:
+            assert value in (True, 1, '1', 'true', 'yes')
+        elif expected_value is False:
+            assert value in (False, 0, '0', 'false', 'no')
+        else:
+            # TODO: what about None?
+            raise ValueError('expected_value is not True or False')
+
+    def assert_IntegerField(self, expected_value, value, *args, **kwargs):
+        self.assertIn(value, (expected_value, str(expected_value)))
+
+
+    def assert_FloatField(self, expected_value, value, *args, **kwargs):
+        if type(value) != type(expected_value):
+            self.assertEqual(value, str(expected_value))
+        else:
+            self.assertAlmostEqual(expected_value, value, places=5)
+
+
+    def assert_DecimalField(self, expected_value, value, *args, **kwargs):
+        return self.assert_FloatField(expected_value, value)
+
+
+    def assert_PercentField(self, expected_value, value, *args, **kwargs):
+        float_value = float(expected_value) * 100
+        self.assertIn(value, (str(float_value) + '%',
+                              str(float_value) + '.0%',
+                              str(float_value) + '.00%'))
+
+
+    def assert_DateField(self, expected_value, value, *args, **kwargs):
+        self.assertEqual(str(expected_value), value)
+
+
+    def assert_DatetimeField(self, expected_value, value, *args, **kwargs):
+        self.assertEqual(str(expected_value).replace(' ', 'T'), value)
+
+
+    def assert_UnicodeField(self, expected_value, value, *args, **kwargs):
+        self.assertEqual(expected_value, value)
+
+
+    def assert_None_value(self, expected_value, value):
+        self.assertIn(value, NONE_VALUES)
