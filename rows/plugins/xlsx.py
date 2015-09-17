@@ -1,9 +1,11 @@
-#coding: utf-8
+# coding: utf-8
+
 import datetime
 import decimal
 
 from openpyxl import load_workbook, Workbook
-from rows.utils import create_table, get_filename_and_fobj
+from rows.plugins.utils import create_table, get_filename_and_fobj
+
 
 def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
         start_row=1, start_column=1, *args, **kwargs):
