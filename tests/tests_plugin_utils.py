@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import itertools
 import random
 import unittest
 
@@ -28,6 +29,16 @@ import rows.plugins.utils as plugins_utils
 from rows import fields
 
 import utils
+
+
+def possible_field_names_errors(error_fields):
+    error_fields = ['"{}"'.format(field_name) for field_name in error_fields]
+    fields_permutations = itertools.permutations(error_fields,
+                                                 len(error_fields))
+    fields_permutations_str = [', '.join(field_names)
+                               for field_names in fields_permutations]
+    return ['Invalid field names {}'.format(field_names)
+            for field_names in fields_permutations_str]
 
 
 class PluginUtilsTestCase(unittest.TestCase):
@@ -80,12 +91,14 @@ class PluginUtilsTestCase(unittest.TestCase):
                       ['2', 2.71, 'turicas'],
                       ['3', 1.23, 'Justen']]
 
-        import_fields = list(header)[:-1] + ['doesnt-exist', 'ruby']
+        error_fields = ['doesnt_exist', 'ruby']
+        import_fields = list(header)[:-1] + error_fields
         with self.assertRaises(ValueError) as exception_context:
             plugins_utils.create_table([header] + table_rows,
                                        import_fields=import_fields)
-        self.assertEqual(exception_context.exception.message,
-                         'Invalid field names "ruby", "doesnt_exist"')
+
+        self.assertIn(exception_context.exception.message,
+                      possible_field_names_errors(error_fields))
 
     def test_create_table_repeated_field_names(self):
         header = ['first', 'first', 'first']
@@ -140,13 +153,15 @@ class PluginUtilsTestCase(unittest.TestCase):
 
     def test_prepare_to_export_some_fields_dont_exist(self):
         field_names = utils.table.fields.keys()
-        export_fields = field_names + ['does-not-exist', 'java']
+        error_fields = ['does_not_exist', 'java']
+        export_fields = field_names + error_fields
         result = plugins_utils.prepare_to_export(utils.table,
                                                  export_fields=export_fields)
         with self.assertRaises(ValueError) as exception_context:
             result.next()
-        self.assertEqual(exception_context.exception.message,
-                         'Invalid field names "does_not_exist", "java"')
+
+        self.assertIn(exception_context.exception.message,
+                      possible_field_names_errors(error_fields))
 
     @mock.patch('rows.plugins.utils.prepare_to_export')
     def test_serialize_should_call_prepare_to_export(self,

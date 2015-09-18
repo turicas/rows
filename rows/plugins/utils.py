@@ -82,8 +82,8 @@ def create_table(data, meta=None, fields=None, skip_header=True,
             _ = table_rows.next()
 
         header = make_header(fields.keys())
-        fields = {field_name: fields[key]
-                  for field_name, key in zip(header, fields)}
+        fields = OrderedDict([(field_name, fields[key])
+                              for field_name, key in zip(header, fields)])
 
     if import_fields is not None:
         # TODO: can optimize if import_fields is not None.

@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import itertools
 import json
 import tempfile
 import unittest
@@ -124,20 +125,11 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table.append(utils.table[0]._asdict())
         rows.export_to_json(table, temp.name, indent=2)
 
-        expected = dedent('''
-        [
-          {
-            "float_column": 3.141592,
-            "decimal_column": 3.141592,
-            "bool_column": true,
-            "integer_column": 1,
-            "date_column": "2015-01-01",
-            "datetime_column": "2015-08-18T15:10:00",
-            "percent_column": "1%",
-            "unicode_column": "\\u00c1lvaro",
-            "null_column": ""
-          }
-        ]''').strip().replace('\r\n', '\n')
         temp.file.seek(0)
-        result = temp.file.read().strip().replace('\r\n', '\n')
-        self.assertEqual(result, expected)
+        result = temp.file.read().strip().replace('\r\n', '\n').splitlines()
+        self.assertEqual(result[0], '[')
+        self.assertEqual(result[1], '  {')
+        for line in result[2:-2]:
+            self.assertTrue(line.startswith('    '))
+        self.assertEqual(result[-2], '  }')
+        self.assertEqual(result[-1], ']')
