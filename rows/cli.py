@@ -40,10 +40,10 @@ DEFAULT_INPUT_LOCALE = 'C'
 DEFAULT_OUTPUT_LOCALE = 'C'
 
 
-def _import_table(source, encoding, verify_ssl=True):
+def _import_table(source, encoding, verify_ssl=True, *args, **kwargs):
     try:
         table = import_from_uri(source, verify_ssl=verify_ssl,
-                                encoding=encoding)
+                                encoding=encoding, *args, **kwargs)
     except requests.exceptions.SSLError:
         click.echo('ERROR: SSL verification failed! '
                    'Use `--verify-ssl=no` if you want to ignore.', err=True)
@@ -173,20 +173,38 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--fields')
+@click.option('--fields-except')
 @click.option('--order-by')
 @click.argument('source', required=True)
 def print_(input_encoding, output_encoding, input_locale, output_locale,
-           verify_ssl, fields, order_by, source):
+           verify_ssl, fields, fields_except, order_by, source):
 
+    if fields is not None and fields_except is not None:
+        click.echo('ERROR: `--fields` cannot be used with `--fields-except`',
+                   err=True)
+        sys.exit(20)
+
+    # TODO: may use `import_fields` for better performance
     with rows.locale_context(input_locale):
         table = _import_table(source, encoding=input_encoding,
                               verify_ssl=verify_ssl)
 
     table_field_names = set(table.fields.keys())
-
-    export_fields = None
     if fields is not None:
-        export_fields = _get_field_names(fields, table_field_names)
+        fields = _get_field_names(fields, table_field_names)
+    if fields_except is not None:
+        fields_except = _get_field_names(fields_except, table_field_names)
+
+    if fields is not None and fields_except is None:
+        export_fields = fields
+    elif fields is not None and fields_except is not None:
+        export_fields = list(fields)
+        map(export_fields.remove, fields_except)
+    elif fields is None and fields_except is not None:
+        export_fields = list(table_field_names)
+        map(export_fields.remove, fields_except)
+    else:
+        export_fields = table_field_names
 
     if order_by is not None:
         order_by = _get_field_names(order_by, table_field_names,
