@@ -13,6 +13,9 @@ automatically detect types and give you high-level Python objects so you can
 start **working with the data** instead of **trying to parse it**. It is also
 locale-and-unicode aware. :)
 
+> Note: if you're using [rows](https://github.com/turicas/rows/) in some
+> project please [tell us](https://github.com/turicas/rows/issues/103)! :-)
+
 
 ## Architecture
 
