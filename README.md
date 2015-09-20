@@ -64,7 +64,14 @@ use another one you need to explicitly install its dependencies, for example:
     pip install rows[html]
     pip install rows[xls]
 
-Or you can install all dependencies by running:
+You also need to install some dependencies to use the [command-line
+interface](#command-line-interface). You can do it installing the `cli` extra
+requirement:
+
+    pip install rows[cli]
+
+And - easily - you can install all the dependencies by using the `all` extra
+requirement:
 
     pip install rows[all]
 
