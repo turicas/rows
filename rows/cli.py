@@ -57,17 +57,23 @@ def _get_field_names(field_names, table_field_names, permit_not=False):
     new_field_names = make_header(field_names.split(','),
                                   permit_not=permit_not)
     if not permit_not:
-        diff = set(new_field_names) - table_field_names
+        diff = set(new_field_names) - set(table_field_names)
     else:
         diff = set(field_name.replace('^', '')
-                   for field_name in new_field_names) - table_field_names
+                   for field_name in new_field_names) - set(table_field_names)
 
     if diff:
         missing = ', '.join(['"{}"'.format(field) for field in diff])
         click.echo('Table does not have fields: {}'.format(missing), err=True)
         sys.exit(1)
     else:
-        return new_field_names
+        result = []
+        for field_name in table_field_names:
+            if field_name in new_field_names:
+                result.append(field_name)
+            elif '^' + field_name in new_field_names:
+                result.append('^' + field_name)
+        return result
 
 
 @click.group()
@@ -82,10 +88,11 @@ def cli():
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
 @click.option('--verify-ssl', default=True, type=bool)
+@click.option('--order-by')
 @click.argument('source')
 @click.argument('destination')
 def convert(input_encoding, output_encoding, input_locale, output_locale,
-            verify_ssl, source, destination):
+            verify_ssl, order_by, source, destination):
 
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
@@ -93,6 +100,13 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
     with rows.locale_context(input_locale):
         table = _import_table(source, encoding=input_encoding,
                               verify_ssl=verify_ssl)
+
+    if order_by is not None:
+        order_by = _get_field_names(order_by,
+                                    table.fields.keys(),
+                                    permit_not=True)
+        # TODO: use complete list of `order_by` fields
+        table.order_by(order_by[0].replace('^', '-'))
 
     with rows.locale_context(output_locale):
         export_to_uri(destination, table, encoding=output_encoding)
@@ -105,11 +119,12 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
 @click.option('--verify-ssl', default=True, type=bool)
+@click.option('--order-by')
 @click.argument('keys')
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('destination')
 def join(input_encoding, output_encoding, input_locale, output_locale,
-         verify_ssl, keys, sources, destination):
+         verify_ssl, order_by, keys, sources, destination):
 
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
@@ -122,6 +137,13 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
 
     result = rows.join(keys, tables)
 
+    if order_by is not None:
+        order_by = _get_field_names(order_by,
+                                    result.fields.keys(),
+                                    permit_not=True)
+        # TODO: use complete list of `order_by` fields
+        result.order_by(order_by[0].replace('^', '-'))
+
     with rows.locale_context(output_locale):
         export_to_uri(destination, result, encoding=output_encoding)
 
@@ -132,11 +154,12 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
 @click.option('--verify-ssl', default=True, type=bool)
+@click.option('--order-by')
 @click.argument('key')
 @click.argument('source')
 @click.argument('destination')
 def sort(input_encoding, output_encoding, input_locale, output_locale,
-         verify_ssl, key, source, destination):
+         verify_ssl, order_by, key, source, destination):
 
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
@@ -213,7 +236,7 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
         table = _import_table(source, encoding=input_encoding,
                               verify_ssl=verify_ssl)
 
-    table_field_names = set(table.fields.keys())
+    table_field_names = table.fields.keys()
     if fields is not None:
         fields = _get_field_names(fields, table_field_names)
     if fields_except is not None:
