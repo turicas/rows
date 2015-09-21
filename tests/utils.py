@@ -93,7 +93,7 @@ EXPECTED_ROWS = [
          'datetime_column': datetime.datetime(2015, 5, 6, 12, 1, 2),
          'percent_column': Decimal('0.02'),
          'unicode_column': 'test',
-         'null_column': ''.encode('utf-8')},]
+         'null_column': 'n/a'.encode('utf-8')},]
 table = Table(fields=FIELDS)
 for row in EXPECTED_ROWS:
     table.append(row)
@@ -126,25 +126,36 @@ class RowsTestMixIn(object):
             second = fobj.read()
         self.assertEqual(first, second)
 
-    def assert_create_table_data(self, call_args):
+    def assert_create_table_data(self, call_args, field_ordering=True):
         kwargs = call_args[1]
         expected_meta = {'imported_from': self.plugin_name,
                          'filename': self.filename, }
         self.assertEqual(kwargs['meta'], expected_meta)
         del kwargs['meta']
-        self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs)
+        self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs,
+                               field_ordering=field_ordering)
 
-    def assert_table_data(self, data, args, kwargs):
+    def assert_table_data(self, data, args, kwargs, field_ordering):
         field_types = {field_name: field_type.TYPE
                        for field_name, field_type in FIELDS.items()}
-        self.assertEqual(data[0], FIELDS.keys())
+        data = list(data)
+        if field_ordering:
+            self.assertEqual(data[0], FIELD_NAMES)
 
-        for row_index, row in enumerate(data[1:]):
-            for column_index, value in enumerate(row):
-                field_name = FIELD_NAMES[column_index]
-                expected_value = EXPECTED_ROWS[row_index][field_name]
-                self.field_assert(field_name, expected_value, value, *args,
-                                  **kwargs)
+            for row_index, row in enumerate(data[1:]):
+                for column_index, value in enumerate(row):
+                    field_name = FIELD_NAMES[column_index]
+                    expected_value = EXPECTED_ROWS[row_index][field_name]
+                    self.field_assert(field_name, expected_value, value, *args,
+                                      **kwargs)
+        else:
+            self.assertEqual(set(data[0]), set(FIELD_NAMES))
+            for row_index, row in enumerate(data[1:]):
+                for column_index, value in enumerate(row):
+                    field_name = data[0][column_index]
+                    expected_value = EXPECTED_ROWS[row_index][field_name]
+                    self.field_assert(field_name, expected_value, value, *args,
+                                      **kwargs)
 
     # Fields asserts: input values we expect from plugins
 

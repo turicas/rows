@@ -46,7 +46,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     @mock.patch('rows.plugins.xls.create_table')
     def test_import_from_xls_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
-        kwargs = {'encoding': 'iso-8859-15', 'some_key': 123, 'other': 456, }
+        kwargs = {'encoding': 'test', 'some_key': 123, 'other': 456, }
         result = rows.import_from_xls(self.filename, **kwargs)
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
@@ -68,8 +68,8 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # import using fobj
         with open(self.filename, 'rb') as fobj:
             table_2 = rows.import_from_xls(fobj)
-        call_args = mocked_create_table.call_args_list[1]
-        self.assert_create_table_data(call_args)
+            call_args = mocked_create_table.call_args_list[1]
+            self.assert_create_table_data(call_args)
 
     def test_export_to_xls_filename(self):
         # TODO: may test file contents

@@ -32,6 +32,7 @@ import utils
 
 class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
+    plugin_name = 'json'
     filename = 'tests/data/all-field-types.json'
     encoding = 'utf-8'
 
@@ -41,20 +42,33 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertIs(rows.export_to_json,
                       rows.plugins._json.export_to_json)
 
-    def test_import_from_json_filename(self):
-        table = rows.import_from_json(self.filename, encoding=self.encoding)
-        self.assert_table_equal(table, utils.table)
-        expected_meta = {'imported_from': 'json', 'filename': self.filename, }
-        self.assertEqual(table.meta, expected_meta)
+    @mock.patch('rows.plugins._json.create_table')
+    def test_import_from_json_uses_create_table(self, mocked_create_table):
+        mocked_create_table.return_value = 42
+        kwargs = {'encoding': self.encoding, 'some_key': 123, 'other': 456, }
+        result = rows.import_from_json(self.filename, **kwargs)
+        self.assertTrue(mocked_create_table.called)
+        self.assertEqual(mocked_create_table.call_count, 1)
+        self.assertEqual(result, 42)
 
-    def test_import_from_json_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
-        with open(self.filename) as fobj:
-            table = rows.import_from_json(fobj, encoding=self.encoding)
-        self.assert_table_equal(table, utils.table)
+        call = mocked_create_table.call_args
+        kwargs['meta'] = {'imported_from': 'json', 'filename': self.filename, }
+        self.assertEqual(call[1], kwargs)
 
-        expected_meta = {'imported_from': 'json', 'filename': self.filename, }
-        self.assertEqual(table.meta, expected_meta)
+    @mock.patch('rows.plugins._json.create_table')
+    def test_import_from_json_retrieve_desired_data(self, mocked_create_table):
+        mocked_create_table.return_value = 42
+
+        # import using filename
+        table_1 = rows.import_from_json(self.filename)
+        call_args = mocked_create_table.call_args_list[0]
+        self.assert_create_table_data(call_args, field_ordering=False)
+
+        # import using fobj
+        with open(self.filename, 'rb') as fobj:
+            table_2 = rows.import_from_json(fobj)
+            call_args = mocked_create_table.call_args_list[1]
+            self.assert_create_table_data(call_args, field_ordering=False)
 
     @mock.patch('rows.plugins._json.create_table')
     def test_import_from_json_uses_create_table(self, mocked_create_table):
@@ -67,6 +81,22 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         call = mocked_create_table.call_args
         kwargs['meta'] = {'imported_from': 'json', 'filename': self.filename, }
+        self.assertEqual(call[1], kwargs)
+
+    @mock.patch('rows.plugins._json.prepare_to_export')
+    def test_export_to_json_uses_prepare_to_export(self,
+            mocked_prepare_to_export):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+        kwargs = {'test': 123, 'parameter': 3.14, }
+        mocked_prepare_to_export.return_value = iter([['field1', 'field2']])
+
+        rows.export_to_json(utils.table, temp.name, **kwargs)
+        self.assertTrue(mocked_prepare_to_export.called)
+        self.assertEqual(mocked_prepare_to_export.call_count, 1)
+
+        call = mocked_prepare_to_export.call_args
+        self.assertEqual(call[0], (utils.table, ))
         self.assertEqual(call[1], kwargs)
 
     def test_export_to_json_filename(self):
@@ -87,35 +117,25 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_json(temp.name)
         self.assert_table_equal(table, utils.table)
 
-    def test_export_to_json_filename_(self):
+    def test_export_to_json_filename_save_data_in_correct_format(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
 
         rows.export_to_json(utils.table, temp.name)
 
-        with open(self.filename, 'rb') as fobj:
-            first_json = json.load(fobj)
-
         with open(temp.name, 'rb') as fobj:
-            second_json = json.load(fobj)
+            imported_json = json.load(fobj)
 
-        self.assertListEqual(first_json, second_json)
-
-    @mock.patch('rows.plugins._json.prepare_to_export')
-    def test_export_to_json_uses_prepare_to_export(self,
-            mocked_prepare_to_export):
-        temp = tempfile.NamedTemporaryFile(delete=False)
-        self.files_to_delete.append(temp.name)
-        kwargs = {'test': 123, 'parameter': 3.14, }
-        mocked_prepare_to_export.return_value = iter([['field1', 'field2']])
-
-        rows.export_to_json(utils.table, temp.name, **kwargs)
-        self.assertTrue(mocked_prepare_to_export.called)
-        self.assertEqual(mocked_prepare_to_export.call_count, 1)
-
-        call = mocked_prepare_to_export.call_args
-        self.assertEqual(call[0], (utils.table, ))
-        self.assertEqual(call[1], kwargs)
+        for row in imported_json:
+            self.assertEqual(type(row['float_column']), float)
+            self.assertEqual(type(row['decimal_column']), float)
+            self.assertEqual(type(row['bool_column']), bool)
+            self.assertEqual(type(row['integer_column']), int)
+            self.assertEqual(type(row['date_column']), unicode)
+            self.assertEqual(type(row['datetime_column']), unicode)
+            self.assertEqual(type(row['percent_column']), unicode)
+            self.assertEqual(type(row['unicode_column']), unicode)
+            self.assertEqual(type(row['null_column']), unicode)
 
     def test_export_to_json_indent(self):
         temp = tempfile.NamedTemporaryFile(delete=False)

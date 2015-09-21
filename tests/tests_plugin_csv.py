@@ -29,28 +29,13 @@ import utils
 
 class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
+    plugin_name = 'csv'
     filename = 'tests/data/all-field-types.csv'
     encoding = 'utf-8'
 
     def test_imports(self):
         self.assertIs(rows.import_from_csv, rows.plugins.csv.import_from_csv)
         self.assertIs(rows.export_to_csv, rows.plugins.csv.export_to_csv)
-
-    def test_import_from_csv_filename(self):
-        table = rows.import_from_csv(self.filename, encoding=self.encoding)
-        self.assert_table_equal(table, utils.table)
-
-        expected_meta = {'imported_from': 'csv', 'filename': self.filename,}
-        self.assertEqual(table.meta, expected_meta)
-
-    def test_import_from_csv_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
-        with open(self.filename) as fobj:
-            table = rows.import_from_csv(fobj, encoding=self.encoding)
-        self.assert_table_equal(table, utils.table)
-
-        expected_meta = {'imported_from': 'csv', 'filename': self.filename,}
-        self.assertEqual(table.meta, expected_meta)
 
     @mock.patch('rows.plugins.csv.create_table')
     def test_import_from_csv_uses_create_table(self, mocked_create_table):
@@ -63,6 +48,39 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         call = mocked_create_table.call_args
         kwargs['meta'] = {'imported_from': 'csv', 'filename': self.filename, }
+        self.assertEqual(call[1], kwargs)
+
+    @mock.patch('rows.plugins.csv.create_table')
+    def test_import_from_csv_retrieve_desired_data(self, mocked_create_table):
+        mocked_create_table.return_value = 42
+
+        # import using filename
+        table_1 = rows.import_from_csv(self.filename)
+        call_args = mocked_create_table.call_args_list[0]
+        self.assert_create_table_data(call_args)
+
+        # import using fobj
+        with open(self.filename, 'rb') as fobj:
+            table_2 = rows.import_from_csv(fobj)
+            call_args = mocked_create_table.call_args_list[1]
+            self.assert_create_table_data(call_args)
+
+    @mock.patch('rows.plugins.csv.serialize')
+    def test_export_to_csv_uses_serialize(self, mocked_serialize):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+        encoding = 'iso-8859-15'
+        kwargs = {'test': 123, 'parameter': 3.14, }
+        mocked_serialize.return_value = iter([['field1', 'field2']])
+
+        rows.export_to_csv(utils.table, temp.name, encoding=encoding,
+                           **kwargs)
+        self.assertTrue(mocked_serialize.called)
+        self.assertEqual(mocked_serialize.call_count, 1)
+
+        call = mocked_serialize.call_args
+        self.assertEqual(call[0], (utils.table, ))
+        kwargs['encoding'] = encoding
         self.assertEqual(call[1], kwargs)
 
     def test_export_to_csv_filename(self):
@@ -83,21 +101,3 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table = rows.import_from_csv(temp.name)
         self.assert_table_equal(table, utils.table)
-
-    @mock.patch('rows.plugins.csv.serialize')
-    def test_export_to_csv_uses_serialize(self, mocked_serialize):
-        temp = tempfile.NamedTemporaryFile(delete=False)
-        self.files_to_delete.append(temp.name)
-        encoding = 'iso-8859-15'
-        kwargs = {'test': 123, 'parameter': 3.14, }
-        mocked_serialize.return_value = iter([['field1', 'field2']])
-
-        rows.export_to_csv(utils.table, temp.name, encoding=encoding,
-                           **kwargs)
-        self.assertTrue(mocked_serialize.called)
-        self.assertEqual(mocked_serialize.call_count, 1)
-
-        call = mocked_serialize.call_args
-        self.assertEqual(call[0], (utils.table, ))
-        kwargs['encoding'] = encoding
-        self.assertEqual(call[1], kwargs)
