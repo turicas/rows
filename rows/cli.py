@@ -42,7 +42,9 @@ DEFAULT_OUTPUT_LOCALE = 'C'
 
 def _import_table(source, encoding, verify_ssl=True, *args, **kwargs):
     try:
-        table = import_from_uri(source, verify_ssl=verify_ssl,
+        table = import_from_uri(source,
+                                default_encoding=DEFAULT_INPUT_ENCODING,
+                                verify_ssl=verify_ssl,
                                 encoding=encoding, *args, **kwargs)
     except requests.exceptions.SSLError:
         click.echo('ERROR: SSL verification failed! '
@@ -75,8 +77,8 @@ def cli():
 
 
 @cli.command(help='Convert table on `source` URI to `destination`')
-@click.option('--input-encoding', default=DEFAULT_INPUT_ENCODING)
-@click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
+@click.option('--input-encoding')
+@click.option('--output-encoding')
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
 @click.option('--verify-ssl', default=True, type=bool)
@@ -84,6 +86,9 @@ def cli():
 @click.argument('destination')
 def convert(input_encoding, output_encoding, input_locale, output_locale,
             verify_ssl, source, destination):
+
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
 
     with rows.locale_context(input_locale):
         table = _import_table(source, encoding=input_encoding,
@@ -95,8 +100,8 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
 
 @cli.command(help='Join tables from `source` URIs using `key(s)` to group '
                   'rows and save into `destination`')
-@click.option('--input-encoding', default=DEFAULT_INPUT_ENCODING)
-@click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
+@click.option('--input-encoding')
+@click.option('--output-encoding')
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
 @click.option('--verify-ssl', default=True, type=bool)
@@ -105,6 +110,9 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
 @click.argument('destination')
 def join(input_encoding, output_encoding, input_locale, output_locale,
          verify_ssl, keys, sources, destination):
+
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
     keys = [key.strip() for key in keys.split(',')]
 
     with rows.locale_context(input_locale):
@@ -119,8 +127,8 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
 
 
 @cli.command(help='Sort from `source` by `key(s)` and save into `destination`')
-@click.option('--input-encoding', default=DEFAULT_INPUT_ENCODING)
-@click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
+@click.option('--input-encoding')
+@click.option('--output-encoding')
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
 @click.option('--verify-ssl', default=True, type=bool)
@@ -129,6 +137,9 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
 @click.argument('destination')
 def sort(input_encoding, output_encoding, input_locale, output_locale,
          verify_ssl, key, source, destination):
+
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
     # TODO: `key` can be a list
     key = key.replace('^', '-')
 
@@ -143,32 +154,41 @@ def sort(input_encoding, output_encoding, input_locale, output_locale,
 
 @cli.command(name='sum',
              help='Sum tables from `source` URIs and save into `destination`')
-@click.option('--input-encoding', default=DEFAULT_INPUT_ENCODING)
-@click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
+@click.option('--input-encoding')
+@click.option('--output-encoding')
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
 @click.option('--verify-ssl', default=True, type=bool)
+@click.option('--order-by')
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('destination')
 def sum_(input_encoding, output_encoding, input_locale, output_locale,
-         verify_ssl, sources, destination):
+         verify_ssl, order_by, sources, destination):
+
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
 
     with rows.locale_context(input_locale):
         tables = [_import_table(source, encoding=input_encoding,
                                 verify_ssl=verify_ssl)
                   for source in sources]
 
-    result = tables[0]
-    for table in tables[1:]:
-        result = result + table
+    result = sum(tables)
+
+    if order_by is not None:
+        order_by = _get_field_names(order_by,
+                                    result.fields.keys(),
+                                    permit_not=True)
+        # TODO: use complete list of `order_by` fields
+        result.order_by(order_by[0].replace('^', '-'))
 
     with rows.locale_context(output_locale):
         export_to_uri(destination, result, encoding=output_encoding)
 
 
 @cli.command(name='print', help='Print a table')
-@click.option('--input-encoding', default=DEFAULT_INPUT_ENCODING)
-@click.option('--output-encoding', default=DEFAULT_OUTPUT_ENCODING)
+@click.option('--input-encoding')
+@click.option('--output-encoding')
 @click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
 @click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
 @click.option('--verify-ssl', default=True, type=bool)
@@ -183,6 +203,10 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
         click.echo('ERROR: `--fields` cannot be used with `--fields-except`',
                    err=True)
         sys.exit(20)
+
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or sys.stdout.encoding or \
+                      DEFAULT_OUTPUT_ENCODING
 
     # TODO: may use `import_fields` for better performance
     with rows.locale_context(input_locale):
@@ -207,7 +231,8 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
         export_fields = table_field_names
 
     if order_by is not None:
-        order_by = _get_field_names(order_by, table_field_names,
+        order_by = _get_field_names(order_by,
+                                    table_field_names,
                                     permit_not=True)
         # TODO: use complete list of `order_by` fields
         table.order_by(order_by[0].replace('^', '-'))

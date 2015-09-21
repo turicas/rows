@@ -97,16 +97,19 @@ def download_file(uri, verify_ssl):
     with open(filename, 'wb') as fobj:
         fobj.write(content)
 
-    return filename
+    return {'filename': filename, 'encoding': response.encoding, }
 
 
 def get_data_from_uri(uri, verify_ssl):
     if uri.startswith('http://') or uri.startswith('https://'):
         should_delete = True
-        filename = download_file(uri, verify_ssl=verify_ssl)
+        file_attributes = download_file(uri, verify_ssl=verify_ssl)
+        filename = file_attributes['filename']
+        encoding = file_attributes['encoding']
     else:
         should_delete = False
         filename = uri
+        encoding = None
 
     plugin_name = filename.split('.')[-1].lower()
     if plugin_name == 'htm':
@@ -114,14 +117,26 @@ def get_data_from_uri(uri, verify_ssl):
     elif plugin_name == 'text':
         plugin_name = 'txt'
     elif plugin_name == 'json':
-        plugin_name = 'pjson'
-    return should_delete, filename, plugin_name
+        plugin_name = 'json'
+
+    return {'should_delete': should_delete,
+            'filename': filename,
+            'plugin_name': plugin_name,
+            'encoding': encoding, }
 
 
-def import_from_uri(uri, verify_ssl=True, *args, **kwargs):
+def import_from_uri(uri, default_encoding, verify_ssl=True, *args, **kwargs):
     # TODO: support '-' also
-    should_delete, filename, plugin_name = get_data_from_uri(uri,
-            verify_ssl=verify_ssl)
+    file_attributes = get_data_from_uri(uri, verify_ssl=verify_ssl)
+    should_delete = file_attributes['should_delete']
+    filename = file_attributes['filename']
+    plugin_name = file_attributes['plugin_name']
+    encoding = file_attributes['encoding']
+    if kwargs.get('encoding', None) is None:
+        if encoding is not None:
+            kwargs['encoding'] = encoding
+        else:
+            kwargs['encoding'] = default_encoding
 
     try:
         import_function = getattr(rows, 'import_from_{}'.format(plugin_name))
