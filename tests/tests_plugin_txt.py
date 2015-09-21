@@ -92,6 +92,10 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_txt(temp.name)
         self.assert_table_equal(table, utils.table)
 
+        with open(temp.name) as fobj:
+            content = fobj.read()
+        self.assertEqual(content[-10:].count('\n'), 1)
+
     def test_export_to_txt_fobj(self):
         # TODO: may test with codecs.open passing an encoding
         # TODO: may test file contents

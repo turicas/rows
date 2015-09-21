@@ -67,7 +67,7 @@ def export_to_txt(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
                   for field_name, value in zip(field_names, row)]
         row_data = ' {} '.format(PIPE).join(values)
         result.append('{} {} {}'.format(PIPE, row_data, PIPE))
-    result.extend([split_line, '\n'])
+    result.extend([split_line, ''])
 
     data = '\n'.join(result).encode(encoding)
 
