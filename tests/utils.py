@@ -28,7 +28,7 @@ import rows.fields as fields
 from rows.table import Table
 
 
-NONE_VALUES = list(fields.NULL) + [None]
+NONE_VALUES = list(fields.NULL) + ['', None]
 FIELDS = OrderedDict([('bool_column', fields.BoolField),
                       ('integer_column', fields.IntegerField),
                       ('float_column', fields.FloatField),
@@ -186,9 +186,12 @@ class RowsTestMixIn(object):
 
     def assert_PercentField(self, expected_value, value, *args, **kwargs):
         float_value = float(expected_value) * 100
-        self.assertIn(value, (str(float_value) + '%',
-                              str(float_value) + '.0%',
-                              str(float_value) + '.00%'))
+        possible_values = [str(float_value) + '%',
+                           str(float_value) + '.0%',
+                           str(float_value) + '.00%']
+        if int(float_value) == float_value:
+            possible_values.append(str(int(float_value)) + '%')
+        self.assertIn(value, possible_values)
 
 
     def assert_DateField(self, expected_value, value, *args, **kwargs):
@@ -203,5 +206,5 @@ class RowsTestMixIn(object):
         self.assertEqual(expected_value, value)
 
 
-    def assert_None_value(self, expected_value, value):
+    def assert_None_value(self, expected_value, value, *args, **kwargs):
         self.assertIn(value, NONE_VALUES)

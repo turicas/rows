@@ -17,7 +17,7 @@
 
 from __future__ import unicode_literals
 
-from rows.plugins.utils import get_filename_and_fobj, serialize
+from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
 
 DASH, PLUS, PIPE = '-', '+', '|'
 
@@ -28,7 +28,24 @@ def _max_column_sizes(field_names, table_rows):
             for field_name, column in zip(field_names, columns)}
 
 
+def import_from_txt(filename_or_fobj, encoding='utf-8', *args, **kwargs):
+    # TODO: should be able to change DASH, PLUS and PIPE
+    filename, fobj = get_filename_and_fobj(filename_or_fobj)
+    kwargs['encoding'] = encoding
+    contents = fobj.read().decode(encoding).strip().splitlines()
+
+    # remove '+----+----+' lines
+    contents = contents[1:-1]
+    del contents[1]
+
+    table_rows = [[value.strip() for value in row.split(PIPE)[1:-1]]
+                  for row in contents]
+    meta = {'imported_from': 'txt', 'filename': filename,}
+    return create_table(table_rows, meta=meta, *args, **kwargs)
+
+
 def export_to_txt(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
+    # TODO: should be able to change DASH, PLUS and PIPE
     # TODO: will work only if table.fields is OrderedDict
     # TODO: should use fobj? What about creating a method like json.dumps?
 
