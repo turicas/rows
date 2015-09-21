@@ -34,12 +34,17 @@ from rows.plugins.txt import import_from_txt, export_to_txt
 # Have dependencies
 
 try:
-    from rows.plugins.xls import import_from_xls, export_to_xls
+    from rows.plugins.html import import_from_html, export_to_html
 except ImportError:
     pass
 
 try:
-    from rows.plugins.html import import_from_html, export_to_html
+    from rows.plugins.ods import import_from_ods
+except ImportError:
+    pass
+
+try:
+    from rows.plugins.xls import import_from_xls, export_to_xls
 except ImportError:
     pass
 
