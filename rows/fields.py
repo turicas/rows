@@ -152,7 +152,8 @@ class IntegerField(Field):
         if value is None or isinstance(value, cls.TYPE):
             return value
 
-        converted = int(value) if SHOULD_NOT_USE_LOCALE else locale.atoi(value)
+        converted = int(value) if SHOULD_NOT_USE_LOCALE \
+                               else locale.atoi(as_string(value))
         float_equivalent = FloatField.deserialize(value, *args, **kwargs)
         if float_equivalent == converted:
             return converted
@@ -223,6 +224,8 @@ class DecimalField(Field):
         value = super(DecimalField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
+        elif type(value) in (int, float):
+            return Decimal(str(value))
 
         if SHOULD_NOT_USE_LOCALE:
             try:
@@ -239,6 +242,7 @@ class DecimalField(Field):
                      for x in interesting_vars)
             interesting_chars = ''.join(set(chars))
             regexp = re.compile(r'[^0-9{} ]'.format(interesting_chars))
+            value = as_string(value)
             if regexp.findall(value):
                 raise ValueError("Can't be {}".format(cls.__name__))
 

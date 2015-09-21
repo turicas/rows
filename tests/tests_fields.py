@@ -107,6 +107,9 @@ class FieldsTestCase(unittest.TestCase):
                                                            grouping=True),
                              '42.000')
             self.assertEqual(fields.IntegerField.deserialize('42.000'), 42000)
+            self.assertEqual(fields.IntegerField.deserialize(42), 42)
+            with self.assertRaises(ValueError):
+                self.assertEqual(fields.IntegerField.deserialize(42.0), 42)
 
         with self.assertRaises(ValueError):
             fields.IntegerField.deserialize(1.23)
@@ -136,6 +139,7 @@ class FieldsTestCase(unittest.TestCase):
             self.assertEqual(fields.FloatField.deserialize('42.000,00'),
                              42000.0)
             self.assertEqual(fields.FloatField.deserialize(42), 42.0)
+            self.assertEqual(fields.FloatField.deserialize(42.0), 42.0)
 
     def test_DecimalField(self):
         deserialized = Decimal('42.010')
@@ -177,6 +181,10 @@ class FieldsTestCase(unittest.TestCase):
                 ),
                 '42.000,0'
             )
+            self.assertEqual(fields.DecimalField.deserialize(42000),
+                             Decimal('42000'))
+            self.assertEqual(fields.DecimalField.deserialize(42000.0),
+                             Decimal('42000'))
 
     def test_PercentField(self):
         deserialized = Decimal('0.42010')
