@@ -2,7 +2,7 @@
     {
         "float_column": 3.141592,
         "decimal_column": 3.141592,
-        "bool_column": true,
+        "bool_column": "1",
         "integer_column": 1,
         "date_column": "2015-01-01",
         "datetime_column": "2015-08-18T15:10:00",
@@ -13,7 +13,7 @@
     {
         "float_column": 1.234,
         "decimal_column": 1.234,
-        "bool_column": false,
+        "bool_column": "0",
         "integer_column": 2,
         "date_column": "1999-02-03",
         "datetime_column": "1999-02-03T00:01:02",
@@ -46,7 +46,7 @@
     {
         "float_column": 9.87,
         "decimal_column": 9.87,
-        "bool_column": true,
+        "bool_column": "yes",
         "integer_column": 5,
         "date_column": "2015-03-04",
         "datetime_column": "2015-03-04T16:00:01",
@@ -57,12 +57,12 @@
     {
         "float_column": 1.2345,
         "decimal_column": 1.2345,
-        "bool_column": false,
+        "bool_column": "no",
         "integer_column": 6,
         "date_column": "2015-05-06",
         "datetime_column": "2015-05-06T12:01:02",
         "percent_column": "2%",
         "unicode_column": "test",
-        "null_column": ""
+        "null_column": "n/a"
     }
 ]
