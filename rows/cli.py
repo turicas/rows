@@ -85,8 +85,8 @@ def cli():
 @cli.command(help='Convert table on `source` URI to `destination`')
 @click.option('--input-encoding')
 @click.option('--output-encoding')
-@click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
-@click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
+@click.option('--input-locale')
+@click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--order-by')
 @click.argument('source')
@@ -97,7 +97,11 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
 
-    with rows.locale_context(input_locale):
+    if input_locale is not None:
+        with rows.locale_context(input_locale):
+            table = _import_table(source, encoding=input_encoding,
+                                verify_ssl=verify_ssl)
+    else:
         table = _import_table(source, encoding=input_encoding,
                               verify_ssl=verify_ssl)
 
@@ -108,7 +112,10 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
         # TODO: use complete list of `order_by` fields
         table.order_by(order_by[0].replace('^', '-'))
 
-    with rows.locale_context(output_locale):
+    if output_locale is not None:
+        with rows.locale_context(output_locale):
+            export_to_uri(destination, table, encoding=output_encoding)
+    else:
         export_to_uri(destination, table, encoding=output_encoding)
 
 
@@ -116,8 +123,8 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
                   'rows and save into `destination`')
 @click.option('--input-encoding')
 @click.option('--output-encoding')
-@click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
-@click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
+@click.option('--input-locale')
+@click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--order-by')
 @click.argument('keys')
@@ -130,7 +137,12 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
     output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
     keys = [key.strip() for key in keys.split(',')]
 
-    with rows.locale_context(input_locale):
+    if input_locale is not None:
+        with rows.locale_context(input_locale):
+            tables = [_import_table(source, encoding=input_encoding,
+                                    verify_ssl=verify_ssl)
+                     for source in sources]
+    else:
         tables = [_import_table(source, encoding=input_encoding,
                                 verify_ssl=verify_ssl)
                   for source in sources]
@@ -144,15 +156,18 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
         # TODO: use complete list of `order_by` fields
         result.order_by(order_by[0].replace('^', '-'))
 
-    with rows.locale_context(output_locale):
+    if output_locale is not None:
+        with rows.locale_context(output_locale):
+            export_to_uri(destination, result, encoding=output_encoding)
+    else:
         export_to_uri(destination, result, encoding=output_encoding)
 
 
 @cli.command(help='Sort from `source` by `key(s)` and save into `destination`')
 @click.option('--input-encoding')
 @click.option('--output-encoding')
-@click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
-@click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
+@click.option('--input-locale')
+@click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--order-by')
 @click.argument('key')
@@ -166,12 +181,20 @@ def sort(input_encoding, output_encoding, input_locale, output_locale,
     # TODO: `key` can be a list
     key = key.replace('^', '-')
 
-    with rows.locale_context(input_locale):
+    if input_locale is not None:
+        with rows.locale_context(input_locale):
+            table = _import_table(source, encoding=input_encoding,
+                                  verify_ssl=verify_ssl)
+    else:
         table = _import_table(source, encoding=input_encoding,
                               verify_ssl=verify_ssl)
-        table.order_by(key)
 
-    with rows.locale_context(output_locale):
+    table.order_by(key)
+
+    if output_locale is not None:
+        with rows.locale_context(output_locale):
+            export_to_uri(destination, table, encoding=output_encoding)
+    else:
         export_to_uri(destination, table, encoding=output_encoding)
 
 
@@ -179,8 +202,8 @@ def sort(input_encoding, output_encoding, input_locale, output_locale,
              help='Sum tables from `source` URIs and save into `destination`')
 @click.option('--input-encoding')
 @click.option('--output-encoding')
-@click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
-@click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
+@click.option('--input-locale')
+@click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--order-by')
 @click.argument('sources', nargs=-1, required=True)
@@ -191,7 +214,12 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
 
-    with rows.locale_context(input_locale):
+    if input_locale is not None:
+        with rows.locale_context(input_locale):
+            tables = [_import_table(source, encoding=input_encoding,
+                                    verify_ssl=verify_ssl)
+                    for source in sources]
+    else:
         tables = [_import_table(source, encoding=input_encoding,
                                 verify_ssl=verify_ssl)
                   for source in sources]
@@ -205,15 +233,18 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
         # TODO: use complete list of `order_by` fields
         result.order_by(order_by[0].replace('^', '-'))
 
-    with rows.locale_context(output_locale):
+    if output_locale is not None:
+        with rows.locale_context(output_locale):
+            export_to_uri(destination, result, encoding=output_encoding)
+    else:
         export_to_uri(destination, result, encoding=output_encoding)
 
 
 @cli.command(name='print', help='Print a table')
 @click.option('--input-encoding')
 @click.option('--output-encoding')
-@click.option('--input-locale', default=DEFAULT_INPUT_LOCALE)
-@click.option('--output-locale', default=DEFAULT_OUTPUT_LOCALE)
+@click.option('--input-locale')
+@click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--fields')
 @click.option('--fields-except')
@@ -232,7 +263,11 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
                       DEFAULT_OUTPUT_ENCODING
 
     # TODO: may use `import_fields` for better performance
-    with rows.locale_context(input_locale):
+    if input_locale is not None:
+        with rows.locale_context(input_locale):
+            table = _import_table(source, encoding=input_encoding,
+                                  verify_ssl=verify_ssl)
+    else:
         table = _import_table(source, encoding=input_encoding,
                               verify_ssl=verify_ssl)
 
@@ -261,12 +296,16 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
         table.order_by(order_by[0].replace('^', '-'))
 
     fobj = BytesIO()
-    with rows.locale_context(output_locale):
+    if output_locale is not None:
+        with rows.locale_context(output_locale):
+            rows.export_to_txt(table, fobj, encoding=output_encoding,
+                               export_fields=export_fields)
+    else:
         rows.export_to_txt(table, fobj, encoding=output_encoding,
                            export_fields=export_fields)
-    # TODO: may pass unicode to click.echo if output_encoding is not provided
 
     fobj.seek(0)
+    # TODO: may pass unicode to click.echo if output_encoding is not provided
     click.echo(fobj.read())
 
 
