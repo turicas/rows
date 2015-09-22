@@ -29,7 +29,7 @@ from rows.table import Table
 class TableTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.table = Table(fields={'name': rows.fields.UnicodeField,
+        self.table = Table(fields={'name': rows.fields.TextField,
                                    'birthdate': rows.fields.DateField, })
         self.first_row = {'name': u'Álvaro Justen',
                           'birthdate': datetime.date(1987, 4, 29)}

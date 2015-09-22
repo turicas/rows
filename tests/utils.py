@@ -36,8 +36,8 @@ FIELDS = OrderedDict([('bool_column', fields.BoolField),
                       ('percent_column', fields.PercentField),
                       ('date_column', fields.DateField),
                       ('datetime_column', fields.DatetimeField),
-                      ('unicode_column', fields.UnicodeField),
-                      ('null_column', fields.ByteField),])
+                      ('unicode_column', fields.TextField),
+                      ('null_column', fields.BinaryField),])
 FIELD_NAMES = FIELDS.keys()
 EXPECTED_ROWS = [
         {'float_column': 3.141592,
@@ -167,7 +167,7 @@ class RowsTestMixIn(object):
                    'percent_column': self.assert_PercentField,
                    'date_column': self.assert_DateField,
                    'datetime_column': self.assert_DatetimeField,
-                   'unicode_column': self.assert_UnicodeField,
+                   'unicode_column': self.assert_TextField,
                    'null_column': self.assert_None_value, }
         return asserts[field_name](expected_value, value, *args, **kwargs)
 
@@ -213,7 +213,7 @@ class RowsTestMixIn(object):
         self.assertEqual(str(expected_value).replace(' ', 'T'), value)
 
 
-    def assert_UnicodeField(self, expected_value, value, *args, **kwargs):
+    def assert_TextField(self, expected_value, value, *args, **kwargs):
         self.assertEqual(expected_value, value)
 
 

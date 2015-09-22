@@ -45,7 +45,7 @@ class PluginUtilsTestCase(unittest.TestCase):
 
     def test_create_table_skip_header(self):
         field_types = OrderedDict([('integer', fields.IntegerField),
-                                   ('string', fields.UnicodeField),])
+                                   ('string', fields.TextField),])
         data = [['1', 'Álvaro'], ['2', 'turicas'], ['3', 'Justen']]
         table_1 = plugins_utils.create_table(data, fields=field_types,
                                              skip_header=True)

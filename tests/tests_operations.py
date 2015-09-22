@@ -56,7 +56,7 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             return new
 
         fields = utils.table.fields.copy()
-        fields.update({'meta': rows.fields.UnicodeField})
+        fields.update({'meta': rows.fields.TextField, })
         tables = [utils.table] * 3
         result = rows.transform(fields, transformation_function, *tables)
         self.assertEqual(result.fields, fields)
@@ -72,9 +72,9 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertIs(rows.transpose, rows.operations.transpose)
 
     def test_transpose_feature(self):
-        new_fields = OrderedDict([('key', rows.fields.UnicodeField),
-                                  ('value_1', rows.fields.UnicodeField),
-                                  ('value_2', rows.fields.UnicodeField)])
+        new_fields = OrderedDict([('key', rows.fields.TextField),
+                                  ('value_1', rows.fields.TextField),
+                                  ('value_2', rows.fields.TextField)])
         table = rows.Table(fields=new_fields)
         table.append({'key': 'first_key', 'value_1': 'first_value_1',
                       'value_2': 'first_value_2', })

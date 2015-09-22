@@ -28,10 +28,10 @@ from rows.plugins.utils import (create_table, get_filename_and_fobj,
                                 prepare_to_export)
 
 
-CELL_TYPES = {xlrd.XL_CELL_BLANK: fields.ByteField,
+CELL_TYPES = {xlrd.XL_CELL_BLANK: fields.BinaryField,
               xlrd.XL_CELL_DATE: fields.DatetimeField,
               xlrd.XL_CELL_ERROR: None,
-              xlrd.XL_CELL_TEXT: fields.UnicodeField,
+              xlrd.XL_CELL_TEXT: fields.TextField,
               xlrd.XL_CELL_BOOLEAN: fields.BoolField,
               xlrd.XL_CELL_EMPTY: None,
               xlrd.XL_CELL_NUMBER: fields.FloatField,}

@@ -18,10 +18,10 @@ REGEXP_UWSGI_LOG = re.compile(r'\[pid: ([0-9]+)\|app: [0-9]+\|req: '
                               r'([^ ]+) (.+) => generated .+ in ([0-9]+) '
                               r'micros \(HTTP/([^ ]+) ([^)]+)\)')
 UWSGI_FIELDS = OrderedDict([('pid', rows.fields.IntegerField),
-                            ('ip', rows.fields.UnicodeField),
+                            ('ip', rows.fields.TextField),
                             ('datetime', rows.fields.DatetimeField),
-                            ('http_verb', rows.fields.UnicodeField),
-                            ('http_path', rows.fields.UnicodeField),
+                            ('http_verb', rows.fields.TextField),
+                            ('http_path', rows.fields.TextField),
                             ('generation_time', rows.fields.FloatField),
                             ('http_version', rows.fields.FloatField),
                             ('http_status', rows.fields.IntegerField)])

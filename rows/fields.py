@@ -28,8 +28,8 @@ from decimal import Decimal, InvalidOperation
 
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
-           'DateField', 'DecimalField', 'PercentField', 'UnicodeField',
-           'ByteField', 'Field']
+           'DateField', 'DecimalField', 'PercentField', 'TextField',
+           'BinaryField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 NULL = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
@@ -38,8 +38,8 @@ NULL = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
 class Field(object):
     """Base Field class - all fields should inherit from this
 
-    As the fallback for all other field types are the ByteField, this Field
-    actually implements what is expected in the ByteField
+    As the fallback for all other field types are the BinaryField, this Field
+    actually implements what is expected in the BinaryField
     """
 
     TYPE = types.NoneType
@@ -49,7 +49,7 @@ class Field(object):
         """Serialize a value to be exported
 
         `cls.serialize` should always return an unicode value, except for
-        ByteField
+        BinaryField
         """
 
         if value is None:
@@ -72,7 +72,7 @@ class Field(object):
             return value
 
 
-class ByteField(Field):
+class BinaryField(Field):
     """Field class to represent byte arrays
 
     Is not locale-aware (does not need to be)
@@ -346,7 +346,7 @@ class DatetimeField(Field):
             return datetime.datetime(*[int(x) for x in groups[0]])
 
 
-class UnicodeField(Field):
+class TextField(Field):
     """Field class to represent unicode strings
 
     Is not locale-aware (does not need to be)
@@ -356,7 +356,7 @@ class UnicodeField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(UnicodeField, cls).deserialize(value)
+        value = super(TextField, cls).deserialize(value)
         if value is None:
             return None
 
@@ -408,8 +408,8 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
                     if not is_null(value)])
 
         if not data:
-            # all rows with an empty field -> ByteField (can't identify)
-            identified_type = ByteField
+            # all rows with an empty field -> BinaryField (can't identify)
+            identified_type = BinaryField
         else:
             # ok, let's try to identify the type of this column by
             # converting every non-null value in the sample
