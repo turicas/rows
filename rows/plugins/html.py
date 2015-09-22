@@ -60,6 +60,12 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
                        for value_element in row.xpath(column_tag)]
                       for row in row_elements]
 
+        if kwargs.get('fields', None) is None:
+            # we're providing field names so strip HTML from the first row
+            # (the header, in this case)
+            table_rows[0] = [value_element.text_content().strip()
+                             for value_element in row_elements[0]]
+
     max_columns = max(len(row) for row in table_rows)
     if ignore_colspan:
         table_rows = filter(lambda row: len(row) == max_columns, table_rows)

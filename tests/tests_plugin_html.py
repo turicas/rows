@@ -20,6 +20,8 @@ from __future__ import unicode_literals
 import tempfile
 import unittest
 
+from collections import OrderedDict
+
 import mock
 
 import rows
@@ -233,6 +235,45 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 '<td> t0,1r5c0 </td>', '<td> t0,1r5c1 </td>', '</tr>',
                 '</table>']
         self.assertEqual(cleanup_lines(table[1].t00r0c1), expected_data)
+
+    @mock.patch('rows.plugins.html.create_table')
+    def test_preserve_html_and_not_skip_header(self, mocked_create_table):
+        filename = 'tests/data/table-with-sections.html'
+
+        # If `import_from_html` needs to identify field names, then it
+        # should not preserve HTML inside first row
+        table_1 = rows.import_from_html(filename, index=1, preserve_html=True)
+        call_args = mocked_create_table.call_args_list.pop()
+        data = call_args[0][0]
+        kwargs = call_args[1]
+
+        self.assertEqual(kwargs.get('fields', None), None)
+        self.assertEqual(len(data), 6)
+        self.assertNotIn('<', data[0][1])
+        self.assertNotIn('>', data[0][1])
+        for row in data[1:]:
+            # Second field has HTML
+            self.assertIn('<', row[1])
+            self.assertIn('>', row[1])
+
+        # If we provide fields and ask to preserve HTML and to don't skip
+        # header then it should strip HTML from every row
+        fields = OrderedDict([('first', rows.fields.TextField),
+                              ('second', rows.fields.TextField),
+                              ('third', rows.fields.TextField),
+                              ('fourth', rows.fields.TextField)])
+        table_2 = rows.import_from_html(filename, index=1, fields=fields,
+                                        preserve_html=True, skip_header=False)
+        call_args = mocked_create_table.call_args_list.pop()
+        data = call_args[0][0]
+        kwargs = call_args[1]
+
+        self.assertEqual(kwargs.get('fields', None), fields)
+        self.assertEqual(len(data), 6)
+        for row in data:
+            # Second field has HTML and should not be stripped
+            self.assertIn('<', row[1])
+            self.assertIn('>', row[1])
 
     def test_ignore_colspan(self):
         filename = 'tests/data/colspan-table.html'
