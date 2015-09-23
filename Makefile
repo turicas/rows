@@ -22,4 +22,8 @@ lint:
 lint-tests:
 	pylint tests/*.py
 
-.PHONY:	test clean lint lint-tests install uninstall
+man:
+	head -1 rows.1.txt > rows.1
+	txt2man rows.1.txt | egrep -v '^\.TH' >> rows.1
+
+.PHONY:	test clean lint lint-tests install uninstall man
