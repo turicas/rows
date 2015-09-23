@@ -16,3 +16,4 @@ Created and maintained by Álvaro Justen aka turicas:
 - Érico Andrei <https://github.com/ericof>
 - Bernardo Fontes <https://github.com/berinhard>
 - Alexandre Brandão (slex) <https://github.com/sxslex>
+- Paulo Roberto Alves de Oliveira (aka kretcheu) <https://github.com/kretcheu>
