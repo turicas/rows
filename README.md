@@ -342,6 +342,20 @@ or (if you don't have `make`):
 
     nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/*.py
 
+To create the man page you'll need to install
+[txt2man](http://mvertes.free.fr/). In Debian (and Debian-based distributions)
+you can install by running:
+
+```bash
+aptitude install txt2man
+```
+
+Then, you can generate the `rows.1` file by running:
+
+```bash
+make man
+```
+
 
 ## Similar Projects
 

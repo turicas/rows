@@ -1,0 +1,121 @@
+.TH ROWS "1" "Sep 2015" "ROWS 0.1.0" "common, beautiful interface to tabular data, no matter the format"
+
+NAME
+  rows - common, beautiful interface to tabular data, no matter the format
+
+SYNOPSIS
+  rows [OPTIONS] COMMAND [ARGS] ...
+
+DESCRIPTION
+  No matter in which format your tabular data is: rows will import it,
+  automatically detect types and give you high-level Python objects so you can
+  start working with the data instead of trying to parse it.
+  It is also locale-and-unicode aware.
+
+OPTIONS
+  --help Show this message and exit
+
+COMMANDS
+.
+
+ convert - Convert table on `source` URI to...
+ join    - Join tables from `source` URIs using `key(s)`...
+ sort    - Sort from `source` by `key(s)` and save into...
+ sum     - Sum tables from `source` URIs and save into...
+
+  SYNOPSIS
+  rows convert [OPTIONS] SOURCE DESTINATION
+
+  DESCRIPTION
+    Convert table on `source` URI to `destination`
+
+  OPTIONS
+    --input-encoding TEXT
+
+    --output-encoding TEXT
+
+    --input-locale TEXT
+
+    --output-locale TEXT
+
+    --help Show this message and exit.
+
+  SYNOPSIS
+  rows join [OPTIONS] KEYS SOURCES ... DESTINATION
+
+  DESCRIPTION
+    Join tables from `source` URIs using `key(s)` to group rows and save into destination`
+
+  OPTIONS
+    --input-encoding TEXT
+
+    --output-encoding TEXT
+
+    --input-locale TEXT
+
+    --output-locale TEXT
+
+    --help Show this message and exit.
+
+  SYNOPSIS
+  rows sort [OPTIONS] KEY SOURCE DESTINATION
+
+  DESCRIPTION
+    Sort from `source` by `key(s)` and save into `destination`
+
+  OPTIONS
+    --input-encoding TEXT
+
+    --output-encoding TEXT
+
+    --input-locale TEXT
+
+    --output-locale TEXT
+
+    --help Show this message and exit.
+
+  SYNOPSIS
+  rows sum [OPTIONS] SOURCES ... DESTINATION
+
+  DESCRIPTION
+    Sum tables from `source` URIs and save into `destination`
+
+  OPTIONS
+    --input-encoding TEXT
+
+    --output-encoding TEXT
+
+    --input-locale TEXT
+
+    --output-locale TEXT
+
+    --help Show this message and exit.
+
+EXAMPLES
+  - To export csv from site and converting locales from pt_BR to en both UTF-8
+
+    rows convert \-\-input-locale pt_BR.UTF-8 \-\-output-locale en.UTF-8 "<URL>" data.csv
+
+  - To export xls from site and no changes locales
+
+    rows convert "<URL>" data.xls
+
+  - To convert csv to xls
+
+    rows convert file.csv file.xls
+
+REPORTING BUGS
+ To report a bug please visit rows' issue tracking system at
+ <https://github.com/turicas/rows/issues>.
+
+AUTHOR
+ Written by Álvaro Justen <alvarojusten@gmail.com>.
+
+ This manual page was written by Paulo Roberto Alves de Oliveira (aka kretcheu)
+ <kretcheu@gmail.com> for the Debian project (but may be used by others).
+
+COPYRIGHT
+ Copyright © 2014-2015 Álvaro Justen.
+ License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+ This is free software: you are free to change and redistribute it. There is NO
+ WARRANTY, to the extent permitted by law.
