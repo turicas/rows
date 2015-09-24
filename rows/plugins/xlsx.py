@@ -7,19 +7,17 @@ from openpyxl import load_workbook, Workbook
 from rows.plugins.utils import create_table, get_filename_and_fobj
 
 
-def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
-        start_row=1, start_column=1, *args, **kwargs):
+def import_from_xlsx(filename_or_fobj, sheet_name='Sheet1', sheet_index=0,
+                     start_row=1, start_column=1, *args, **kwargs):
     filename, _ = get_filename_and_fobj(filename_or_fobj)
-    #Load the workbook
     workbook = load_workbook(filename)
-    #Get the desired sheet
     if sheet_name is not None:
         worksheet = workbook.get_sheet_by_name(sheet_name)
     else:
-        #get the sheet by the index using all sheet names
-        worksheet = workbook.get_sheet_by_name(workbook.get_sheet_names()[sheet_index])
+        worksheet = workbook.get_sheet_by_name(
+                workbook.get_sheet_names()[sheet_index])
 
-    #Get the header
+    # Get the header
     header = []
     col_pos = start_column
     current_header_value  = worksheet.cell(row=1, column=col_pos).value
@@ -29,27 +27,30 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
         current_header_value = worksheet.cell(row=start_row, column=col_pos).value
         header.append(current_header_value)
 
-    #Remove the last header. Is a None
+    # Remove the last header. Is a None
     header = filter(lambda v: v is not None, header)
-    #Get the rows content
+
+    # Get the rows content
+    get_cell_value = lambda row, col: worksheet.cell(row=row, column=col).value
+    get_row = lambda row, colsize: [worksheet.cell(row=row, column=col).value
+                                    for col in range(1, colsize)]
     row_pos = start_row + 1
-    current_row = [validate_cell_value(worksheet.cell(row=row_pos, column=col)).value for col in
-            xrange(1, col_pos)]
+    current_row = get_row(row_pos, col_pos)
     all_rows = [current_row, ]
     while any(current_row):
         row_pos += 1
-        current_row = [validate_cell_value(worksheet.cell(row=row_pos, column=col)).value for col in
-                xrange(1, col_pos)]
+        current_row = get_row(row_pos, col_pos)
         all_rows.append(current_row)
 
-    #Remove the last row with Nones
+    # Remove the last row with Nones
     all_rows = filter(lambda v: any(v), all_rows)
     metadata = {'imported_from': 'xlsx', 'filename': filename}
     return create_table([header] + all_rows, meta=metadata, *args, **kwargs)
 
+
 def export_to_xlsx(table, filename_or_fobj, sheet_name='Sheet'):
 
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
+    filename, fobj = get_filename_and_fobj(filename_or_fobj, dont_open=True)
     workbook = Workbook()
     worksheet = workbook.create_sheet(title=sheet_name)
     fields = [(index, field_name)
