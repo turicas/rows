@@ -5,6 +5,7 @@ import decimal
 
 from openpyxl import load_workbook, Workbook
 from rows.plugins.utils import create_table, get_filename_and_fobj
+from rows import fields
 
 
 def import_from_xlsx(filename_or_fobj, sheet_name='Sheet1', sheet_index=0,
@@ -31,8 +32,8 @@ def import_from_xlsx(filename_or_fobj, sheet_name='Sheet1', sheet_index=0,
     header = filter(lambda v: v is not None, header)
 
     # Get the rows content
-    get_cell_value = lambda row, col: worksheet.cell(row=row, column=col).value
-    get_row = lambda row, colsize: [worksheet.cell(row=row, column=col).value
+    get_cell_value = lambda row, col: validate_cell_value(worksheet.cell(row=row, column=col))
+    get_row = lambda row, colsize: [validate_cell_value(worksheet.cell(row=row, column=col))
                                     for col in range(1, colsize)]
     row_pos = start_row + 1
     current_row = get_row(row_pos, col_pos)
@@ -73,26 +74,31 @@ def validate_cell_value(cell_obj):
     For some reason the openpyxl is not recognizing boolean type.
     It returns True or False but as string.
     """
+    #TODO: Check if all cases of xlsx types are treated
     if cell_obj.value == u"=TRUE()":
-        cell_obj.value = True
+        result = True
     elif cell_obj.value == u"=FALSE()":
-        cell_obj.value = False
-    elif cell_obj.style.number_format == "YYYY/MM/DD" or\
-            cell_obj.style.number_format == "yyyy-mm-dd":
-        cell_obj.value = str(cell_obj.value).split(" 00:00:00")[0]
-    elif cell_obj.style.number_format == "0.00%":
-        cell_obj.value = "{}%".format(cell_obj.value * 100)
+        result = False
+    elif cell_obj.style.number_format.lower() == "yyyy-mm-dd":
+        result = str(cell_obj.value).split(" 00:00:00")[0]
+    elif cell_obj.style.number_format.lower() == "yyyy-mm-dd hh:mm:ss":
+        result = str(cell_obj.value)
+    elif cell_obj.style.number_format.endswith("%"):
+        result = "{}%".format(cell_obj.value * 100)
     elif cell_obj.value is None:
-        cell_obj.value = ''
-    return cell_obj
+        result = ''
+    else:
+        result = cell_obj.value
+    return result
 
 def correct_field_types(cell_obj, current_field_type):
     """
     Make some correctios to export
     """
-    if current_field_type.TYPE == decimal.Decimal:
+    #TODO: compare xlsx type with rows field types
+    if current_field_type is fields.PercentField:
         cell_obj.number_format = "0.00%"
-    elif current_field_type.TYPE == datetime.datetime:
+    elif current_field_type is fields.DatetimeField:
         cell_obj.value = str(cell_obj.value).split(" 00:00:00")[0]
         cell_obj.number_format = "YYYY/MM/DD"
     return cell_obj
