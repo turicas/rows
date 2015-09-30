@@ -359,11 +359,14 @@ make man
 
 ## Similar Projects
 
-- [odo](https://github.com/blaze/odo)
-- [OKFN's messytables](https://github.com/okfn/messytables)
 - [OKFN's goodtables](https://github.com/okfn/goodtables)
-- [tablib](https://tablib.readthedocs.org/en/latest/)
+- [OKFN's messytables](https://github.com/okfn/messytables)
+- [csvcat](https://pypi.python.org/pypi/csvcat)
+- [csvstudio](https://github.com/mdipierro/csvstudio)
+- [odo](https://github.com/blaze/odo)
 - [pandashells](https://github.com/robdmc/pandashells) (and pandas DataFrame)
+- [tablib](https://tablib.readthedocs.org/en/latest/)
+- [textql](https://github.com/dinedal/textql)
 
 
 ## Related Projects
