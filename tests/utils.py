@@ -126,10 +126,13 @@ class RowsTestMixIn(object):
             second = fobj.read()
         self.assertEqual(first, second)
 
-    def assert_create_table_data(self, call_args, field_ordering=True):
+    def assert_create_table_data(self, call_args, field_ordering=True,
+                                 filename=None):
+        if filename is None:
+            filename = self.filename
         kwargs = call_args[1]
         expected_meta = {'imported_from': self.plugin_name,
-                         'filename': self.filename, }
+                         'filename': filename, }
         self.assertEqual(kwargs['meta'], expected_meta)
         del kwargs['meta']
         self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs,

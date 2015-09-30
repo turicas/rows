@@ -44,6 +44,11 @@ except ImportError:
     pass
 
 try:
+    from rows.plugins.sqlite import import_from_sqlite, export_to_sqlite
+except ImportError:
+    pass
+
+try:
     from rows.plugins.xls import import_from_xls, export_to_xls
 except ImportError:
     pass
