@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import copy
 import datetime
 import os
 
@@ -103,6 +104,7 @@ table._meta = {'test': 123}
 class RowsTestMixIn(object):
 
     maxDiff = None
+    override_fields = None
 
     def setUp(self):
         self.files_to_delete = []
@@ -112,12 +114,30 @@ class RowsTestMixIn(object):
             os.unlink(filename)
 
     def assert_table_equal(self, first, second):
-        self.assertDictEqual(dict(first.fields), dict(second.fields))
+        expected_fields = dict(second.fields)
+        if self.override_fields is None:
+            override_fields = {}
+        else:
+            override_fields = self.override_fields
+            expected_fields = copy.deepcopy(expected_fields)
+            expected_fields.update(override_fields)
+
+        self.assertDictEqual(dict(first.fields), expected_fields)
         self.assertEqual(len(first), len(second))
 
         for first_row, second_row in zip(first, second):
-            self.assertDictEqual(dict(first_row._asdict()),
-                                 dict(second_row._asdict()))
+            first_row = dict(first_row._asdict())
+            second_row = dict(second_row._asdict())
+            for field_name, field_type in expected_fields.items():
+                value = first_row[field_name]
+                expected_value = second_row[field_name]
+                if field_name in override_fields:
+                    expected_value = override_fields[field_name]\
+                            .deserialize(expected_value)
+                if float not in (type(value), type(expected_value)):
+                    self.assertEqual(value, expected_value)
+                else:
+                    self.assertAlmostEqual(value, expected_value)
 
     def assert_file_contents_equal(self, first_filename, second_filename):
         with open(first_filename, 'rb') as fobj:
@@ -126,10 +146,13 @@ class RowsTestMixIn(object):
             second = fobj.read()
         self.assertEqual(first, second)
 
-    def assert_create_table_data(self, call_args, field_ordering=True):
+    def assert_create_table_data(self, call_args, field_ordering=True,
+                                 filename=None):
+        if filename is None:
+            filename = self.filename
         kwargs = call_args[1]
         expected_meta = {'imported_from': self.plugin_name,
-                         'filename': self.filename, }
+                         'filename': filename, }
         self.assertEqual(kwargs['meta'], expected_meta)
         del kwargs['meta']
         self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs,

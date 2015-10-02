@@ -143,8 +143,7 @@ def import_from_uri(uri, default_encoding, verify_ssl=True, *args, **kwargs):
     except AttributeError:
         raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
 
-    with open(filename) as fobj:
-        table = import_function(fobj, *args, **kwargs)
+    table = import_function(filename, *args, **kwargs)
 
     if should_delete:
         os.unlink(filename)

@@ -22,8 +22,8 @@ locale-and-unicode aware. :)
 The library is composed by:
 
 - A common interface to tabular data (the `Table` class)
-- A set of plugins to populate `Table` objects (CSV, XLS, HTML, TXT, JSON
-  -- more coming soon!)
+- A set of plugins to populate `Table` objects (CSV, XLS, HTML, TXT, JSON,
+  SQLite -- more coming soon!)
 - A set of common fields (such as `BoolField`, `IntegerField`) which know
   exactly how to serialize and deserialize data for each object type you'll get
 - A set of utilities (such as field type recognition) to help working with
@@ -58,8 +58,9 @@ or:
     python setup.py install
 
 
-The plugins `csv`, `txt` and `json` are built-in by default but if you want to
-use another one you need to explicitly install its dependencies, for example:
+The plugins `csv`, `txt`, `json` and `sqlite` are built-in by default but if
+you want to use another one you need to explicitly install its dependencies,
+for example:
 
     pip install rows[html]
     pip install rows[xls]
@@ -255,10 +256,14 @@ file format you want. Currently we have the following plugins:
   must be installed with `pip install rows[html]`)
 - XLS: use `rows.import_from_xls` and `rows.export_to_xls` (dependencies must
   be installed with `pip install rows[xls]`)
+- SQLite: use `rows.import_from_sqlite` and `rows.export_to_sqlite` (no
+  dependencies)
+- ODS: use `rows.import_from_ods` (dependencies must be installed with `pip
+  install rows[ods]`)
 
-More plugins are coming (like ODS, PDF, SQLite, JSON etc.) and we're going to
-re-design the plugin interface so you can create your own easily. Feel free to
-contribute. :-)
+More plugins are coming (like PDF, DBF etc.) and we're going to re-design the
+plugin interface so you can create your own easily. Feel free to contribute.
+:-)
 
 
 #### Common Parameters
