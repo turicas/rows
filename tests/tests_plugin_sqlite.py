@@ -28,11 +28,16 @@ import rows.plugins.sqlite
 import rows.plugins.utils
 import utils
 
+from rows import fields
+
 
 class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'sqlite'
     filename = 'tests/data/all-field-types.sqlite'
+    override_fields = {'percent_column': fields.FloatField, }
+    # SQLite does not support "Decimal" type, so `PercentField` will be
+    # identified as a float
 
     def test_imports(self):
         self.assertIs(rows.import_from_sqlite,
