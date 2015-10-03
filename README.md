@@ -76,6 +76,12 @@ requirement:
 
     pip install rows[all]
 
+If you use [Debian sid](https://www.debian.org/releases/sid/) you can install
+it directly from the main repository by running:
+
+    aptitude install python-rows  # Python library only
+    aptitude install rows  # Python library + CLI
+
 
 ## Basic Usage
 
