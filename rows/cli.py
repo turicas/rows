@@ -309,5 +309,54 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
     click.echo(fobj.read())
 
 
+@cli.command(name='query', help='Query a table using SQL')
+@click.option('--input-encoding')
+@click.option('--output-encoding')
+@click.option('--input-locale')
+@click.option('--output-locale')
+@click.option('--verify-ssl', default=True, type=bool)
+@click.option('--fields')
+@click.argument('source', required=True)
+@click.argument('query', required=True)
+@click.argument('destination', required=False)
+def query_(input_encoding, output_encoding, input_locale, output_locale,
+           verify_ssl, fields, source, query, destination):
+
+    # TODO: accept many sources
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or sys.stdout.encoding or \
+                      DEFAULT_OUTPUT_ENCODING
+    if not query.lower().startswith('select'):
+        field_names = '*' if fields is None else fields
+        query = 'SELECT {} FROM rows WHERE {}'.format(field_names, query)
+
+    if input_locale is not None:
+        with rows.locale_context(input_locale):
+            table = _import_table(source, encoding=input_encoding,
+                                  verify_ssl=verify_ssl)
+    else:
+        table = _import_table(source, encoding=input_encoding,
+                              verify_ssl=verify_ssl)
+
+    sqlite_connection = rows.export_to_sqlite(table, ':memory:')
+    result = rows.import_from_sqlite(sqlite_connection, query=query)
+
+    if destination is None:
+        fobj = BytesIO()
+        if output_locale is not None:
+            with rows.locale_context(output_locale):
+                rows.export_to_txt(result, fobj, encoding=output_encoding)
+        else:
+            rows.export_to_txt(result, fobj, encoding=output_encoding)
+        fobj.seek(0)
+        click.echo(fobj.read())
+    else:
+        if output_locale is not None:
+            with rows.locale_context(output_locale):
+                export_to_uri(destination, result, encoding=output_encoding)
+        else:
+            export_to_uri(destination, result, encoding=output_encoding)
+
+
 if __name__ == '__main__':
     cli()
