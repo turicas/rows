@@ -1,0 +1,77 @@
+*** Starting uWSGI 2.0.8 (64bit) on [Mon Jun  1 11:08:58 2015] ***
+compiled with version: 4.8.2 on 01 June 2015 11:01:28
+os: Linux-3.13.0-48-generic #80-Ubuntu SMP Thu Mar 12 11:16:15 UTC 2015
+nodename: localhost.localdomain
+machine: x86_64
+clock source: unix
+detected number of CPU cores: 1
+current working directory: /home/ubuntu
+writing pidfile to /home/ubuntu/uwsgi/uwsgi.pid
+detected binary path: /home/ubuntu/venv/bin/uwsgi
+!!! no internal routing support, rebuild with pcre support !!!
+chdir() to /home/ubuntu/repo
+your processes number limit is 7862
+your memory page size is 4096 bytes
+detected max file descriptor number: 1024
+lock engine: pthread robust mutexes
+thunder lock: disabled (you can enable it with --thunder-lock)
+uwsgi socket 0 bound to TCP address 127.0.0.1:8001 fd 3
+Python version: 2.7.6 (default, Mar 22 2014, 23:03:41)  [GCC 4.8.2]
+Set PythonHome to /home/ubuntu/venv
+*** Python threads support is disabled. You can enable it with --enable-threads ***
+Python main interpreter initialized at 0x14d9cf0
+your server socket listen backlog is limited to 100 connections
+your mercy for graceful operations on workers is 60 seconds
+mapped 363840 bytes (355 KB) for 4 cores
+*** Operational MODE: preforking ***
+WSGI app 0 (mountpoint='') ready in 0 seconds on interpreter 0x14d9cf0 pid: 32310 (default app)
+*** uWSGI is running in multiple interpreter mode ***
+spawned uWSGI master process (pid: 32310)
+spawned uWSGI worker 1 (pid: 32317, cores: 1)
+spawned uWSGI worker 2 (pid: 32318, cores: 1)
+spawned uWSGI worker 3 (pid: 32319, cores: 1)
+spawned uWSGI worker 4 (pid: 32320, cores: 1)
+*** Stats server enabled on 127.0.0.1:8002 fd: 16 ***
+SIGINT/SIGQUIT received...killing workers...
+worker 1 buried after 1 seconds
+worker 2 buried after 1 seconds
+worker 3 buried after 1 seconds
+worker 4 buried after 1 seconds
+goodbye to uWSGI.
+VACUUM: pidfile removed.
+*** Starting uWSGI 2.0.8 (64bit) on [Mon Jun  1 11:20:46 2015] ***
+compiled with version: 4.8.2 on 01 June 2015 11:01:28
+os: Linux-3.13.0-48-generic #80-Ubuntu SMP Thu Mar 12 11:16:15 UTC 2015
+nodename: localhost.localdomain
+machine: x86_64
+clock source: unix
+detected number of CPU cores: 1
+current working directory: /home/ubuntu
+writing pidfile to /home/ubuntu/uwsgi/uwsgi.pid
+detected binary path: /home/ubuntu/venv/bin/uwsgi
+!!! no internal routing support, rebuild with pcre support !!!
+chdir() to /home/ubuntu/repo
+your processes number limit is 7862
+your memory page size is 4096 bytes
+detected max file descriptor number: 1024
+lock engine: pthread robust mutexes
+thunder lock: disabled (you can enable it with --thunder-lock)
+uwsgi socket 0 bound to TCP address 127.0.0.1:8001 fd 3
+Python version: 2.7.6 (default, Mar 22 2014, 23:03:41)  [GCC 4.8.2]
+Set PythonHome to /home/ubuntu/venv
+*** Python threads support is disabled. You can enable it with --enable-threads ***
+Python main interpreter initialized at 0xf6dcf0
+your server socket listen backlog is limited to 100 connections
+your mercy for graceful operations on workers is 60 seconds
+mapped 363840 bytes (355 KB) for 4 cores
+*** Operational MODE: preforking ***
+WSGI app 0 (mountpoint='') ready in 1 seconds on interpreter 0xf6dcf0 pid: 872 (default app)
+*** uWSGI is running in multiple interpreter mode ***
+spawned uWSGI master process (pid: 872)
+spawned uWSGI worker 1 (pid: 879, cores: 1)
+spawned uWSGI worker 2 (pid: 880, cores: 1)
+spawned uWSGI worker 3 (pid: 881, cores: 1)
+spawned uWSGI worker 4 (pid: 882, cores: 1)
+*** Stats server enabled on 127.0.0.1:8002 fd: 16 ***
+[pid: 879|app: 0|req: 1/1] 127.0.0.1 () {40 vars in 743 bytes} [Mon Jun  1 11:23:16 2015] GET /something => generated 93 bytes in 173780 micros (HTTP/1.1 404) 2 headers in 80 bytes (1 switches on core 0)
+[pid: 31460|app: 0|req: 21/2786] 127.0.1.1 () {46 vars in 840 bytes} [Wed Jul 15 23:49:20 2015] OPTIONS /about => generated 0 bytes in 466 micros (HTTP/1.1 200) 6 headers in 327 bytes (1 switches on core 0)

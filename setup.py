@@ -1,35 +1,67 @@
 # coding: utf-8
 
+# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from setuptools import setup
 
-setup(name='rows',
-    description='Import and export tabular data easily with Python',
-    long_description='',
-    version='0.1.0.dev0',
-    author=u'Álvaro Justen',
-    author_email='alvarojusten@gmail.com',
-    url='https://github.com/turicas/rows/',
-    packages=['rows'],
-    install_requires=[],
-    extras_require = {
+
+EXTRA_REQUIREMENTS = {
+        'csv': ['unicodecsv'],
+        'cli': ['click', 'requests'],
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
-        'mysql': ['MySQL-Python'], # apt: libmariadbclient-dev libssl-dev
-        'all': ['lxml', 'MySQL-Python'],
-    },
-    keywords=['tabular', 'csv'],
-    entry_points = {
-        'console_scripts': [
-            'rows = rows.cli:main',
-            ],
-    },
-    classifiers = [
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: GNU General Public License (GPL)',
-        'Natural Language :: English',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2.7',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-    ]
+        'ods': ['lxml'],
+        'xls': ['xlrd', 'xlwt'], }
+EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
+INSTALL_REQUIREMENTS = EXTRA_REQUIREMENTS['csv']
+LONG_DESCRIPTION = '''
+No matter in which format your tabular data is: rows will import it,
+automatically detect types and give you high-level Python objects so you can
+start working with the data instead of trying to parse it. It is also
+locale-and-unicode aware. :)
+
+See a quick start tutorial at:
+    https://github.com/turicas/rows/blob/develop/README.md
+'''.strip()
+
+
+setup(name='rows',
+      description=('A common, beautiful interface to tabular data, '
+                   'no matter the format'),
+      long_description=LONG_DESCRIPTION,
+      version='0.2.0-dev',
+      author=u'Álvaro Justen',
+      author_email='alvarojusten@gmail.com',
+      url='https://github.com/turicas/rows/',
+      packages=['rows', 'rows.plugins'],
+      install_requires=INSTALL_REQUIREMENTS,
+      extras_require=EXTRA_REQUIREMENTS,
+      keywords=['tabular', 'table', 'csv', 'xls', 'html', 'rows'],
+      entry_points = {
+          'console_scripts': [
+              'rows = rows.cli:cli',
+              ],
+      },
+      classifiers = [
+          'Development Status :: 3 - Alpha',
+          'Intended Audience :: Developers',
+          'Intended Audience :: Science/Research',
+          'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+          'Natural Language :: English',
+          'Operating System :: OS Independent',
+          'Programming Language :: Python :: 2.7',
+          'Topic :: Software Development :: Libraries :: Python Modules',
+      ]
 )

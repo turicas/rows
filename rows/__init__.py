@@ -1,6 +1,7 @@
 # coding: utf-8
 
-# Copyright 2014 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+#
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
@@ -14,34 +15,43 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-import types
+from __future__ import unicode_literals
 
-from .plugins import *
+# General imports
 
-from .rows import Table, LazyTable, BaseTable, join
+from rows.operations import join, transform, transpose
+from rows.table import Table
+from rows.localization import locale_context
 
 
-this = sys.modules[__name__]
-import_methods = []
+# Don't have dependencies or dependencies installed on `install_requires`
 
-for attribute in dir(this):
-    if attribute.startswith('import_from_'):
-        import_methods.append(attribute)
-    elif attribute.startswith('export_to_'):
-        setattr(BaseTable, attribute,
-                types.MethodType(getattr(this, attribute), None, BaseTable))
-        delattr(this, attribute)
-    elif attribute.startswith('plugin_'):
-        delattr(this, attribute)
+from rows.plugins._json import import_from_json, export_to_json
+from rows.plugins.csv import import_from_csv, export_to_csv
+from rows.plugins.txt import import_from_txt, export_to_txt
 
-__all__ = ['Table', 'LazyTable'] + import_methods
 
-del BaseTable
-del attribute
-del import_methods
-del plugins
-del rows
-del sys
-del this
-del types
+# Have dependencies
+
+try:
+    from rows.plugins.html import import_from_html, export_to_html
+except ImportError:
+    pass
+
+try:
+    from rows.plugins.ods import import_from_ods
+except ImportError:
+    pass
+
+try:
+    from rows.plugins.sqlite import import_from_sqlite, export_to_sqlite
+except ImportError:
+    pass
+
+try:
+    from rows.plugins.xls import import_from_xls, export_to_xls
+except ImportError:
+    pass
+
+
+__version__ = '0.2.0-dev'

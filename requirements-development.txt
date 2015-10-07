@@ -1,0 +1,16 @@
+-r requirements.txt
+
+# Everything except install_requires
+click
+requests
+lxml
+xlrd
+xlwt
+
+# Test tools
+coverage
+ipdb
+mock
+nose
+pylint
+yanc
