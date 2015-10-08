@@ -44,13 +44,12 @@ def import_from_txt(filename_or_fobj, encoding='utf-8', *args, **kwargs):
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_txt(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
+def export_to_txt(table, filename_or_fobj=None, encoding='utf-8', *args, **kwargs):
     # TODO: should be able to change DASH, PLUS and PIPE
     # TODO: will work only if table.fields is OrderedDict
     # TODO: should use fobj? What about creating a method like json.dumps?
 
     kwargs['encoding'] = encoding
-    _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
     serialized_table = serialize(table, *args, **kwargs)
     field_names = serialized_table.next()
     table_rows = list(serialized_table)
@@ -71,6 +70,10 @@ def export_to_txt(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
 
     data = '\n'.join(result).encode(encoding)
 
-    fobj.write(data)
-    fobj.flush()
-    return fobj
+    if filename_or_fobj is not None:
+        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
+        fobj.write(data)
+        fobj.flush()
+        return fobj
+    else:
+        return data
