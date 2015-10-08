@@ -163,41 +163,6 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
         export_to_uri(destination, result, encoding=output_encoding)
 
 
-@cli.command(help='Sort from `source` by `key(s)` and save into `destination`')
-@click.option('--input-encoding')
-@click.option('--output-encoding')
-@click.option('--input-locale')
-@click.option('--output-locale')
-@click.option('--verify-ssl', default=True, type=bool)
-@click.option('--order-by')
-@click.argument('key')
-@click.argument('source')
-@click.argument('destination')
-def sort(input_encoding, output_encoding, input_locale, output_locale,
-         verify_ssl, order_by, key, source, destination):
-
-    # TODO: may use sys.stdout.encoding if output_file = '-'
-    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
-    # TODO: `key` can be a list
-    key = key.replace('^', '-')
-
-    if input_locale is not None:
-        with rows.locale_context(input_locale):
-            table = _import_table(source, encoding=input_encoding,
-                                  verify_ssl=verify_ssl)
-    else:
-        table = _import_table(source, encoding=input_encoding,
-                              verify_ssl=verify_ssl)
-
-    table.order_by(key)
-
-    if output_locale is not None:
-        with rows.locale_context(output_locale):
-            export_to_uri(destination, table, encoding=output_encoding)
-    else:
-        export_to_uri(destination, table, encoding=output_encoding)
-
-
 @cli.command(name='sum',
              help='Sum tables from `source` URIs and save into `destination`')
 @click.option('--input-encoding')

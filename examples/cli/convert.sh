@@ -10,4 +10,8 @@ rows convert $FILENAME.html $FILENAME.xls
 rows convert $FILENAME.xls $FILENAME.txt
 rows convert $FILENAME.txt $FILENAME.sqlite
 rows convert $FILENAME.sqlite $FILENAME.json
-# note that JSON does not guarantee field order :-/
+# When converting to JSON we cannot guarantee field order!
+
+# `convert` can also sort the data before saving it into the CSV file
+rows convert --input-encoding=utf-8 --input-locale=$LOCALE \
+             --order-by=^pessoas $URL $FILENAME-sorted.csv
