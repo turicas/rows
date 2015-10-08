@@ -4,6 +4,7 @@
 
 **Released on: (under development)**
 
+- Export to XLS also support an already opened file
 - Enhance README
 - Refactor `export_to_txt`
 - Support lazy objects on `create_table`
