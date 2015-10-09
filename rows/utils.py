@@ -31,8 +31,12 @@ except ImportError:
 
 import rows
 
+try:
+    urllib3.disable_warnings()
+except AttributeError:
+    # old versions of urllib3 or requests
+    pass
 
-urllib3.disable_warnings()
 SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
 
