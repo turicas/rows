@@ -229,11 +229,25 @@ class RowsTestMixIn(object):
 
 
     def assert_DateField(self, expected_value, value, *args, **kwargs):
+        value = str(value)
+        if value.endswith('00:00:00'):
+            value = value[:-9]
         self.assertEqual(str(expected_value), value)
 
 
     def assert_DatetimeField(self, expected_value, value, *args, **kwargs):
-        self.assertEqual(str(expected_value).replace(' ', 'T'), value)
+        if type(value) is datetime.datetime and \
+                type(expected_value) is datetime.datetime:
+            # if both types are datetime, check delta
+            # XLSX plugin has not a good precision and will change milliseconds
+            delta_1 = expected_value - value
+            delta_2 = value - expected_value
+            self.assertTrue(str(delta_1).startswith('0:00:00') or
+                            str(delta_2).startswith('0:00:00'))
+        else:
+            # if not, convert values to string and verify if are equal
+            value = str(value)
+            self.assertEqual(str(expected_value).replace(' ', 'T'), value)
 
 
     def assert_TextField(self, expected_value, value, *args, **kwargs):
