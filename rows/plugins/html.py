@@ -114,3 +114,11 @@ def tag_to_dict(html):
 def tag_text(html):
     element = document_fromstring(html).xpath('//html/body/child::*')[0]
     return element.text_content()
+
+
+def count_tables(filename_or_fobj, encoding='utf-8', table_tag='table'):
+    filename, fobj = get_filename_and_fobj(filename_or_fobj)
+    html = fobj.read().decode(encoding)
+    html_tree = document_fromstring(html)
+    tables = html_tree.xpath('//{}'.format(table_tag))
+    return len(tables)
