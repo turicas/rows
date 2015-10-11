@@ -187,6 +187,11 @@ class PluginUtilsTestCase(unittest.TestCase):
                       for field_type, value in zip(field_types, expected_row)]
             self.assertEqual(values, row)
 
+    def test_make_header_should_add_underscore_if_starts_with_number(self):
+        result = plugins_utils.make_header(['123', '456', '123'])
+        expected_result = ['field_123', 'field_456', 'field_123_2']
+        self.assertEqual(result, expected_result)
+
     # TODO: test make_header
     # TODO: test all features of create_table
     # TODO: test if error is raised if len(row) != len(fields)

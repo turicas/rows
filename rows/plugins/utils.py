@@ -54,7 +54,10 @@ def make_header(data, permit_not=False):
               for field_name in data]
     field_names = []
     for index, field_name in enumerate(header):
-        field_name = field_name if field_name else 'field_{}'.format(index)
+        if not field_name:
+            field_name = 'field_{}'.format(index)
+        if field_name[0].isdigit():
+            field_name = 'field_{}'.format(field_name)
         if field_name in field_names:
             field_name = _make_new_field_name(field_name, field_names)
         field_names.append(field_name)
