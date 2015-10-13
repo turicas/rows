@@ -98,6 +98,8 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(type(fields.IntegerField.serialize(42)),
                       types.UnicodeType)
         self.assertEqual(fields.IntegerField.deserialize(None), None)
+        self.assertEqual(fields.IntegerField.deserialize('10152709355006317'),
+                         10152709355006317)
 
         with rows.locale_context(locale_name):
             self.assertEqual(fields.IntegerField.serialize(42000), '42000')
@@ -108,8 +110,7 @@ class FieldsTestCase(unittest.TestCase):
                              '42.000')
             self.assertEqual(fields.IntegerField.deserialize('42.000'), 42000)
             self.assertEqual(fields.IntegerField.deserialize(42), 42)
-            with self.assertRaises(ValueError):
-                self.assertEqual(fields.IntegerField.deserialize(42.0), 42)
+            self.assertEqual(fields.IntegerField.deserialize(42.0), 42)
 
         with self.assertRaises(ValueError):
             fields.IntegerField.deserialize(1.23)

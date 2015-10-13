@@ -151,14 +151,16 @@ class IntegerField(Field):
         value = super(IntegerField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
+        elif isinstance(value, float):
+            new_value = int(value)
+            if new_value != value:
+                raise ValueError("It's float, not integer")
+            else:
+                value = new_value
 
-        converted = int(value) if SHOULD_NOT_USE_LOCALE \
-                               else locale.atoi(as_string(value))
-        float_equivalent = FloatField.deserialize(value, *args, **kwargs)
-        if float_equivalent == converted:
-            return converted
-        else:
-            raise ValueError("It's float, not integer")
+        value = as_string(value)
+        return int(value) if SHOULD_NOT_USE_LOCALE \
+                          else locale.atoi(value)
 
 
 class FloatField(Field):
