@@ -14,7 +14,30 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+About
+-----
 
+No matter in which format your tabular data is: rows will import it,
+automatically detect types and give you high-level Python objects so you can
+start working with the data instead of trying to parse it. It is also
+locale-and-unicode aware. :)
+
+Architecture
+-------------
+
+The library is composed by:
+
+* A common interface to tabular data (the Table class)
+* A set of plugins to populate Table objects (CSV, XLS, HTML, TXT, JSON, SQLite
+  -- more coming soon!)
+* A set of common fields (such as BoolField, IntegerField) which know exactly
+  how to serialize and deserialize data for each object type you'll get
+* A set of utilities (such as field type recognition) to help working with
+  tabular data
+* A command-line interface so you can have easy access to the most used
+  features: convert between formats, sum, join and sort tables.
+"""
 from __future__ import unicode_literals
 
 # General imports
