@@ -4,6 +4,7 @@
 
 **Released on: (under development)**
 
+- Autodetect delimiter in CSV files
 - Fix StringIO import for Python 3
 - Fix error on import of older versions of urllib3
 - Export to TXT also support an already opened file
