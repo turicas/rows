@@ -18,12 +18,7 @@
 from __future__ import unicode_literals
 
 import datetime
-try:
-    # python 3
-    from io import BytesIO
-except ImportError:
-    # python 2
-    from StringIO import StringIO as BytesIO
+from io import BytesIO
 
 import xlrd
 import xlwt
