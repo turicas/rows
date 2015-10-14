@@ -18,7 +18,12 @@
 from __future__ import unicode_literals
 
 import datetime
-import StringIO
+try:
+    # python 3
+    from io import BytesIO
+except ImportError:
+    # python 2
+    from StringIO import StringIO as BytesIO
 
 import xlrd
 import xlwt
@@ -138,7 +143,7 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
         fobj.flush()
         return fobj
     else:
-        output = StringIO.StringIO()
+        output = BytesIO()
         work_book.save(output)
         output.seek(0)
         stream = output.read()

@@ -5,6 +5,7 @@
 **Released on: (under development)**
 
 - Add `FlexibleTable` class
+- Fix StringIO import for Python 3
 - Fix error on import of older versions of urllib3
 - Export to TXT also support an already opened file
 - Export to JSON also support an already opened file
