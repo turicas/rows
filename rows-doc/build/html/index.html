@@ -1,0 +1,408 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to Rows &mdash; Rows 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Rows 0.1.1 documentation" href="#" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-rows">
+<span id="welcome-to-rows"></span><h1>Welcome to Rows<a class="headerlink" href="#module-rows" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="about">
+<h2>About<a class="headerlink" href="#about" title="Permalink to this headline">¶</a></h2>
+<p>No matter in which format your tabular data is: rows will import it,
+automatically detect types and give you high-level Python objects so you can
+start working with the data instead of trying to parse it. It is also
+locale-and-unicode aware. :)</p>
+</div>
+<div class="section" id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Permalink to this headline">¶</a></h2>
+<p>The library is composed by:</p>
+<ul class="simple">
+<li>A common interface to tabular data (the Table class)</li>
+<li>A set of plugins to populate Table objects (CSV, XLS, HTML, TXT, JSON, SQLite
+&#8211; more coming soon!)</li>
+<li>A set of common fields (such as BoolField, IntegerField) which know exactly
+how to serialize and deserialize data for each object type you&#8217;ll get</li>
+<li>A set of utilities (such as field type recognition) to help working with
+tabular data</li>
+<li>A command-line interface so you can have easy access to the most used
+features: convert between formats, sum, join and sort tables.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="quick-start">
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
+<p>Do you want to read a <strong>table from a HTML page</strong>? It&#8217;s simple :)</p>
+<p>Let&#8217;s say you want to know all the Academic Award-winning films</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">rows</span>
+
+<span class="c"># Get data</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s">&#39;https://en.wikipedia.org/wiki/List_of_Academy_Award-winning_films&#39;</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+<span class="n">html</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
+
+<span class="c"># Parse</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">import_from_html</span><span class="p">(</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">html</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c"># Sort</span>
+<span class="n">by_name</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+<span class="n">by_nominations</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">nominations</span><span class="p">)</span>
+<span class="n">by_year</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="how-to-install">
+<h1>How to install<a class="headerlink" href="#how-to-install" title="Permalink to this headline">¶</a></h1>
+<p>Simple and elegant: <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rows</span></code></p>
+<p>If you want another forms of installation please <a class="reference external" href="https://github.com/turicas/rows/blob/develop/README.md#installation">click here</a></p>
+<p>The plugins <cite>csv</cite>, <cite>txt</cite>, <cite>json</cite> and <cite>sqlite</cite> are built-in by default but if
+you want to use another one you need to explicitly install its dependencies,
+for example:</p>
+<div class="highlight-python"><div class="highlight"><pre>pip install rows[html]
+pip install rows[xls]
+</pre></div>
+</div>
+<p>You also need to install some dependencies to use the [command-line
+interface](#command-line-interface). You can do it installing the <cite>cli</cite> extra
+requirement:</p>
+<div class="highlight-python"><div class="highlight"><pre>pip install rows[cli]
+</pre></div>
+</div>
+<p>And - easily - you can install all the dependencies by using the <cite>all</cite> extra
+requirement:</p>
+<div class="highlight-python"><div class="highlight"><pre>pip install rows[all]
+</pre></div>
+</div>
+<p>If you use Debian [sid](<a class="reference external" href="https://www.debian.org/releases/sid/">https://www.debian.org/releases/sid/</a>) or
+[testing](<a class="reference external" href="https://www.debian.org/releases/testing/">https://www.debian.org/releases/testing/</a>) you can install it directly
+from the main repository by running:</p>
+<div class="highlight-python"><div class="highlight"><pre>aptitude install python-rows  # Python library only
+aptitude install rows  # Python library + CLI
+</pre></div>
+</div>
+</div>
+<div class="section" id="basic-usage">
+<h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h1>
+<p>You can create a <cite>Table</cite> object and populate it with some data
+programmatically:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">rows</span> <span class="kn">import</span> <span class="n">fields</span><span class="p">,</span> <span class="n">Table</span>
+
+<span class="n">my_fields</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="n">fields</span><span class="o">.</span><span class="n">UnicodeField</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;age&#39;</span><span class="p">,</span> <span class="n">fields</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;can&#39;</span><span class="p">,</span> <span class="n">fields</span><span class="o">.</span><span class="n">BoolField</span><span class="p">)])</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="n">my_fields</span><span class="p">)</span>
+<span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="s">u&#39;Álvaro Justen&#39;</span><span class="p">,</span> <span class="s">&#39;age&#39;</span><span class="p">:</span> <span class="mi">28</span><span class="p">,</span> <span class="s">&#39;can&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
+<span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="s">u&#39;Another Guy&#39;</span><span class="p">,</span> <span class="s">&#39;age&#39;</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span> <span class="s">&#39;can&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>Then you can iterate over it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">print_person</span><span class="p">(</span><span class="n">person</span><span class="p">):</span>
+    <span class="n">can</span> <span class="o">=</span> <span class="s">&#39;can&#39;</span> <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">can</span> <span class="k">else</span> <span class="s">&quot;just can&#39;t&quot;</span>
+    <span class="k">print</span> <span class="s">u&#39;{} is {} years old and {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">age</span><span class="p">,</span> <span class="n">can</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">table</span><span class="p">:</span>
+    <span class="n">print_person</span><span class="p">(</span><span class="n">person</span><span class="p">)</span>  <span class="c"># namedtuples are returned</span>
+</pre></div>
+</div>
+<p>You&#8217;ll see:</p>
+<div class="highlight-python"><div class="highlight"><pre>Álvaro Justen is 28 years old and just can&#39;t.
+Another Guy is 42 years old and can.
+</pre></div>
+</div>
+<p>As you specified field types (<cite>my_fields</cite>) you don&#8217;t need to insert data using
+the correct types. Actually you can insert strings and the library will
+automatically convert it for you:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="s">&#39;...&#39;</span><span class="p">,</span> <span class="s">&#39;age&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;can&#39;</span><span class="p">:</span> <span class="s">&#39;false&#39;</span><span class="p">})</span>
+<span class="n">print_person</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c"># yes, you can index it!</span>
+</pre></div>
+</div>
+<p>And the output:</p>
+<div class="highlight-python"><div class="highlight"><pre>is None years old and just can&#39;t
+</pre></div>
+</div>
+</div>
+<div class="section" id="importing-data">
+<h1>Importing Data<a class="headerlink" href="#importing-data" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal"><span class="pre">rows</span></code> will help you importing data: its plugins will do the hard job of
+parsing each supported file format so you don&#8217;t need to. They can help you
+exporting data also. For example, let&#8217;s download a CSV from the Web and import
+it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">rows</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s">&#39;http://unitedstates.sunlightfoundation.com/legislators/legislators.csv&#39;</span>
+<span class="n">csv</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span>  <span class="c"># Download CSV data</span>
+<span class="n">legislators</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">import_from_csv</span><span class="p">(</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">csv</span><span class="p">))</span>  <span class="c"># already imported!</span>
+
+<span class="k">print</span> <span class="s">&#39;Hey, rows automatically identified the types:&#39;</span>
+<span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_type</span> <span class="ow">in</span> <span class="n">legislators</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">print</span> <span class="s">&#39;{} is {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">field_type</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And you&#8217;ll see something like this:</p>
+<div class="highlight-python"><div class="highlight"><pre>[...]
+in_office is &lt;class &#39;rows.fields.BoolField&#39;&gt;
+gender is &lt;class &#39;rows.fields.UnicodeField&#39;&gt;
+[...]
+birthdate is &lt;class &#39;rows.fields.DateField&#39;&gt;
+</pre></div>
+</div>
+<p>We can then work on this data:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">women_in_office</span> <span class="o">=</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">in_office</span> <span class="ow">and</span> <span class="n">row</span><span class="o">.</span><span class="n">gender</span> <span class="o">==</span> <span class="s">&#39;F&#39;</span><span class="p">,</span>
+                         <span class="n">legislators</span><span class="p">)</span>
+<span class="n">men_in_office</span> <span class="o">=</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">in_office</span> <span class="ow">and</span> <span class="n">row</span><span class="o">.</span><span class="n">gender</span> <span class="o">==</span> <span class="s">&#39;M&#39;</span><span class="p">,</span>
+                       <span class="n">legislators</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;Women vs Men: {} vs {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">women_in_office</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">men_in_office</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Then you&#8217;ll see effects of our sexist society:</p>
+<div class="highlight-python"><div class="highlight"><pre>Women vs Men: 108 vs 432
+</pre></div>
+</div>
+<p>Now, let&#8217;s compare ages:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">legislators</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s">&#39;birthdate&#39;</span><span class="p">)</span>
+<span class="n">older</span><span class="p">,</span> <span class="n">younger</span> <span class="o">=</span> <span class="n">legislators</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">legislators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">print</span> <span class="s">&#39;{}, {} is older than {}, {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">older</span><span class="o">.</span><span class="n">lastname</span><span class="p">,</span> <span class="n">older</span><span class="o">.</span><span class="n">firstname</span><span class="p">,</span>
+                                           <span class="n">younger</span><span class="o">.</span><span class="n">lastname</span><span class="p">,</span> <span class="n">younger</span><span class="o">.</span><span class="n">firstname</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The output:</p>
+<div class="highlight-python"><div class="highlight"><pre>Stefanik, Elise is older than Byrd, Robert
+</pre></div>
+</div>
+<blockquote>
+<div>Note that <strong>native Python objects</strong> are returned for each row inside a
+<cite>namedtuple</cite>! The library recognizes each field type and converts it
+<em>automagically</em> no matter which plugin you&#8217;re using to import the data.</div></blockquote>
+<div class="section" id="common-parameters">
+<h2>Common Parameters<a class="headerlink" href="#common-parameters" title="Permalink to this headline">¶</a></h2>
+<p>Each plugin has its own parameters (like index in import_from_html and sheet_name in import_from_xls) but all plugins create a rows.Table object so they also have some common parameters you can pass to import_from_X. They are:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">fields</span></code>: an <code class="docutils literal"><span class="pre">OrderedDict</span></code> with field names and types (disable automatic detection of types).</li>
+<li><code class="docutils literal"><span class="pre">skip_header</span></code>: Ignore header row. Only used if <code class="docutils literal"><span class="pre">fields</span></code> is not <code class="docutils literal"><span class="pre">None</span></code>. Default: <code class="docutils literal"><span class="pre">True</span></code>.</li>
+<li><code class="docutils literal"><span class="pre">import_fields</span></code>: a <code class="docutils literal"><span class="pre">list</span></code> with field names to import (other fields will be ignored) &#8211; fields will be imported in this order.</li>
+<li><code class="docutils literal"><span class="pre">samples</span></code>: number of sample rows to use on field type autodetect algorithm. Default: <code class="docutils literal"><span class="pre">None</span></code> (use all rows).</li>
+</ul>
+</div>
+</div>
+<div class="section" id="exporting-data">
+<h1>Exporting Data<a class="headerlink" href="#exporting-data" title="Permalink to this headline">¶</a></h1>
+<p>If you have a <cite>Table</cite> object you can export it to all available plugins which
+have the &#8220;export&#8221; feature. Let&#8217;s use the HTML plugin:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">rows</span><span class="o">.</span><span class="n">export_to_html</span><span class="p">(</span><span class="n">legislators</span><span class="p">,</span> <span class="s">&#39;legislators.html&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And you&#8217;ll get:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ head legislators.html
+&lt;table&gt;
+
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt; title &lt;/th&gt;
+      &lt;th&gt; firstname &lt;/th&gt;
+      &lt;th&gt; middlename &lt;/th&gt;
+      &lt;th&gt; lastname &lt;/th&gt;
+      &lt;th&gt; name_suffix &lt;/th&gt;
+      &lt;th&gt; nickname &lt;/th&gt;
+</pre></div>
+</div>
+<p>See the <a class="reference external" href="https://github.com/turicas/rows/tree/develop/examples">examples folder</a> guide. for more examples.</p>
+</div>
+<div class="section" id="available-plugins">
+<h1>Available Plugins<a class="headerlink" href="#available-plugins" title="Permalink to this headline">¶</a></h1>
+<p>The idea behing plugins is very simple: you write a little piece of code which
+extracts data from/to some specific format and the library will do the other
+tasks for you. So writing a plugin is as easy as reading from/writing to the
+file format you want. Currently we have the following plugins:</p>
+<ul class="simple">
+<li>CSV: use <code class="docutils literal"><span class="pre">rows.import_from_csv</span></code> and <code class="docutils literal"><span class="pre">rows.export_to_csv</span></code> (dependencies are
+installed by default)</li>
+<li>TXT: use <code class="docutils literal"><span class="pre">rows.export_to_txt</span></code> (no dependencies)</li>
+<li>JSON: use <code class="docutils literal"><span class="pre">rows.import_from_json</span></code> and <code class="docutils literal"><span class="pre">rows.export_to_json</span></code> (no dependencies)</li>
+<li>HTML: use <code class="docutils literal"><span class="pre">rows.import_from_html</span></code> and <code class="docutils literal"><span class="pre">rows.export_to_html</span></code> (denpendencies
+must be installed with <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rows[html]</span></code>)</li>
+<li>XLS: use <code class="docutils literal"><span class="pre">rows.import_from_xls</span></code> and <code class="docutils literal"><span class="pre">rows.export_to_xls</span></code> (dependencies must
+be installed with <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rows[xls]</span></code>)</li>
+<li>SQLite: use <code class="docutils literal"><span class="pre">rows.import_from_sqlite</span></code> and <code class="docutils literal"><span class="pre">rows.export_to_sqlite</span></code> (no
+dependencies)</li>
+<li>ODS: use <code class="docutils literal"><span class="pre">rows.import_from_ods</span></code> (dependencies must be installed with <code class="docutils literal"><span class="pre">pip</span>
+<span class="pre">install</span> <span class="pre">rows[ods]</span></code>)</li>
+</ul>
+<p>More plugins are coming (like PDF, DBF etc.) and we&#8217;re going to re-design the
+plugin interface so you can create your own easily. Feel free to contribute.
+:-)</p>
+<div class="section" id="id1">
+<h2>Common Parameters<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>Each plugin has its own parameters (like <code class="docutils literal"><span class="pre">encoding</span></code> in <code class="docutils literal"><span class="pre">import_from_html</span></code> and
+<code class="docutils literal"><span class="pre">sheet_name</span></code> in <code class="docutils literal"><span class="pre">import_from_xls</span></code>) but all plugins use the same mechanism to
+prepare a <code class="docutils literal"><span class="pre">rows.Table</span></code> before exporting, so they also have some common
+parameters you can pass to <code class="docutils literal"><span class="pre">export_to_X</span></code>. They are:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">export_fields</span></code>: a <code class="docutils literal"><span class="pre">list</span></code> with field names to export (other fields will be
+ignored) &#8211; fields will be exported in this order.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="command-line-interface">
+<h1>Command-Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal"><span class="pre">rows</span></code> exposes a command-line interface with the common operations such as
+convert data between plugins, sum, sort and join <code class="docutils literal"><span class="pre">Table</span></code>&#8216;s.</p>
+<p>Run <code class="docutils literal"><span class="pre">rows</span> <span class="pre">--help</span></code> to see the available commands and take a look at
+<code class="docutils literal"><span class="pre">rows/cli.py</span></code>.</p>
+</div>
+<div class="section" id="locale">
+<h1>Locale<a class="headerlink" href="#locale" title="Permalink to this headline">¶</a></h1>
+<p>Many fields inside <code class="docutils literal"><span class="pre">rows.fields</span></code> are locale-aware. If you have some data using
+Brazilian Portuguese number formatting, for example (<code class="docutils literal"><span class="pre">,</span></code> as decimal separators
+and <code class="docutils literal"><span class="pre">.</span></code> as thousands separator) you can configure this into the library and
+<code class="docutils literal"><span class="pre">rows</span></code> will automatically understand these numbers!</p>
+<p>Let&#8217;s see it working by extracting the population of cities in Rio de Janeiro
+state:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">locale</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">rows</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s">&#39;http://cidades.ibge.gov.br/comparamun/compara.php?idtema=1&amp;codv=v01&amp;coduf=33&#39;</span>
+<span class="n">html</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span>
+<span class="k">with</span> <span class="n">rows</span><span class="o">.</span><span class="n">locale_context</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;pt_BR.UTF-8&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="n">locale</span><span class="o">.</span><span class="n">LC_NUMERIC</span><span class="p">):</span>
+    <span class="n">rio</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">import_from_html</span><span class="p">(</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">html</span><span class="p">))</span>
+
+<span class="n">total_population</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">city</span><span class="o">.</span><span class="n">pessoas</span> <span class="k">for</span> <span class="n">city</span> <span class="ow">in</span> <span class="n">rio</span><span class="p">)</span>
+<span class="c"># &#39;pessoas&#39; is the fieldname related to the number of people in each city</span>
+<span class="k">print</span> <span class="s">&#39;Rio de Janeiro has {} inhabitants&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">total_population</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The column <code class="docutils literal"><span class="pre">pessoas</span></code> will be imported as an <code class="docutils literal"><span class="pre">IntegerField</span></code> and the result is:</p>
+<div class="highlight-python"><div class="highlight"><pre>Rio de Janeiro has 15989929 inhabitants
+</pre></div>
+</div>
+</div>
+<div class="section" id="license">
+<h1>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h1>
+<p>This library is released under the <a class="reference external" href="http://www.gnu.org/licenses/gpl-3.0.html">GNU General Public License version
+3</a>.</p>
+</div>
+<div class="section" id="bugs-and-enhancements">
+<h1>Bugs and Enhancements<a class="headerlink" href="#bugs-and-enhancements" title="Permalink to this headline">¶</a></h1>
+<p>Please fill an issue in <a class="reference external" href="https://github.com/turicas/rows/issues">https://github.com/turicas/rows/issues</a></p>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to Rows</a><ul>
+<li><a class="reference internal" href="#about">About</a></li>
+<li><a class="reference internal" href="#architecture">Architecture</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#quick-start">Quick Start</a></li>
+<li><a class="reference internal" href="#how-to-install">How to install</a></li>
+<li><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
+<li><a class="reference internal" href="#importing-data">Importing Data</a><ul>
+<li><a class="reference internal" href="#common-parameters">Common Parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#exporting-data">Exporting Data</a></li>
+<li><a class="reference internal" href="#available-plugins">Available Plugins</a><ul>
+<li><a class="reference internal" href="#id1">Common Parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#command-line-interface">Command-Line Interface</a></li>
+<li><a class="reference internal" href="#locale">Locale</a></li>
+<li><a class="reference internal" href="#license">License</a></li>
+<li><a class="reference internal" href="#bugs-and-enhancements">Bugs and Enhancements</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Alvaro Justen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/index.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

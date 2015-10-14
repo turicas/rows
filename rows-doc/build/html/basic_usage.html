@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Basic Usage &mdash; Rows 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Rows 0.1.1 documentation" href="index.html" />
+    <link rel="next" title="Common Parameters" href="importing_data.html" />
+    <link rel="prev" title="Welcome to Rows" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="basic-usage">
+<h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h1>
+<p>You can create a <cite>Table</cite> object and populate it with some data
+programmatically:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">rows</span> <span class="kn">import</span> <span class="n">fields</span><span class="p">,</span> <span class="n">Table</span>
+
+<span class="n">my_fields</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="n">fields</span><span class="o">.</span><span class="n">UnicodeField</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;age&#39;</span><span class="p">,</span> <span class="n">fields</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;can&#39;</span><span class="p">,</span> <span class="n">fields</span><span class="o">.</span><span class="n">BoolField</span><span class="p">)])</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="n">my_fields</span><span class="p">)</span>
+<span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="s">u&#39;Álvaro Justen&#39;</span><span class="p">,</span> <span class="s">&#39;age&#39;</span><span class="p">:</span> <span class="mi">28</span><span class="p">,</span> <span class="s">&#39;can&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
+<span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="s">u&#39;Another Guy&#39;</span><span class="p">,</span> <span class="s">&#39;age&#39;</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span> <span class="s">&#39;can&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>Then you can iterate over it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">print_person</span><span class="p">(</span><span class="n">person</span><span class="p">):</span>
+    <span class="n">can</span> <span class="o">=</span> <span class="s">&#39;can&#39;</span> <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">can</span> <span class="k">else</span> <span class="s">&quot;just can&#39;t&quot;</span>
+    <span class="k">print</span> <span class="s">u&#39;{} is {} years old and {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">age</span><span class="p">,</span> <span class="n">can</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">table</span><span class="p">:</span>
+    <span class="n">print_person</span><span class="p">(</span><span class="n">person</span><span class="p">)</span>  <span class="c"># namedtuples are returned</span>
+</pre></div>
+</div>
+<p>You&#8217;ll see:</p>
+<div class="highlight-python"><div class="highlight"><pre>Álvaro Justen is 28 years old and just can&#39;t.
+Another Guy is 42 years old and can.
+</pre></div>
+</div>
+<p>As you specified field types (<cite>my_fields</cite>) you don&#8217;t need to insert data using
+the correct types. Actually you can insert strings and the library will
+automatically convert it for you:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="s">&#39;...&#39;</span><span class="p">,</span> <span class="s">&#39;age&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;can&#39;</span><span class="p">:</span> <span class="s">&#39;false&#39;</span><span class="p">})</span>
+<span class="n">print_person</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c"># yes, you can index it!</span>
+</pre></div>
+</div>
+<p>And the output:</p>
+<div class="highlight-python"><div class="highlight"><pre>is None years old and just can&#39;t
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to Rows</a></li>
+      <li>Next: <a href="importing_data.html" title="next chapter">Common Parameters</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/basic_usage.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Alvaro Justen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/basic_usage.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

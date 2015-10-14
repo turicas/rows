@@ -1,0 +1,135 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Available Plugins &mdash; Rows 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Rows 0.1.1 documentation" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="available-plugins">
+<h1>Available Plugins<a class="headerlink" href="#available-plugins" title="Permalink to this headline">¶</a></h1>
+<p>The idea behing plugins is very simple: you write a little piece of code which
+extracts data from/to some specific format and the library will do the other
+tasks for you. So writing a plugin is as easy as reading from/writing to the
+file format you want. Currently we have the following plugins:</p>
+<ul class="simple">
+<li>CSV: use <code class="docutils literal"><span class="pre">rows.import_from_csv</span></code> and <code class="docutils literal"><span class="pre">rows.export_to_csv</span></code> (dependencies are
+installed by default)</li>
+<li>TXT: use <code class="docutils literal"><span class="pre">rows.export_to_txt</span></code> (no dependencies)</li>
+<li>JSON: use <code class="docutils literal"><span class="pre">rows.import_from_json</span></code> and <code class="docutils literal"><span class="pre">rows.export_to_json</span></code> (no dependencies)</li>
+<li>HTML: use <code class="docutils literal"><span class="pre">rows.import_from_html</span></code> and <code class="docutils literal"><span class="pre">rows.export_to_html</span></code> (denpendencies
+must be installed with <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rows[html]</span></code>)</li>
+<li>XLS: use <code class="docutils literal"><span class="pre">rows.import_from_xls</span></code> and <code class="docutils literal"><span class="pre">rows.export_to_xls</span></code> (dependencies must
+be installed with <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">rows[xls]</span></code>)</li>
+<li>SQLite: use <code class="docutils literal"><span class="pre">rows.import_from_sqlite</span></code> and <code class="docutils literal"><span class="pre">rows.export_to_sqlite</span></code> (no
+dependencies)</li>
+<li>ODS: use <code class="docutils literal"><span class="pre">rows.import_from_ods</span></code> (dependencies must be installed with <code class="docutils literal"><span class="pre">pip</span>
+<span class="pre">install</span> <span class="pre">rows[ods]</span></code>)</li>
+</ul>
+<p>More plugins are coming (like PDF, DBF etc.) and we&#8217;re going to re-design the
+plugin interface so you can create your own easily. Feel free to contribute.
+:-)</p>
+<div class="section" id="common-parameters">
+<h2>Common Parameters<a class="headerlink" href="#common-parameters" title="Permalink to this headline">¶</a></h2>
+<p>Each plugin has its own parameters (like <code class="docutils literal"><span class="pre">encoding</span></code> in <code class="docutils literal"><span class="pre">import_from_html</span></code> and
+<code class="docutils literal"><span class="pre">sheet_name</span></code> in <code class="docutils literal"><span class="pre">import_from_xls</span></code>) but all plugins use the same mechanism to
+prepare a <code class="docutils literal"><span class="pre">rows.Table</span></code> before exporting, so they also have some common
+parameters you can pass to <code class="docutils literal"><span class="pre">export_to_X</span></code>. They are:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">export_fields</span></code>: a <code class="docutils literal"><span class="pre">list</span></code> with field names to export (other fields will be
+ignored) &#8211; fields will be exported in this order.</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Available Plugins</a><ul>
+<li><a class="reference internal" href="#common-parameters">Common Parameters</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/avaliable_plugins.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Alvaro Justen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/avaliable_plugins.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
