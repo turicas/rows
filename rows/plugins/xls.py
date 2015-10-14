@@ -18,6 +18,7 @@
 from __future__ import unicode_literals
 
 import datetime
+from io import BytesIO
 
 import xlrd
 import xlwt
@@ -110,10 +111,9 @@ FORMATTING_STYLES = {fields.DateField: xlwt.easyxf(num_format_str='yyyy-mm-dd'),
                      fields.DatetimeField: xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'),
                      fields.PercentField: xlwt.easyxf(num_format_str='0.00%'),}
 
-def export_to_xls(table, filename_or_fobj, sheet_name='Sheet1', *args,
+def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                   **kwargs):
 
-    _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
     work_book = xlwt.Workbook()
     sheet = work_book.add_sheet(sheet_name)
 
@@ -132,6 +132,15 @@ def export_to_xls(table, filename_or_fobj, sheet_name='Sheet1', *args,
                 data['style'] = FORMATTING_STYLES[field_type]
             sheet.write(row_index, column_index, value, **data)
 
-    work_book.save(fobj)
-    fobj.flush()
-    return fobj
+    if filename_or_fobj is not None:
+        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
+        work_book.save(fobj)
+        fobj.flush()
+        return fobj
+    else:
+        output = BytesIO()
+        work_book.save(output)
+        output.seek(0)
+        stream = output.read()
+        output.close()
+        return stream

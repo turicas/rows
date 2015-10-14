@@ -48,11 +48,9 @@ def _convert(value, field_type, *args, **kwargs):
     return value
 
 
-def export_to_json(table, filename_or_fobj, encoding='utf-8', indent=None,
+def export_to_json(table, filename_or_fobj=None, encoding='utf-8', indent=None,
                    *args, **kwargs):
     # TODO: will work only if table.fields is OrderedDict
-
-    _, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
 
     fields = table.fields
     prepared_table = prepare_to_export(table, *args, **kwargs)
@@ -64,6 +62,11 @@ def export_to_json(table, filename_or_fobj, encoding='utf-8', indent=None,
     result = json.dumps(data, indent=indent)
     if indent is not None:
         result = '\n'.join(line.rstrip() for line in result.splitlines())
-    fobj.write(result)
-    fobj.flush()
-    return fobj
+
+    if filename_or_fobj is not None:
+        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
+        fobj.write(result)
+        fobj.flush()
+        return fobj
+    else:
+        return result
