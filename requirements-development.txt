@@ -6,6 +6,7 @@ requests
 lxml
 xlrd
 xlwt
+sphinx
 
 # Test tools
 coverage
