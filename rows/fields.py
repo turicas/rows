@@ -429,3 +429,23 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
         detected_types[field_name] = identified_type
 
     return detected_types
+
+
+TYPES = [(key, locals().get(key)) for key in __all__]
+
+
+def identify_type(value):
+    value_type = type(value)
+    if value_type not in (str, unicode):
+        possible_types = [type_class for type_name, type_class in TYPES
+                          if value_type is type_class.TYPE]
+        if not possible_types:
+            detected = detect_types(['some_field'], [[value]])['some_field']
+        elif len(possible_types) > 1:
+            raise ValueError('Cannot detect field type')
+        else:
+            detected = possible_types[0]
+    else:
+        detected = detect_types(['some_field'], [[value]])['some_field']
+
+    return detected

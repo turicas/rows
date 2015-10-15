@@ -20,6 +20,8 @@ from __future__ import unicode_literals
 from collections import MutableSequence, namedtuple, OrderedDict, Sized
 from operator import itemgetter
 
+from rows.fields import identify_type
+
 
 class Table(MutableSequence):
 
@@ -112,3 +114,45 @@ class Table(MutableSequence):
 
         key_index = field_names.index(key)
         self._rows.sort(key=itemgetter(key_index), reverse=reverse)
+
+
+class FlexibleTable(Table):
+
+    def __init__(self, fields=None, meta=None):
+        if fields is None:
+            fields = {}
+        super(FlexibleTable, self).__init__(fields, meta)
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self.Row(**self._rows[key])
+        elif isinstance(key, slice):
+            return [self.Row(**row) for row in self._rows[key]]
+        else:
+            raise ValueError('Type not recognized: {}'.format(type(key)))
+
+    def _add_field(self, field_name, field_type):
+        self.fields[field_name] = field_type
+        self.field_names.append(field_name)
+        self.field_types.append(field_type)
+        self.Row = namedtuple('Row', self.field_names)
+
+    def _make_row(self, row):
+        field_names = row.keys()
+        for field_name in field_names:
+            if field_name not in self.field_names:
+                self._add_field(field_name, identify_type(row[field_name]))
+
+        return {field_name: field_type.deserialize(row.get(field_name, None))
+                for field_name, field_type in self.fields.items()}
+
+    def insert(self, index, row):
+        self._rows.insert(index, self._make_row(row))
+
+    def __setitem__(self, key, value):
+        self._rows[key] = self._make_row(value)
+
+    def append(self, row):
+        """Add a row to the table. Should be a dict"""
+
+        self._rows.append(self._make_row(row))

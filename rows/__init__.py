@@ -20,7 +20,7 @@ from __future__ import unicode_literals
 # General imports
 
 from rows.operations import join, transform, transpose
-from rows.table import Table
+from rows.table import Table, FlexibleTable
 from rows.localization import locale_context
 
 

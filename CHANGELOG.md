@@ -4,6 +4,7 @@
 
 **Released on: (under development)**
 
+- Add `FlexibleTable` class
 - Enhance README
 - Refactor `export_to_txt`
 - Support lazy objects on `create_table`

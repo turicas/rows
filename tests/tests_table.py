@@ -20,10 +20,12 @@ from __future__ import unicode_literals
 import datetime
 import unittest
 
+from collections import OrderedDict
+
 import rows
 import rows.fields as fields
 
-from rows.table import Table
+from rows.table import FlexibleTable, Table
 
 
 class TableTestCase(unittest.TestCase):
@@ -128,3 +130,34 @@ class TableTestCase(unittest.TestCase):
     def test_table_repr(self):
         expected = '<rows.Table 2 fields, 3 rows>'
         self.assertEqual(expected, repr(self.table))
+
+
+class TestFlexibleTable(unittest.TestCase):
+
+    def test_FlexibleTable_is_present_on_main_namespace(self):
+        self.assertIn('FlexibleTable', dir(rows))
+        self.assertIs(FlexibleTable, rows.FlexibleTable)
+
+    def test_inheritance(self):
+        self.assertTrue(issubclass(FlexibleTable, Table))
+
+    def test_flexible_append_detect_field_type(self):
+        table = FlexibleTable()
+        self.assertEqual(len(table.fields), 0)
+
+        table.append({'a': 123, 'b': 3.14, })
+        self.assertEqual(table[0].a, 123)
+        self.assertEqual(table[0].b, 3.14)
+        self.assertEqual(table.fields, OrderedDict([('a', fields.IntegerField),
+                                                    ('b', fields.FloatField)]))
+
+        # Values are checked based on field types when appending
+        with self.assertRaises(ValueError):
+            table.append({'a': 'spam', 'b': 1.23})  # invalid value for 'a'
+        with self.assertRaises(ValueError):
+            table.append({'a': 42, 'b': 'ham'})  # invalid value or 'b'
+
+        # Values are converted
+        table.append({'a': '42', 'b': '2.71'})
+        self.assertEqual(table[1].a, 42)
+        self.assertEqual(table[1].b, 2.71)
