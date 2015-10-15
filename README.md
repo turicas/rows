@@ -389,6 +389,7 @@ make man
 - [multicorn](https://github.com/Kozea/Multicorn)
 - [webscraper.io](http://webscraper.io/)
 - [import.io](http://import.io/)
+- [Tabula](http://tabula.technology/)
 
 
 ## Known Issues
