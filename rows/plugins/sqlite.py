@@ -64,6 +64,25 @@ def _get_connection(filename_or_connection):
         return filename_or_connection
 
 
+def _get_default_table_name(filename_or_connection):
+    connection = _get_connection(filename_or_connection)
+    table_name = 'rows'
+    select_table = "SELECT name FROM sqlite_master WHERE type='table' AND name='{}';"
+    result = connection.execute(select_table.format(table_name))
+
+    if len(result.fetchall()) > 0:
+        table_name_raw = 'rows_{}'
+        i = 1
+        while True:
+            table_name = table_name_raw.format(i)
+            result = connection.execute(select_table.format(table_name))
+            if len(result.fetchall()) == 0:
+                break
+            i += 1
+
+    return table_name
+
+
 def import_from_sqlite(filename_or_connection, table_name='rows', query=None,
                        *args, **kwargs):
     connection = _get_connection(filename_or_connection)
@@ -84,7 +103,7 @@ def export_to_sqlite(table_obj, filename_or_connection, table_name=None,
     # TODO: should add transaction support?
 
     if table_name is None:
-        table_name = 'rows'  # TODO: may use 'rows_N' if 'rows' already exists
+        table_name = _get_default_table_name(filename_or_connection)
 
     serialized_table = serialize(table_obj, *args, **kwargs)
     connection = _get_connection(filename_or_connection)
