@@ -66,19 +66,17 @@ def _get_connection(filename_or_connection):
 
 def _get_default_table_name(filename_or_connection):
     connection = _get_connection(filename_or_connection)
-    table_name = 'rows'
-    select_table = "SELECT name FROM sqlite_master WHERE type='table' AND name='{}';"
-    result = connection.execute(select_table.format(table_name))
+    select_tables = "SELECT name FROM sqlite_master WHERE type='table';"
+    current_tables = (x[0] for x in connection.execute(select_tables).fetchall())
+    table_name_raw = 'rows_{}'
 
-    if len(result.fetchall()) > 0:
-        table_name_raw = 'rows_{}'
-        i = 1
-        while True:
-            table_name = table_name_raw.format(i)
-            result = connection.execute(select_table.format(table_name))
-            if len(result.fetchall()) == 0:
-                break
-            i += 1
+    i = 1
+
+    while True:
+        table_name = table_name_raw.format(i)
+        if not table_name in current_tables
+            break
+        i += 1
 
     return table_name
 
