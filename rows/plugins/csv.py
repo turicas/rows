@@ -22,21 +22,19 @@ import unicodecsv
 from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
 
 
-def import_from_csv(filename_or_fobj, encoding='utf-8', delimiter=None,
-                    quotechar='"', *args, **kwargs):
+def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None, *args,
+                    **kwargs):
     'Import data from a CSV file'
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj)
 
-    if delimiter is None:
-        dialect = unicodecsv.Sniffer().sniff(fobj.read())
-        delimiter = dialect.delimiter
+    if dialect is None:
+        sample = fobj.readline().decode(encoding)
+        dialect = unicodecsv.Sniffer().sniff(sample)
         fobj.seek(0)
 
     kwargs['encoding'] = encoding
-    csv_reader = unicodecsv.reader(fobj, encoding=encoding,
-                                   delimiter=str(delimiter),
-                                   quotechar=str(quotechar))
+    csv_reader = unicodecsv.reader(fobj, encoding=encoding, dialect=dialect)
 
     meta = {'imported_from': 'csv', 'filename': filename,}
     return create_table(csv_reader, meta=meta, *args, **kwargs)

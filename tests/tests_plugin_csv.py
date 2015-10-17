@@ -20,11 +20,24 @@ from __future__ import unicode_literals
 import tempfile
 import unittest
 
+from io import BytesIO
+
 import mock
 
 import rows
 import rows.plugins.csv
 import utils
+
+
+def make_csv_data(quote_char, field_delimiter, line_delimiter):
+    data = [['field1', 'field2', 'field3'],
+            ['value1', 'value2', 'value3']]
+    lines = [['{}{}{}'.format(quote_char, value, quote_char)
+              for value in line]
+             for line in data]
+    lines = line_delimiter.join([field_delimiter.join(line)
+                                 for line in data])
+    return data, lines
 
 
 class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -40,7 +53,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     @mock.patch('rows.plugins.csv.create_table')
     def test_import_from_csv_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
-        kwargs = {'encoding': 'test', 'some_key': 123, 'other': 456, }
+        kwargs = {'encoding': 'utf-8', 'some_key': 123, 'other': 456, }
         result = rows.import_from_csv(self.filename, **kwargs)
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
@@ -64,6 +77,32 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             table_2 = rows.import_from_csv(fobj)
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args)
+
+    @mock.patch('rows.plugins.csv.create_table')
+    def test_import_from_csv_discover_dialect(self, mocked_create_table):
+        data, lines = make_csv_data(quote_char="'",
+                                    field_delimiter=";",
+                                    line_delimiter="\r\n")
+        fobj = BytesIO()
+        fobj.write(lines.encode('utf-8'))
+        fobj.seek(0)
+
+        rows.import_from_csv(fobj)
+        call_args = mocked_create_table.call_args_list[0]
+        self.assertEqual(data, list(call_args[0][0]))
+
+    @mock.patch('rows.plugins.csv.create_table')
+    def test_import_from_csv_force_dialect(self, mocked_create_table):
+        data, lines = make_csv_data(quote_char="'",
+                                    field_delimiter="\t",
+                                    line_delimiter="\r\n")
+        fobj = BytesIO()
+        fobj.write(lines.encode('utf-8'))
+        fobj.seek(0)
+
+        rows.import_from_csv(fobj, dialect='excel-tab')
+        call_args = mocked_create_table.call_args_list[0]
+        self.assertEqual(data, list(call_args[0][0]))
 
     @mock.patch('rows.plugins.csv.serialize')
     def test_export_to_csv_uses_serialize(self, mocked_serialize):
