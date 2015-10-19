@@ -193,6 +193,25 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         expected_result = ['field_123', 'field_456', 'field_123_2']
         self.assertEqual(result, expected_result)
 
+    def test_make_unique_name(self):
+        name = 'test'
+        existing_names = []
+        name_format = '{index}_{name}'
+
+        result = plugins_utils.make_unique_name(name, existing_names,
+                                                name_format)
+        self.assertEqual(result, name)
+
+        existing_names = ['test']
+        result = plugins_utils.make_unique_name(name, existing_names,
+                                                name_format)
+        self.assertEqual(result, '2_test')
+
+        existing_names = ['test', '2_test', '3_test', '5_test']
+        result = plugins_utils.make_unique_name(name, existing_names,
+                                                name_format)
+        self.assertEqual(result, '4_test')
+
     def test_export_data(self):
         data = 'python rules'.encode('utf-8')
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -208,7 +227,6 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         filename_or_fobj = None
         result = plugins_utils.export_data(filename_or_fobj, data)
         self.assertIs(result, data)
-
 
     # TODO: test make_header
     # TODO: test all features of create_table
