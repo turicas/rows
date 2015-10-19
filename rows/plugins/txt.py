@@ -17,7 +17,8 @@
 
 from __future__ import unicode_literals
 
-from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
+from rows.plugins.utils import (create_table, export_data,
+                                get_filename_and_fobj, serialize)
 
 DASH, PLUS, PIPE = '-', '+', '|'
 
@@ -67,13 +68,6 @@ def export_to_txt(table, filename_or_fobj=None, encoding='utf-8', *args, **kwarg
         row_data = ' {} '.format(PIPE).join(values)
         result.append('{} {} {}'.format(PIPE, row_data, PIPE))
     result.extend([split_line, ''])
-
     data = '\n'.join(result).encode(encoding)
 
-    if filename_or_fobj is not None:
-        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
-        fobj.write(data)
-        fobj.flush()
-        return fobj
-    else:
-        return data
+    return export_data(filename_or_fobj, data)

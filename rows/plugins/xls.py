@@ -138,9 +138,9 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
         fobj.flush()
         return fobj
     else:
-        output = BytesIO()
-        work_book.save(output)
-        output.seek(0)
-        stream = output.read()
-        output.close()
-        return stream
+        fobj = BytesIO()
+        work_book.save(fobj)
+        fobj.seek(0)
+        result = output.read()
+        fobj.close()
+        return result

@@ -22,8 +22,8 @@ import decimal
 import json
 
 from rows.fields import DateField, DatetimeField, DecimalField, PercentField
-from rows.plugins.utils import (create_table, get_filename_and_fobj,
-                                prepare_to_export)
+from rows.plugins.utils import (create_table, export_data,
+                                get_filename_and_fobj, prepare_to_export)
 
 
 def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
@@ -63,10 +63,4 @@ def export_to_json(table, filename_or_fobj=None, encoding='utf-8', indent=None,
     if indent is not None:
         result = '\n'.join(line.rstrip() for line in result.splitlines())
 
-    if filename_or_fobj is not None:
-        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
-        fobj.write(result)
-        fobj.flush()
-        return fobj
-    else:
-        return result
+    return export_data(filename_or_fobj, result)

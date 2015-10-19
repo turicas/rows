@@ -22,7 +22,8 @@ import HTMLParser
 from lxml.html import document_fromstring
 from lxml.etree import tostring as to_string, strip_tags
 
-from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
+from rows.plugins.utils import (create_table, export_data,
+                                get_filename_and_fobj, serialize)
 
 
 html_parser = HTMLParser.HTMLParser()
@@ -95,13 +96,7 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
                   for value in result]
     html = ''.encode(encoding).join(new_result)
 
-    if filename_or_fobj is not None:
-        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
-        fobj.write(html)
-        fobj.flush()
-        return fobj
-    else:
-        return html
+    return export_data(filename_or_fobj, html)
 
 
 def tag_to_dict(html):
