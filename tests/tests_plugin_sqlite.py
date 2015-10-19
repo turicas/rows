@@ -96,6 +96,34 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_sqlite(temp.name)
         self.assert_table_equal(table, utils.table)
 
+    def test_export_to_sqlite_create_unique_table_name(self):
+        # TODO: may test file contents
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+
+        first_table = utils.table
+        second_table = utils.table + utils.table
+        third_table = utils.table + utils.table + utils.table
+        fourth_table = utils.table + utils.table + utils.table
+
+        rows.export_to_sqlite(first_table, temp.name, table_name='rows')
+        rows.export_to_sqlite(second_table, temp.name, table_name='rows')
+        rows.export_to_sqlite(third_table, temp.name, table_name='test')
+        rows.export_to_sqlite(fourth_table, temp.name, table_name='test')
+
+        result_first_table = rows.import_from_sqlite(temp.name,
+                                                     table_name='rows')
+        result_second_table = rows.import_from_sqlite(temp.name,
+                                                      table_name='rows_2')
+        result_third_table = rows.import_from_sqlite(temp.name,
+                                                     table_name='test')
+        result_fourth_table = rows.import_from_sqlite(temp.name,
+                                                      table_name='test_2')
+        self.assert_table_equal(result_first_table, first_table)
+        self.assert_table_equal(result_second_table, second_table)
+        self.assert_table_equal(result_third_table, third_table)
+        self.assert_table_equal(result_fourth_table, fourth_table)
+
     @mock.patch('rows.plugins.sqlite.serialize')
     def test_export_to_sqlite_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)

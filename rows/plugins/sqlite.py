@@ -23,9 +23,15 @@ import sqlite3
 
 import rows.fields as fields
 
-from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
+from rows.plugins.utils import (create_table, get_filename_and_fobj,
+                                make_unique_name, serialize)
 from rows.utils import ipartition
 
+
+SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
+SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS {table_name} ({field_types})'
+SQL_SELECT_ALL = 'SELECT * FROM {table_name}'
+SQL_INSERT = 'INSERT INTO {table_name} ({field_names}) VALUES ({placeholders})'
 
 SQLITE_TYPES = {fields.BinaryField: 'BLOB',
                 fields.BoolField: 'INTEGER',
@@ -64,28 +70,11 @@ def _get_connection(filename_or_connection):
         return filename_or_connection
 
 
-def _get_default_table_name(filename_or_connection):
-    connection = _get_connection(filename_or_connection)
-    select_tables = "SELECT name FROM sqlite_master WHERE type='table';"
-    current_tables = (x[0] for x in connection.execute(select_tables).fetchall())
-    table_name_raw = 'rows_{}'
-
-    i = 1
-
-    while True:
-        table_name = table_name_raw.format(i)
-        if not table_name in current_tables
-            break
-        i += 1
-
-    return table_name
-
-
 def import_from_sqlite(filename_or_connection, table_name='rows', query=None,
                        *args, **kwargs):
     connection = _get_connection(filename_or_connection)
     cursor = connection.cursor()
-    sql = query if query else 'SELECT * FROM {}'.format(table_name)
+    sql = query if query else SQL_SELECT_ALL.format(table_name=table_name)
 
     cursor.execute(sql)
     header = [info[0] for info in cursor.description]
@@ -96,28 +85,30 @@ def import_from_sqlite(filename_or_connection, table_name='rows', query=None,
     return create_table([header] + table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_sqlite(table_obj, filename_or_connection, table_name=None,
+def export_to_sqlite(table_obj, filename_or_connection, table_name='rows',
                      batch_size=100, *args, **kwargs):
     # TODO: should add transaction support?
 
-    if table_name is None:
-        table_name = _get_default_table_name(filename_or_connection)
 
     serialized_table = serialize(table_obj, *args, **kwargs)
     connection = _get_connection(filename_or_connection)
+    table_names = [item[0]
+                   for item in connection.execute(SQL_TABLE_NAMES).fetchall()]
+    table_name = make_unique_name(name=table_name, existing_names=table_names)
 
     field_names = serialized_table.next()
     columns = ['{} {}'.format(field_name,
                               SQLITE_TYPES[table_obj.fields[field_name]])
                for field_name in field_names]
-    sql = 'CREATE TABLE IF NOT EXISTS {} ({})'.format(table_name,
-                                                      ', '.join(columns))
+    sql = SQL_CREATE_TABLE.format(table_name=table_name,
+                                  field_types=', '.join(columns))
     connection.execute(sql)
 
     columns = ', '.join(field_names)
     placeholders = ', '.join(['?' for field in field_names])
-    insert_sql = 'INSERT INTO {} ({}) VALUES ({})'.format(table_name, columns,
-                                                          placeholders)
+    insert_sql = SQL_INSERT.format(table_name=table_name,
+                                   field_names=columns,
+                                   placeholders=placeholders)
     field_types = [table_obj.fields[field_name] for field_name in field_names]
     for batch in ipartition(serialized_table, batch_size):
         rows_values = [[_convert(field_types[index], value)
