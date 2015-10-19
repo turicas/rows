@@ -38,6 +38,7 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(type(result), types.GeneratorType)
         self.assertEqual(list(result), [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]])
 
+
     # TODO: test download_file
     # TODO: test get_uri_information
     # TODO: test import_from_uri (test also args like encoding)

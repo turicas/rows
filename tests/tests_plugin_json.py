@@ -99,6 +99,22 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(call[0], (utils.table, ))
         self.assertEqual(call[1], kwargs)
 
+    @mock.patch('rows.plugins._json.export_data')
+    def test_export_to_json_uses_export_data(self, mocked_export_data):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+        kwargs = {'test': 123, 'parameter': 3.14, }
+        mocked_export_data.return_value = 42
+
+        result = rows.export_to_json(utils.table, temp.name, **kwargs)
+        self.assertTrue(mocked_export_data.called)
+        self.assertEqual(mocked_export_data.call_count, 1)
+        self.assertEqual(result, 42)
+
+        call = mocked_export_data.call_args
+        self.assertEqual(call[0][0], temp.name)
+        self.assertEqual(call[1], {})
+
     def test_export_to_json_filename(self):
         # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)

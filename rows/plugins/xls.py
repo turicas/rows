@@ -141,6 +141,6 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
         fobj = BytesIO()
         work_book.save(fobj)
         fobj.seek(0)
-        result = output.read()
+        result = fobj.read()
         fobj.close()
         return result

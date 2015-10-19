@@ -108,18 +108,15 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_export_to_csv_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        encoding = 'iso-8859-15'
-        kwargs = {'test': 123, 'parameter': 3.14, }
+        kwargs = {'test': 123, 'parameter': 3.14, 'encoding': 'utf-8', }
         mocked_serialize.return_value = iter([['field1', 'field2']])
 
-        rows.export_to_csv(utils.table, temp.name, encoding=encoding,
-                           **kwargs)
+        rows.export_to_csv(utils.table, temp.name, **kwargs)
         self.assertTrue(mocked_serialize.called)
         self.assertEqual(mocked_serialize.call_count, 1)
 
         call = mocked_serialize.call_args
         self.assertEqual(call[0], (utils.table, ))
-        kwargs['encoding'] = encoding
         self.assertEqual(call[1], kwargs)
 
     def test_export_to_csv_filename(self):
@@ -130,6 +127,11 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table = rows.import_from_csv(temp.name)
         self.assert_table_equal(table, utils.table)
+
+        temp.file.seek(0)
+        result = temp.file.read()
+        export_in_memory = rows.export_to_csv(utils.table, None)
+        self.assertEqual(result, export_in_memory)
 
     def test_export_to_csv_fobj(self):
         # TODO: may test with codecs.open passing an encoding
