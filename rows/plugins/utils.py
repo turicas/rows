@@ -143,3 +143,13 @@ def serialize(table, *args, **kwargs):
     for row in prepared_table:
         yield [field_type.serialize(value, *args, **kwargs)
                for value, field_type in zip(row, field_types)]
+
+
+def export_data(filename_or_fobj, data, mode='w'):
+    if filename_or_fobj is not None:
+        _, fobj = get_filename_and_fobj(filename_or_fobj, mode=mode)
+        fobj.write(data)
+        fobj.flush()
+        return fobj
+    else:
+        return data

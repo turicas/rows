@@ -102,19 +102,32 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_export_to_html_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        encoding = 'iso-8859-15'
-        kwargs = {'test': 123, 'parameter': 3.14, }
+        kwargs = {'test': 123, 'parameter': 3.14, 'encoding': 'utf-8', }
         mocked_serialize.return_value = iter([['field1', 'field2']])
 
-        rows.export_to_html(utils.table, temp.name, encoding=encoding,
-                            **kwargs)
+        rows.export_to_html(utils.table, temp.name, **kwargs)
         self.assertTrue(mocked_serialize.called)
         self.assertEqual(mocked_serialize.call_count, 1)
 
         call = mocked_serialize.call_args
         self.assertEqual(call[0], (utils.table, ))
-        kwargs['encoding'] = encoding
         self.assertEqual(call[1], kwargs)
+
+    @mock.patch('rows.plugins.html.export_data')
+    def test_export_to_html_uses_export_data(self, mocked_export_data):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+        kwargs = {'test': 123, 'parameter': 3.14, 'encoding': 'utf-8', }
+        mocked_export_data.return_value = 42
+
+        result = rows.export_to_html(utils.table, temp.name, **kwargs)
+        self.assertTrue(mocked_export_data.called)
+        self.assertEqual(mocked_export_data.call_count, 1)
+        self.assertEqual(result, 42)
+
+        call = mocked_export_data.call_args
+        self.assertEqual(call[0][0], temp.name)
+        self.assertEqual(call[1], {})
 
     def test_export_to_html_none(self):
         # TODO: may test with codecs.open passing an encoding
