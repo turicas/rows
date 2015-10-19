@@ -36,13 +36,15 @@ def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
     return filename, fobj
 
 
-def _make_new_field_name(field_name, field_names):
-    new_field_name = field_name
+def make_unique_name(name, existing_names, name_format='{name}_{index}'):
+    '''Return a unique name based on `name_format` and `name`.'''
+
+    new_name = name
     index = 2
-    while new_field_name in field_names:
-        new_field_name = '{}_{}'.format(field_name, index)
+    while new_name in existing_names:
+        new_name = name_format.format(name=name, index=index)
         index += 1
-    return new_field_name
+    return new_name
 
 
 def make_header(data, permit_not=False):
@@ -59,7 +61,8 @@ def make_header(data, permit_not=False):
         if field_name[0].isdigit():
             field_name = 'field_{}'.format(field_name)
         if field_name in field_names:
-            field_name = _make_new_field_name(field_name, field_names)
+            field_name = make_unique_name(name=field_name,
+                                          existing_names=field_names)
         field_names.append(field_name)
     return field_names
 
