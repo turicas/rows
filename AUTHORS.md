@@ -18,3 +18,4 @@ Created and maintained by Álvaro Justen aka turicas:
 - Alexandre Brandão (slex) <https://github.com/sxslex>
 - Paulo Roberto Alves de Oliveira (aka kretcheu) <https://github.com/kretcheu>
 - Jean Ferri <https://github.com/jeanferri>
+- Evaldo Junior <https://github.com/infog>
