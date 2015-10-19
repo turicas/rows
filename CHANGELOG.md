@@ -5,6 +5,12 @@
 **Released on: (under development)**
 
 - Add `FlexibleTable` class
+- Autodetect delimiter in CSV files
+- Fix StringIO import for Python 3
+- Fix error on import of older versions of urllib3
+- Export to TXT also support an already opened file
+- Export to JSON also support an already opened file
+- Export to XLS also support an already opened file
 - Enhance README
 - Refactor `export_to_txt`
 - Support lazy objects on `create_table`

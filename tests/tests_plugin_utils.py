@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 import itertools
 import random
+import tempfile
 import unittest
 
 from collections import OrderedDict
@@ -41,7 +42,7 @@ def possible_field_names_errors(error_fields):
             for field_names in fields_permutations_str]
 
 
-class PluginUtilsTestCase(unittest.TestCase):
+class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_create_table_skip_header(self):
         field_types = OrderedDict([('integer', fields.IntegerField),
@@ -210,6 +211,22 @@ class PluginUtilsTestCase(unittest.TestCase):
         result = plugins_utils.make_unique_name(name, existing_names,
                                                 name_format)
         self.assertEqual(result, '4_test')
+
+    def test_export_data(self):
+        data = 'python rules'.encode('utf-8')
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+
+        filename_or_fobj = temp.file
+        result = plugins_utils.export_data(filename_or_fobj, data)
+        temp.file.seek(0)
+        output = temp.file.read()
+        self.assertIs(result, temp.file)
+        self.assertEqual(output, data)
+
+        filename_or_fobj = None
+        result = plugins_utils.export_data(filename_or_fobj, data)
+        self.assertIs(result, data)
 
     # TODO: test make_header
     # TODO: test all features of create_table

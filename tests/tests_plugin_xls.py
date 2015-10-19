@@ -80,6 +80,11 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_xls(temp.name)
         self.assert_table_equal(table, utils.table)
 
+        temp.file.seek(0)
+        result = temp.file.read()
+        export_in_memory = rows.export_to_xls(utils.table, None)
+        self.assertEqual(result, export_in_memory)
+
     def test_export_to_xls_fobj(self):
         # TODO: may test with codecs.open passing an encoding
         # TODO: may test file contents
