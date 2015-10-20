@@ -60,13 +60,6 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call_args = mocked_create_table.call_args_list[1]
         self.assert_create_table_data(call_args)
 
-#    def test_export_to_xlsx_fobj(self):
-#        export_filename = 'tests/data/all-field-types-export.xlsx'
-#        rows.export_to_xlsx(utils.table, export_filename)
-#
-#        table = rows.import_from_xlsx(export_filename, sheet_name='Sheet1')
-#        self.assert_table_equal(table, utils.table)
-
     def test_export_to_xlsx_filename(self):
         # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -77,15 +70,16 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_xlsx_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
         # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False, mode='wb')
         file_name = temp.name + ".xlsx"
         fobj = open(file_name, 'wb')
         self.files_to_delete.append(temp.name + ".xlsx")
         self.files_to_delete.append(temp.name)
+
         rows.export_to_xlsx(utils.table, fobj)
         temp.file.close()
         fobj.close()
+
         table = rows.import_from_xlsx(file_name)
         self.assert_table_equal(table, utils.table)
