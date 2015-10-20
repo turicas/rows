@@ -4,6 +4,7 @@
 
 **Released on: (under development)**
 
+- Fix filename_or_fobj param on export_to_csv method
 - Add `FlexibleTable` class
 - Autodetect delimiter in CSV files
 - Fix StringIO import for Python 3
