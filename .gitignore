@@ -12,3 +12,4 @@ build/*
 dist/*
 reg_settings.py
 rows.1
+.DS_Store

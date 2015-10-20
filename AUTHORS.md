@@ -19,3 +19,4 @@ Created and maintained by Álvaro Justen aka turicas:
 - Paulo Roberto Alves de Oliveira (aka kretcheu) <https://github.com/kretcheu>
 - Jean Ferri <https://github.com/jeanferri>
 - Evaldo Junior <https://github.com/infog>
+- Rhenan Bartels <https://github.com/RhenanBartels>
