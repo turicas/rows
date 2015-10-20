@@ -22,8 +22,8 @@ locale-and-unicode aware. :)
 The library is composed by:
 
 - A common interface to tabular data (the `Table` class)
-- A set of plugins to populate `Table` objects (CSV, XLS, HTML, TXT, JSON,
-  SQLite -- more coming soon!)
+- A set of plugins to populate `Table` objects (CSV, XLS, XLSX, HTML, TXT,
+  JSON, SQLite -- more coming soon!)
 - A set of common fields (such as `BoolField`, `IntegerField`) which know
   exactly how to serialize and deserialize data for each object type you'll get
 - A set of utilities (such as field type recognition) to help working with
@@ -263,6 +263,8 @@ file format you want. Currently we have the following plugins:
   must be installed with `pip install rows[html]`)
 - XLS: use `rows.import_from_xls` and `rows.export_to_xls` (dependencies must
   be installed with `pip install rows[xls]`)
+- XLSX: use `rows.import_from_xlsx` and `rows.export_to_xlsx` (dependencies
+  must be installed with `pip install rows[xlsx]`)
 - SQLite: use `rows.import_from_sqlite` and `rows.export_to_sqlite` (no
   dependencies)
 - ODS: use `rows.import_from_ods` (dependencies must be installed with `pip
