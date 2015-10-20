@@ -42,7 +42,7 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None, *args,
     return create_table(csv_reader, meta=meta, *args, **kwargs)
 
 
-def export_to_csv(table, filename_or_fobj, encoding='utf-8', *args, **kwargs):
+def export_to_csv(table, filename_or_fobj=None, encoding='utf-8', *args, **kwargs):
     # TODO: will work only if table.fields is OrderedDict
     # TODO: should use fobj? What about creating a method like json.dumps?
 
