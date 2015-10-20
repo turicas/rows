@@ -71,15 +71,35 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_export_to_xlsx_fobj(self):
         # TODO: may test file contents
-        temp = tempfile.NamedTemporaryFile(delete=False, mode='wb')
-        file_name = temp.name + ".xlsx"
-        fobj = open(file_name, 'wb')
-        self.files_to_delete.append(temp.name + ".xlsx")
-        self.files_to_delete.append(temp.name)
+        temp = tempfile.NamedTemporaryFile()
+        filename = temp.name + '.xlsx'
+        temp.file.close()
+        fobj = open(filename, 'wb')
+        self.files_to_delete.append(filename)
 
         rows.export_to_xlsx(utils.table, fobj)
-        temp.file.close()
         fobj.close()
 
-        table = rows.import_from_xlsx(file_name)
+        table = rows.import_from_xlsx(filename)
         self.assert_table_equal(table, utils.table)
+
+    @mock.patch('rows.plugins.xlsx.prepare_to_export')
+    def test_export_to_xlsx_uses_prepare_to_export(self,
+                                                   mocked_prepare_to_export):
+        temp = tempfile.NamedTemporaryFile()
+        filename = temp.name + '.xlsx'
+        temp.file.close()
+        fobj = open(filename, 'wb')
+        self.files_to_delete.append(filename)
+
+        kwargs = {'test': 123, 'parameter': 3.14, }
+        mocked_prepare_to_export.return_value = \
+                iter([utils.table.fields.keys()])
+
+        rows.export_to_xlsx(utils.table, temp.name, **kwargs)
+        self.assertTrue(mocked_prepare_to_export.called)
+        self.assertEqual(mocked_prepare_to_export.call_count, 1)
+
+        call = mocked_prepare_to_export.call_args
+        self.assertEqual(call[0], (utils.table, ))
+        self.assertEqual(call[1], kwargs)

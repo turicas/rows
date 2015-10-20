@@ -109,7 +109,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         kwargs = {'test': 123, 'parameter': 3.14, 'encoding': 'utf-8', }
-        mocked_serialize.return_value = iter([['field1', 'field2']])
+        mocked_serialize.return_value = iter([utils.table.fields.keys()])
 
         rows.export_to_csv(utils.table, temp.name, **kwargs)
         self.assertTrue(mocked_serialize.called)

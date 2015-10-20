@@ -103,7 +103,8 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.files_to_delete.append(temp.name)
         encoding = 'iso-8859-15'
         kwargs = {'test': 123, 'parameter': 3.14, }
-        mocked_prepare_to_export.return_value = iter([['field1', 'field2']])
+        mocked_prepare_to_export.return_value = \
+                iter([utils.table.fields.keys()])
 
         rows.export_to_xls(utils.table, temp.name, encoding=encoding,
                            **kwargs)
