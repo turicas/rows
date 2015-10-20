@@ -14,8 +14,13 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import unicode_literals
+
 import tempfile
 import unittest
+
+from io import BytesIO
 
 import mock
 
@@ -61,19 +66,26 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_create_table_data(call_args)
 
     def test_export_to_xlsx_filename(self):
-        # TODO: may test file contents
-        temp = tempfile.NamedTemporaryFile(delete=False)
-        self.files_to_delete.append(temp.name + ".xlsx")
-        rows.export_to_xlsx(utils.table, temp.name + ".xlsx")
-
-        table = rows.import_from_xlsx(temp.name + ".xlsx")
-        self.assert_table_equal(table, utils.table)
-
-    def test_export_to_xlsx_fobj(self):
-        # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile()
         filename = temp.name + '.xlsx'
-        temp.file.close()
+        temp.close()
+        self.files_to_delete.append(filename)
+        rows.export_to_xlsx(utils.table, filename)
+
+        table = rows.import_from_xlsx(filename)
+        self.assert_table_equal(table, utils.table)
+
+        export_in_memory = rows.export_to_xlsx(utils.table, None)
+        result_fobj = BytesIO()
+        result_fobj.write(export_in_memory)
+        result_fobj.seek(0)
+        result_table = rows.import_from_xlsx(result_fobj)
+        self.assert_table_equal(result_table, utils.table)
+
+    def test_export_to_xlsx_fobj(self):
+        temp = tempfile.NamedTemporaryFile()
+        filename = temp.name + '.xlsx'
+        temp.close()
         fobj = open(filename, 'wb')
         self.files_to_delete.append(filename)
 

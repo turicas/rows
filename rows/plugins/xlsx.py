@@ -5,6 +5,8 @@ from __future__ import unicode_literals
 import datetime
 import decimal
 
+from io import BytesIO
+
 from openpyxl import load_workbook, Workbook
 
 from rows import fields
@@ -42,8 +44,7 @@ def cell_to_python(cell):
 
 def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
                      start_row=0, start_column=0, *args, **kwargs):
-    filename, _ = get_filename_and_fobj(filename_or_fobj)
-    workbook = load_workbook(filename)
+    workbook = load_workbook(filename_or_fobj)
     if sheet_name is None:
         sheet_name = workbook.sheetnames[sheet_index]
     sheet = workbook.get_sheet_by_name(sheet_name)
@@ -67,6 +68,7 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
         row_pos += 1
         row = _read_row(sheet, row_pos, last_column)
 
+    filename, _ = get_filename_and_fobj(filename_or_fobj, dont_open=True)
     metadata = {'imported_from': 'xlsx', 'filename': filename, }
     return create_table([header] + all_rows, meta=metadata, *args, **kwargs)
 
@@ -84,10 +86,9 @@ def _write_cell(sheet, row_index, col_index, value, field_type):
         cell.number_format = 'YYYY-MM-DD'
 
 
-def export_to_xlsx(table, filename_or_fobj, sheet_name='Sheet1', *args,
+def export_to_xlsx(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                    **kwargs):
 
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, dont_open=True)
     workbook = Workbook()
     sheet = workbook.get_active_sheet()
     sheet.title = sheet_name
@@ -107,4 +108,17 @@ def export_to_xlsx(table, filename_or_fobj, sheet_name='Sheet1', *args,
                         value=row[col_index],
                         field_type=table_fields[field_name])
 
-    workbook.save(filename)
+    if filename_or_fobj is not None:
+        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
+        workbook.save(fobj)
+        fobj.flush()
+        return fobj
+    else:
+        fobj = BytesIO()
+        workbook.save(fobj)
+        fobj.seek(0)
+        result = fobj.read()
+        fobj.close()
+        return result
+
+
