@@ -77,7 +77,8 @@ def ipartition(iterable, partition_size):
             except StopIteration:
                 finished = True
                 break
-        yield data
+        if data:
+            yield data
 
 
 def download_file(uri, verify_ssl):
