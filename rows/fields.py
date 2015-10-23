@@ -441,8 +441,6 @@ def identify_type(value):
                           if value_type is type_class.TYPE]
         if not possible_types:
             detected = detect_types(['some_field'], [[value]])['some_field']
-        elif len(possible_types) > 1:
-            raise ValueError('Cannot detect field type')
         else:
             detected = possible_types[0]
     else:

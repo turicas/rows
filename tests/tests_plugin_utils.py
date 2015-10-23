@@ -26,7 +26,9 @@ from collections import OrderedDict
 
 import mock
 
+import rows
 import rows.plugins.utils as plugins_utils
+
 from rows import fields
 
 import utils
@@ -187,6 +189,25 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             values = [field_type.serialize(value)
                       for field_type, value in zip(field_types, expected_row)]
             self.assertEqual(values, row)
+
+    def test_serialize_with_FlexibleTable(self):
+        flexible = rows.FlexibleTable()
+        for row in utils.table:
+            flexible.append(row._asdict())
+
+        result = plugins_utils.serialize(flexible)
+        field_names = flexible.fields.keys()
+        field_types = flexible.fields.values()
+        self.assertEqual(result.next(), field_names)
+
+        for row, expected_row in zip(result, flexible._rows):
+            values = [field_type.serialize(expected_row[field_name])
+                      for field_name, field_type in flexible.fields.items()]
+            self.assertEqual(values, row)
+
+    # TODO: move this test to use prepare_to_export
+    # TODO: test export_fields
+    # TODO: test serialize passing object other than Table and FlexibleTable
 
     def test_make_header_should_add_underscore_if_starts_with_number(self):
         result = plugins_utils.make_header(['123', '456', '123'])
