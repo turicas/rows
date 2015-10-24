@@ -117,10 +117,14 @@ def create_table(data, meta=None, fields=None, skip_header=True,
 
 def prepare_to_export(table, export_fields=None, *args, **kwargs):
     # TODO: optimize for more used cases (export_fields=None)
+    table_type = type(table)
+    if table_type not in (FlexibleTable, Table):
+        raise ValueError('Table type not recognized')
+
     if export_fields is None:
         export_fields = table.fields.keys()
-
     export_fields = make_header(export_fields)
+
     fields = table.fields
     table_field_names = fields.keys()
     diff = set(export_fields) - set(table_field_names)
@@ -130,7 +134,6 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
 
     yield export_fields
 
-    table_type = type(table)
     if table_type is Table:
         field_indexes = map(table_field_names.index, export_fields)
         for row in table._rows:
@@ -138,8 +141,6 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
     elif table_type is FlexibleTable:
         for row in table._rows:
             yield [row[field_name] for field_name in export_fields]
-    else:
-        raise ValueError('Table type not recognized')
 
 
 def serialize(table, *args, **kwargs):

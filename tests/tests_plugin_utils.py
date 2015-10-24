@@ -196,6 +196,23 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             values = [expected_row[field_name] for field_name in export_fields]
             self.assertEqual(values, row)
 
+    def test_prepare_to_export_wrong_obj_type(self):
+        '''`prepare_to_export` raises exception if obj isn't `*Table`'''
+
+        expected_message = 'Table type not recognized'
+
+        with self.assertRaises(ValueError) as exception_context:
+            plugins_utils.prepare_to_export(1).next()
+        self.assertEqual(exception_context.exception.message, expected_message)
+
+        with self.assertRaises(ValueError) as exception_context:
+            plugins_utils.prepare_to_export(42.0).next()
+        self.assertEqual(exception_context.exception.message, expected_message)
+
+        with self.assertRaises(ValueError) as exception_context:
+            plugins_utils.prepare_to_export([list('abc'), [1, 2, 3]]).next()
+        self.assertEqual(exception_context.exception.message, expected_message)
+
     @mock.patch('rows.plugins.utils.prepare_to_export')
     def test_serialize_should_call_prepare_to_export(self,
             mocked_prepare_to_export):
