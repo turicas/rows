@@ -166,6 +166,36 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertIn(exception_context.exception.message,
                       possible_field_names_errors(error_fields))
 
+    def test_prepare_to_export_with_FlexibleTable(self):
+        flexible = rows.FlexibleTable()
+        for row in utils.table:
+            flexible.append(row._asdict())
+
+        field_names = flexible.fields.keys()
+        field_types = flexible.fields.values()
+        prepared = plugins_utils.prepare_to_export(flexible)
+        self.assertEqual(prepared.next(), field_names)
+
+        for row, expected_row in zip(prepared, flexible._rows):
+            values = [expected_row[field_name] for field_name in field_names]
+            self.assertEqual(values, row)
+
+    def test_prepare_to_export_with_FlexibleTable_and_export_fields(self):
+        flexible = rows.FlexibleTable()
+        for row in utils.table:
+            flexible.append(row._asdict())
+
+        field_names = flexible.fields.keys()
+        field_types = flexible.fields.values()
+        export_fields = field_names[:len(field_names) // 2]
+        prepared = plugins_utils.prepare_to_export(flexible,
+                                                   export_fields=export_fields)
+        self.assertEqual(prepared.next(), export_fields)
+
+        for row, expected_row in zip(prepared, flexible._rows):
+            values = [expected_row[field_name] for field_name in export_fields]
+            self.assertEqual(values, row)
+
     @mock.patch('rows.plugins.utils.prepare_to_export')
     def test_serialize_should_call_prepare_to_export(self,
             mocked_prepare_to_export):
@@ -189,25 +219,6 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             values = [field_type.serialize(value)
                       for field_type, value in zip(field_types, expected_row)]
             self.assertEqual(values, row)
-
-    def test_serialize_with_FlexibleTable(self):
-        flexible = rows.FlexibleTable()
-        for row in utils.table:
-            flexible.append(row._asdict())
-
-        result = plugins_utils.serialize(flexible)
-        field_names = flexible.fields.keys()
-        field_types = flexible.fields.values()
-        self.assertEqual(result.next(), field_names)
-
-        for row, expected_row in zip(result, flexible._rows):
-            values = [field_type.serialize(expected_row[field_name])
-                      for field_name, field_type in flexible.fields.items()]
-            self.assertEqual(values, row)
-
-    # TODO: move this test to use prepare_to_export
-    # TODO: test export_fields
-    # TODO: test serialize passing object other than Table and FlexibleTable
 
     def test_make_header_should_add_underscore_if_starts_with_number(self):
         result = plugins_utils.make_header(['123', '456', '123'])
