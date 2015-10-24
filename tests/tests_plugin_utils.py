@@ -26,7 +26,9 @@ from collections import OrderedDict
 
 import mock
 
+import rows
 import rows.plugins.utils as plugins_utils
+
 from rows import fields
 
 import utils
@@ -163,6 +165,53 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         self.assertIn(exception_context.exception.message,
                       possible_field_names_errors(error_fields))
+
+    def test_prepare_to_export_with_FlexibleTable(self):
+        flexible = rows.FlexibleTable()
+        for row in utils.table:
+            flexible.append(row._asdict())
+
+        field_names = flexible.fields.keys()
+        field_types = flexible.fields.values()
+        prepared = plugins_utils.prepare_to_export(flexible)
+        self.assertEqual(prepared.next(), field_names)
+
+        for row, expected_row in zip(prepared, flexible._rows):
+            values = [expected_row[field_name] for field_name in field_names]
+            self.assertEqual(values, row)
+
+    def test_prepare_to_export_with_FlexibleTable_and_export_fields(self):
+        flexible = rows.FlexibleTable()
+        for row in utils.table:
+            flexible.append(row._asdict())
+
+        field_names = flexible.fields.keys()
+        field_types = flexible.fields.values()
+        export_fields = field_names[:len(field_names) // 2]
+        prepared = plugins_utils.prepare_to_export(flexible,
+                                                   export_fields=export_fields)
+        self.assertEqual(prepared.next(), export_fields)
+
+        for row, expected_row in zip(prepared, flexible._rows):
+            values = [expected_row[field_name] for field_name in export_fields]
+            self.assertEqual(values, row)
+
+    def test_prepare_to_export_wrong_obj_type(self):
+        '''`prepare_to_export` raises exception if obj isn't `*Table`'''
+
+        expected_message = 'Table type not recognized'
+
+        with self.assertRaises(ValueError) as exception_context:
+            plugins_utils.prepare_to_export(1).next()
+        self.assertEqual(exception_context.exception.message, expected_message)
+
+        with self.assertRaises(ValueError) as exception_context:
+            plugins_utils.prepare_to_export(42.0).next()
+        self.assertEqual(exception_context.exception.message, expected_message)
+
+        with self.assertRaises(ValueError) as exception_context:
+            plugins_utils.prepare_to_export([list('abc'), [1, 2, 3]]).next()
+        self.assertEqual(exception_context.exception.message, expected_message)
 
     @mock.patch('rows.plugins.utils.prepare_to_export')
     def test_serialize_should_call_prepare_to_export(self,
