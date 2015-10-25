@@ -124,6 +124,13 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[0].field_1, 3.14)
         self.assertEqual(table[0].field_2, 'Álvaro')
 
+    def test_create_table_empty_data(self):
+        header = ['first', 'first', 'first']
+        table_rows = []
+        table = plugins_utils.create_table([header] + table_rows)
+        self.assertEqual(table.fields.keys(), ['first', 'first_2', 'first_3'])
+        self.assertEqual(len(table), 0)
+
     def test_prepare_to_export_all_fields(self):
         result = plugins_utils.prepare_to_export(utils.table,
                                                  export_fields=None)

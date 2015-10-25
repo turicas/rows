@@ -396,6 +396,11 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
     # TODO: may receive 'type hints'
     # TODO: should support receiving unicode objects directly
     # TODO: should expect data in unicode or will be able to use binary data?
+    field_values = list(field_values)
+    if not field_values:
+        return collections.OrderedDict([(field_name, BinaryField)
+                                        for field_name in field_names])
+
     number_of_fields = len(field_names)
     columns = zip(*[row for row in field_values
                     if len(row) == number_of_fields])

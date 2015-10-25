@@ -328,6 +328,11 @@ class FieldUtilsTestCase(unittest.TestCase):
         result = fields.detect_types(self.fields, data)
         self.assertDictEqual(dict(result), self.expected)
 
+    def test_detect_types_no_sample(self):
+        expected = {key: fields.BinaryField for key in self.expected.keys()}
+        result = fields.detect_types(self.fields, [])
+        self.assertDictEqual(dict(result), expected)
+
 
 class FieldsFunctionsTestCase(unittest.TestCase):
 
