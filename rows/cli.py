@@ -21,6 +21,7 @@
 # TODO: add option to pass 'create_table' options in command-line (like force
 #       fields)
 
+import shlex
 import sys
 
 from io import BytesIO
@@ -281,32 +282,41 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--fields')
-@click.argument('source', required=True)
+@click.option('--output')
 @click.argument('query', required=True)
-@click.argument('destination', required=False)
-def query_(input_encoding, output_encoding, input_locale, output_locale,
-           verify_ssl, fields, source, query, destination):
+@click.argument('sources', nargs=-1, required=True)
+def query(input_encoding, output_encoding, input_locale, output_locale,
+        verify_ssl, fields, output, query, sources):
 
-    # TODO: accept many sources
+    # TODO: may move all 'destination' to '--output'
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or sys.stdout.encoding or \
                       DEFAULT_OUTPUT_ENCODING
     if not query.lower().startswith('select'):
         field_names = '*' if fields is None else fields
-        query = 'SELECT {} FROM rows WHERE {}'.format(field_names, query)
-
+        table_names = ', '.join(['table{}'.format(index)
+                                 for index in range(1, len(sources) + 1)])
+        query = 'SELECT {} FROM {} WHERE {}'.format(field_names, table_names,
+                                                    query)
     if input_locale is not None:
         with rows.locale_context(input_locale):
-            table = _import_table(source, encoding=input_encoding,
-                                  verify_ssl=verify_ssl)
+            tables = [_import_table(source, encoding=input_encoding,
+                                    verify_ssl=verify_ssl)
+                     for source in sources]
     else:
-        table = _import_table(source, encoding=input_encoding,
-                              verify_ssl=verify_ssl)
+        tables = [_import_table(source, encoding=input_encoding,
+                                verify_ssl=verify_ssl)
+                  for source in sources]
 
-    sqlite_connection = rows.export_to_sqlite(table, ':memory:')
+    sqlite_connection = rows.export_to_sqlite(tables[0], ':memory:',
+                                              table_name='table1')
+    for index, table in enumerate(tables[1:], start=2):
+        rows.export_to_sqlite(table, sqlite_connection,
+                              table_name='table{}'.format(index))
+
     result = rows.import_from_sqlite(sqlite_connection, query=query)
 
-    if destination is None:
+    if output is None:
         fobj = BytesIO()
         if output_locale is not None:
             with rows.locale_context(output_locale):
@@ -318,9 +328,9 @@ def query_(input_encoding, output_encoding, input_locale, output_locale,
     else:
         if output_locale is not None:
             with rows.locale_context(output_locale):
-                export_to_uri(destination, result, encoding=output_encoding)
+                export_to_uri(output, result, encoding=output_encoding)
         else:
-            export_to_uri(destination, result, encoding=output_encoding)
+            export_to_uri(output, result, encoding=output_encoding)
 
 
 if __name__ == '__main__':
