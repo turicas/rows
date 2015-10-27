@@ -20,6 +20,8 @@ from __future__ import unicode_literals
 import unittest
 import platform
 
+from locale import getdefaultlocale
+
 import rows
 import rows.fields
 
@@ -37,7 +39,8 @@ class LocalizationTestCase(unittest.TestCase):
         if platform.system() == 'Windows':
             name = str('ptb_bra')
         else:
-            name = 'pt_BR.UTF-8'
+            defaultlocale = getdefaultlocale()
+            name = '{}.{}'.format(defaultlocale[0], defaultlocale[1])
         with locale_context(name):
             self.assertFalse(rows.fields.SHOULD_NOT_USE_LOCALE)
         self.assertTrue(rows.fields.SHOULD_NOT_USE_LOCALE)

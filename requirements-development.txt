@@ -6,6 +6,7 @@ requests
 lxml
 xlrd
 xlwt
+openpyxl
 
 # Test tools
 coverage

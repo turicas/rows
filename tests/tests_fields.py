@@ -23,6 +23,7 @@ import unittest
 import types
 
 from decimal import Decimal
+from locale import getdefaultlocale, localeconv
 
 import rows
 import platform
@@ -32,7 +33,11 @@ from rows import fields
 if platform.system() == 'Windows':
     locale_name = str('ptb_bra')
 else:
-    locale_name = 'pt_BR.UTF-8'
+    defaultlocale = getdefaultlocale()
+    locale_name = '{}.{}'.format(defaultlocale[0], defaultlocale[1])
+
+dp = localeconv()['decimal_point']
+ts = localeconv()['thousands_sep']
 
 class FieldsTestCase(unittest.TestCase):
 
@@ -107,7 +112,7 @@ class FieldsTestCase(unittest.TestCase):
                           types.UnicodeType)
             self.assertEqual(fields.IntegerField.serialize(42000,
                                                            grouping=True),
-                             '42.000')
+                             '42{}000'.format(ts))
             self.assertEqual(fields.IntegerField.deserialize('42.000'), 42000)
             self.assertEqual(fields.IntegerField.deserialize(42), 42)
             self.assertEqual(fields.IntegerField.deserialize(42.0), 42)
@@ -126,7 +131,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.FloatField.deserialize(42.0), 42.0)
         self.assertEqual(fields.FloatField.deserialize(42), 42.0)
         self.assertEqual(fields.FloatField.deserialize(None), None)
-        self.assertEqual(fields.FloatField.serialize(42.0), '42.0')
+        self.assertEqual(fields.FloatField.serialize(42.0), '42{}0'.format(dp))
         self.assertIs(type(fields.FloatField.serialize(42.0)),
                       types.UnicodeType)
 
@@ -169,18 +174,18 @@ class FieldsTestCase(unittest.TestCase):
             )
             self.assertEqual(fields.DecimalField.serialize(Decimal('4200')),
                              '4200')
-            self.assertEqual(fields.DecimalField.serialize(Decimal('42.0')),
-                             '42,0')
-            self.assertEqual(fields.DecimalField.serialize(Decimal('42000.0')),
-                             '42000,0')
-            self.assertEqual(fields.DecimalField.deserialize('42.000,00'),
-                             Decimal('42000.00'))
+            self.assertEqual(fields.DecimalField.serialize(Decimal('42{}0'.format(ts))),
+                             '42{}0'.format(ts))
+            self.assertEqual(fields.DecimalField.serialize(Decimal('42000{}0'.format(dp))),
+                             '42000{}0'.format(dp))
+            self.assertEqual(fields.DecimalField.deserialize('42{}000{}00'.format(ts, dp)),
+                             Decimal('42000{}00'.format(dp)))
             self.assertEqual(
                 fields.DecimalField.serialize(
-                    Decimal('42000.0'),
+                    Decimal('42000{}0'.format(dp)),
                     grouping=True
                 ),
-                '42.000,0'
+                '42{}000{}0'.format(ts, dp)
             )
             self.assertEqual(fields.DecimalField.deserialize(42000),
                              Decimal('42000'))
@@ -215,8 +220,8 @@ class FieldsTestCase(unittest.TestCase):
                              '4200%')
             self.assertEqual(fields.PercentField.serialize(Decimal('42000.0')),
                              '4200000%')
-            self.assertEqual(fields.PercentField.deserialize('42.000,00%'),
-                             Decimal('420.0000'))
+            self.assertEqual(fields.PercentField.deserialize('42{}000{}00%'.format(ts, dp)),
+                             Decimal('420{}0000'.format(ts)))
             self.assertEqual(fields.PercentField.serialize(Decimal('42000.00'),
                                                            grouping=True),
                              '4.200.000%')
