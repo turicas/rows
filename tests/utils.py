@@ -159,8 +159,6 @@ class RowsTestMixIn(object):
                                field_ordering=field_ordering)
 
     def assert_table_data(self, data, args, kwargs, field_ordering):
-        field_types = {field_name: field_type.TYPE
-                       for field_name, field_type in FIELDS.items()}
         data = list(data)
         if field_ordering:
             self.assertEqual(data[0], FIELD_NAMES)

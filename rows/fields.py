@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 import collections
 import datetime
+import json
 import locale
 import re
 import types
@@ -28,8 +29,8 @@ from decimal import Decimal, InvalidOperation
 
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
-           'DateField', 'DecimalField', 'PercentField', 'TextField',
-           'BinaryField', 'Field']
+           'DateField', 'DecimalField', 'PercentField', 'JSONField',
+           'TextField', 'BinaryField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 NULL = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
@@ -42,7 +43,7 @@ class Field(object):
     actually implements what is expected in the BinaryField
     """
 
-    TYPE = types.NoneType
+    TYPE = (types.NoneType, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -78,14 +79,14 @@ class BinaryField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = types.StringType
+    TYPE = (types.StringType, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is None:
             value = ''
 
-        return cls.TYPE(value)
+        return cls.TYPE[0](value)
 
 
     @classmethod
@@ -93,7 +94,7 @@ class BinaryField(Field):
         if value is None:
             return None
         else:
-            return cls.TYPE(value)
+            return cls.TYPE[0](value)
 
 
 class BoolField(Field):
@@ -103,7 +104,7 @@ class BoolField(Field):
     attributes like `TRUE_VALUES` and `FALSE_VALUES`)
     """
 
-    TYPE = types.BooleanType
+    TYPE = (types.BooleanType, )
     SERIALIZED_VALUES = {True: 'true', False: 'false', None: ''}
     TRUE_VALUES = (b'true', b'1', b'yes')
     FALSE_VALUES = (b'false', b'0', b'no')
@@ -133,7 +134,7 @@ class IntegerField(Field):
     Is locale-aware
     """
 
-    TYPE = types.IntType
+    TYPE = (types.IntType, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -169,7 +170,7 @@ class FloatField(Field):
     Is locale-aware
     """
 
-    TYPE = types.FloatType
+    TYPE = (types.FloatType, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -201,7 +202,7 @@ class DecimalField(Field):
     Is locale-aware
     """
 
-    TYPE = Decimal
+    TYPE = (Decimal, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -294,7 +295,7 @@ class DateField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = datetime.date
+    TYPE = (datetime.date, )
     INPUT_FORMAT = '%Y-%m-%d'
     OUTPUT_FORMAT = '%Y-%m-%d'
 
@@ -322,7 +323,7 @@ class DatetimeField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = datetime.datetime
+    TYPE = (datetime.datetime, )
     DATETIME_REGEXP = re.compile('^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]'
                                  '([0-9]{2}):([0-9]{2}):([0-9]{2})$')
 
@@ -354,7 +355,7 @@ class TextField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = types.UnicodeType
+    TYPE = (types.UnicodeType, )
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -367,7 +368,33 @@ class TextField(Field):
         elif 'encoding' in kwargs:
             return as_string(value).decode(kwargs['encoding'])
         else:
-            return cls.TYPE(value)
+            return cls.TYPE[0](value)
+
+
+class JSONField(Field):
+    """Field class to represent JSON-encoded strings
+
+    Is not locale-aware (does not need to be)
+    """
+
+    TYPE = (types.ListType, types.DictType)
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        return json.dumps(value)
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        if isinstance(value, types.UnicodeType):
+            value = value.encode('utf-8')
+
+        if value is None:
+            return None
+        elif isinstance(value, cls.TYPE):
+            return value
+        else:
+            return json.loads(value)
+
 
 
 AVAILABLE_FIELD_TYPES = [locals()[element] for element in __all__
@@ -387,6 +414,18 @@ def is_null(value):
 
     value_str = as_string(value).strip().lower()
     return not value_str or value_str in NULL
+
+
+def unique_values(values):
+    value_types = set(type(value) for value in values)
+    if dict not in value_types:
+        return set([value for value in set(values) if not is_null(value)])
+    else:
+        result = []
+        for value in values:
+            if not is_null(value) and value not in result:
+                result.append(value)
+        return result
 
 
 def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
@@ -411,8 +450,7 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
     detected_types = collections.OrderedDict([(field_name, None)
                                               for field_name in field_names])
     for index, field_name in enumerate(field_names):
-        data = set([value for value in set(columns[index])
-                    if not is_null(value)])
+        data = unique_values(columns[index])
 
         if not data:
             # all rows with an empty field -> BinaryField (can't identify)
@@ -430,7 +468,9 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
                         cant_be.add(type_)
                 for type_to_remove in cant_be:
                     possible_types.remove(type_to_remove)
+
             identified_type = possible_types[0]  # priorities matter
+
         detected_types[field_name] = identified_type
 
     return detected_types
@@ -443,7 +483,7 @@ def identify_type(value):
     value_type = type(value)
     if value_type not in (str, unicode):
         possible_types = [type_class for type_name, type_class in TYPES
-                          if value_type is type_class.TYPE]
+                          if value_type in type_class.TYPE]
         if not possible_types:
             detected = detect_types(['some_field'], [[value]])['some_field']
         else:
