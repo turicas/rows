@@ -313,6 +313,9 @@ class DateField(Field):
             return value
 
         value = as_string(value)
+        if isinstance(value, unicode):
+            value = value.encode('utf-8')
+
         dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
         return datetime.date(dt_object.year, dt_object.month, dt_object.day)
 

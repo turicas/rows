@@ -248,6 +248,8 @@ class FieldsTestCase(unittest.TestCase):
             fields.DateField.deserialize(42)
         with self.assertRaises(ValueError):
             fields.DateField.deserialize(serialized + 'T00:00:00')
+        with self.assertRaises(ValueError):
+            fields.DateField.deserialize('Álvaro')
 
     def test_DatetimeField(self):
         # TODO: test timezone-aware datetime.date
@@ -269,7 +271,10 @@ class FieldsTestCase(unittest.TestCase):
                       types.UnicodeType)
         with self.assertRaises(ValueError):
             fields.DatetimeField.deserialize(42)
+        with self.assertRaises(ValueError):
             fields.DatetimeField.deserialize('2015-01-01')
+        with self.assertRaises(ValueError):
+            fields.DatetimeField.deserialize('Álvaro')
 
     def test_TextField(self):
         self.assertEqual(fields.TextField.TYPE, (unicode, ))
