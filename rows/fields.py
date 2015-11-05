@@ -271,6 +271,9 @@ class PercentField(DecimalField):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''
+
         value = Decimal(str(value * 100)[:-2])
         value = super(PercentField, cls).serialize(value, *args, **kwargs)
         return '{}%'.format(value)
