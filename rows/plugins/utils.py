@@ -68,18 +68,26 @@ def make_header(data, permit_not=False):
 
 
 def create_table(data, meta=None, fields=None, skip_header=True,
-                 import_fields=None, samples=None, *args, **kwargs):
+                 import_fields=None, samples=None, force_types=None,
+                 *args, **kwargs):
     # TODO: add auto_detect_types=True parameter
     table_rows = iter(data)
     sample_rows = []
 
     if fields is None:
         header = make_header(table_rows.next())
+
         if samples is not None:
             sample_rows = list(islice(table_rows, 0, samples))
         else:
             sample_rows = list(table_rows)
+
         fields = detect_types(header, sample_rows, *args, **kwargs)
+
+        if force_types is not None:
+            # TODO: optimize field detection (ignore fields on `force_types`)
+            for field_name, field_type in force_types.items():
+                fields[field_name] = field_type
     else:
         if not isinstance(fields, OrderedDict):
             raise ValueError('`fields` must be an `OrderedDict`')

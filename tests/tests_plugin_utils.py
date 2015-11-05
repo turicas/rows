@@ -131,6 +131,18 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table.fields.keys(), ['first', 'first_2', 'first_3'])
         self.assertEqual(len(table), 0)
 
+    def test_create_table_force_types(self):
+        header = ['field1', 'field2', 'field3']
+        table_rows = [['1', '3.14', 'Álvaro'],
+                      ['2', '2.71', 'turicas'],
+                      ['3', '1.23', 'Justen']]
+        force_types = {'field2': rows.fields.DecimalField}
+
+        table = plugins_utils.create_table([header] + table_rows,
+                                           force_types=force_types)
+        for field_name, field_type in force_types.items():
+            self.assertEqual(table.fields[field_name], field_type)
+
     def test_prepare_to_export_all_fields(self):
         result = plugins_utils.prepare_to_export(utils.table,
                                                  export_fields=None)
