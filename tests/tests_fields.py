@@ -149,6 +149,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.DecimalField.serialize(None), '')
         self.assertIs(type(fields.DecimalField.serialize(None)),
                       types.UnicodeType)
+        self.assertEqual(fields.DecimalField.deserialize(''), None)
         self.assertIn(type(fields.DecimalField.deserialize('42.0')),
                       fields.DecimalField.TYPE)
         self.assertEqual(fields.DecimalField.deserialize('42.0'),

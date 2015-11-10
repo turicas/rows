@@ -225,7 +225,9 @@ class DecimalField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         value = super(DecimalField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if is_null(value):
+            return None
+        elif isinstance(value, cls.TYPE):
             return value
         elif type(value) in (int, float):
             return Decimal(str(value))
