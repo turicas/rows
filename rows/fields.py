@@ -275,6 +275,8 @@ class PercentField(DecimalField):
     def serialize(cls, value, *args, **kwargs):
         if value is None:
             return ''
+        elif value == Decimal('0'):
+            return '0.00%'
 
         value = Decimal(str(value * 100)[:-2])
         value = super(PercentField, cls).serialize(value, *args, **kwargs)

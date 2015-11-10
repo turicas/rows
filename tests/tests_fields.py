@@ -207,6 +207,8 @@ class FieldsTestCase(unittest.TestCase):
                          types.UnicodeType)
         self.assertEqual(fields.PercentField.serialize(Decimal('42.010')),
                          '4201.0%')
+        self.assertEqual(fields.PercentField.serialize(Decimal('0')),
+                         '0.00%')
         self.assertEqual(fields.PercentField.serialize(None), '')
         self.assertEqual(fields.PercentField.serialize(Decimal('0.01')), '1%')
         with rows.locale_context(locale_name):
