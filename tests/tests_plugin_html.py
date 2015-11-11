@@ -305,6 +305,28 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
             table = rows.import_from_html(fobj, ignore_colspan=False)
         self.assertEqual(raises.exception.message, 'Number of fields differ')
 
+    def test_extract_properties(self):
+        filename = 'tests/data/properties-table.html'
+        fobj = open(filename)
+
+        table = rows.import_from_html(fobj, properties=True)
+        self.assertEqual(table.fields.keys(),
+                         ['field1', 'field2', 'properties'])
+        self.assertEqual(table.fields.values(),
+                         [rows.fields.TextField,
+                          rows.fields.TextField,
+                          rows.fields.JSONField])
+        properties_1 = {'class': 'some-class another-class',
+                        'data-test': 'value', }
+        properties_2 = {'class': 'css-class', 'data-test': 'value2', }
+        self.assertEqual(len(table), 2)
+        self.assertEqual(table[0].field1, 'row1field1')
+        self.assertEqual(table[0].field2, 'row1field2')
+        self.assertEqual(table[0].properties, properties_1)
+        self.assertEqual(table[1].field1, 'row2field1')
+        self.assertEqual(table[1].field2, 'row2field2')
+        self.assertEqual(table[1].properties, properties_2)
+
 
 class PluginHtmlUtilsTestCase(unittest.TestCase):
 

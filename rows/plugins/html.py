@@ -35,10 +35,23 @@ def _get_content(element):
     return html_parser.unescape(content)
 
 
+def _get_row(row, column_tag, preserve_html, properties):
+    if not preserve_html:
+        data = [element.text_content().strip()
+                for element in row.xpath(column_tag)]
+    else:
+        data = [_get_content(element) for element in row.xpath(column_tag)]
+
+    if properties:
+        data.append(dict(row.attrib))
+
+    return data
+
+
 def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
                      ignore_colspan=True, preserve_html=False,
-                     table_tag='table', row_tag='tr', column_tag='td|th',
-                     *args, **kwargs):
+                     properties=False, table_tag='table', row_tag='tr',
+                     column_tag='td|th', *args, **kwargs):
     # TODO: unescape before returning: html_parser.unescape(html)
     # TODO: lxml -> unicode?
 
@@ -52,20 +65,21 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
     strip_tags(table, 'thead')
     strip_tags(table, 'tbody')
     row_elements = table.xpath(row_tag)
-    if not preserve_html:
-        table_rows = [[value_element.text_content().strip()
-                       for value_element in row.xpath(column_tag)]
-                      for row in row_elements]
-    else:
-        table_rows = [[_get_content(value_element)
-                       for value_element in row.xpath(column_tag)]
-                      for row in row_elements]
 
-        if kwargs.get('fields', None) is None:
-            # we're providing field names so strip HTML from the first row
-            # (the header, in this case)
-            table_rows[0] = [value_element.text_content().strip()
-                             for value_element in row_elements[0]]
+    table_rows = [_get_row(row,
+                           column_tag=column_tag,
+                           preserve_html=preserve_html,
+                           properties=properties)
+                  for row in row_elements]
+
+    if properties:
+        table_rows[0][-1] = 'properties'
+
+    if preserve_html and kwargs.get('fields', None) is None:
+        # we're providing field names so strip HTML from the first row
+        # (the header, in this case)
+        table_rows[0] = [value_element.text_content().strip()
+                         for value_element in row_elements[0]]
 
     max_columns = max(len(row) for row in table_rows)
     if ignore_colspan:
