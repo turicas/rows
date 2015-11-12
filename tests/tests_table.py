@@ -57,6 +57,11 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(table_rows[2].name, u'Douglas Adams')
         self.assertEqual(table_rows[2].birthdate, datetime.date(1952, 3, 11))
 
+    def test_table_insert_row(self):
+        self.table.insert(1, {'name': u'Grace Hopper',
+                              'birthdate': datetime.date(1909, 12, 9)})
+        self.assertEqual(self.table[1].name, u'Grace Hopper')
+
     def test_table_append_error(self):
         # TODO: may mock these validations and test only on *Field tests
         with self.assertRaises(ValueError) as context_manager:
