@@ -159,20 +159,20 @@ class TestFlexibleTable(unittest.TestCase):
         self.assertTrue(issubclass(FlexibleTable, Table))
 
     def test_flexible_append_detect_field_type(self):
-        table = FlexibleTable()
-        self.assertEqual(len(table.fields), 0)
+        self.assertEqual(len(self.table.fields), 0)
 
-        table.append({'a': 123, 'b': 3.14, })
-        self.assertEqual(table[0].a, 123)
-        self.assertEqual(table[0].b, 3.14)
-        self.assertEqual(table.fields, OrderedDict([('a', fields.IntegerField),
-                                                    ('b', fields.FloatField)]))
+        self.table.append({'a': 123, 'b': 3.14, })
+        self.assertEqual(self.table[0].a, 123)
+        self.assertEqual(self.table[0].b, 3.14)
+        self.assertEqual(self.table.fields,
+                         OrderedDict([('a', fields.IntegerField),
+                                      ('b', fields.FloatField)]))
 
         # Values are checked based on field types when appending
         with self.assertRaises(ValueError):
-            table.append({'a': 'spam', 'b': 1.23})  # invalid value for 'a'
+            self.table.append({'a': 'spam', 'b': 1.23})  # invalid value for 'a'
         with self.assertRaises(ValueError):
-            table.append({'a': 42, 'b': 'ham'})  # invalid value or 'b'
+            self.table.append({'a': 42, 'b': 'ham'})  # invalid value or 'b'
 
         # Values are converted
         self.table.append({'a': '42', 'b': '2.71'})
