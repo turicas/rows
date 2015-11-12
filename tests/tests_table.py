@@ -57,6 +57,11 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(table_rows[2].name, u'Douglas Adams')
         self.assertEqual(table_rows[2].birthdate, datetime.date(1952, 3, 11))
 
+    def test_table_insert_row(self):
+        self.table.insert(1, {'name': u'Grace Hopper',
+                              'birthdate': datetime.date(1909, 12, 9)})
+        self.assertEqual(self.table[1].name, u'Grace Hopper')
+
     def test_table_append_error(self):
         # TODO: may mock these validations and test only on *Field tests
         with self.assertRaises(ValueError) as context_manager:
@@ -134,6 +139,9 @@ class TableTestCase(unittest.TestCase):
 
 class TestFlexibleTable(unittest.TestCase):
 
+    def setUp(self):
+        self.table = table = FlexibleTable()
+
     def test_FlexibleTable_is_present_on_main_namespace(self):
         self.assertIn('FlexibleTable', dir(rows))
         self.assertIs(FlexibleTable, rows.FlexibleTable)
@@ -142,22 +150,32 @@ class TestFlexibleTable(unittest.TestCase):
         self.assertTrue(issubclass(FlexibleTable, Table))
 
     def test_flexible_append_detect_field_type(self):
-        table = FlexibleTable()
-        self.assertEqual(len(table.fields), 0)
+        self.assertEqual(len(self.table.fields), 0)
 
-        table.append({'a': 123, 'b': 3.14, })
-        self.assertEqual(table[0].a, 123)
-        self.assertEqual(table[0].b, 3.14)
-        self.assertEqual(table.fields, OrderedDict([('a', fields.IntegerField),
-                                                    ('b', fields.FloatField)]))
+        self.table.append({'a': 123, 'b': 3.14, })
+        self.assertEqual(self.table[0].a, 123)
+        self.assertEqual(self.table[0].b, 3.14)
+        self.assertEqual(self.table.fields,
+                         OrderedDict([('a', fields.IntegerField),
+                                      ('b', fields.FloatField)]))
 
         # Values are checked based on field types when appending
         with self.assertRaises(ValueError):
-            table.append({'a': 'spam', 'b': 1.23})  # invalid value for 'a'
+            self.table.append({'a': 'spam', 'b': 1.23})  # invalid value for 'a'
         with self.assertRaises(ValueError):
-            table.append({'a': 42, 'b': 'ham'})  # invalid value or 'b'
+            self.table.append({'a': 42, 'b': 'ham'})  # invalid value or 'b'
 
         # Values are converted
-        table.append({'a': '42', 'b': '2.71'})
-        self.assertEqual(table[1].a, 42)
-        self.assertEqual(table[1].b, 2.71)
+        self.table.append({'a': '42', 'b': '2.71'})
+        self.assertEqual(self.table[1].a, 42)
+        self.assertEqual(self.table[1].b, 2.71)
+
+    def test_flexible_insert_row(self):
+        self.table.append({'a': 123, 'b': 3.14, })
+        self.table.insert(0, {'a': 2357, 'b': 1123})
+        self.assertEqual(self.table[0].a, 2357)
+
+    def test_flexible_update_row(self):
+        self.table.append({'a': 123, 'b': 3.14, })
+        self.table[0] = {'a': 2357, 'b': 1123}
+        self.assertEqual(self.table[0].a, 2357)
