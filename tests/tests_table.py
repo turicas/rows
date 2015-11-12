@@ -61,6 +61,11 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(len(self.table[::2]), 2)
         self.assertEqual(self.table[::2][0].name, u'Álvaro Justen')
 
+    def test_table_slicing_error(self):
+        with self.assertRaises(ValueError) as context_manager:
+            self.table[[1]]
+        self.assertEqual(type(context_manager.exception), ValueError)
+
     def test_table_insert_row(self):
         self.table.insert(1, {'name': u'Grace Hopper',
                               'birthdate': datetime.date(1909, 12, 9)})
@@ -190,3 +195,11 @@ class TestFlexibleTable(unittest.TestCase):
         self.table.append({'a': 8687, 'b': 834798})
         self.assertEqual(len(self.table[::2]), 2)
         self.assertEqual(self.table[::2][0].a, 123)
+
+    def test_table_slicing_error(self):
+        self.table.append({'a': 123, 'b': 3.14, })
+        self.table.append({'a': 2357, 'b': 1123})
+        self.table.append({'a': 8687, 'b': 834798})
+        with self.assertRaises(ValueError) as context_manager:
+            self.table[[1]]
+        self.assertEqual(type(context_manager.exception), ValueError)
