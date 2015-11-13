@@ -20,3 +20,4 @@ Created and maintained by Álvaro Justen aka turicas:
 - Jean Ferri <https://github.com/jeanferri>
 - Evaldo Junior <https://github.com/infog>
 - Rhenan Bartels <https://github.com/RhenanBartels>
+- Mauro Baraldi <https://github.com/MauroBaraldi>
