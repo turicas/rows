@@ -385,6 +385,7 @@ make man
 
 ## Related Projects
 
+- [libextract](https://github.com/datalib/libextract)
 - [scrapy](http://scrapy.org/)
 - [grablib](https://github.com/lorien/grab)
 - [streamtools](http://blog.nytlabs.com/streamtools/)
