@@ -90,7 +90,7 @@ def export_to_xlsx(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                    **kwargs):
 
     workbook = Workbook()
-    sheet = workbook.get_active_sheet()
+    sheet = workbook.active
     sheet.title = sheet_name
     field_names = list(enumerate(table.fields))
     prepared_table = prepare_to_export(table, *args, **kwargs)
