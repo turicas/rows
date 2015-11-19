@@ -58,5 +58,9 @@ try:
 except ImportError:
     pass
 
+try:
+    from rows.plugins._pandas import import_from_pandas, export_to_pandas
+except ImportError:
+    pass
 
 __version__ = '0.2.0-dev'
