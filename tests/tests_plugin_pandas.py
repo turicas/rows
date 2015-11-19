@@ -25,10 +25,9 @@ import utils
 
 class PluginPandasTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
-    plugin_name = 'xls'
-    filename = 'tests/data/all-field-types.csv'
-    data_frame = pandas.read_csv(filename)
-    table = rows.plugins.csv.import_from_csv(filename)
+    plugin_name = 'pandas'
+    data_frame = pandas.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8]],
+                                  columns=['A', 'B', 'C', 'D'])
 
     def test_imports(self):
         self.assertIs(rows.import_from_pandas,
@@ -50,7 +49,7 @@ class PluginPandasTestCase(utils.RowsTestMixIn, unittest.TestCase):
     @mock.patch('rows.plugins._pandas.pandas.DataFrame')
     def test_export_to_pandas_uses_data_frame(self, mocked_data_frame):
         mocked_data_frame.return_value = 101
-        result = rows.plugins._pandas.export_to_pandas(self.table)
+        result = rows.plugins._pandas.export_to_pandas(utils.table)
         self.assertTrue(mocked_data_frame.called)
         self.assertTrue(mocked_data_frame.call_count, 1)
         self.assertEqual(result, 101)

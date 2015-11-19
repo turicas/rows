@@ -21,6 +21,7 @@ import pandas
 
 from rows.plugins.utils import create_table
 
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 def import_from_pandas(data_frame, *args, **kwargs):
     meta = {'imported_from': 'pandas', 'filename': 'DataFrame', }
@@ -31,22 +32,21 @@ def _dataframe_generator(data_frame):
     yield list(data_frame)
 
     for _, row in data_frame.iterrows():
-        row = correct_row_values(row)
-        yield list(row)
+        yield dataframe_row_to_list(row)
 
-def correct_row_values(row):
-    date_format = "%Y-%m-%d %H:%M:%S"
+def dataframe_row_to_list(row):
+    result = []
     for element_index, element in enumerate(row):
         #Problem importing pandas.tslib.Timestamp or pandas.Timestamp
         if isinstance(element, pandas.tslib.Timestamp):
-            date_string = element.strftime(date_format)
+            date_string = element.strftime(DATE_FORMAT)
             if date_string.endswith("00:00:00"):
-                row.values[element_index] = datetime.datetime.\
-                        strptime(date_string,
-                        date_format).date()
+                value = datetime.datetime.strptime(date_string,
+                                                   DATE_FORMAT).date()
             else:
-                row.values[element_index] = element.to_datetime()
-    return row
+                value = element.to_datetime()
+        result.append(value)
+    return result
 
 
 def export_to_pandas(table_obj):

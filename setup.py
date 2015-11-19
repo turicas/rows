@@ -25,7 +25,7 @@ EXTRA_REQUIREMENTS = {
         'ods': ['lxml'],
         'xls': ['xlrd', 'xlwt'],
         'xlsx': ['openpyxl'],
-        '_pandas': ['pandas'], }
+        'pandas': ['pandas'], }
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = EXTRA_REQUIREMENTS['csv']
 LONG_DESCRIPTION = '''
