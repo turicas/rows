@@ -30,7 +30,7 @@ from decimal import Decimal, InvalidOperation
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
            'DateField', 'DecimalField', 'PercentField', 'JSONField',
-           'TextField', 'BinaryField', 'Field']
+           'EmailField', 'TextField', 'BinaryField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 NULL = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
@@ -379,6 +379,35 @@ class TextField(Field):
             return as_string(value).decode(kwargs['encoding'])
         else:
             return cls.TYPE[0](value)
+
+
+class EmailField(TextField):
+    """Field class to represent e-mail addresses
+
+    Is not locale-aware (does not need to be)
+    """
+
+    EMAIL_REGEXP = re.compile(r'^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]+$',
+                              flags=re.IGNORECASE)
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''
+
+        return types.UnicodeType(value)
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        value = super(EmailField, cls).deserialize(value)
+        if value is None:
+            return None
+
+        result = cls.EMAIL_REGEXP.findall(value)
+        if not result:
+            raise ValueError("Can't be {}".format(cls.__name__))
+        else:
+            return result[0]
 
 
 class JSONField(Field):

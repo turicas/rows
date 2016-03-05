@@ -280,6 +280,32 @@ class FieldsTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             fields.DatetimeField.deserialize('Álvaro')
 
+    def test_EmailtimeField(self):
+        # TODO: accept spaces also
+        serialized = b'test@domain.com'
+        self.assertEqual(fields.EmailField.TYPE, (types.UnicodeType, ))
+        deserialized = fields.EmailField.deserialize(serialized)
+        self.assertIn(type(deserialized), fields.EmailField.TYPE)
+        self.assertEqual(fields.EmailField.serialize(None), '')
+        self.assertIs(type(fields.EmailField.serialize(None)),
+                      types.UnicodeType)
+
+        value = u'test@domain.com'
+        self.assertEqual(fields.EmailField.deserialize(serialized), value)
+        self.assertEqual(fields.EmailField.deserialize(deserialized),
+                         deserialized)
+        self.assertEqual(fields.EmailField.deserialize(None), None)
+        self.assertEqual(fields.EmailField.serialize(value), serialized)
+        self.assertIs(type(fields.EmailField.serialize(value)),
+                      types.UnicodeType)
+
+        with self.assertRaises(ValueError):
+            fields.EmailField.deserialize(42)
+        with self.assertRaises(ValueError):
+            fields.EmailField.deserialize('2015-01-01')
+        with self.assertRaises(ValueError):
+            fields.EmailField.deserialize('Álvaro')
+
     def test_TextField(self):
         self.assertEqual(fields.TextField.TYPE, (unicode, ))
         self.assertEqual(fields.TextField.serialize(None), '')
