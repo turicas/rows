@@ -261,6 +261,10 @@ file format you want. Currently we have the following plugins:
 - JSON: use `rows.import_from_json` and `rows.export_to_json` (no dependencies)
 - HTML: use `rows.import_from_html` and `rows.export_to_html` (denpendencies
   must be installed with `pip install rows[html]`)
+- XPath: use `rows.import_from_xpath` passing the following arguments:
+  `filename_or_fobj`, `rows_xpath` and `fields_xpath` (denpendencies must be
+  installed with `pip install rows[xpath]`) -- see an example in
+  `examples/library/ecuador_radiodifusoras.py`.
 - XLS: use `rows.import_from_xls` and `rows.export_to_xls` (dependencies must
   be installed with `pip install rows[xls]`)
 - XLSX: use `rows.import_from_xlsx` and `rows.export_to_xlsx` (dependencies
