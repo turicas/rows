@@ -40,7 +40,7 @@ def possible_field_names_errors(error_fields):
                                                  len(error_fields))
     fields_permutations_str = [', '.join(field_names)
                                for field_names in fields_permutations]
-    return ['Invalid field names {}'.format(field_names)
+    return ['Invalid field names: {}'.format(field_names)
             for field_names in fields_permutations_str]
 
 

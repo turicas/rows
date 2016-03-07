@@ -15,3 +15,6 @@ mock
 nose
 pylint
 yanc
+
+# PyPI tools
+pypissh
