@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@ EXTRA_REQUIREMENTS = {
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
         'ods': ['lxml'],
         'xls': ['xlrd', 'xlwt'],
-        'xlsx': ['openpyxl'], }
+        'xlsx': ['openpyxl'],
+        'xpath': ['lxml'], }
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = EXTRA_REQUIREMENTS['csv']
 LONG_DESCRIPTION = '''
@@ -42,27 +43,33 @@ setup(name='rows',
       description=('A common, beautiful interface to tabular data, '
                    'no matter the format'),
       long_description=LONG_DESCRIPTION,
-      version='0.2.0-dev',
+      version='0.2.0dev',
       author=u'Álvaro Justen',
       author_email='alvarojusten@gmail.com',
       url='https://github.com/turicas/rows/',
       packages=['rows', 'rows.plugins'],
       install_requires=INSTALL_REQUIREMENTS,
       extras_require=EXTRA_REQUIREMENTS,
-      keywords=['tabular', 'table', 'csv', 'xls', 'html', 'rows'],
+      keywords=['tabular', 'table', 'csv', 'xls', 'xlsx', 'xpath', 'sqlite',
+                'html', 'rows', 'data', 'opendata'],
       entry_points = {
           'console_scripts': [
               'rows = rows.cli:cli',
               ],
       },
       classifiers = [
-          'Development Status :: 3 - Alpha',
+          'Development Status :: 5 - Production/Stable',
+          'Environment :: Console',
           'Intended Audience :: Developers',
           'Intended Audience :: Science/Research',
+          'Intended Audience :: System Administrators',
           'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
           'Natural Language :: English',
           'Operating System :: OS Independent',
           'Programming Language :: Python :: 2.7',
+          'Topic :: Database',
           'Topic :: Software Development :: Libraries :: Python Modules',
+          'Topic :: Text Processing :: Markup :: HTML',
+          'Topic :: Utilities',
       ]
 )

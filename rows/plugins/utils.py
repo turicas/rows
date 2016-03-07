@@ -107,7 +107,7 @@ def create_table(data, meta=None, fields=None, skip_header=True,
         diff = set(import_fields) - set(header)
         if diff:
             field_names = ', '.join('"{}"'.format(field) for field in diff)
-            raise ValueError("Invalid field names {}".format(field_names))
+            raise ValueError("Invalid field names: {}".format(field_names))
 
         new_fields = OrderedDict()
         for field_name in import_fields:
@@ -138,7 +138,7 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
     diff = set(export_fields) - set(table_field_names)
     if diff:
         field_names = ', '.join('"{}"'.format(field) for field in diff)
-        raise ValueError("Invalid field names {}".format(field_names))
+        raise ValueError("Invalid field names: {}".format(field_names))
 
     yield export_fields
 
