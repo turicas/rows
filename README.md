@@ -271,7 +271,8 @@ file format you want. Currently we have the following plugins:
 - Parquet: use `rows.import_from_parquet` passing the filename (dependencies
   must be installed with `pip install rows[parquet]` and if the data is
   compressed using snappy you also need to install `rows[parquet-snappy]` and
-  the `libsnappy-dev` system library)
+  the `libsnappy-dev` system library) -- read [this blog post][blog-rows-parquet]
+  for more details and one example
 - XLS: use `rows.import_from_xls` and `rows.export_to_xls` (dependencies must
   be installed with `pip install rows[xls]`)
 - XLSX: use `rows.import_from_xlsx` and `rows.export_to_xlsx` (dependencies
