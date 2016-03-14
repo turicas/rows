@@ -59,5 +59,10 @@ try:
 except ImportError:
     pass
 
+try:
+    from rows.plugins._parquet import import_from_parquet
+except ImportError:
+    pass
 
-__version__ = '0.2.0-dev'
+
+__version__ = '0.2.0dev'

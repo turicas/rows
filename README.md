@@ -22,8 +22,8 @@ locale-and-unicode aware. :)
 The library is composed by:
 
 - A common interface to tabular data (the `Table` class)
-- A set of plugins to populate `Table` objects (CSV, XLS, XLSX, HTML, TXT,
-  JSON, SQLite -- more coming soon!)
+- A set of plugins to populate `Table` objects (CSV, XLS, XLSX, HTML and XPath,
+  Parquet, TXT, JSON, SQLite -- more coming soon!)
 - A set of common fields (such as `BoolField`, `IntegerField`) which know
   exactly how to serialize and deserialize data for each object type you'll get
 - A set of utilities (such as field type recognition) to help working with
@@ -47,7 +47,8 @@ Directly from [PyPI](http://pypi.python.org/pypi/rows):
 
     pip install rows
 
-But if you have a strong heart, install the bleeding edge version:
+You can also install directly from the GitHub repository to have the newest
+features (not pretty stable) by running:
 
     pip install git+https://github.com/turicas/rows.git@develop
 
@@ -82,6 +83,10 @@ from the main repository by running:
 
     aptitude install python-rows  # Python library only
     aptitude install rows  # Python library + CLI
+
+And in Fedora:
+
+    dnf install python-row  # Python library + CLI
 
 
 ## Basic Usage
@@ -265,6 +270,10 @@ file format you want. Currently we have the following plugins:
   `filename_or_fobj`, `rows_xpath` and `fields_xpath` (denpendencies must be
   installed with `pip install rows[xpath]`) -- see an example in
   `examples/library/ecuador_radiodifusoras.py`.
+- Parquet: use `rows.import_from_parquet` passing the filename (dependencies
+  must be installed with `pip install rows[parquet]` and if the data is
+  compressed using snappy you also need to install `rows[parquet-snappy]` and
+  the `libsnappy-dev` system library)
 - XLS: use `rows.import_from_xls` and `rows.export_to_xls` (dependencies must
   be installed with `pip install rows[xls]`)
 - XLSX: use `rows.import_from_xlsx` and `rows.export_to_xlsx` (dependencies
