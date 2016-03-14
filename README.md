@@ -13,8 +13,8 @@ automatically detect types and give you high-level Python objects so you can
 start **working with the data** instead of **trying to parse it**. It is also
 locale-and-unicode aware. :)
 
-> Note: if you're using [rows](https://github.com/turicas/rows/) in some
-> project please [tell us](https://github.com/turicas/rows/issues/103)! :-)
+> Note: if you're using [rows][rows] in some project please [tell
+> us][rows-issue-103]! :-)
 
 
 ## Architecture
@@ -43,7 +43,7 @@ Just `import rows` and relax.
 
 ## Installation
 
-Directly from [PyPI](http://pypi.python.org/pypi/rows):
+Directly from [PyPI][pypi-rows]:
 
     pip install rows
 
@@ -67,8 +67,7 @@ for example:
     pip install rows[xls]
 
 You also need to install some dependencies to use the [command-line
-interface](#command-line-interface). You can do it installing the `cli` extra
-requirement:
+interface][rows-cli]. You can do it installing the `cli` extra requirement:
 
     pip install rows[cli]
 
@@ -77,9 +76,8 @@ requirement:
 
     pip install rows[all]
 
-If you use Debian [sid](https://www.debian.org/releases/sid/) or
-[testing](https://www.debian.org/releases/testing/) you can install it directly
-from the main repository by running:
+If you use Debian [sid][debian-sid] or [testing][debian-testing] you can
+install it directly from the main repository by running:
 
     aptitude install python-rows  # Python library only
     aptitude install rows  # Python library + CLI
@@ -305,7 +303,7 @@ parameters you can pass to `export_to_X`. They are:
 convert data between plugins, sum, sort and join `Table`s.
 
 Run `rows --help` to see the available commands and take a look at
-`rows/cli.py`. TODO.
+`rows/cli.py`. We still need to improve the CLI docs, sorry.
 
 
 ## Locale
@@ -369,9 +367,8 @@ or (if you don't have `make`):
 
     nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/*.py
 
-To create the man page you'll need to install
-[txt2man](http://mvertes.free.fr/). In Debian (and Debian-based distributions)
-you can install by running:
+To create the man page you'll need to install [txt2man][txt2man]. In Debian
+(and Debian-based distributions) you can install by running:
 
 ```bash
 aptitude install txt2man
@@ -410,24 +407,41 @@ make man
 
 ## Known Issues
 
-- [Lack of Python 3 support](https://github.com/turicas/rows/issues/46)
+- [Lack of Python 3 support][rows-issue-46]
 - [Create a better plugin interface so anyone can benefit of
-  it](https://github.com/turicas/rows/issues/27)
-- [Create `TableSet`](https://github.com/turicas/rows/issues/47)
+  it][rows-issue-27]
+- [Create an object to represent a set of `rows.Table`s, like
+  `TableSet`][rows-issue-47]
 - Performance: the automatic type detection algorithm can cost time: it
   iterates over all rows to determine the type of each column. You can disable
   it by passing `samples=0` to any `import_from_*` function or either changing
   the number of sample rows (any positive number is accepted).
-- See [issue #31](https://github.com/turicas/rows/issues/31)
+- [Code design issues][rows-issue-31]
 
 
 ## Semantic Versioning
 
-`rows` uses [semantic versioning](http://semver.org). Note that it means we do
-not guarantee API backwards compatibility on `0.x.y` versions.
+`rows` uses [semantic versioning][semver]. Note that it means we do not
+guarantee API backwards compatibility on `0.x.y` versions.
 
 
 ## License
 
 This library is released under the [GNU General Public License version
-3](http://www.gnu.org/licenses/gpl-3.0.html).
+3][gpl3].
+
+
+[blog-rows-parquet]: http://blog.justen.eng.br/2016/03/reading-parquet-files-in-python-with-rows.html
+[debian-sid]: https://www.debian.org/releases/sid/
+[debian-testing]: https://www.debian.org/releases/testing/
+[gpl3]: http://www.gnu.org/licenses/gpl-3.0.html
+[pypi-rows]: http://pypi.python.org/pypi/rows
+[rows-cli]: #command-line-interface
+[rows-issue-103]: https://github.com/turicas/rows/issues/103
+[rows-issue-27]: https://github.com/turicas/rows/issues/27
+[rows-issue-31]: https://github.com/turicas/rows/issues/31
+[rows-issue-46]: https://github.com/turicas/rows/issues/46
+[rows-issue-47]: https://github.com/turicas/rows/issues/47
+[rows]: https://github.com/turicas/rows/
+[semver]: http://semver.org/
+[txt2man]: http://mvertes.free.fr/
