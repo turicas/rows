@@ -2,11 +2,12 @@
 
 # Everything except install_requires
 click
-requests
 lxml
+openpyxl
+parquet
+requests
 xlrd
 xlwt
-openpyxl
 
 # Test tools
 coverage
