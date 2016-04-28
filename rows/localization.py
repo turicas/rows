@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 import contextlib
 import locale
-import types
+import six
 
 import rows.fields
 
@@ -15,7 +15,7 @@ def locale_context(name, category=locale.LC_ALL):
     old_name = locale.getlocale(category)
     if None not in old_name:
         old_name = '.'.join(old_name)
-    if isinstance(name, types.UnicodeType):
+    if isinstance(name, six.text_type):
         name = str(name)
 
     if old_name != name:

@@ -24,7 +24,7 @@ import mock
 import rows
 import rows.fields as fields
 import rows.plugins.ods
-import utils
+from . import utils
 
 
 class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):

@@ -26,7 +26,7 @@ import mock
 import rows
 import rows.plugins.sqlite
 import rows.plugins.utils
-import utils
+from . import utils
 
 from rows import fields
 

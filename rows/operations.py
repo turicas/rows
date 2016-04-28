@@ -28,7 +28,7 @@ def join(keys, tables):
 
     # Make new (merged) Table fields
     fields = OrderedDict()
-    map(lambda table: fields.update(table.fields), tables)
+    list([fields.update(table.fields) for table in tables])
     # TODO: may raise an error if a same field is different in some tables
 
     # Check if all keys are inside merged Table's fields
@@ -38,7 +38,7 @@ def join(keys, tables):
             raise ValueError('Invalid key: "{}"'.format(key))
 
     # Group rows by key, without missing ordering
-    none_fields = lambda: OrderedDict({field: None for field in fields.keys()})
+    none_fields = lambda: OrderedDict({field: None for field in list(fields.keys())})
     data = OrderedDict()
     for table in tables:
         for row in table:
@@ -48,7 +48,7 @@ def join(keys, tables):
             data[row_key].update(row._asdict())
 
     merged = Table(fields=fields)
-    merged.extend(data.values())
+    merged.extend(list(data.values()))
     return merged
 
 
@@ -58,8 +58,8 @@ def transform(fields, function, *tables):
     new_table = Table(fields=fields)
 
     for table in tables:
-        map(new_table.append,
-            filter(bool, map(lambda row: function(row, table), table)))
+        list(map(new_table.append,
+            list(filter(bool, [function(row, table) for row in table]))))
 
     return new_table
 

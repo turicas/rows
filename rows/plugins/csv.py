@@ -53,7 +53,7 @@ def export_to_csv(table, filename_or_fobj=None, encoding='utf-8', *args, **kwarg
         fobj = BytesIO()
 
     csv_writer = unicodecsv.writer(fobj, encoding=encoding)
-    map(csv_writer.writerow, serialize(table, *args, **kwargs))
+    list(map(csv_writer.writerow, serialize(table, *args, **kwargs)))
 
     if filename_or_fobj is not None:
         fobj.flush()

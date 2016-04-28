@@ -33,7 +33,7 @@ def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
     filename, fobj = get_filename_and_fobj(filename_or_fobj)
 
     json_obj = json.load(fobj, encoding=encoding)
-    field_names = json_obj[0].keys()
+    field_names = list(json_obj[0].keys())
     table_rows = [[item[key] for key in field_names] for item in json_obj]
 
     data = [field_names] + table_rows
@@ -54,7 +54,7 @@ def export_to_json(table, filename_or_fobj=None, encoding='utf-8', indent=None,
 
     fields = table.fields
     prepared_table = prepare_to_export(table, *args, **kwargs)
-    field_names = prepared_table.next()
+    field_names = next(prepared_table)
     data = [{field_name: _convert(value, fields[field_name], *args, **kwargs)
              for field_name, value in zip(field_names, row)}
             for row in prepared_table]

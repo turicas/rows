@@ -73,7 +73,7 @@ def ipartition(iterable, partition_size):
         data = []
         for _ in range(partition_size):
             try:
-                data.append(iterator.next())
+                data.append(next(iterator))
             except StopIteration:
                 finished = True
                 break

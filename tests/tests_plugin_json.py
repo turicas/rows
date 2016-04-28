@@ -21,13 +21,14 @@ import itertools
 import json
 import tempfile
 import unittest
+import six
 
 from textwrap import dedent
 
 import mock
 
 import rows
-import utils
+from . import utils
 
 
 class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -90,7 +91,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.files_to_delete.append(temp.name)
         kwargs = {'test': 123, 'parameter': 3.14, }
         mocked_prepare_to_export.return_value = \
-                iter([utils.table.fields.keys()])
+                iter([list(utils.table.fields.keys())])
 
         rows.export_to_json(utils.table, temp.name, **kwargs)
         self.assertTrue(mocked_prepare_to_export.called)
@@ -148,11 +149,11 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
             self.assertEqual(type(row['decimal_column']), float)
             self.assertEqual(type(row['bool_column']), bool)
             self.assertEqual(type(row['integer_column']), int)
-            self.assertEqual(type(row['date_column']), unicode)
-            self.assertEqual(type(row['datetime_column']), unicode)
-            self.assertEqual(type(row['percent_column']), unicode)
-            self.assertEqual(type(row['unicode_column']), unicode)
-            self.assertEqual(type(row['null_column']), unicode)
+            self.assertEqual(type(row['date_column']), six.text_type)
+            self.assertEqual(type(row['datetime_column']), six.text_type)
+            self.assertEqual(type(row['percent_column']), six.text_type)
+            self.assertEqual(type(row['unicode_column']), six.text_type)
+            self.assertEqual(type(row['null_column']), six.text_type)
 
     def test_export_to_json_indent(self):
         temp = tempfile.NamedTemporaryFile(delete=False)

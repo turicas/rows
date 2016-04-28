@@ -27,7 +27,7 @@ import mock
 import rows
 import rows.fields as fields
 import rows.plugins.xls
-import utils
+from . import utils
 
 
 def date_to_datetime(value):
@@ -104,7 +104,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         encoding = 'iso-8859-15'
         kwargs = {'test': 123, 'parameter': 3.14, }
         mocked_prepare_to_export.return_value = \
-                iter([utils.table.fields.keys()])
+                iter([list(utils.table.fields.keys())])
 
         rows.export_to_xls(utils.table, temp.name, encoding=encoding,
                            **kwargs)

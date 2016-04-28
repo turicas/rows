@@ -30,8 +30,8 @@ class Table(MutableSequence):
         # TODO: should use slug on each field name automatically or inside each
         #       plugin?
         self.fields = OrderedDict(fields)
-        self.field_names = self.fields.keys()
-        self.field_types = self.fields.values()
+        self.field_names = list(self.fields.keys())
+        self.field_types = list(self.fields.values())
 
         # TODO: should be able to customize row return type (namedtuple, dict
         #       etc.)
@@ -46,14 +46,14 @@ class Table(MutableSequence):
         if 'imported_from' in self.meta:
             imported = ' (from {})'.format(self.meta['imported_from'])
 
-        return u'<rows.Table{} {} fields, {} rows>'.format(imported,
+        return '<rows.Table{} {} fields, {} rows>'.format(imported,
                                                            len(self.fields),
                                                            length)
 
     def _make_row(self, row):
         # TODO: should be able to customize row type (namedtuple, dict etc.)
         return [field_type.deserialize(row.get(field_name, None))
-                for field_name, field_type in self.fields.items()]
+                for field_name, field_type in list(self.fields.items())]
 
     def append(self, row):
         """Add a row to the table. Should be a dict"""
@@ -96,8 +96,8 @@ class Table(MutableSequence):
             raise ValueError('Tables have incompatible fields')
 
         table = Table(fields=self.fields)
-        map(lambda row: table.append(row._asdict()), self)
-        map(lambda row: table.append(row._asdict()), other)
+        list([table.append(row._asdict()) for row in self])
+        list([table.append(row._asdict()) for row in other])
         return table
 
     def order_by(self, key):
@@ -108,7 +108,7 @@ class Table(MutableSequence):
             key = key[1:]
             reverse = True
 
-        field_names = self.fields.keys()
+        field_names = list(self.fields.keys())
         if key not in field_names:
             raise ValueError('Field "{}" does not exist'.format(key))
 
@@ -138,13 +138,13 @@ class FlexibleTable(Table):
         self.Row = namedtuple('Row', self.field_names)
 
     def _make_row(self, row):
-        field_names = row.keys()
+        field_names = list(row.keys())
         for field_name in field_names:
             if field_name not in self.field_names:
                 self._add_field(field_name, identify_type(row[field_name]))
 
         return {field_name: field_type.deserialize(row.get(field_name, None))
-                for field_name, field_type in self.fields.items()}
+                for field_name, field_type in list(self.fields.items())}
 
     def insert(self, index, row):
         self._rows.insert(index, self._make_row(row))

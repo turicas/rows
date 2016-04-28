@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 
 import datetime
 import re
@@ -30,7 +30,7 @@ strptime = datetime.datetime.strptime
 
 
 def import_from_uwsgi_log(filename):
-    fields = UWSGI_FIELDS.keys()
+    fields = list(UWSGI_FIELDS.keys())
     table = Table(fields=UWSGI_FIELDS)
     with open(filename) as fobj:
         for line in fobj:
@@ -49,4 +49,4 @@ def import_from_uwsgi_log(filename):
 if __name__ == '__main__':
     table = import_from_uwsgi_log('uwsgi.log')
     for row in table:
-        print row
+        print(row)

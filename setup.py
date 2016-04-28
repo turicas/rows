@@ -15,6 +15,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import unicode_literals
 from setuptools import setup
 
 
@@ -28,7 +29,7 @@ EXTRA_REQUIREMENTS = {
         'xls': ['xlrd', 'xlwt'],
         'xlsx': ['openpyxl'],
         'xpath': ['lxml'], }
-EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
+EXTRA_REQUIREMENTS['all'] = sum(list(EXTRA_REQUIREMENTS.values()), [])
 INSTALL_REQUIREMENTS = EXTRA_REQUIREMENTS['csv']
 LONG_DESCRIPTION = '''
 No matter in which format your tabular data is: rows will import it,
@@ -46,7 +47,7 @@ setup(name='rows',
                    'no matter the format'),
       long_description=LONG_DESCRIPTION,
       version='0.2.0dev',
-      author=u'Álvaro Justen',
+      author='Álvaro Justen',
       author_email='alvarojusten@gmail.com',
       url='https://github.com/turicas/rows/',
       packages=['rows', 'rows.plugins'],
