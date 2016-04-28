@@ -365,7 +365,7 @@ class TextField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = six.string_types
+    TYPE = (six.text_type,)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -513,7 +513,7 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
     return detected_types
 
 
-TYPES = [(key, locals().get(key)) for key in __all__]
+TYPES = [(key, globals().get(key)) for key in __all__]
 
 
 def identify_type(value):

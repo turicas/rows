@@ -25,7 +25,7 @@ from rows.table import FlexibleTable, Table
 from rows.utils import slug, SLUG_CHARS
 
 
-def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
+def get_filename_and_fobj(filename_or_fobj, mode='rb', dont_open=False):
     if getattr(filename_or_fobj, 'read', None) is not None:
         fobj = filename_or_fobj
         filename = getattr(fobj, 'name', None)

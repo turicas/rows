@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import six
 import os
 import tempfile
 
@@ -42,7 +43,7 @@ SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
 def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
          replace_with_separator=' -_'):
-    if isinstance(text, str):
+    if isinstance(text, six.binary_type):
         text = text.decode(encoding or 'ascii')
     clean_text = text.strip()
     for char in replace_with_separator:
@@ -50,7 +51,7 @@ def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
     double_separator = separator + separator
     while double_separator in clean_text:
         clean_text = clean_text.replace(double_separator, separator)
-    ascii_text = normalize('NFKD', clean_text).encode('ascii', 'ignore')
+    ascii_text = normalize('NFKD', clean_text)
     strict_text = [x for x in ascii_text if x in permitted_chars]
     text = ''.join(strict_text).lower()
 
