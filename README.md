@@ -16,6 +16,12 @@ locale-and-unicode aware. :)
 > Note: if you're using [rows][rows] in some project please [tell
 > us][rows-issue-103]! :-)
 
+## Showcase
+
+- [Convert files tabular files using rows][rows-showcase] ([source
+  code][rows-showcase-source])
+- (Portuguese) [Talk (videos + slides) on rows by Álvaro Justen][rows-talk-pt]
+
 
 ## Architecture
 
@@ -443,6 +449,9 @@ This library is released under the [GNU General Public License version
 [rows-issue-31]: https://github.com/turicas/rows/issues/31
 [rows-issue-46]: https://github.com/turicas/rows/issues/46
 [rows-issue-47]: https://github.com/turicas/rows/issues/47
+[rows-showcase-source]: https://github.com/leonardocsantoss/django-rows
+[rows-showcase]: http://rows.irdx.com.br/
+[rows-talk-pt]: http://blog.justen.eng.br/2016/05/dados-tabulares-a-maneira-pythonica.html
 [rows]: https://github.com/turicas/rows/
 [semver]: http://semver.org/
 [txt2man]: http://mvertes.free.fr/
