@@ -24,6 +24,8 @@ import locale
 import re
 import types
 
+from locale import localeconv
+
 from decimal import Decimal, InvalidOperation
 
 
@@ -34,6 +36,8 @@ __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 NULL = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
+DP = localeconv()['decimal_point']
+TS = localeconv()['thousands_sep']
 
 
 class Field(object):
@@ -214,11 +218,11 @@ class DecimalField(Field):
             return value_as_string
         else:
             grouping = kwargs.get('grouping', None)
-            has_decimal_places = value_as_string.find('.') != -1
+            has_decimal_places = value_as_string.find(DP) != -1
             if not has_decimal_places:
                 string_format = '%d'
             else:
-                decimal_places = len(value_as_string.split('.')[1])
+                decimal_places = len(value_as_string.split(DP)[1])
                 string_format = '%.{}f'.format(decimal_places)
             return locale.format(string_format, value, grouping=grouping)
 

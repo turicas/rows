@@ -8,6 +8,7 @@ parquet
 requests
 xlrd
 xlwt
+openpyxl
 
 # Test tools
 coverage
