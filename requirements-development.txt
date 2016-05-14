@@ -8,6 +8,7 @@ parquet
 requests
 xlrd
 xlwt
+sphinx
 
 # Test tools
 coverage
