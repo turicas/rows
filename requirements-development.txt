@@ -17,3 +17,4 @@ mock
 nose
 pylint
 yanc
+tox
