@@ -25,7 +25,7 @@ from collections import OrderedDict
 import rows
 import rows.operations
 
-import utils
+from . import utils
 
 
 class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -52,7 +52,7 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
             new = row._asdict()
             new['meta'] = ', '.join(['{} => {}'.format(key, value)
-                                     for key, value in table._meta.items()])
+                                     for key, value in list(table._meta.items())])
             return new
 
         fields = utils.table.fields.copy()
@@ -89,7 +89,7 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         self.assertEqual(len(new_table), 2)
         self.assertEqual(len(new_table.fields), len(table))
-        self.assertEqual(new_table.fields.keys(), [row.key for row in table])
+        self.assertEqual(list(new_table.fields.keys()), [row.key for row in table])
         self.assertEqual(new_table[0].first_key, 'first_value_1')
         self.assertEqual(new_table[0].second_key, 1)
         self.assertEqual(new_table[0].third_key, 3.14)

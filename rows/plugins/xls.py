@@ -119,7 +119,7 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
 
     prepared_table = prepare_to_export(table, *args, **kwargs)
 
-    field_names = prepared_table.next()
+    field_names = next(prepared_table)
     for column_index, field_name in enumerate(field_names):
         sheet.write(0, column_index, field_name)
 

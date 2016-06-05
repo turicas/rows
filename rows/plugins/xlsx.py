@@ -26,9 +26,9 @@ def _read_row(sheet, row_index, last_column):
 def cell_to_python(cell):
     '''Convert a PyOpenXL's `Cell` object to the corresponding Python object'''
 
-    if cell.value == u"=TRUE()":
+    if cell.value == "=TRUE()":
         return True
-    elif cell.value == u"=FALSE()":
+    elif cell.value == "=FALSE()":
         return False
     elif cell.number_format.lower() == "yyyy-mm-dd":
         return str(cell.value).split(" 00:00:00")[0]
@@ -96,7 +96,7 @@ def export_to_xlsx(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
     prepared_table = prepare_to_export(table, *args, **kwargs)
 
     # Write header
-    header = prepared_table.next()
+    header = next(prepared_table)
     for col_index, field_name in enumerate(header):
         _write_cell(sheet, 0, col_index, field_name, fields.TextField)
 

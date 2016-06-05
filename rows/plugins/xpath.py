@@ -27,7 +27,7 @@ from rows.plugins.utils import create_table, get_filename_and_fobj
 def _get_row_data(row, fields_xpath):
     row = tree_from_string(to_string(row))
     data = []
-    for field_name, field_xpath in fields_xpath.items():
+    for field_name, field_xpath in list(fields_xpath.items()):
         result = row.xpath(field_xpath)
         if result:
             result = result[0]
@@ -46,7 +46,7 @@ def import_from_xpath(filename_or_fobj, rows_xpath, fields_xpath,
     tree = tree_from_string(xml)
     row_elements = tree.xpath(rows_xpath)
 
-    header = fields_xpath.keys()
+    header = list(fields_xpath.keys())
     result_rows = [_get_row_data(row, fields_xpath) for row in row_elements]
 
     meta = {'imported_from': 'xpath', 'filename': filename,}

@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import six
 import datetime
 
 import sqlite3
@@ -64,7 +65,7 @@ def _convert(field_type, value):
 
 
 def _get_connection(filename_or_connection):
-    if isinstance(filename_or_connection, basestring):
+    if isinstance(filename_or_connection, six.string_types):
         return sqlite3.connect(filename_or_connection)
     else:
         return filename_or_connection
@@ -96,7 +97,7 @@ def export_to_sqlite(table_obj, filename_or_connection, table_name='rows',
                    for item in connection.execute(SQL_TABLE_NAMES).fetchall()]
     table_name = make_unique_name(name=table_name, existing_names=table_names)
 
-    field_names = serialized_table.next()
+    field_names = next(serialized_table)
     columns = ['{} {}'.format(field_name,
                               SQLITE_TYPES[table_obj.fields[field_name]])
                for field_name in field_names]

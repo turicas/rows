@@ -26,7 +26,7 @@ import mock
 
 import rows
 import rows.plugins.html
-import utils
+from . import utils
 
 
 # TODO: test unescape
@@ -103,7 +103,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         kwargs = {'test': 123, 'parameter': 3.14, 'encoding': 'utf-8', }
-        mocked_serialize.return_value = iter([utils.table.fields.keys()])
+        mocked_serialize.return_value = iter([list(utils.table.fields.keys())])
 
         rows.export_to_html(utils.table, temp.name, **kwargs)
         self.assertTrue(mocked_serialize.called)
@@ -310,9 +310,9 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         fobj = open(filename)
 
         table = rows.import_from_html(fobj, properties=True)
-        self.assertEqual(table.fields.keys(),
+        self.assertEqual(list(table.fields.keys()),
                          ['field1', 'field2', 'properties'])
-        self.assertEqual(table.fields.values(),
+        self.assertEqual(list(table.fields.values()),
                          [rows.fields.TextField,
                           rows.fields.TextField,
                           rows.fields.JSONField])

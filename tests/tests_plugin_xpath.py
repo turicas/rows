@@ -26,7 +26,7 @@ import mock
 
 import rows
 import rows.plugins.xpath
-import utils
+from . import utils
 
 
 class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):

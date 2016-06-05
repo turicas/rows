@@ -20,9 +20,9 @@ field_types = OrderedDict([('bool_column', 'INTEGER'),
                            ('unicode_column', 'TEXT'),
                            ('null_column', 'TEXT'), ])
 column_types = ', '.join(['{} {}'.format(key, value)
-                          for key, value in field_types.items()])
+                          for key, value in list(field_types.items())])
 create_sql = 'CREATE TABLE rows ({})'.format(column_types)
-field_names = ', '.join(field_types.keys())
+field_names = ', '.join(list(field_types.keys()))
 placeholders = ', '.join(['?' for _ in field_types])
 insert_sql = 'INSERT INTO rows ({}) VALUES ({})'.format(field_names,
                                                         placeholders)

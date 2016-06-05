@@ -39,7 +39,7 @@ FIELDS = OrderedDict([('bool_column', fields.BoolField),
                       ('datetime_column', fields.DatetimeField),
                       ('unicode_column', fields.TextField),
                       ('null_column', fields.BinaryField),])
-FIELD_NAMES = FIELDS.keys()
+FIELD_NAMES = list(FIELDS.keys())
 EXPECTED_ROWS = [
         {'float_column': 3.141592,
          'decimal_column': 3.141592,
@@ -128,7 +128,7 @@ class RowsTestMixIn(object):
         for first_row, second_row in zip(first, second):
             first_row = dict(first_row._asdict())
             second_row = dict(second_row._asdict())
-            for field_name, field_type in expected_fields.items():
+            for field_name, field_type in list(expected_fields.items()):
                 value = first_row[field_name]
                 expected_value = second_row[field_name]
                 if field_name in override_fields:

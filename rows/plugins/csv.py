@@ -48,12 +48,13 @@ def export_to_csv(table, filename_or_fobj=None, encoding='utf-8', *args, **kwarg
 
     kwargs['encoding'] = encoding
     if filename_or_fobj is not None:
-        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
+        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
     else:
         fobj = BytesIO()
 
     csv_writer = unicodecsv.writer(fobj, encoding=encoding)
-    map(csv_writer.writerow, serialize(table, *args, **kwargs))
+    for row in serialize(table, *args, **kwargs):
+        csv_writer.writerow(row)
 
     if filename_or_fobj is not None:
         fobj.flush()

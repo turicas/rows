@@ -15,6 +15,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import unicode_literals
 import datetime
 import unittest
 
@@ -29,14 +30,14 @@ class UwsgiLogPluginTestCase(unittest.TestCase):
         filename = 'uwsgi.log'
         table = import_from_uwsgi_log(filename)
         self.assertEqual(len(table), 2)
-        first = table.Row(pid=879, ip=u'127.0.0.1',
+        first = table.Row(pid=879, ip='127.0.0.1',
                           datetime=datetime.datetime(2015, 6, 1, 11, 23, 16),
-                          http_verb=u'GET', http_path=u'/something',
+                          http_verb='GET', http_path='/something',
                           generation_time=0.17378, http_version=1.1,
                           http_status=404)
-        second = table.Row(pid=31460, ip=u'127.0.1.1',
+        second = table.Row(pid=31460, ip='127.0.1.1',
                            datetime=datetime.datetime(2015, 7, 15, 23, 49, 20),
-                           http_verb=u'OPTIONS', http_path=u'/about',
+                           http_verb='OPTIONS', http_path='/about',
                            generation_time=0.000466, http_version=1.1,
                            http_status=200)
         self.assertEqual(table[0], first)

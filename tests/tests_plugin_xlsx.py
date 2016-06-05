@@ -26,7 +26,7 @@ import mock
 
 import rows
 import rows.plugins.xlsx
-import utils
+from . import utils
 
 
 class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -106,7 +106,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         kwargs = {'test': 123, 'parameter': 3.14, }
         mocked_prepare_to_export.return_value = \
-                iter([utils.table.fields.keys()])
+                iter([list(utils.table.fields.keys())])
 
         rows.export_to_xlsx(utils.table, temp.name, **kwargs)
         self.assertTrue(mocked_prepare_to_export.called)

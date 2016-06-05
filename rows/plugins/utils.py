@@ -25,7 +25,7 @@ from rows.table import FlexibleTable, Table
 from rows.utils import slug, SLUG_CHARS
 
 
-def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
+def get_filename_and_fobj(filename_or_fobj, mode='rb', dont_open=False):
     if getattr(filename_or_fobj, 'read', None) is not None:
         fobj = filename_or_fobj
         filename = getattr(fobj, 'name', None)
@@ -75,7 +75,7 @@ def create_table(data, meta=None, fields=None, skip_header=True,
     sample_rows = []
 
     if fields is None:
-        header = make_header(table_rows.next())
+        header = make_header(next(table_rows))
 
         if samples is not None:
             sample_rows = list(islice(table_rows, 0, samples))
@@ -86,16 +86,16 @@ def create_table(data, meta=None, fields=None, skip_header=True,
 
         if force_types is not None:
             # TODO: optimize field detection (ignore fields on `force_types`)
-            for field_name, field_type in force_types.items():
+            for field_name, field_type in list(force_types.items()):
                 fields[field_name] = field_type
     else:
         if not isinstance(fields, OrderedDict):
             raise ValueError('`fields` must be an `OrderedDict`')
 
         if skip_header:
-            _ = table_rows.next()
+            _ = next(table_rows)
 
-        header = make_header(fields.keys())
+        header = make_header(list(fields.keys()))
         fields = OrderedDict([(field_name, fields[key])
                               for field_name, key in zip(header, fields)])
 
@@ -130,11 +130,11 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
         raise ValueError('Table type not recognized')
 
     if export_fields is None:
-        export_fields = table.fields.keys()
+        export_fields = list(table.fields.keys())
     export_fields = make_header(export_fields)
 
     fields = table.fields
-    table_field_names = fields.keys()
+    table_field_names = list(fields.keys())
     diff = set(export_fields) - set(table_field_names)
     if diff:
         field_names = ', '.join('"{}"'.format(field) for field in diff)
@@ -143,7 +143,7 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
     yield export_fields
 
     if table_type is Table:
-        field_indexes = map(table_field_names.index, export_fields)
+        field_indexes = list(map(table_field_names.index, export_fields))
         for row in table._rows:
             yield [row[field_index] for field_index in field_indexes]
     elif table_type is FlexibleTable:
@@ -154,7 +154,7 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
 def serialize(table, *args, **kwargs):
     prepared_table = prepare_to_export(table, *args, **kwargs)
 
-    field_names = prepared_table.next()
+    field_names = next(prepared_table)
     yield field_names
 
     field_types = [table.fields[field_name] for field_name in field_names]

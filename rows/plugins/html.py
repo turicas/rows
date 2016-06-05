@@ -17,7 +17,8 @@
 
 from __future__ import unicode_literals
 
-import HTMLParser
+import six
+from six.moves import html_parser as HTMLParser
 
 from lxml.html import document_fromstring
 from lxml.etree import tostring as to_string, strip_tags
@@ -83,7 +84,7 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
 
     max_columns = max(len(row) for row in table_rows)
     if ignore_colspan:
-        table_rows = filter(lambda row: len(row) == max_columns, table_rows)
+        table_rows = [row for row in table_rows if len(row) == max_columns]
 
     meta = {'imported_from': 'html', 'filename': filename,}
     return create_table(table_rows, meta=meta, *args, **kwargs)
@@ -93,7 +94,7 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
                    **kwargs):
     kwargs['encoding'] = encoding
     serialized_table = serialize(table, *args, **kwargs)
-    fields = serialized_table.next()
+    fields = next(serialized_table)
     result = ['<table>\n\n', '  <thead>\n', '    <tr>\n']
     header = ['      <th> {} </th>\n'.format(field) for field in fields]
     result.extend(header)
@@ -105,7 +106,7 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
             result.extend(['      <td> ', value, ' </td>\n'])
         result.append('    </tr>\n\n')
     result.append('  </tbody>\n\n</table>\n')
-    new_result = [value.encode(encoding) if isinstance(value, unicode)
+    new_result = [value.encode(encoding) if isinstance(value, six.text_type)
                   else value
                   for value in result]
     html = ''.encode(encoding).join(new_result)

@@ -24,7 +24,7 @@ DASH, PLUS, PIPE = '-', '+', '|'
 
 
 def _max_column_sizes(field_names, table_rows):
-    columns = zip(*([field_names] + table_rows))
+    columns = list(zip(*([field_names] + table_rows)))
     return {field_name: max(len(value) for value in column)
             for field_name, column in zip(field_names, columns)}
 
@@ -52,7 +52,7 @@ def export_to_txt(table, filename_or_fobj=None, encoding='utf-8', *args, **kwarg
 
     kwargs['encoding'] = encoding
     serialized_table = serialize(table, *args, **kwargs)
-    field_names = serialized_table.next()
+    field_names = next(serialized_table)
     table_rows = list(serialized_table)
     max_sizes = _max_column_sizes(field_names, table_rows)
 
