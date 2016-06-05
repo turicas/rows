@@ -366,6 +366,17 @@ Run tests:
 
 or (if you don't have `make`):
 
+    tox
+
+you can also run tox against an especific python version:
+
+    tox -e py27
+    tox -e py35
+
+*tox known issuses* : runing tox with py27 eviron may raise InvocationError in non Linux environments. To avoid it you may rebuild tox environment in every run with: `tox -e py27 -r`
+
+or if you want to run nosetests directly:
+
     nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/*.py
 
 To create the man page you'll need to install [txt2man][txt2man]. In Debian
