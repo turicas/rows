@@ -211,13 +211,14 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-encoding')
 @click.option('--input-locale')
 @click.option('--output-locale')
+@click.option('--table-index', default=0)
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--fields')
 @click.option('--fields-except')
 @click.option('--order-by')
 @click.argument('source', required=True)
 def print_(input_encoding, output_encoding, input_locale, output_locale,
-           verify_ssl, fields, fields_except, order_by, source):
+           table_index, verify_ssl, fields, fields_except, order_by, source):
 
     if fields is not None and fields_except is not None:
         click.echo('ERROR: `--fields` cannot be used with `--fields-except`',
@@ -232,10 +233,12 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = _import_table(source, encoding=input_encoding,
-                                  verify_ssl=verify_ssl)
+                                  verify_ssl=verify_ssl,
+                                  index=table_index)
     else:
         table = _import_table(source, encoding=input_encoding,
-                              verify_ssl=verify_ssl)
+                              verify_ssl=verify_ssl,
+                              index=table_index)
 
     table_field_names = table.fields.keys()
     if fields is not None:
