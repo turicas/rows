@@ -93,7 +93,7 @@ def create_table(data, meta=None, fields=None, skip_header=True,
             raise ValueError('`fields` must be an `OrderedDict`')
 
         if skip_header:
-            _ = table_rows.next()
+            _ = next(table_rows)
 
         header = make_header(fields.keys())
         fields = OrderedDict([(field_name, fields[key])
@@ -115,8 +115,12 @@ def create_table(data, meta=None, fields=None, skip_header=True,
         fields = new_fields
 
     table = Table(fields=fields, meta=meta)
+    if sample_rows:
+        data = chain(sample_rows, table_rows)
+    else:
+        data = table_rows
     # TODO: put this inside Table.__init__
-    for row in chain(sample_rows, table_rows):
+    for row in data:
         table.append({field_name: value
                       for field_name, value in zip(header, row)})
 

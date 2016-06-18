@@ -64,5 +64,10 @@ try:
 except ImportError:
     pass
 
+try:
+    from rows.plugins._row import import_from_row, export_to_row
+except ImportError:
+    pass
+
 
 __version__ = '0.2.0dev'

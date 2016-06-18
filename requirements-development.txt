@@ -8,6 +8,7 @@ parquet
 requests
 xlrd
 xlwt
+row
 
 # Test tools
 coverage
@@ -16,6 +17,7 @@ mock
 nose
 pylint
 yanc
+pycodestyle
 
 # PyPI tools
 pypissh

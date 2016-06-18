@@ -20,6 +20,7 @@ from setuptools import setup
 
 EXTRA_REQUIREMENTS = {
         'csv': ['unicodecsv'],
+        'row': ['row'],
         'cli': ['click', 'requests'],
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
         'ods': ['lxml'],
@@ -29,7 +30,7 @@ EXTRA_REQUIREMENTS = {
         'xlsx': ['openpyxl'],
         'xpath': ['lxml'], }
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
-INSTALL_REQUIREMENTS = EXTRA_REQUIREMENTS['csv']
+INSTALL_REQUIREMENTS = EXTRA_REQUIREMENTS['csv']  # add row?
 LONG_DESCRIPTION = '''
 No matter in which format your tabular data is: rows will import it,
 automatically detect types and give you high-level Python objects so you can
