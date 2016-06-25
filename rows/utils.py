@@ -23,6 +23,10 @@ import tempfile
 from collections import Iterator
 from unicodedata import normalize
 
+try:
+    import magic
+except ImportError:
+    magic = None
 import requests
 try:
     import urllib3
@@ -84,6 +88,10 @@ def ipartition(iterable, partition_size):
 def download_file(uri, verify_ssl):
     response = requests.get(uri, verify=verify_ssl)
     content = response.content
+    if magic is not None:
+        encoding = magic.detect_from_content(content).encoding
+    else:
+        encoding = response.encoding
 
     # TODO: try to guess with uri.split('/')[-1].split('.')[-1].lower()
     # TODO: try to guess with file-magic lib
@@ -102,7 +110,7 @@ def download_file(uri, verify_ssl):
     with open(filename, 'wb') as fobj:
         fobj.write(content)
 
-    return {'filename': filename, 'encoding': response.encoding, }
+    return {'filename': filename, 'encoding': encoding, }
 
 
 def get_data_from_uri(uri, verify_ssl):

@@ -27,7 +27,8 @@ EXTRA_REQUIREMENTS = {
         'parquet-snappy': ['python-snappy', 'parquet'],  # apt: libsnappy-dev
         'xls': ['xlrd', 'xlwt'],
         'xlsx': ['openpyxl'],
-        'xpath': ['lxml'], }
+        'xpath': ['lxml'],
+        'detect': ['file-magic'], }
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = EXTRA_REQUIREMENTS['csv']
 LONG_DESCRIPTION = '''
