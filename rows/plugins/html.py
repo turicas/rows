@@ -131,3 +131,7 @@ def count_tables(filename_or_fobj, encoding='utf-8', table_tag='table'):
     html_tree = document_fromstring(html)
     tables = html_tree.xpath('//{}'.format(table_tag))
     return len(tables)
+
+def extract_text(html):
+    texts = document_fromstring(html).xpath('//*[text()]/text()')
+    return ''.join(text.strip() for text in texts if text.strip())
