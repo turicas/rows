@@ -35,9 +35,11 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'sqlite'
     filename = 'tests/data/all-field-types.sqlite'
-    override_fields = {'percent_column': fields.FloatField, }
+    override_fields = {'percent_column': fields.FloatField,
+                       'bool_column': fields.IntegerField, }
     # SQLite does not support "Decimal" type, so `PercentField` will be
-    # identified as a float
+    # identified as a float and also does not support "boolean" type, so it's
+    # saved as integer internally
 
     def test_imports(self):
         self.assertIs(rows.import_from_sqlite,

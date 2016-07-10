@@ -2,7 +2,7 @@
     {
         "float_column": 3.141592,
         "decimal_column": 3.141592,
-        "bool_column": "1",
+        "bool_column": "True",
         "integer_column": 1,
         "date_column": "2015-01-01",
         "datetime_column": "2015-08-18T15:10:00",
@@ -13,7 +13,7 @@
     {
         "float_column": 1.234,
         "decimal_column": 1.234,
-        "bool_column": "0",
+        "bool_column": "False",
         "integer_column": 2,
         "date_column": "1999-02-03",
         "datetime_column": "1999-02-03T00:01:02",

@@ -193,10 +193,11 @@ class RowsTestMixIn(object):
         return asserts[field_name](expected_value, value, *args, **kwargs)
 
     def assert_BoolField(self, expected_value, value, *args, **kwargs):
+        value = str(value)
         if expected_value is True:
-            assert value in (True, 1, '1', 'true', 'yes')
+            assert value.lower() in ('true', b'true', 'yes', b'yes')
         elif expected_value is False:
-            assert value in (False, 0, '0', 'false', 'no')
+            assert value.lower() in ('false', b'false', 'no', b'no')
         else:
             # TODO: what about None?
             raise ValueError('expected_value is not True or False')

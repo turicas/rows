@@ -106,11 +106,12 @@ class BoolField(Field):
 
     TYPE = (types.BooleanType, )
     SERIALIZED_VALUES = {True: 'true', False: 'false', None: ''}
-    TRUE_VALUES = (b'true', b'1', b'yes')
-    FALSE_VALUES = (b'false', b'0', b'no')
+    TRUE_VALUES = ('true', 'yes')
+    FALSE_VALUES = ('false', 'no')
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        # TODO: should we serialize `None` as well or give it to the plugin?
         return cls.SERIALIZED_VALUES[value]
 
     @classmethod
@@ -119,7 +120,7 @@ class BoolField(Field):
         if value is None or isinstance(value, cls.TYPE):
             return value
 
-        value = as_string(value)
+        value = as_string(value).lower()
         if value in cls.TRUE_VALUES:
             return True
         elif value in cls.FALSE_VALUES:

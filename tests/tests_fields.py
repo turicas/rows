@@ -63,28 +63,37 @@ class FieldsTestCase(unittest.TestCase):
     def test_BoolField(self):
         self.assertEqual(fields.BoolField.TYPE, (bool, ))
         self.assertEqual(fields.BoolField.serialize(None), '')
-        self.assertIs(type(fields.BoolField.serialize(None)),
-                      types.UnicodeType)
-        self.assertIn(type(fields.BoolField.deserialize('true')),
-                      fields.BoolField.TYPE)
 
-        self.assertIs(fields.BoolField.deserialize('0'), False)
-        self.assertIs(fields.BoolField.deserialize('false'), False)
-        self.assertIs(fields.BoolField.deserialize('no'), False)
+        false_values = ('False', b'False', 'false', b'false', 'no', b'no',
+                        False)
+        for value in false_values:
+            self.assertIs(fields.BoolField.deserialize(value), False)
+
         self.assertIs(fields.BoolField.deserialize(None), None)
-        self.assertIs(fields.BoolField.deserialize(True), True)
-        self.assertIs(fields.BoolField.deserialize(False), False)
+
+        true_values = ('True', b'True', 'true', b'true', 'yes', b'yes', True)
+        for value in true_values:
+            self.assertIs(fields.BoolField.deserialize(value), True)
+
         self.assertEqual(fields.BoolField.serialize(False), 'false')
         self.assertIs(type(fields.BoolField.serialize(False)),
                       types.UnicodeType)
 
-        self.assertIs(fields.BoolField.deserialize('1'), True)
-        self.assertIs(fields.BoolField.deserialize(1), True)
-        self.assertIs(fields.BoolField.deserialize('true'), True)
-        self.assertIs(fields.BoolField.deserialize('yes'), True)
         self.assertEqual(fields.BoolField.serialize(True), 'true')
         self.assertIs(type(fields.BoolField.serialize(True)),
                       types.UnicodeType)
+
+        # '0' and '1' should be not accepted as boolean values because the
+        # sample could not contain other integers but the actual type could be
+        # integer
+        with self.assertRaises(ValueError):
+            fields.BoolField.deserialize('0')
+        with self.assertRaises(ValueError):
+            fields.BoolField.deserialize(b'0')
+        with self.assertRaises(ValueError):
+            fields.BoolField.deserialize('1')
+        with self.assertRaises(ValueError):
+            fields.BoolField.deserialize(b'1')
 
     def test_IntegerField(self):
         self.assertEqual(fields.IntegerField.TYPE, (int, ))

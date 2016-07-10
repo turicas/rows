@@ -53,6 +53,11 @@ def cell_value(sheet, row, col):
         time_tuple = xlrd.xldate_as_tuple(value, sheet.book.datemode)
         value = field_type.serialize(datetime.datetime(*time_tuple))
         return value.split('T00:00:00')[0]
+    elif field_type is fields.BoolField:
+        if value == 0:
+            return False
+        elif value == 1:
+            return True
     else:
         book = sheet.book
         xf = book.xf_list[cell.xf_index]
