@@ -2,11 +2,7 @@
 
 from __future__ import unicode_literals
 
-import re
-
-from collections import OrderedDict
 from io import BytesIO
-from urllib2 import urlparse
 
 import requests
 import rows
