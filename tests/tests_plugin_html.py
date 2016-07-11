@@ -183,11 +183,14 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[0].t00r0c1, 't0,0r1c1')
         self.assertEqual(table[0].t00r0c2, 't0,0r1c2')
 
+        # if there are nested tables, the inner ones will be represented as
+        # strings (each <td>...</td> element will return only one string, even
+        # if there is a <table> inside it)
         inner_table = ('t0,1r0c0 t0,1r0c1 t0,1r1c0 t0,1r1c1 t0,1r2c0 '
                        't0,1r2c1 t0,2r0c0 t0,2r0c1 t0,2r1c0 t0,2r1c1 '
-                       't0,1r3c1 t0,1r4c0 t0,1r4c1 t0,1r5c0 t0,1r5c1').split()
+                       't0,1r3c1 t0,1r4c0 t0,1r4c1 t0,1r5c0 t0,1r5c1')
         self.assertEqual(table[1].t00r0c0, 't0,0r2c0')
-        self.assertEqual(cleanup_lines(table[1].t00r0c1), inner_table)
+        self.assertEqual(table[1].t00r0c1, inner_table)
         self.assertEqual(table[1].t00r0c2, 't0,0r2c2')
 
         self.assertEqual(table[2].t00r0c0, 't0,0r3c0')
@@ -209,8 +212,8 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[1].t01r0c0, 't0,1r2c0')
         self.assertEqual(table[1].t01r0c1, 't0,1r2c1')
 
-        inner_table = 't0,2r0c0 t0,2r0c1 t0,2r1c0 t0,2r1c1'.split()
-        self.assertEqual(cleanup_lines(table[2].t01r0c0), inner_table)
+        inner_table = 't0,2r0c0 t0,2r0c1 t0,2r1c0 t0,2r1c1'
+        self.assertEqual(table[2].t01r0c0, inner_table)
         self.assertEqual(table[2].t01r0c1, 't0,1r3c1')
 
         self.assertEqual(table[3].t01r0c0, 't0,1r4c0')
@@ -338,7 +341,38 @@ class PluginHtmlUtilsTestCase(unittest.TestCase):
                     'href': 'some-url'}
         self.assertEqual(result, expected)
 
-    def test_tag_text(self):
-        result = rows.plugins.html.tag_text(self.html)
-        expected = ' some text '
+    def test_extract_text_from_node(self):
+        from lxml.html import document_fromstring
+
+        html = '''<div>
+                    some text
+                    <a href="#"><b>bold</b> link <b>bold</b> text</a>
+                  </div>'''
+        node = document_fromstring(html)
+        desired_node = node.xpath('//a')[0]
+        expected = 'bold link bold text'
+        result = rows.plugins.html.extract_text_from_node(desired_node)
+        self.assertEqual(result, expected)
+
+    def test_extract_text_from_html(self):
+        expected = 'some text other'
+        result = rows.plugins.html.extract_text_from_html(self.html)
+        self.assertEqual(result, expected)
+
+        # Real HTML from
+        # <http://voos.infraero.gov.br/hstvoos/RelatorioPortal.aspx>
+        html = '''<td>
+                        <span id="GridVoos_ATR_0">0</span>
+                        <span id="GridVoos_LABEL2_0">(</span>
+                        <span id="GridVoos_LABEL1_0">0</span>
+                        <span id="GridVoos_LABEL3_0">%)</span>
+                  </td>'''
+        expected = '0 ( 0 %)'
+        result = rows.plugins.html.extract_text_from_html(html)
+        self.assertEqual(result, expected)
+
+        # test HTML unescape
+        html = '<b>&Aacute;lvaro &amp; Python</b>'
+        expected = 'Álvaro & Python'
+        result = rows.plugins.html.extract_text_from_html(html)
         self.assertEqual(result, expected)

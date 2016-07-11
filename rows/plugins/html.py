@@ -18,6 +18,7 @@
 from __future__ import unicode_literals
 
 import HTMLParser
+import string
 
 from lxml.html import document_fromstring
 from lxml.etree import tostring as to_string, strip_tags
@@ -26,21 +27,20 @@ from rows.plugins.utils import (create_table, export_data,
                                 get_filename_and_fobj, serialize)
 
 
-html_parser = HTMLParser.HTMLParser()
+unescape = HTMLParser.HTMLParser().unescape
 
 
 def _get_content(element):
     content = to_string(element)
     content = content[content.find('>') + 1:content.rfind('<')].strip()
-    return html_parser.unescape(content)
+    return unescape(content)
 
 
 def _get_row(row, column_tag, preserve_html, properties):
     if not preserve_html:
-        data = [element.text_content().strip()
-                for element in row.xpath(column_tag)]
+        data = map(extract_text_from_node, row.xpath(column_tag))
     else:
-        data = [_get_content(element) for element in row.xpath(column_tag)]
+        data = map(_get_content, row.xpath(column_tag))
 
     if properties:
         data.append(dict(row.attrib))
@@ -52,8 +52,6 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
                      ignore_colspan=True, preserve_html=False,
                      properties=False, table_tag='table', row_tag='tr',
                      column_tag='td|th', *args, **kwargs):
-    # TODO: unescape before returning: html_parser.unescape(html)
-    # TODO: lxml -> unicode?
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj)
     kwargs['encoding'] = encoding
@@ -76,12 +74,12 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
         table_rows[0][-1] = 'properties'
 
     if preserve_html and kwargs.get('fields', None) is None:
-        # we're providing field names so strip HTML from the first row
-        # (the header, in this case)
-        table_rows[0] = [value_element.text_content().strip()
-                         for value_element in row_elements[0]]
+        # The field names will be the first table row, so we need to strip HTML
+        # from it even if `preserve_html` is `True` (it's `True` only for rows,
+        # not for the header).
+        table_rows[0] = map(extract_text_from_node, row_elements[0])
 
-    max_columns = max(len(row) for row in table_rows)
+    max_columns = max(map(len, table_rows))
     if ignore_colspan:
         table_rows = filter(lambda row: len(row) == max_columns, table_rows)
 
@@ -113,18 +111,6 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
     return export_data(filename_or_fobj, html)
 
 
-def tag_to_dict(html):
-    element = document_fromstring(html).xpath('//html/body/child::*')[0]
-    attributes = dict(element.attrib)
-    attributes['text'] = element.text_content()
-    return attributes
-
-
-def tag_text(html):
-    element = document_fromstring(html).xpath('//html/body/child::*')[0]
-    return element.text_content()
-
-
 def count_tables(filename_or_fobj, encoding='utf-8', table_tag='table'):
     filename, fobj = get_filename_and_fobj(filename_or_fobj)
     html = fobj.read().decode(encoding)
@@ -132,6 +118,26 @@ def count_tables(filename_or_fobj, encoding='utf-8', table_tag='table'):
     tables = html_tree.xpath('//{}'.format(table_tag))
     return len(tables)
 
-def extract_text(html):
-    texts = document_fromstring(html).xpath('//*[text()]/text()')
-    return ''.join(text.strip() for text in texts if text.strip())
+
+def tag_to_dict(html):
+    "Extract tag's attributes into a `dict`"
+
+    element = document_fromstring(html).xpath('//html/body/child::*')[0]
+    attributes = dict(element.attrib)
+    attributes['text'] = element.text_content()
+    return attributes
+
+
+def extract_text_from_html(html):
+    'Extract text from a given HTML'
+
+    return extract_text_from_node(document_fromstring(html))
+
+
+def extract_text_from_node(node):
+    'Extract text from a given lxml node'
+
+    texts = map(string.strip,
+                map(unescape,
+                    node.xpath('.//text()')))
+    return ' '.join(text for text in texts if text)
