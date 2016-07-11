@@ -21,6 +21,7 @@ import tempfile
 import unittest
 
 from collections import OrderedDict
+from io import BytesIO
 
 import mock
 
@@ -89,6 +90,23 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_csv(fobj)
 
         self.assert_table_equal(table, self.expected_table)
+
+    def test_import_from_xpath_unescape_and_extract_text(self):
+        html = '''
+          <ul>
+            <li><a href="/wiki/Abadia_de_Goi%C3%A1s" title="Abadia de Goiás">Abadia de Goi&aacute;s</a> (GO)</li>
+            <li><a href="/wiki/Abadi%C3%A2nia" title="Abadiânia">Abadi&acirc;nia</a> (GO)</li>
+          </ul>
+        '''.encode('utf-8')
+        rows_xpath = '//ul/li'
+        fields_xpath = OrderedDict([('name', './/text()'),
+                                    ('link', './/a/@href')])
+        table = rows.import_from_xpath(BytesIO(html),
+                                       rows_xpath=rows_xpath,
+                                       fields_xpath=fields_xpath,
+                                       encoding='utf-8')
+        self.assertEqual(table[0].name, 'Abadia de Goiás (GO)')
+        self.assertEqual(table[1].name, 'Abadiânia (GO)')
 
     @mock.patch('rows.plugins.xpath.create_table')
     def test_import_from_xpath_uses_create_table(self, mocked_create_table):

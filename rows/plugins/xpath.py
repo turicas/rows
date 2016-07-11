@@ -17,6 +17,9 @@
 
 from __future__ import unicode_literals
 
+import HTMLParser
+import string
+
 from lxml.html import fromstring as tree_from_string
 from lxml.etree import strip_tags
 from lxml.etree import tostring as to_string
@@ -24,13 +27,16 @@ from lxml.etree import tostring as to_string
 from rows.plugins.utils import create_table, get_filename_and_fobj
 
 
+unescape = HTMLParser.HTMLParser().unescape
+
 def _get_row_data(row, fields_xpath):
     row = tree_from_string(to_string(row))
     data = []
     for field_name, field_xpath in fields_xpath.items():
         result = row.xpath(field_xpath)
         if result:
-            result = result[0]
+            texts = map(string.strip, map(unescape, result))
+            result = ' '.join(text for text in texts if text)
         else:
             result = None
         data.append(result)
