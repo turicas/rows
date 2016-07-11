@@ -341,7 +341,7 @@ class PluginHtmlUtilsTestCase(unittest.TestCase):
                     'href': 'some-url'}
         self.assertEqual(result, expected)
 
-    def test_extract_text_from_node(self):
+    def test_extract_node_text(self):
         from lxml.html import document_fromstring
 
         html = '''<div>
@@ -351,12 +351,12 @@ class PluginHtmlUtilsTestCase(unittest.TestCase):
         node = document_fromstring(html)
         desired_node = node.xpath('//a')[0]
         expected = 'bold link bold text'
-        result = rows.plugins.html.extract_text_from_node(desired_node)
+        result = rows.plugins.html._extract_node_text(desired_node)
         self.assertEqual(result, expected)
 
     def test_extract_text_from_html(self):
         expected = 'some text other'
-        result = rows.plugins.html.extract_text_from_html(self.html)
+        result = rows.plugins.html.extract_text(self.html)
         self.assertEqual(result, expected)
 
         # Real HTML from
@@ -368,11 +368,25 @@ class PluginHtmlUtilsTestCase(unittest.TestCase):
                         <span id="GridVoos_LABEL3_0">%)</span>
                   </td>'''
         expected = '0 ( 0 %)'
-        result = rows.plugins.html.extract_text_from_html(html)
+        result = rows.plugins.html.extract_text(html)
         self.assertEqual(result, expected)
 
         # test HTML unescape
         html = '<b>&Aacute;lvaro &amp; Python</b>'
         expected = 'Álvaro & Python'
-        result = rows.plugins.html.extract_text_from_html(html)
+        result = rows.plugins.html.extract_text(html)
+        self.assertEqual(result, expected)
+
+    def test_extract_links_from_html(self):
+        # Real HTML from
+        # <http://wnpp.debian.net/>
+        html = '''
+          <nobr> abcl
+            <a href="http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=608466">[1]</a>
+            <a href="http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=701712">[2]</a>
+          </nobr>
+        '''
+        expected = ['http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=608466',
+                    'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=701712']
+        result = rows.plugins.html.extract_links(html)
         self.assertEqual(result, expected)

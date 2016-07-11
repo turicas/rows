@@ -38,7 +38,7 @@ def _get_content(element):
 
 def _get_row(row, column_tag, preserve_html, properties):
     if not preserve_html:
-        data = map(extract_text_from_node, row.xpath(column_tag))
+        data = map(_extract_node_text, row.xpath(column_tag))
     else:
         data = map(_get_content, row.xpath(column_tag))
 
@@ -77,7 +77,7 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
         # The field names will be the first table row, so we need to strip HTML
         # from it even if `preserve_html` is `True` (it's `True` only for rows,
         # not for the header).
-        table_rows[0] = map(extract_text_from_node, row_elements[0])
+        table_rows[0] = map(_extract_node_text, row_elements[0])
 
     max_columns = max(map(len, table_rows))
     if ignore_colspan:
@@ -111,6 +111,15 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
     return export_data(filename_or_fobj, html)
 
 
+def _extract_node_text(node):
+    'Extract text from a given lxml node'
+
+    texts = map(string.strip,
+                map(unescape,
+                    node.xpath('.//text()')))
+    return ' '.join(text for text in texts if text)
+
+
 def count_tables(filename_or_fobj, encoding='utf-8', table_tag='table'):
     filename, fobj = get_filename_and_fobj(filename_or_fobj)
     html = fobj.read().decode(encoding)
@@ -128,16 +137,13 @@ def tag_to_dict(html):
     return attributes
 
 
-def extract_text_from_html(html):
+def extract_text(html):
     'Extract text from a given HTML'
 
-    return extract_text_from_node(document_fromstring(html))
+    return _extract_node_text(document_fromstring(html))
 
 
-def extract_text_from_node(node):
-    'Extract text from a given lxml node'
+def extract_links(html):
+    'Extract the href values from a given HTML (returns a list of strings)'
 
-    texts = map(string.strip,
-                map(unescape,
-                    node.xpath('.//text()')))
-    return ' '.join(text for text in texts if text)
+    return document_fromstring(html).xpath('.//@href')

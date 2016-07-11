@@ -67,7 +67,7 @@
 - Export to TXT, JSON and XLS also support an already opened file and CSV can
   export to memory (thanks to [@jeanferri](https://github.com/jeanferri))
 - [#93](https://github.com/turicas/rows/issues/93) Add HTML helpers inside
-  `rows.plugins.html`: `count_tables`, `extract_text_from_html` and
+  `rows.plugins.html`: `count_tables`, `extract_text`, `extract_links` and
   `tag_to_dict`
 - Refactor `export_to_txt`
 
