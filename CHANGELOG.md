@@ -44,6 +44,8 @@
   `rows.fields.EmailField`
 - Enhance encoding detection using
   [file-magic](https://pypi.python.org/pypi/file-magic) library
+- [#160](https://github.com/turicas/rows/issues/160) Add
+  support for column get/set/del in `rows.Table`
 
 ### Tests
 

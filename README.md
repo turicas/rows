@@ -206,6 +206,65 @@ The output:
 Stefanik, Elise is older than Byrd, Robert
 ```
 
+You can also get a whole column, like this:
+
+```python
+>>> legislators[u'gender']
+[u'M',
+ u'M',
+ u'M',
+ u'M',
+ u'M',
+ u'M',
+ u'M',
+ u'M',
+ u'M',
+ u'M',
+ u'M',
+ u'M',
+ u'M',
+ u'M',
+ u'F',
+ u'M',
+ ...]
+```
+
+And change the whole column (or add a new one):
+
+```python
+>>> legislators[u'gender'] = [u'male' if gender == u'M' else u'female'
+                              for gender in legislators[u'gender']]
+>>> legislators[u'gender']
+[u'male',
+ u'male',
+ u'male',
+ u'male',
+ u'male',
+ u'male',
+ u'male',
+ u'male',
+ u'male',
+ u'male',
+ u'male',
+ u'male',
+ u'female',
+ u'male',
+ ...]
+```
+
+Or delete it:
+
+```python
+>>> u'gender' in legislators.field_names
+True
+>>> del legislators[u'gender']
+>>> u'gender' in legislators.field_names
+False
+>>> legislators[0].gender
+[...]
+AttributeError: 'Row' object has no attribute 'gender'
+```
+
 > Note that **native Python objects** are returned for each row inside a
 > `namedtuple`! The library recognizes each field type and converts it
 > *automagically* no matter which plugin you're using to import the data.
