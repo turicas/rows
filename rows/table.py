@@ -104,7 +104,18 @@ class Table(MutableSequence):
                     .format(type(key).__name__))
 
     def __delitem__(self, key):
-        del self._rows[key]
+        key_type = type(key)
+        if key_type == int:
+            del self._rows[key]
+        elif key_type == unicode:  # TODO: change to 'str' on Python3
+            field_index = self.field_names.index(key)
+            del self.fields[key]
+            self.Row = namedtuple('Row', self.field_names)
+            for row in self._rows:
+                row.pop(field_index)
+        else:
+            raise ValueError('Unsupported key type: {}'
+                    .format(type(key).__name__))
 
     def insert(self, index, row):
         self._rows.insert(index, self._make_row(row))

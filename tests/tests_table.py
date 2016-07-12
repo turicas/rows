@@ -166,6 +166,43 @@ class TableTestCase(unittest.TestCase):
         for row, expected_row in zip(self.table, table_rows[1:]):
             self.assertEqual(row, expected_row)
 
+    def test_table_delitem_column_happy_path(self):
+        fields = self.table.fields.copy()
+        self.assertEqual(len(self.table), 3)
+
+        del self.table['name']
+
+        self.assertEqual(len(self.table), 3)  # should not del any row
+        self.assertEqual(len(self.table.fields), len(fields) - 1)
+
+        self.assertDictEqual(dict(self.table[0]._asdict()),
+                             {'birthdate': datetime.date(1987, 4, 29)})
+        self.assertDictEqual(dict(self.table[1]._asdict()),
+                             {'birthdate': datetime.date(1990, 2, 1)})
+        self.assertDictEqual(dict(self.table[2]._asdict()),
+                             {'birthdate': datetime.date(1952, 3, 11)})
+
+    def test_table_delitem_column_invalid_type(self):
+        fields = self.table.fields.copy()
+        self.assertEqual(len(self.table), 3)
+
+        with self.assertRaises(ValueError) as exception_context:
+            del self.table[3.14]
+
+        self.assertEqual(len(self.table), 3)  # should not del any row
+        self.assertDictEqual(fields, self.table.fields)  # should not del field
+        self.assertEqual(exception_context.exception.message,
+                         'Unsupported key type: float')
+
+        with self.assertRaises(ValueError) as exception_context:
+            self.table[b'name'] = []  # u'name' actually exists
+
+        self.assertEqual(len(self.table), 3)  # should not del any row
+        self.assertDictEqual(fields, self.table.fields)  # should not del field
+        self.assertEqual(exception_context.exception.message,
+                         'Unsupported key type: str')
+        # TODO: should change to 'bytes' on Python3
+
     def test_table_add(self):
         self.assertIs(self.table + 0, self.table)
         self.assertIs(0 + self.table, self.table)
