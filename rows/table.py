@@ -78,9 +78,30 @@ class Table(MutableSequence):
         else:
             raise ValueError('Type not recognized: {}'.format(type(key)))
 
-
     def __setitem__(self, key, value):
-        self._rows[key] = self._make_row(value)
+        key_type = type(key)
+        if key_type == int:
+            self._rows[key] = self._make_row(value)
+        elif key_type == unicode:  # TODO: change to 'str' on Python3
+            values = list(value)  # I'm not lazy, sorry
+            if len(values) != len(self):
+                raise ValueError('Values length ({}) should be the same as '
+                                 'Table length ({})'
+                                 .format(len(values), len(self)))
+
+            from rows.plugins.utils import make_header
+            from rows.fields import detect_types
+
+            field_name = make_header(self.fields.keys() + [key])[-1]
+            field_type = detect_types([field_name],
+                                      [[value] for value in values])[field_name]
+            self.fields[field_name] = field_type
+            self.Row = namedtuple('Row', self.field_names)
+            for row, value in zip(self._rows, values):
+                row.append(field_type.deserialize(value))
+        else:
+            raise ValueError('Unsupported key type: {}'
+                    .format(type(key).__name__))
 
     def __delitem__(self, key):
         del self._rows[key]

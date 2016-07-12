@@ -99,6 +99,64 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(self.table.field_names, self.table.fields.keys())
         self.assertEqual(self.table.field_types, self.table.fields.values())
 
+    def test_table_setitem_column_happy_path(self):
+        number_of_fields = len(self.table.fields)
+        self.assertEqual(len(self.table), 3)
+
+        self.table['user_id'] = [4, 5, 6]
+
+        self.assertEqual(len(self.table), 3)
+        self.assertEqual(len(self.table.fields), number_of_fields + 1)
+
+        self.assertIn('user_id', self.table.fields)
+        self.assertIs(self.table.fields['user_id'], rows.fields.IntegerField)
+        self.assertEqual(self.table[0].user_id, 4)
+        self.assertEqual(self.table[1].user_id, 5)
+        self.assertEqual(self.table[2].user_id, 6)
+
+    def test_table_setitem_column_slug_field_name(self):
+        self.assertNotIn('user_id', self.table.fields)
+        self.table['User ID'] = [4, 5, 6]
+        self.assertIn('user_id', self.table.fields)
+
+        self.assertNotIn('user_id_2', self.table.fields)
+        self.table['User ID'] = [7, 8, 9]
+        self.assertIn('user_id_2', self.table.fields)
+
+    def test_table_setitem_column_invalid_length(self):
+        number_of_fields = len(self.table.fields)
+        self.assertEqual(len(self.table), 3)
+
+        with self.assertRaises(ValueError) as exception_context:
+            self.table['user_id'] = [4, 5]  # list len should be 3
+
+        self.assertEqual(len(self.table), 3)
+        self.assertEqual(len(self.table.fields), number_of_fields)
+        self.assertEqual(exception_context.exception.message,
+                         'Values length (2) should be the same as Table '
+                         'length (3)')
+
+    def test_table_setitem_invalid_type(self):
+        fields = self.table.fields.copy()
+        self.assertEqual(len(self.table), 3)
+
+        with self.assertRaises(ValueError) as exception_context:
+            self.table[3.14] = []
+
+        self.assertEqual(len(self.table), 3)  # should not add any row
+        self.assertDictEqual(fields, self.table.fields)  # should not add field
+        self.assertEqual(exception_context.exception.message,
+                         'Unsupported key type: float')
+
+        with self.assertRaises(ValueError) as exception_context:
+            self.table[b'some_value'] = []
+
+        self.assertEqual(len(self.table), 3)  # should not add any row
+        self.assertDictEqual(fields, self.table.fields)  # should not add field
+        self.assertEqual(exception_context.exception.message,
+                         'Unsupported key type: str')
+        # TODO: should change to 'bytes' on Python3
+
     def test_table_delitem_row(self):
         table_rows = [row for row in self.table]
         before = len(self.table)
