@@ -84,9 +84,27 @@ class TableTestCase(unittest.TestCase):
         self.assertIn('does not match format',
                       context_manager.exception.message)
 
-    def test_table_getitem_error(self):
-        with self.assertRaises(ValueError) as context_manager:
-            self.table['test']
+    def test_table_getitem_invalid_type(self):
+        with self.assertRaises(ValueError) as exception_context:
+            self.table[3.14]
+        self.assertEqual(exception_context.exception.message,
+                         'Unsupported key type: float')
+
+        with self.assertRaises(ValueError) as exception_context:
+            self.table[b'name']
+        self.assertEqual(exception_context.exception.message,
+                         'Unsupported key type: str')
+        # TODO: should change to 'bytes' on Python3
+
+    def test_table_getitem_column(self):
+        expected_values = ['Álvaro Justen', 'Somebody', 'Douglas Adams']
+        self.assertEqual(self.table['name'], expected_values)
+
+        expected_values = [
+                datetime.date(1987, 4, 29),
+                datetime.date(1990, 2, 1),
+                datetime.date(1952, 3, 11)]
+        self.assertEqual(self.table['birthdate'], expected_values)
 
     def test_table_setitem_row(self):
         self.first_row['name'] = 'turicas'

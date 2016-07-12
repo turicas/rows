@@ -70,13 +70,18 @@ class Table(MutableSequence):
         return len(self._rows)
 
     def __getitem__(self, key):
-
-        if isinstance(key, int):
+        key_type = type(key)
+        if key_type == int:
             return self.Row(*self._rows[key])
-        elif isinstance(key, slice):
+        elif key_type == slice:
             return [self.Row(*row) for row in self._rows[key]]
+        elif key_type == unicode:  # TODO: change to 'str' on Python3
+            field_index = self.field_names.index(key)
+            # TODO: should change the line below to return a generator exp?
+            return [row[field_index] for row in self._rows]
         else:
-            raise ValueError('Type not recognized: {}'.format(type(key)))
+            raise ValueError('Unsupported key type: {}'
+                    .format(type(key).__name__))
 
     def __setitem__(self, key, value):
         key_type = type(key)
@@ -167,7 +172,8 @@ class FlexibleTable(Table):
         elif isinstance(key, slice):
             return [self.Row(**row) for row in self._rows[key]]
         else:
-            raise ValueError('Type not recognized: {}'.format(type(key)))
+            raise ValueError('Unsupported key type: {}'
+                    .format(type(key).__name__))
 
     def _add_field(self, field_name, field_type):
         self.fields[field_name] = field_type
