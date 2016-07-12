@@ -30,14 +30,20 @@ class Table(MutableSequence):
         # TODO: should use slug on each field name automatically or inside each
         #       plugin?
         self.fields = OrderedDict(fields)
-        self.field_names = self.fields.keys()
-        self.field_types = self.fields.values()
 
         # TODO: should be able to customize row return type (namedtuple, dict
         #       etc.)
         self.Row = namedtuple('Row', self.field_names)
         self._rows = []
         self.meta = dict(meta) if meta is not None else {}
+
+    @property
+    def field_names(self):
+        return self.fields.keys()
+
+    @property
+    def field_types(self):
+        return self.fields.values()
 
     def __repr__(self):
         length = len(self._rows) if isinstance(self._rows, Sized) else '?'

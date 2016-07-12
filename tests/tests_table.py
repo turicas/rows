@@ -88,14 +88,18 @@ class TableTestCase(unittest.TestCase):
         with self.assertRaises(ValueError) as context_manager:
             self.table['test']
 
-    def test_table_setitem(self):
+    def test_table_setitem_row(self):
         self.first_row['name'] = 'turicas'
         self.first_row['birthdate'] = datetime.date(2000, 1, 1)
         self.table[0] = self.first_row
         self.assertEqual(self.table[0].name, 'turicas')
         self.assertEqual(self.table[0].birthdate, datetime.date(2000, 1, 1))
 
-    def test_table_delitem(self):
+    def test_field_names_and_types(self):
+        self.assertEqual(self.table.field_names, self.table.fields.keys())
+        self.assertEqual(self.table.field_types, self.table.fields.values())
+
+    def test_table_delitem_row(self):
         table_rows = [row for row in self.table]
         before = len(self.table)
         del self.table[0]
