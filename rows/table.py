@@ -76,7 +76,11 @@ class Table(MutableSequence):
         elif key_type == slice:
             return [self.Row(*row) for row in self._rows[key]]
         elif key_type == unicode:  # TODO: change to 'str' on Python3
-            field_index = self.field_names.index(key)
+            try:
+                field_index = self.field_names.index(key)
+            except ValueError:
+                raise KeyError(key)
+
             # TODO: should change the line below to return a generator exp?
             return [row[field_index] for row in self._rows]
         else:
@@ -113,7 +117,11 @@ class Table(MutableSequence):
         if key_type == int:
             del self._rows[key]
         elif key_type == unicode:  # TODO: change to 'str' on Python3
-            field_index = self.field_names.index(key)
+            try:
+                field_index = self.field_names.index(key)
+            except ValueError:
+                raise KeyError(key)
+
             del self.fields[key]
             self.Row = namedtuple('Row', self.field_names)
             for row in self._rows:

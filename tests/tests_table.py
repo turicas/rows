@@ -96,7 +96,16 @@ class TableTestCase(unittest.TestCase):
                          'Unsupported key type: str')
         # TODO: should change to 'bytes' on Python3
 
-    def test_table_getitem_column(self):
+    # TODO: test setitem column if already exists
+
+    def test_table_getitem_column_doesnt_exist(self):
+        with self.assertRaises(KeyError) as exception_context:
+            self.table['doesnt-exist']
+
+        self.assertEqual(exception_context.exception.message,
+                         'doesnt-exist')
+
+    def test_table_getitem_column_happy_path(self):
         expected_values = ['Álvaro Justen', 'Somebody', 'Douglas Adams']
         self.assertEqual(self.table['name'], expected_values)
 
@@ -183,6 +192,13 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(after, before - 1)
         for row, expected_row in zip(self.table, table_rows[1:]):
             self.assertEqual(row, expected_row)
+
+    def test_table_delitem_column_doesnt_exist(self):
+        with self.assertRaises(KeyError) as exception_context:
+            del self.table['doesnt-exist']
+
+        self.assertEqual(exception_context.exception.message,
+                         'doesnt-exist')
 
     def test_table_delitem_column_happy_path(self):
         fields = self.table.fields.copy()
