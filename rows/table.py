@@ -98,16 +98,23 @@ class Table(MutableSequence):
                                  'Table length ({})'
                                  .format(len(values), len(self)))
 
-            from rows.plugins.utils import make_header
             from rows.fields import detect_types
+            from rows.utils import slug
 
-            field_name = make_header(self.fields.keys() + [key])[-1]
+            field_name = slug(key)
+            is_new_field = field_name not in self.field_names
             field_type = detect_types([field_name],
-                                      [[value] for value in values])[field_name]
+                    [[value] for value in values])[field_name]
             self.fields[field_name] = field_type
             self.Row = namedtuple('Row', self.field_names)
-            for row, value in zip(self._rows, values):
-                row.append(field_type.deserialize(value))
+
+            if is_new_field:
+                for row, value in zip(self._rows, values):
+                    row.append(field_type.deserialize(value))
+            else:
+                field_index = self.field_names.index(field_name)
+                for row, value in zip(self._rows, values):
+                    row[field_index] = field_type.deserialize(value)
         else:
             raise ValueError('Unsupported key type: {}'
                     .format(type(key).__name__))

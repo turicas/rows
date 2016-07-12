@@ -52,8 +52,7 @@ def make_header(data, permit_not=False):
     if permit_not:
         permitted_chars += '^'
 
-    header = [slug(field_name, permitted_chars=permitted_chars).lower()
-              for field_name in data]
+    header = map(slug, data)
     field_names = []
     for index, field_name in enumerate(header):
         if not field_name:

@@ -96,8 +96,6 @@ class TableTestCase(unittest.TestCase):
                          'Unsupported key type: str')
         # TODO: should change to 'bytes' on Python3
 
-    # TODO: test setitem column if already exists
-
     def test_table_getitem_column_doesnt_exist(self):
         with self.assertRaises(KeyError) as exception_context:
             self.table['doesnt-exist']
@@ -126,7 +124,7 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(self.table.field_names, self.table.fields.keys())
         self.assertEqual(self.table.field_types, self.table.fields.values())
 
-    def test_table_setitem_column_happy_path(self):
+    def test_table_setitem_column_happy_path_new_column(self):
         number_of_fields = len(self.table.fields)
         self.assertEqual(len(self.table), 3)
 
@@ -141,14 +139,26 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(self.table[1].user_id, 5)
         self.assertEqual(self.table[2].user_id, 6)
 
+    def test_table_setitem_column_happy_path_replace_column(self):
+        number_of_fields = len(self.table.fields)
+        self.assertEqual(len(self.table), 3)
+
+        self.table['name'] = [4, 5, 6]  # change values *and* type
+
+        self.assertEqual(len(self.table), 3)
+        self.assertEqual(len(self.table.fields), number_of_fields)
+
+        self.assertIn('name', self.table.fields)
+        self.assertIs(self.table.fields['name'], rows.fields.IntegerField)
+        self.assertEqual(self.table[0].name, 4)
+        self.assertEqual(self.table[1].name, 5)
+        self.assertEqual(self.table[2].name, 6)
+
+
     def test_table_setitem_column_slug_field_name(self):
         self.assertNotIn('user_id', self.table.fields)
         self.table['User ID'] = [4, 5, 6]
         self.assertIn('user_id', self.table.fields)
-
-        self.assertNotIn('user_id_2', self.table.fields)
-        self.table['User ID'] = [7, 8, 9]
-        self.assertIn('user_id_2', self.table.fields)
 
     def test_table_setitem_column_invalid_length(self):
         number_of_fields = len(self.table.fields)
