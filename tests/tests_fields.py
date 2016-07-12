@@ -304,6 +304,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.EmailField.deserialize(deserialized),
                          deserialized)
         self.assertEqual(fields.EmailField.deserialize(None), None)
+        self.assertEqual(fields.EmailField.deserialize(''), None)
         self.assertEqual(fields.EmailField.serialize(value), serialized)
         self.assertIs(type(fields.EmailField.serialize(value)),
                       types.UnicodeType)

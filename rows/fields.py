@@ -401,7 +401,7 @@ class EmailField(TextField):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         value = super(EmailField, cls).deserialize(value)
-        if value is None:
+        if value is None or not value.strip():
             return None
 
         result = cls.EMAIL_REGEXP.findall(value)
