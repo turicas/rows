@@ -27,6 +27,7 @@ from rows.localization import locale_context
 # Don't have dependencies or dependencies installed on `install_requires`
 
 from rows.plugins._json import import_from_json, export_to_json
+from rows.plugins.dicts import import_from_dicts, export_to_dicts
 from rows.plugins.csv import import_from_csv, export_to_csv
 from rows.plugins.txt import import_from_txt, export_to_txt
 

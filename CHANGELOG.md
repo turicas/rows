@@ -71,6 +71,8 @@
 - [#93](https://github.com/turicas/rows/issues/93) Add HTML helpers inside
   `rows.plugins.html`: `count_tables`, `extract_text`, `extract_links` and
   `tag_to_dict`
+- [#162](https://github.com/turicas/rows/issues/162) Add `import_from_dicts`
+  and `export_to_dicts`
 - Refactor `export_to_txt`
 
 ### Utils

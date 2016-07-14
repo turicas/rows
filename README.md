@@ -102,13 +102,28 @@ programmatically:
 from collections import OrderedDict
 from rows import fields, Table
 
-my_fields = OrderedDict([('name', fields.UnicodeField),
+my_fields = OrderedDict([('name', fields.TextField),
                          ('age', fields.IntegerField),
                          ('can', fields.BoolField)])
 table = Table(fields=my_fields)
 table.append({'name': u'Álvaro Justen', 'age': 28, 'can': False})
 table.append({'name': u'Another Guy', 'age': 42, 'can': True})
 ```
+
+A common use case is to have a `list` of `dict`s -- you can also import it, and
+`rows` will automatically fill in the blanks (your `dict`s don't need to have
+the same keys) and convert data:
+
+```python
+import rows
+
+data = [{'name': u'Álvaro Justen', 'age': 28, 'can': False},
+        {'name': u'Another Guy', 'age': 42, 'can': True},]
+table = rows.import_from_dicts(data)
+```
+
+In this case, `table.fields` will be created automatically (`rows` will
+identify the field type for each `dict` key).
 
 Then you can iterate over it:
 
