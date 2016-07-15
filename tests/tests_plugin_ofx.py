@@ -32,7 +32,7 @@ import utils
 class PluginOfxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'ofx'
-    filename = 'tests/data/sample.ofx'
+    filename = 'tests/data/sample.ofx'  # TODO: may use also sample2.ofx
 
     def test_imports(self):
         self.assertIs(rows.import_from_ofx, rows.plugins.ofx.import_from_ofx)

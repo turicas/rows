@@ -1,0 +1,132 @@
+OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+SECURITY:NONE
+ENCODING:USASCII
+CHARSET:1252
+COMPRESSION:NONE
+OLDFILEUID:NONE
+NEWFILEUID:NONE
+
+<OFX>
+    <SIGNONMSGSRSV1>
+        <SONRS>
+            <STATUS>
+                <CODE>0
+                <SEVERITY>INFO
+            </STATUS>
+            <DTSERVER>20160715004134[-3:GMT]
+            <LANGUAGE>ENG
+            <FI>
+                <ORG>SANTANDER
+                <FID>SANTANDER
+            </FI>
+        </SONRS>
+    </SIGNONMSGSRSV1>
+    <BANKMSGSRSV1>
+        <STMTTRNRS>
+            <TRNUID>1
+            <STATUS>
+                <CODE>0
+                <SEVERITY>INFO
+            </STATUS>
+            <STMTRS>
+                <CURDEF>BRL
+                <BANKACCTFROM>
+                    <BANKID>033
+                    <ACCTID>0123456789012
+                    <ACCTTYPE>CHECKING
+                </BANKACCTFROM>
+                <BANKTRANLIST>
+                    <DTSTART>20160715004134[-3:GMT]
+                    <DTEND>20160715004134[-3:GMT]
+                    <STMTTRN>
+                        <TRNTYPE>OTHER
+                        <DTPOSTED>20160609000000[-3:GMT]
+                        <TRNAMT>           1600,00
+                        <FITID>00021507
+                        <CHECKNUM>00021507
+                        <PAYEEID>0
+                        <MEMO>TED DIFERENTE TITULARIDADE CIP     SOME NAME
+                    </STMTTRN>
+                    <STMTTRN>
+                        <TRNTYPE>OTHER
+                        <DTPOSTED>20160610000000[-3:GMT]
+                        <TRNAMT>          -4121.21
+                        <FITID>00031507
+                        <CHECKNUM>00031507
+                        <PAYEEID>0
+                        <MEMO>DEBITO AUTOM EMPRESAS CONVENIADAS  SOME COMPANY                   
+                    </STMTTRN>
+                    <STMTTRN>
+                        <TRNTYPE>OTHER
+                        <DTPOSTED>20160613000000[-3:GMT]
+                        <TRNAMT>           1600,00
+                        <FITID>00041507
+                        <CHECKNUM>00041507
+                        <PAYEEID>0
+                        <MEMO>TED MESMA TITULARIDADE CIP         001-0123-0000123456789   
+                    </STMTTRN>
+                    <STMTTRN>
+                        <TRNTYPE>OTHER
+                        <DTPOSTED>20160614000000[-3:GMT]
+                        <TRNAMT>            180,00
+                        <FITID>00051507
+                        <CHECKNUM>00051507
+                        <PAYEEID>0
+                        <MEMO>TED MESMA TITULARIDADE CIP         001-0123-0000123456789
+                    </STMTTRN>
+                    <STMTTRN>
+                        <TRNTYPE>OTHER
+                        <DTPOSTED>20160701000000[-3:GMT]
+                        <TRNAMT>             -0.45
+                        <FITID>00061507
+                        <CHECKNUM>00061507
+                        <PAYEEID>0
+                        <MEMO>IOF IMPOSTO OPERACOES FINANCEIRAS  PERIODO: 01/06 A 30/06/16
+                    </STMTTRN>
+                    <STMTTRN>
+                        <TRNTYPE>OTHER
+                        <DTPOSTED>20160701000000[-3:GMT]
+                        <TRNAMT>             -6.74
+                        <FITID>00071507
+                        <CHECKNUM>00071507
+                        <PAYEEID>0
+                        <MEMO>IOF ADICIONAL - AUTOMATICO         PERIODO: 01/06 A 30/06/16
+                    </STMTTRN>
+                    <STMTTRN>
+                        <TRNTYPE>OTHER
+                        <DTPOSTED>20160711000000[-3:GMT]
+                        <TRNAMT>           7500,00
+                        <FITID>00081507
+                        <CHECKNUM>00081507
+                        <PAYEEID>0
+                        <MEMO>TED MESMA TITULARIDADE CIP         001-0123-0000123456789   
+                    </STMTTRN>
+                    <STMTTRN>
+                        <TRNTYPE>OTHER
+                        <DTPOSTED>20160711000000[-3:GMT]
+                        <TRNAMT>          -7457.53
+                        <FITID>00091507
+                        <CHECKNUM>00091507
+                        <PAYEEID>0
+                        <MEMO>DEBITO AUTOM EMPRESAS CONVENIADAS  SOME COMPANY                   
+                    </STMTTRN>
+                    <STMTTRN>
+                        <TRNTYPE>OTHER
+                        <DTPOSTED>20160712000000[-3:GMT]
+                        <TRNAMT>            -38.62
+                        <FITID>00101507
+                        <CHECKNUM>00101507
+                        <PAYEEID>0
+                        <MEMO>DEBITO AUT.  FATURA CARTAO VISA    FINAL 0000               
+                    </STMTTRN>
+                </BANKTRANLIST>
+                <LEDGERBAL>
+                    <BALAMT>              0.97
+                    <DTASOF>20160715004134[-3:GMT]
+                </LEDGERBAL>
+            </STMTRS>
+        </STMTTRNRS>
+    </BANKMSGSRSV1>
+</OFX>
