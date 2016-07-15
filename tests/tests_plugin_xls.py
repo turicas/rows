@@ -22,6 +22,8 @@ import tempfile
 import time
 import unittest
 
+import mock
+
 import rows
 import rows.fields as fields
 import rows.plugins.xls
@@ -34,29 +36,40 @@ def date_to_datetime(value):
 
 class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
+    plugin_name = 'xls'
     filename = 'tests/data/all-field-types.xls'
 
     def test_imports(self):
         self.assertIs(rows.import_from_xls, rows.plugins.xls.import_from_xls)
         self.assertIs(rows.export_to_xls, rows.plugins.xls.export_to_xls)
 
-    def test_import_from_xls_filename(self):
-        table = rows.import_from_xls(self.filename)
+    @mock.patch('rows.plugins.xls.create_table')
+    def test_import_from_xls_uses_create_table(self, mocked_create_table):
+        mocked_create_table.return_value = 42
+        kwargs = {'encoding': 'test', 'some_key': 123, 'other': 456, }
+        result = rows.import_from_xls(self.filename, **kwargs)
+        self.assertTrue(mocked_create_table.called)
+        self.assertEqual(mocked_create_table.call_count, 1)
+        self.assertEqual(result, 42)
 
-        self.assert_table_equal(table, utils.table)
+        call = mocked_create_table.call_args
+        kwargs['meta'] = {'imported_from': 'xls', 'filename': self.filename, }
+        self.assertEqual(call[1], kwargs)
 
-        expected_meta = {'imported_from': 'xls', 'filename': self.filename,}
-        self.assertEqual(table.meta, expected_meta)
+    @mock.patch('rows.plugins.xls.create_table')
+    def test_import_from_xls_retrieve_desired_data(self, mocked_create_table):
+        mocked_create_table.return_value = 42
 
-    def test_import_from_xls_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
+        # import using filename
+        table_1 = rows.import_from_xls(self.filename)
+        call_args = mocked_create_table.call_args_list[0]
+        self.assert_create_table_data(call_args)
+
+        # import using fobj
         with open(self.filename, 'rb') as fobj:
-            table = rows.import_from_xls(fobj)
-
-        self.assert_table_equal(table, utils.table)
-
-        expected_meta = {'imported_from': 'xls', 'filename': self.filename,}
-        self.assertEqual(table.meta, expected_meta)
+            table_2 = rows.import_from_xls(fobj)
+            call_args = mocked_create_table.call_args_list[1]
+            self.assert_create_table_data(call_args)
 
     def test_export_to_xls_filename(self):
         # TODO: may test file contents
@@ -66,6 +79,11 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table = rows.import_from_xls(temp.name)
         self.assert_table_equal(table, utils.table)
+
+        temp.file.seek(0)
+        result = temp.file.read()
+        export_in_memory = rows.export_to_xls(utils.table, None)
+        self.assertEqual(result, export_in_memory)
 
     def test_export_to_xls_fobj(self):
         # TODO: may test with codecs.open passing an encoding
@@ -77,3 +95,23 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table = rows.import_from_xls(temp.name)
         self.assert_table_equal(table, utils.table)
+
+    @mock.patch('rows.plugins.xls.prepare_to_export')
+    def test_export_to_xls_uses_prepare_to_export(self,
+                                                  mocked_prepare_to_export):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+        encoding = 'iso-8859-15'
+        kwargs = {'test': 123, 'parameter': 3.14, }
+        mocked_prepare_to_export.return_value = \
+                iter([utils.table.fields.keys()])
+
+        rows.export_to_xls(utils.table, temp.name, encoding=encoding,
+                           **kwargs)
+        self.assertTrue(mocked_prepare_to_export.called)
+        self.assertEqual(mocked_prepare_to_export.call_count, 1)
+
+        call = mocked_prepare_to_export.call_args
+        self.assertEqual(call[0], (utils.table, ))
+        kwargs['encoding'] = encoding
+        self.assertEqual(call[1], kwargs)

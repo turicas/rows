@@ -1,6 +1,0 @@
-click
-lxml
-requests
-unicodecsv
-xlrd
-xlwt

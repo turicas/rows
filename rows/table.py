@@ -17,10 +17,10 @@
 
 from __future__ import unicode_literals
 
-from collections import MutableSequence, namedtuple, OrderedDict
+from collections import MutableSequence, namedtuple, OrderedDict, Sized
 from operator import itemgetter
 
-import rows.fields as fields
+from rows.fields import identify_type
 
 
 class Table(MutableSequence):
@@ -30,14 +30,31 @@ class Table(MutableSequence):
         # TODO: should use slug on each field name automatically or inside each
         #       plugin?
         self.fields = OrderedDict(fields)
-        self.field_names = self.fields.keys()
-        self.field_types = self.fields.values()
 
         # TODO: should be able to customize row return type (namedtuple, dict
         #       etc.)
         self.Row = namedtuple('Row', self.field_names)
         self._rows = []
         self.meta = dict(meta) if meta is not None else {}
+
+    @property
+    def field_names(self):
+        return self.fields.keys()
+
+    @property
+    def field_types(self):
+        return self.fields.values()
+
+    def __repr__(self):
+        length = len(self._rows) if isinstance(self._rows, Sized) else '?'
+
+        imported = ''
+        if 'imported_from' in self.meta:
+            imported = ' (from {})'.format(self.meta['imported_from'])
+
+        return u'<rows.Table{} {} fields, {} rows>'.format(imported,
+                                                           len(self.fields),
+                                                           length)
 
     def _make_row(self, row):
         # TODO: should be able to customize row type (namedtuple, dict etc.)
@@ -53,20 +70,72 @@ class Table(MutableSequence):
         return len(self._rows)
 
     def __getitem__(self, key):
-
-        if isinstance(key, int):
+        key_type = type(key)
+        if key_type == int:
             return self.Row(*self._rows[key])
-        elif isinstance(key, slice):
+        elif key_type == slice:
             return [self.Row(*row) for row in self._rows[key]]
-        else:
-            raise ValueError('Type not recognized: {}'.format(type(key)))
+        elif key_type == unicode:  # TODO: change to 'str' on Python3
+            try:
+                field_index = self.field_names.index(key)
+            except ValueError:
+                raise KeyError(key)
 
+            # TODO: should change the line below to return a generator exp?
+            return [row[field_index] for row in self._rows]
+        else:
+            raise ValueError('Unsupported key type: {}'
+                    .format(type(key).__name__))
 
     def __setitem__(self, key, value):
-        self._rows[key] = self._make_row(value)
+        key_type = type(key)
+        if key_type == int:
+            self._rows[key] = self._make_row(value)
+        elif key_type == unicode:  # TODO: change to 'str' on Python3
+            values = list(value)  # I'm not lazy, sorry
+            if len(values) != len(self):
+                raise ValueError('Values length ({}) should be the same as '
+                                 'Table length ({})'
+                                 .format(len(values), len(self)))
+
+            from rows.fields import detect_types
+            from rows.utils import slug
+
+            field_name = slug(key)
+            is_new_field = field_name not in self.field_names
+            field_type = detect_types([field_name],
+                    [[value] for value in values])[field_name]
+            self.fields[field_name] = field_type
+            self.Row = namedtuple('Row', self.field_names)
+
+            if is_new_field:
+                for row, value in zip(self._rows, values):
+                    row.append(field_type.deserialize(value))
+            else:
+                field_index = self.field_names.index(field_name)
+                for row, value in zip(self._rows, values):
+                    row[field_index] = field_type.deserialize(value)
+        else:
+            raise ValueError('Unsupported key type: {}'
+                    .format(type(key).__name__))
 
     def __delitem__(self, key):
-        del self._rows[key]
+        key_type = type(key)
+        if key_type == int:
+            del self._rows[key]
+        elif key_type == unicode:  # TODO: change to 'str' on Python3
+            try:
+                field_index = self.field_names.index(key)
+            except ValueError:
+                raise KeyError(key)
+
+            del self.fields[key]
+            self.Row = namedtuple('Row', self.field_names)
+            for row in self._rows:
+                row.pop(field_index)
+        else:
+            raise ValueError('Unsupported key type: {}'
+                    .format(type(key).__name__))
 
     def insert(self, index, row):
         self._rows.insert(index, self._make_row(row))
@@ -81,7 +150,7 @@ class Table(MutableSequence):
         if other == 0:
             return self
 
-        if type(self) != type(other) or self.fields != other.fields:
+        if not isinstance(self, type(other)) or self.fields != other.fields:
             raise ValueError('Tables have incompatible fields')
 
         table = Table(fields=self.fields)
@@ -103,3 +172,46 @@ class Table(MutableSequence):
 
         key_index = field_names.index(key)
         self._rows.sort(key=itemgetter(key_index), reverse=reverse)
+
+
+class FlexibleTable(Table):
+
+    def __init__(self, fields=None, meta=None):
+        if fields is None:
+            fields = {}
+        super(FlexibleTable, self).__init__(fields, meta)
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self.Row(**self._rows[key])
+        elif isinstance(key, slice):
+            return [self.Row(**row) for row in self._rows[key]]
+        else:
+            raise ValueError('Unsupported key type: {}'
+                    .format(type(key).__name__))
+
+    def _add_field(self, field_name, field_type):
+        self.fields[field_name] = field_type
+        self.field_names.append(field_name)
+        self.field_types.append(field_type)
+        self.Row = namedtuple('Row', self.field_names)
+
+    def _make_row(self, row):
+        field_names = row.keys()
+        for field_name in field_names:
+            if field_name not in self.field_names:
+                self._add_field(field_name, identify_type(row[field_name]))
+
+        return {field_name: field_type.deserialize(row.get(field_name, None))
+                for field_name, field_type in self.fields.items()}
+
+    def insert(self, index, row):
+        self._rows.insert(index, self._make_row(row))
+
+    def __setitem__(self, key, value):
+        self._rows[key] = self._make_row(value)
+
+    def append(self, row):
+        """Add a row to the table. Should be a dict"""
+
+        self._rows.append(self._make_row(row))

@@ -1,0 +1,22 @@
+-r requirements.txt
+
+# Everything except install_requires
+click
+lxml
+openpyxl
+parquet
+requests
+xlrd
+xlwt
+file-magic
+
+# Test tools
+coverage
+ipdb
+mock
+nose
+pylint
+yanc
+
+# PyPI tools
+pypissh

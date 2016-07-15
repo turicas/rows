@@ -17,36 +17,49 @@
 
 from __future__ import unicode_literals
 
+from io import BytesIO
+
 import unicodecsv
 
-from rows.operations import serialize
-from rows.utils import create_table, get_filename_and_fobj
+from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
 
 
-def import_from_csv(filename_or_fobj, encoding='utf-8', delimiter=',',
-                    quotechar='"', *args, **kwargs):
+def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None, *args,
+                    **kwargs):
     'Import data from a CSV file'
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj)
+
+    if dialect is None:
+        sample = fobj.readline().decode(encoding)
+        dialect = unicodecsv.Sniffer().sniff(sample)
+        fobj.seek(0)
+
     kwargs['encoding'] = encoding
-    csv_reader = unicodecsv.reader(fobj, encoding=encoding,
-                                   delimiter=str(delimiter),
-                                   quotechar=str(quotechar))
+    csv_reader = unicodecsv.reader(fobj, encoding=encoding, dialect=dialect)
 
     meta = {'imported_from': 'csv', 'filename': filename,}
     return create_table(csv_reader, meta=meta, *args, **kwargs)
 
 
-def export_to_csv(table, filename_or_fobj, encoding='utf-8'):
+def export_to_csv(table, filename_or_fobj=None, encoding='utf-8', *args, **kwargs):
     # TODO: will work only if table.fields is OrderedDict
     # TODO: should use fobj? What about creating a method like json.dumps?
 
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
+    kwargs['encoding'] = encoding
+    if filename_or_fobj is not None:
+        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='w')
+    else:
+        fobj = BytesIO()
+
     csv_writer = unicodecsv.writer(fobj, encoding=encoding)
+    map(csv_writer.writerow, serialize(table, *args, **kwargs))
 
-    csv_writer.writerow(table.fields.keys())
-    for row in serialize(table, encoding=encoding):
-        csv_writer.writerow(row)
-
-    fobj.flush()
-    return fobj
+    if filename_or_fobj is not None:
+        fobj.flush()
+        return fobj
+    else:
+        fobj.seek(0)
+        result = fobj.read()
+        fobj.close()
+        return result

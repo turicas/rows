@@ -18,19 +18,21 @@
 from __future__ import unicode_literals
 
 import datetime
+from io import BytesIO
 
 import xlrd
 import xlwt
 
 import rows.fields as fields
 
-from rows.utils import create_table, get_filename_and_fobj
+from rows.plugins.utils import (create_table, get_filename_and_fobj,
+                                prepare_to_export)
 
 
-CELL_TYPES = {xlrd.XL_CELL_BLANK: fields.ByteField,
+CELL_TYPES = {xlrd.XL_CELL_BLANK: fields.BinaryField,
               xlrd.XL_CELL_DATE: fields.DatetimeField,
               xlrd.XL_CELL_ERROR: None,
-              xlrd.XL_CELL_TEXT: fields.UnicodeField,
+              xlrd.XL_CELL_TEXT: fields.TextField,
               xlrd.XL_CELL_BOOLEAN: fields.BoolField,
               xlrd.XL_CELL_EMPTY: None,
               xlrd.XL_CELL_NUMBER: fields.FloatField,}
@@ -46,11 +48,16 @@ def cell_value(sheet, row, col):
         return None
 
     # TODO: this approach will not work if using locale
-    value = sheet.cell_value(row, col)
+    value = cell.value
     if field_type is fields.DatetimeField:
         time_tuple = xlrd.xldate_as_tuple(value, sheet.book.datemode)
         value = field_type.serialize(datetime.datetime(*time_tuple))
         return value.split('T00:00:00')[0]
+    elif field_type is fields.BoolField:
+        if value == 0:
+            return False
+        elif value == 1:
+            return True
     else:
         book = sheet.book
         xf = book.xf_list[cell.xf_index]
@@ -105,30 +112,40 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
 
 # TODO: add more formatting styles for other types such as currency
 # TODO: styles may be influenced by locale
-FORMATTING_STYLES = {
-        fields.DateField: xlwt.easyxf(num_format_str='yyyy-mm-dd'),
-        fields.DatetimeField: xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'),
-        fields.PercentField: xlwt.easyxf(num_format_str='0.00%'),}
+FORMATTING_STYLES = {fields.DateField: xlwt.easyxf(num_format_str='yyyy-mm-dd'),
+                     fields.DatetimeField: xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'),
+                     fields.PercentField: xlwt.easyxf(num_format_str='0.00%'),}
 
-def export_to_xls(table, filename_or_fobj, sheet_name='Sheet1'):
+def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
+                  **kwargs):
 
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
     work_book = xlwt.Workbook()
     sheet = work_book.add_sheet(sheet_name)
-    fields = [(index, field_name)
-              for index, field_name in enumerate(table.fields)]
 
-    for index, field_name in fields:
-        sheet.write(0, index, field_name)
-    for row_index, row in enumerate(table, start=1):
-        for column_index, field_name in fields:
-            value = getattr(row, field_name)
+    prepared_table = prepare_to_export(table, *args, **kwargs)
+
+    field_names = prepared_table.next()
+    for column_index, field_name in enumerate(field_names):
+        sheet.write(0, column_index, field_name)
+
+    for row_index, row in enumerate(prepared_table, start=1):
+        for column_index, (field_name, value) in \
+                enumerate(zip(field_names, row)):
             field_type = table.fields[field_name]
             data = {}
             if field_type in FORMATTING_STYLES:
                 data['style'] = FORMATTING_STYLES[field_type]
             sheet.write(row_index, column_index, value, **data)
 
-    work_book.save(fobj)
-    fobj.flush()
-    return fobj
+    if filename_or_fobj is not None:
+        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
+        work_book.save(fobj)
+        fobj.flush()
+        return fobj
+    else:
+        fobj = BytesIO()
+        work_book.save(fobj)
+        fobj.seek(0)
+        result = fobj.read()
+        fobj.close()
+        return result

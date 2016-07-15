@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 import collections
 import datetime
+import json
 import locale
 import re
 import types
@@ -28,28 +29,28 @@ from decimal import Decimal, InvalidOperation
 
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
-           'DateField', 'DecimalField', 'PercentField', 'UnicodeField',
-           'ByteField', 'Field']
+           'DateField', 'DecimalField', 'PercentField', 'JSONField',
+           'EmailField', 'TextField', 'BinaryField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
-NULL = (b'-', b'null', b'none', b'nil')
+NULL = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
 
 
 class Field(object):
     """Base Field class - all fields should inherit from this
 
-    As the fallback for all other field types are the ByteField, this Field
-    actually implements what is expected in the ByteField
+    As the fallback for all other field types are the BinaryField, this Field
+    actually implements what is expected in the BinaryField
     """
 
-    TYPE = types.NoneType
+    TYPE = (types.NoneType, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         """Serialize a value to be exported
 
         `cls.serialize` should always return an unicode value, except for
-        ByteField
+        BinaryField
         """
 
         if value is None:
@@ -72,20 +73,20 @@ class Field(object):
             return value
 
 
-class ByteField(Field):
+class BinaryField(Field):
     """Field class to represent byte arrays
 
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = types.StringType
+    TYPE = (types.StringType, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is None:
             value = ''
 
-        return cls.TYPE(value)
+        return cls.TYPE[0](value)
 
 
     @classmethod
@@ -93,7 +94,7 @@ class ByteField(Field):
         if value is None:
             return None
         else:
-            return cls.TYPE(value)
+            return cls.TYPE[0](value)
 
 
 class BoolField(Field):
@@ -103,13 +104,14 @@ class BoolField(Field):
     attributes like `TRUE_VALUES` and `FALSE_VALUES`)
     """
 
-    TYPE = types.BooleanType
+    TYPE = (types.BooleanType, )
     SERIALIZED_VALUES = {True: 'true', False: 'false', None: ''}
-    TRUE_VALUES = (b'true', b'1', b'yes')
-    FALSE_VALUES = (b'false', b'0', b'no')
+    TRUE_VALUES = ('true', 'yes')
+    FALSE_VALUES = ('false', 'no')
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        # TODO: should we serialize `None` as well or give it to the plugin?
         return cls.SERIALIZED_VALUES[value]
 
     @classmethod
@@ -118,7 +120,7 @@ class BoolField(Field):
         if value is None or isinstance(value, cls.TYPE):
             return value
 
-        value = as_string(value)
+        value = as_string(value).lower()
         if value in cls.TRUE_VALUES:
             return True
         elif value in cls.FALSE_VALUES:
@@ -133,7 +135,7 @@ class IntegerField(Field):
     Is locale-aware
     """
 
-    TYPE = types.IntType
+    TYPE = (types.IntType, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -151,13 +153,16 @@ class IntegerField(Field):
         value = super(IntegerField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
+        elif isinstance(value, float):
+            new_value = int(value)
+            if new_value != value:
+                raise ValueError("It's float, not integer")
+            else:
+                value = new_value
 
-        converted = int(value) if SHOULD_NOT_USE_LOCALE else locale.atoi(value)
-        float_equivalent = FloatField.deserialize(value, *args, **kwargs)
-        if float_equivalent == converted:
-            return converted
-        else:
-            raise ValueError("It's float, not integer")
+        value = as_string(value)
+        return int(value) if SHOULD_NOT_USE_LOCALE \
+                          else locale.atoi(value)
 
 
 class FloatField(Field):
@@ -166,7 +171,7 @@ class FloatField(Field):
     Is locale-aware
     """
 
-    TYPE = types.FloatType
+    TYPE = (types.FloatType, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -198,7 +203,7 @@ class DecimalField(Field):
     Is locale-aware
     """
 
-    TYPE = Decimal
+    TYPE = (Decimal, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -221,8 +226,12 @@ class DecimalField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         value = super(DecimalField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if is_null(value):
+            return None
+        elif isinstance(value, cls.TYPE):
             return value
+        elif type(value) in (int, float):
+            return Decimal(str(value))
 
         if SHOULD_NOT_USE_LOCALE:
             try:
@@ -235,15 +244,16 @@ class DecimalField(Field):
             interesting_vars = ['decimal_point', 'mon_decimal_point',
                                 'mon_thousands_sep', 'negative_sign',
                                 'positive_sign', 'thousands_sep']
-            chars = (locale_vars[x].replace('.', '\.').replace('-', '\-')
-                    for x in interesting_vars)
+            chars = (locale_vars[x].replace('.', r'\.').replace('-', r'\-')
+                     for x in interesting_vars)
             interesting_chars = ''.join(set(chars))
             regexp = re.compile(r'[^0-9{} ]'.format(interesting_chars))
+            value = as_string(value)
             if regexp.findall(value):
                 raise ValueError("Can't be {}".format(cls.__name__))
 
             parts = [REGEXP_ONLY_NUMBERS.subn('', number)[0]
-                    for number in value.split(decimal_separator)]
+                     for number in value.split(decimal_separator)]
             if len(parts) > 2:
                 raise ValueError("Can't deserialize with this locale.")
             try:
@@ -264,6 +274,11 @@ class PercentField(DecimalField):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''
+        elif value == Decimal('0'):
+            return '0.00%'
+
         value = Decimal(str(value * 100)[:-2])
         value = super(PercentField, cls).serialize(value, *args, **kwargs)
         return '{}%'.format(value)
@@ -288,7 +303,7 @@ class DateField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = datetime.date
+    TYPE = (datetime.date, )
     INPUT_FORMAT = '%Y-%m-%d'
     OUTPUT_FORMAT = '%Y-%m-%d'
 
@@ -306,6 +321,9 @@ class DateField(Field):
             return value
 
         value = as_string(value)
+        if isinstance(value, unicode):
+            value = value.encode('utf-8')
+
         dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
         return datetime.date(dt_object.year, dt_object.month, dt_object.day)
 
@@ -316,7 +334,7 @@ class DatetimeField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = datetime.datetime
+    TYPE = (datetime.datetime, )
     DATETIME_REGEXP = re.compile('^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]'
                                  '([0-9]{2}):([0-9]{2}):([0-9]{2})$')
 
@@ -342,26 +360,81 @@ class DatetimeField(Field):
             return datetime.datetime(*[int(x) for x in groups[0]])
 
 
-class UnicodeField(Field):
+class TextField(Field):
     """Field class to represent unicode strings
 
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = types.UnicodeType
+    TYPE = (types.UnicodeType, )
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(UnicodeField, cls).deserialize(value)
+        value = super(TextField, cls).deserialize(value)
         if value is None:
             return None
 
-        if type(value) is cls.TYPE:
+        if isinstance(value, cls.TYPE):
             return value
         elif 'encoding' in kwargs:
             return as_string(value).decode(kwargs['encoding'])
         else:
-            return cls.TYPE(value)
+            return cls.TYPE[0](value)
+
+
+class EmailField(TextField):
+    """Field class to represent e-mail addresses
+
+    Is not locale-aware (does not need to be)
+    """
+
+    EMAIL_REGEXP = re.compile(r'^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]+$',
+                              flags=re.IGNORECASE)
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        if value is None:
+            return ''
+
+        return types.UnicodeType(value)
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        value = super(EmailField, cls).deserialize(value)
+        if value is None or not value.strip():
+            return None
+
+        result = cls.EMAIL_REGEXP.findall(value)
+        if not result:
+            raise ValueError("Can't be {}".format(cls.__name__))
+        else:
+            return result[0]
+
+
+class JSONField(Field):
+    """Field class to represent JSON-encoded strings
+
+    Is not locale-aware (does not need to be)
+    """
+
+    TYPE = (types.ListType, types.DictType)
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        return json.dumps(value)
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        if isinstance(value, types.UnicodeType):
+            value = value.encode('utf-8')
+
+        if value is None:
+            return None
+        elif isinstance(value, cls.TYPE):
+            return value
+        else:
+            return json.loads(value)
+
 
 
 AVAILABLE_FIELD_TYPES = [locals()[element] for element in __all__
@@ -383,6 +456,18 @@ def is_null(value):
     return not value_str or value_str in NULL
 
 
+def unique_values(values):
+    value_types = set(type(value) for value in values)
+    if dict not in value_types:
+        return set([value for value in set(values) if not is_null(value)])
+    else:
+        result = []
+        for value in values:
+            if not is_null(value) and value not in result:
+                result.append(value)
+        return result
+
+
 def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
                  *args, **kwargs):
     """Where the magic happens"""
@@ -390,24 +475,26 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
     # TODO: may receive 'type hints'
     # TODO: should support receiving unicode objects directly
     # TODO: should expect data in unicode or will be able to use binary data?
+    field_values = list(field_values)
+    if not field_values:
+        return collections.OrderedDict([(field_name, BinaryField)
+                                        for field_name in field_names])
+
     number_of_fields = len(field_names)
     columns = zip(*[row for row in field_values
-                        if len(row) == number_of_fields])
+                    if len(row) == number_of_fields])
 
     if len(columns) != number_of_fields:
         raise ValueError('Number of fields differ')
 
-    none_type = set([type(None)])
     detected_types = collections.OrderedDict([(field_name, None)
                                               for field_name in field_names])
-    encoding = kwargs.get('encoding', None)
     for index, field_name in enumerate(field_names):
-        data = set([value for value in set(columns[index])
-                          if not is_null(value)])
+        data = unique_values(columns[index])
 
         if not data:
-            # all rows with an empty field -> ByteField (can't identify)
-            identified_type = ByteField
+            # all rows with an empty field -> BinaryField (can't identify)
+            identified_type = BinaryField
         else:
             # ok, let's try to identify the type of this column by
             # converting every non-null value in the sample
@@ -421,7 +508,27 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
                         cant_be.add(type_)
                 for type_to_remove in cant_be:
                     possible_types.remove(type_to_remove)
+
             identified_type = possible_types[0]  # priorities matter
+
         detected_types[field_name] = identified_type
 
     return detected_types
+
+
+TYPES = [(key, locals().get(key)) for key in __all__]
+
+
+def identify_type(value):
+    value_type = type(value)
+    if value_type not in (str, unicode):
+        possible_types = [type_class for type_name, type_class in TYPES
+                          if value_type in type_class.TYPE]
+        if not possible_types:
+            detected = detect_types(['some_field'], [[value]])['some_field']
+        else:
+            detected = possible_types[0]
+    else:
+        detected = detect_types(['some_field'], [[value]])['some_field']
+
+    return detected
