@@ -148,6 +148,11 @@ class RowsTestMixIn(object):
 
     def assert_create_table_data(self, call_args, field_ordering=True,
                                  filename=None):
+        self.assert_table_meta_data(call_args, filename)
+        self.assert_table_row_data(call_args[0][0], args=[],
+                kwargs=call_args[1], field_ordering=field_ordering)
+
+    def assert_table_meta_data(self, call_args, filename):
         if filename is None:
             filename = self.filename
         kwargs = call_args[1]
@@ -155,10 +160,8 @@ class RowsTestMixIn(object):
                          'filename': filename, }
         self.assertEqual(kwargs['meta'], expected_meta)
         del kwargs['meta']
-        self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs,
-                               field_ordering=field_ordering)
 
-    def assert_table_data(self, data, args, kwargs, field_ordering):
+    def assert_table_row_data(self, data, args, kwargs, field_ordering):
         data = list(data)
         if field_ordering:
             self.assertEqual(data[0], FIELD_NAMES)

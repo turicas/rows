@@ -23,6 +23,7 @@ EXTRA_REQUIREMENTS = {
         'cli': ['click', 'requests'],
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
         'ods': ['lxml'],
+        'ofx': ['ofxtools'],
         'parquet': ['parquet'],
         'parquet-snappy': ['python-snappy', 'parquet'],  # apt: libsnappy-dev
         'xls': ['xlrd', 'xlwt'],

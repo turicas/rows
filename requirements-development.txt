@@ -2,13 +2,14 @@
 
 # Everything except install_requires
 click
+file-magic
 lxml
+ofxtools
 openpyxl
 parquet
 requests
 xlrd
 xlwt
-file-magic
 
 # Test tools
 coverage

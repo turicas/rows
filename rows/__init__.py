@@ -65,5 +65,10 @@ try:
 except ImportError:
     pass
 
+try:
+    from rows.plugins.ofx import import_from_ofx
+except ImportError:
+    pass
+
 
 __version__ = '0.2.0dev'
