@@ -4,6 +4,11 @@
 
 **Released on: (under development)**
 
+### Backwards Incompatible Changes
+
+- `rows.fields.UnicodeField` was renamed to `rows.fields.TextField`
+- `rows.fields.BytesField` was renamed to `rows.fields.BinaryField`
+
 ### Bug Fixes
 
 - Fix import errors on older versions of urllib3 and Python (thanks to
