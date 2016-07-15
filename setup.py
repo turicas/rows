@@ -24,7 +24,6 @@ EXTRA_REQUIREMENTS = {
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
         'ods': ['lxml'],
         'parquet': ['parquet'],
-        'parquet-snappy': ['python-snappy', 'parquet'],  # apt: libsnappy-dev
         'xls': ['xlrd', 'xlwt'],
         'xlsx': ['openpyxl'],
         'xpath': ['lxml'],
