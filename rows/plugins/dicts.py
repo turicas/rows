@@ -26,7 +26,7 @@ def import_from_dicts(data, *args, **kwargs):
     headers = set()
     for row in data:
         headers.update(row.keys())
-    headers = list(headers)
+    headers = sorted(list(headers))
 
     data = [[row.get(header, None) for header in headers] for row in data]
 

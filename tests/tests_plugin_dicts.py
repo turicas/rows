@@ -61,8 +61,8 @@ class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         self.assertEqual(len(table), 3)
         self.assertEqual(len(table.fields), 4)
-        self.assertEqual(set(table.fields.keys()),
-                         set(['name', 'ids', 'number', 'other']))
+        self.assertEqual(set(table.field_names),
+                         set(['ids', 'name', 'number', 'other']))
         self.assertEqual(table.fields['name'], rows.fields.TextField)
         self.assertEqual(table.fields['ids'], rows.fields.TextField)
         self.assertEqual(table.fields['number'], rows.fields.IntegerField)
