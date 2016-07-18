@@ -70,6 +70,7 @@ def _get_field_names(field_names, table_field_names, permit_not=False):
     else:
         result = []
         for field_name in table_field_names:
+            # TODO: change order
             if field_name in new_field_names:
                 result.append(field_name)
             elif '^' + field_name in new_field_names:
