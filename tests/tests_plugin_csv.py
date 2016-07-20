@@ -104,6 +104,12 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call_args = mocked_create_table.call_args_list[0]
         self.assertEqual(data, list(call_args[0][0]))
 
+    def test_detect_encoding_if_is_None(self):
+        data = BytesIO('id,name\n1,Álvaro'.encode('iso-8859-15'))
+        table = rows.import_from_csv(data)
+        self.assertEqual(table[0].name, 'Álvaro')
+        # TODO: add a test to the case when file-magic is not available
+
     @mock.patch('rows.plugins.csv.serialize')
     def test_export_to_csv_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)

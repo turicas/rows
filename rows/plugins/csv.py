@@ -23,12 +23,27 @@ import unicodecsv
 
 from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
 
+try:
+    import magic
+except ImportError:
+    magic = None
+else:
+    if 'detect_from_content' not in dir(magic):  # it's not file-magic library!
+        magic = None
 
-def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None, *args,
+
+def import_from_csv(filename_or_fobj, encoding=None, dialect=None, *args,
                     **kwargs):
     'Import data from a CSV file'
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj)
+
+    if encoding is None:
+        if magic is not None:
+            result = magic.detect_from_content(fobj.read(4096)).encoding
+            fobj.seek(0)
+        else:
+            raise ValueError('You must provide `encoding` or install file-magic')
 
     if dialect is None:
         sample = fobj.readline().decode(encoding)
