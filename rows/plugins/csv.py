@@ -40,7 +40,7 @@ def import_from_csv(filename_or_fobj, encoding=None, dialect=None, *args,
 
     if encoding is None:
         if magic is not None:
-            result = magic.detect_from_content(fobj.read(4096)).encoding
+            encoding = magic.detect_from_content(fobj.read(4096)).encoding
             fobj.seek(0)
         else:
             raise ValueError('You must provide `encoding` or install file-magic')
