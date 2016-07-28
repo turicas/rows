@@ -21,6 +21,8 @@ import sqlite3
 import tempfile
 import unittest
 
+from collections import OrderedDict
+
 import mock
 
 import rows
@@ -126,21 +128,35 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(result_third_table, third_table)
         self.assert_table_equal(result_fourth_table, fourth_table)
 
-    @mock.patch('rows.plugins.sqlite.serialize')
-    def test_export_to_sqlite_uses_serialize(self, mocked_serialize):
+    @mock.patch('rows.plugins.sqlite.prepare_to_export')
+    def test_export_to_sqlite_uses_prepare_to_export(self,
+            mocked_prepare_to_export):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         encoding = 'iso-8859-15'
         kwargs = {'test': 123, 'parameter': 3.14, }
-        mocked_serialize.return_value = \
-                iter(rows.plugins.utils.serialize(utils.table))
+        mocked_prepare_to_export.return_value = \
+                iter(rows.plugins.utils.prepare_to_export(utils.table))
 
         rows.export_to_sqlite(utils.table, temp.name, encoding=encoding,
                               **kwargs)
-        self.assertTrue(mocked_serialize.called)
-        self.assertEqual(mocked_serialize.call_count, 1)
+        self.assertTrue(mocked_prepare_to_export.called)
+        self.assertEqual(mocked_prepare_to_export.call_count, 1)
 
-        call = mocked_serialize.call_args
+        call = mocked_prepare_to_export.call_args
         self.assertEqual(call[0], (utils.table, ))
         kwargs['encoding'] = encoding
         self.assertEqual(call[1], kwargs)
+
+    def test_issue_170(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+
+        table = rows.Table(fields=
+                OrderedDict([('intvalue', rows.fields.IntegerField),
+                             ('floatvalue', rows.fields.FloatField)]))
+        table.append({'intvalue': 42, 'floatvalue': 3.14})
+        table.append({'intvalue': None, 'floatvalue': None})
+
+        # should not raise an exception
+        rows.export_to_sqlite(table, temp.name)

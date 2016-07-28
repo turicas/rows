@@ -4,6 +4,11 @@
 
 **Released on: (under development)**
 
+### Bug Fixes
+
+- [#170](https://github.com/turicas/rows/issues/170) (SQLite plugin) Error
+  converting `int` and `float` when value is `None`
+
 
 ## Version `0.2.0`
 

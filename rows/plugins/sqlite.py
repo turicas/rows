@@ -24,7 +24,7 @@ import sqlite3
 import rows.fields as fields
 
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
-                                make_unique_name, serialize)
+                                make_unique_name, prepare_to_export)
 from rows.utils import ipartition
 
 
@@ -43,24 +43,31 @@ SQLITE_TYPES = {fields.BinaryField: 'BLOB',
                 fields.DatetimeField: 'TEXT',
                 fields.TextField: 'TEXT', }
 
-def _convert(field_type, value):
-    if value is None:
-        return None
 
-    if field_type in (fields.BinaryField, fields.DateField, fields.TextField):
-        return value
-    elif field_type is fields.BoolField:
-        return 1 if value == 'true' else 0
-    elif field_type is fields.IntegerField:
-        return int(value)
-    elif field_type in (fields.FloatField, fields.DecimalField):
-        return float(value)
-    elif field_type is fields.PercentField:
-        return float(value.replace('%', '')) / 100
-    elif field_type is fields.DatetimeField:
-        return value.replace('T', ' ')
-    else:
-        return value
+def _python_to_sqlite(field_types):
+
+    def convert_value(field_type, value):
+        if field_type in (fields.BinaryField,
+                          fields.BoolField,
+                          fields.DateField,
+                          fields.DatetimeField,
+                          fields.FloatField,
+                          fields.IntegerField,
+                          fields.TextField):
+            return value
+
+        elif field_type in (fields.DecimalField,
+                            fields.PercentField):
+            return float(value)
+
+        else:  # don't know this field
+            return value
+
+    def convert_row(row):
+        return [convert_value(field_type, value)
+                for field_type, value in zip(field_types, row)]
+
+    return convert_row
 
 
 def _get_connection(filename_or_connection):
@@ -90,13 +97,13 @@ def export_to_sqlite(table_obj, filename_or_connection, table_name='rows',
     # TODO: should add transaction support?
 
 
-    serialized_table = serialize(table_obj, *args, **kwargs)
+    prepared_table = prepare_to_export(table_obj, *args, **kwargs)
     connection = _get_connection(filename_or_connection)
     table_names = [item[0]
                    for item in connection.execute(SQL_TABLE_NAMES).fetchall()]
     table_name = make_unique_name(name=table_name, existing_names=table_names)
 
-    field_names = serialized_table.next()
+    field_names = prepared_table.next()
     columns = ['{} {}'.format(field_name,
                               SQLITE_TYPES[table_obj.fields[field_name]])
                for field_name in field_names]
@@ -109,12 +116,11 @@ def export_to_sqlite(table_obj, filename_or_connection, table_name='rows',
     insert_sql = SQL_INSERT.format(table_name=table_name,
                                    field_names=columns,
                                    placeholders=placeholders)
+
     field_types = [table_obj.fields[field_name] for field_name in field_names]
-    for batch in ipartition(serialized_table, batch_size):
-        rows_values = [[_convert(field_types[index], value)
-                        for index, value in enumerate(row)]
-                       for row in batch]
-        connection.executemany(insert_sql, rows_values)
+    _convert_row = _python_to_sqlite(field_types)
+    for batch in ipartition(prepared_table, batch_size):
+        connection.executemany(insert_sql, map(_convert_row, batch))
 
     connection.commit()
     return connection
