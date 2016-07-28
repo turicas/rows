@@ -342,10 +342,10 @@ file format you want. Currently we have the following plugins:
   installed by default)
 - TXT: use `rows.export_to_txt` (no dependencies)
 - JSON: use `rows.import_from_json` and `rows.export_to_json` (no dependencies)
-- HTML: use `rows.import_from_html` and `rows.export_to_html` (denpendencies
+- HTML: use `rows.import_from_html` and `rows.export_to_html` (dependencies
   must be installed with `pip install rows[html]`)
 - XPath: use `rows.import_from_xpath` passing the following arguments:
-  `filename_or_fobj`, `rows_xpath` and `fields_xpath` (denpendencies must be
+  `filename_or_fobj`, `rows_xpath` and `fields_xpath` (dependencies must be
   installed with `pip install rows[xpath]`) -- see an example in
   `examples/library/ecuador_radiodifusoras.py`.
 - Parquet: use `rows.import_from_parquet` passing the filename (dependencies
