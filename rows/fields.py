@@ -226,9 +226,7 @@ class DecimalField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         value = super(DecimalField, cls).deserialize(value)
-        if is_null(value):
-            return None
-        elif isinstance(value, cls.TYPE):
+        if value is None or isinstance(value, cls.TYPE):
             return value
         elif type(value) in (int, float):
             return Decimal(str(value))
@@ -371,10 +369,7 @@ class TextField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         value = super(TextField, cls).deserialize(value)
-        if value is None:
-            return None
-
-        if isinstance(value, cls.TYPE):
+        if value is None or isinstance(value, cls.TYPE):
             return value
         elif 'encoding' in kwargs:
             return as_string(value).decode(kwargs['encoding'])
@@ -428,13 +423,10 @@ class JSONField(Field):
         if isinstance(value, types.UnicodeType):
             value = value.encode('utf-8')
 
-        if value is None:
-            return None
-        elif isinstance(value, cls.TYPE):
+        if value is None or isinstance(value, cls.TYPE):
             return value
         else:
             return json.loads(value)
-
 
 
 AVAILABLE_FIELD_TYPES = [locals()[element] for element in __all__
