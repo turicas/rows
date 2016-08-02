@@ -211,3 +211,32 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table2 = rows.import_from_csv(filename)
         self.assert_table_equal(table, table2)
+
+    def test_quotes(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        table = rows.Table(fields=OrderedDict([
+                    ('field_1', rows.fields.TextField),
+                    ('field_2', rows.fields.TextField),
+                    ('field_3', rows.fields.TextField),
+                    ('field_4', rows.fields.TextField), ]))
+        table.append({
+            'field_1': '"quotes"',
+            'field_2': 'test "quotes"',
+            'field_3': '"quotes" test',
+            'field_4': 'test "quotes" test',
+            })
+        # we need this line row since `"quotes"` on `field_1` could be
+        # `JSONField` or `TextField`
+        table.append({
+            'field_1': 'noquotes',
+            'field_2': 'test "quotes"',
+            'field_3': '"quotes" test',
+            'field_4': 'test "quotes" test',
+            })
+        rows.export_to_csv(table, filename)
+
+        table2 = rows.import_from_csv(filename)
+        self.assert_table_equal(table, table2)

@@ -13,6 +13,8 @@
 - [#167](https://github.com/turicas/rows/issues/167) Use more data to detect
   dialect, delimit the possible delimiters and fallback to excel if can't
   detect.
+- [#176](https://github.com/turicas/rows/issues/176) Problem using quotes on
+  CSV plugin.
 
 ## Version `0.2.0`
 
