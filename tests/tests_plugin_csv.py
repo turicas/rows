@@ -18,6 +18,7 @@
 from __future__ import unicode_literals
 
 import tempfile
+import textwrap
 import unittest
 
 from collections import OrderedDict
@@ -106,6 +107,58 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call_args = mocked_create_table.call_args_list[0]
         self.assertEqual(data, list(call_args[0][0]))
 
+    def test_detect_dialect_more_data(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        # If the sniffer reads only the first line, it will think the delimiter
+        # is ',' instead of ';'
+        data = textwrap.dedent('''
+            field1,samefield;field2,other
+            row1value1;row1value2
+            row2value1;row2value2
+            ''').strip()
+        with open(filename, 'w') as fobj:
+            fobj.write(data.encode('utf-8'))
+
+        table = rows.import_from_csv(filename, encoding='utf-8')
+        self.assertEqual(table.field_names, ['field1samefield', 'field2other'])
+        self.assertEqual(table[0].field1samefield, 'row1value1')
+        self.assertEqual(table[0].field2other, 'row1value2')
+        self.assertEqual(table[1].field1samefield, 'row2value1')
+        self.assertEqual(table[1].field2other, 'row2value2')
+
+    def test_detect_dialect_using_json(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        encoding = 'utf-8'
+        self.files_to_delete.append(filename)
+
+        # Using JSON will force the sniffer to do not include ':', '}' in the
+        # possible delimiters
+        table = rows.Table(fields=OrderedDict([
+            ('jsoncolumn1', rows.fields.JSONField),
+            ('jsoncolumn2', rows.fields.JSONField),
+            ]))
+        table.append({
+            'jsoncolumn1': '{"a": 42}',
+            'jsoncolumn2': '{"b": 43}',
+            })
+        table.append({
+            'jsoncolumn1': '{"c": 44}',
+            'jsoncolumn2': '{"d": 45}',
+            })
+        rows.export_to_csv(table, filename, encoding=encoding)
+
+        table = rows.import_from_csv(filename, encoding=encoding)
+
+        self.assertEqual(table.field_names, ['jsoncolumn1', 'jsoncolumn2'])
+        self.assertDictEqual(table[0].jsoncolumn1, {'a': 42})
+        self.assertDictEqual(table[0].jsoncolumn2, {'b': 43})
+        self.assertDictEqual(table[1].jsoncolumn1, {'c': 44})
+        self.assertDictEqual(table[1].jsoncolumn2, {'d': 45})
+
     @mock.patch('rows.plugins.csv.serialize')
     def test_export_to_csv_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -156,17 +209,5 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table.append({'jsoncolumn': '{"python": 42}'})
         rows.export_to_csv(table, filename)
 
-        # We need to force the dialect here since the current CSV plugin could
-        # detect ':' as delimiter (because of the JSON).
-        # TODO: should be removed when issue 167 is fixed.
-        import csv
-        class MyDialect(csv.Dialect):
-            quotechar = b'"'
-            delimiter = b','
-            lineterminator = b'\r\n'
-            doublequote = True
-            quoting = csv.QUOTE_MINIMAL
-            skipinitialspace = False
-
-        table2 = rows.import_from_csv(filename, dialect=MyDialect)
+        table2 = rows.import_from_csv(filename)
         self.assert_table_equal(table, table2)

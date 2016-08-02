@@ -24,15 +24,21 @@ import unicodecsv
 from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
 
 
-def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None, *args,
-                    **kwargs):
+sniffer = unicodecsv.Sniffer()
+
+def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
+                    sample_size=8192, *args, **kwargs):
     'Import data from a CSV file'
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj)
 
     if dialect is None:
-        sample = fobj.readline().decode(encoding)
-        dialect = unicodecsv.Sniffer().sniff(sample)
+        sample = fobj.read(sample_size)
+        try:
+            dialect = sniffer.sniff(sample, delimiters=(',', ';', '\t'))
+        except unicodecsv.Error:
+            # Could not detect dialect, fall back to 'excel'
+            dialect = unicodecsv.excel
         fobj.seek(0)
 
     kwargs['encoding'] = encoding

@@ -7,10 +7,12 @@
 ### Bug Fixes
 
 - [#170](https://github.com/turicas/rows/issues/170) (SQLite plugin) Error
-  converting `int` and `float` when value is `None`
+  converting `int` and `float` when value is `None`.
 - [#168](https://github.com/turicas/rows/issues/168) Use `Field.serialize`
-  if does not know the field type (affecting: XLS, XLSX and SQLite plugins)
-
+  if does not know the field type (affecting: XLS, XLSX and SQLite plugins).
+- [#167](https://github.com/turicas/rows/issues/167) Use more data to detect
+  dialect, delimit the possible delimiters and fallback to excel if can't
+  detect.
 
 ## Version `0.2.0`
 

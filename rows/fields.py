@@ -464,6 +464,7 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
                  *args, **kwargs):
     """Where the magic happens"""
 
+    # TODO: look strategy of csv.Sniffer.has_header
     # TODO: may receive 'type hints'
     # TODO: should support receiving unicode objects directly
     # TODO: should expect data in unicode or will be able to use binary data?
