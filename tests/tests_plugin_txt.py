@@ -20,6 +20,8 @@ from __future__ import unicode_literals
 import tempfile
 import unittest
 
+from collections import OrderedDict
+
 import mock
 
 import rows
@@ -30,6 +32,7 @@ import utils
 class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'txt'
+    file_extension = 'txt'
     filename = 'tests/data/all-field-types.txt'
     encoding = 'utf-8'
 
@@ -118,3 +121,17 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table = rows.import_from_txt(temp.name)
         self.assert_table_equal(table, utils.table)
+
+
+    def test_issue_168(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        table = rows.Table(fields=
+                OrderedDict([('jsoncolumn', rows.fields.JSONField)]))
+        table.append({'jsoncolumn': '{"python": 42}'})
+        rows.export_to_txt(table, filename)
+
+        table2 = rows.import_from_txt(filename)
+        self.assert_table_equal(table, table2)
