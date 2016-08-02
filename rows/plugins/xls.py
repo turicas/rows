@@ -37,6 +37,46 @@ CELL_TYPES = {xlrd.XL_CELL_BLANK: fields.BinaryField,
               xlrd.XL_CELL_EMPTY: None,
               xlrd.XL_CELL_NUMBER: fields.FloatField,}
 
+
+# TODO: add more formatting styles for other types such as currency
+# TODO: styles may be influenced by locale
+FORMATTING_STYLES = {
+        fields.DateField: xlwt.easyxf(num_format_str='yyyy-mm-dd'),
+        fields.DatetimeField: xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'),
+        fields.PercentField: xlwt.easyxf(num_format_str='0.00%'),
+}
+
+
+def _python_to_xls(field_types):
+
+    def convert_value(field_type, value):
+        data = {}
+        if field_type in FORMATTING_STYLES:
+            data['style'] = FORMATTING_STYLES[field_type]
+
+        if field_type in (
+                fields.BinaryField,
+                fields.BoolField,
+                fields.DateField,
+                fields.DatetimeField,
+                fields.DecimalField,
+                fields.FloatField,
+                fields.IntegerField,
+                fields.PercentField,
+                fields.TextField,
+        ):
+            return value, data
+
+        else:  # don't know this field
+            return field_type.serialize(value), data
+
+    def convert_row(row):
+        return [convert_value(field_type, value)
+                for field_type, value in zip(field_types, row)]
+
+    return convert_row
+
+
 def cell_value(sheet, row, col):
     try:
         cell = sheet.cell(row, col)
@@ -68,6 +108,7 @@ def cell_value(sheet, row, col):
             return int(value)
         else:
             return value
+
 
 def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
                     start_row=0, start_column=0, *args, **kwargs):
@@ -110,12 +151,6 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
     return create_table([header] + table_rows, meta=meta, *args, **kwargs)
 
 
-# TODO: add more formatting styles for other types such as currency
-# TODO: styles may be influenced by locale
-FORMATTING_STYLES = {fields.DateField: xlwt.easyxf(num_format_str='yyyy-mm-dd'),
-                     fields.DatetimeField: xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss'),
-                     fields.PercentField: xlwt.easyxf(num_format_str='0.00%'),}
-
 def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                   **kwargs):
 
@@ -128,13 +163,9 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
     for column_index, field_name in enumerate(field_names):
         sheet.write(0, column_index, field_name)
 
+    _convert_row = _python_to_xls(map(table.fields.get, field_names))
     for row_index, row in enumerate(prepared_table, start=1):
-        for column_index, (field_name, value) in \
-                enumerate(zip(field_names, row)):
-            field_type = table.fields[field_name]
-            data = {}
-            if field_type in FORMATTING_STYLES:
-                data['style'] = FORMATTING_STYLES[field_type]
+        for column_index, (value, data) in enumerate(_convert_row(row)):
             sheet.write(row_index, column_index, value, **data)
 
     if filename_or_fobj is not None:
