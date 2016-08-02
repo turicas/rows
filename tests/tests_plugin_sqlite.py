@@ -36,6 +36,7 @@ from rows import fields
 class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'sqlite'
+    file_extension = 'sqlite'
     filename = 'tests/data/all-field-types.sqlite'
     override_fields = {'percent_column': fields.FloatField,
                        'bool_column': fields.IntegerField, }
@@ -160,3 +161,16 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         # should not raise an exception
         rows.export_to_sqlite(table, temp.name)
+
+    def test_issue_168(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        table = rows.Table(fields=
+                OrderedDict([('jsoncolumn', rows.fields.JSONField)]))
+        table.append({'jsoncolumn': '{"python": 42}'})
+        rows.export_to_sqlite(table, filename)
+
+        table2 = rows.import_from_sqlite(filename)
+        self.assert_table_equal(table, table2)

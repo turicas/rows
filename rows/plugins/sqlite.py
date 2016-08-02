@@ -42,6 +42,7 @@ SQLITE_TYPES = {fields.BinaryField: 'BLOB',
                 fields.DateField: 'TEXT',
                 fields.DatetimeField: 'TEXT',
                 fields.TextField: 'TEXT', }
+DEFAULT_TYPE = 'BLOB'
 
 
 def _python_to_sqlite(field_types):
@@ -61,7 +62,7 @@ def _python_to_sqlite(field_types):
             return float(value)
 
         else:  # don't know this field
-            return value
+            return field_type.serialize(value)
 
     def convert_row(row):
         return [convert_value(field_type, value)
@@ -92,32 +93,28 @@ def import_from_sqlite(filename_or_connection, table_name='rows', query=None,
     return create_table([header] + table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_sqlite(table_obj, filename_or_connection, table_name='rows',
+def export_to_sqlite(table, filename_or_connection, table_name='rows',
                      batch_size=100, *args, **kwargs):
     # TODO: should add transaction support?
 
-
-    prepared_table = prepare_to_export(table_obj, *args, **kwargs)
+    prepared_table = prepare_to_export(table, *args, **kwargs)
     connection = _get_connection(filename_or_connection)
     table_names = [item[0]
                    for item in connection.execute(SQL_TABLE_NAMES).fetchall()]
     table_name = make_unique_name(name=table_name, existing_names=table_names)
 
     field_names = prepared_table.next()
+    field_types = map(table.fields.get, field_names)
     columns = ['{} {}'.format(field_name,
-                              SQLITE_TYPES[table_obj.fields[field_name]])
-               for field_name in field_names]
-    sql = SQL_CREATE_TABLE.format(table_name=table_name,
-                                  field_types=', '.join(columns))
-    connection.execute(sql)
+                              SQLITE_TYPES.get(field_type, DEFAULT_TYPE))
+               for field_name, field_type in zip(field_names, field_types)]
+    connection.execute(SQL_CREATE_TABLE.format(table_name=table_name,
+                                               field_types=', '.join(columns)))
 
-    columns = ', '.join(field_names)
-    placeholders = ', '.join(['?' for field in field_names])
-    insert_sql = SQL_INSERT.format(table_name=table_name,
-                                   field_names=columns,
-                                   placeholders=placeholders)
-
-    field_types = [table_obj.fields[field_name] for field_name in field_names]
+    insert_sql = SQL_INSERT.format(
+            table_name=table_name,
+            field_names=', '.join(field_names),
+            placeholders=', '.join('?' for _ in field_names))
     _convert_row = _python_to_sqlite(field_types)
     for batch in ipartition(prepared_table, batch_size):
         connection.executemany(insert_sql, map(_convert_row, batch))
