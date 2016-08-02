@@ -261,6 +261,12 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         expected_result = ['field_123', 'field_456', 'field_123_2']
         self.assertEqual(result, expected_result)
 
+    def test_make_header_should_not_ignore_permit_not(self):
+        result = plugins_utils.make_header(['abc', '^qwe', 'rty'],
+                                           permit_not=True)
+        expected_result = ['abc', '^qwe', 'rty']
+        self.assertEqual(result, expected_result)
+
     def test_make_unique_name(self):
         name = 'test'
         existing_names = []

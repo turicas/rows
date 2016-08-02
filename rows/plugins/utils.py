@@ -46,13 +46,13 @@ def make_unique_name(name, existing_names, name_format='{name}_{index}'):
         index += 1
     return new_name
 
-
 def make_header(data, permit_not=False):
-    permitted_chars = SLUG_CHARS
+    slug_chars = SLUG_CHARS
     if permit_not:
-        permitted_chars += '^'
+        slug_chars += '^'
 
-    header = map(slug, data)
+    header = [slug(field_name, permitted_chars=slug_chars)
+              for field_name in data]
     field_names = []
     for index, field_name in enumerate(header):
         if not field_name:
