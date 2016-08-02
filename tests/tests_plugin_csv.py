@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import tempfile
 import unittest
 
+from collections import OrderedDict
 from io import BytesIO
 
 import mock
@@ -43,6 +44,7 @@ def make_csv_data(quote_char, field_delimiter, line_delimiter):
 class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'csv'
+    file_extension = 'csv'
     filename = 'tests/data/all-field-types.csv'
     encoding = 'utf-8'
 
@@ -142,3 +144,29 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table = rows.import_from_csv(temp.name)
         self.assert_table_equal(table, utils.table)
+
+    def test_issue_168(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        table = rows.Table(fields=OrderedDict([
+            ('jsoncolumn', rows.fields.JSONField),
+            ]))
+        table.append({'jsoncolumn': '{"python": 42}'})
+        rows.export_to_csv(table, filename)
+
+        # We need to force the dialect here since the current CSV plugin could
+        # detect ':' as delimiter (because of the JSON).
+        # TODO: should be removed when issue 167 is fixed.
+        import csv
+        class MyDialect(csv.Dialect):
+            quotechar = b'"'
+            delimiter = b','
+            lineterminator = b'\r\n'
+            doublequote = True
+            quoting = csv.QUOTE_MINIMAL
+            skipinitialspace = False
+
+        table2 = rows.import_from_csv(filename, dialect=MyDialect)
+        self.assert_table_equal(table, table2)

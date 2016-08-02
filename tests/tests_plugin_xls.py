@@ -22,6 +22,8 @@ import tempfile
 import time
 import unittest
 
+from collections import OrderedDict
+
 import mock
 
 import rows
@@ -37,6 +39,7 @@ def date_to_datetime(value):
 class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'xls'
+    file_extension = 'xls'
     filename = 'tests/data/all-field-types.xls'
 
     def test_imports(self):
@@ -115,3 +118,16 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(call[0], (utils.table, ))
         kwargs['encoding'] = encoding
         self.assertEqual(call[1], kwargs)
+
+    def test_issue_168(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        table = rows.Table(fields=
+                OrderedDict([('jsoncolumn', rows.fields.JSONField)]))
+        table.append({'jsoncolumn': '{"python": 42}'})
+        rows.export_to_xls(table, filename)
+
+        table2 = rows.import_from_xls(filename)
+        self.assert_table_equal(table, table2)

@@ -42,6 +42,8 @@ def cleanup_lines(lines):
 
 class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
+    plugin_name = 'html'
+    file_extension = 'html'
     filename = 'tests/data/all-field-types.html'
     encoding = 'utf-8'
 
@@ -329,6 +331,19 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[1].field1, 'row2field1')
         self.assertEqual(table[1].field2, 'row2field2')
         self.assertEqual(table[1].properties, properties_2)
+
+    def test_issue_168(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        table = rows.Table(fields=
+                OrderedDict([('jsoncolumn', rows.fields.JSONField)]))
+        table.append({'jsoncolumn': '{"python": 42}'})
+        rows.export_to_html(table, filename)
+
+        table2 = rows.import_from_html(filename)
+        self.assert_table_equal(table, table2)
 
 
 class PluginHtmlUtilsTestCase(unittest.TestCase):

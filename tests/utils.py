@@ -111,7 +111,8 @@ class RowsTestMixIn(object):
 
     def tearDown(self):
         for filename in self.files_to_delete:
-            os.unlink(filename)
+            if os.path.exists(filename):
+                os.unlink(filename)
 
     def assert_table_equal(self, first, second):
         expected_fields = dict(second.fields)
@@ -120,7 +121,9 @@ class RowsTestMixIn(object):
         else:
             override_fields = self.override_fields
             expected_fields = copy.deepcopy(expected_fields)
-            expected_fields.update(override_fields)
+            for key, value in override_fields.items():
+                if key in expected_fields:
+                    expected_fields[key] = value
 
         self.assertDictEqual(dict(first.fields), expected_fields)
         self.assertEqual(len(first), len(second))

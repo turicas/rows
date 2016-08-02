@@ -22,6 +22,7 @@ import json
 import tempfile
 import unittest
 
+from collections import OrderedDict
 from textwrap import dedent
 
 import mock
@@ -33,6 +34,7 @@ import utils
 class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'json'
+    file_extension = 'json'
     filename = 'tests/data/all-field-types.json'
     encoding = 'utf-8'
 
@@ -170,3 +172,16 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
             self.assertTrue(line.startswith('    '))
         self.assertEqual(result[-2], '  }')
         self.assertEqual(result[-1], ']')
+
+    def test_issue_168(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        table = rows.Table(fields=
+                OrderedDict([('jsoncolumn', rows.fields.JSONField)]))
+        table.append({'jsoncolumn': '{"python": 42}'})
+        rows.export_to_json(table, filename)
+
+        table2 = rows.import_from_json(filename)
+        self.assert_table_equal(table, table2)
