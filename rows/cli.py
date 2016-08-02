@@ -68,14 +68,7 @@ def _get_field_names(field_names, table_field_names, permit_not=False):
         click.echo('Table does not have fields: {}'.format(missing), err=True)
         sys.exit(1)
     else:
-        result = []
-        for field_name in table_field_names:
-            # TODO: change order
-            if field_name in new_field_names:
-                result.append(field_name)
-            elif '^' + field_name in new_field_names:
-                result.append('^' + field_name)
-        return result
+        return new_field_names
 
 
 @click.group()
@@ -226,7 +219,6 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
                    err=True)
         sys.exit(20)
 
-    # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or sys.stdout.encoding or \
                       DEFAULT_OUTPUT_ENCODING
 
