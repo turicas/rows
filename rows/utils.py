@@ -178,13 +178,15 @@ def import_from_uri(uri, default_encoding, verify_ssl=True, *args, **kwargs):
     return table
 
 
-def export_to_uri(uri, table, *args, **kwargs):
+def export_to_uri(table, uri, *args, **kwargs):
+    'Given a `rows.Table` and an URI, detects plugin (from URI) and exports'
+
     # TODO: support '-' also
-    plugin_name = uri.split('.')[-1].lower()
+    plugin_name = plugin_name_by_uri(uri)
 
     try:
         export_function = getattr(rows, 'export_to_{}'.format(plugin_name))
     except AttributeError:
         raise ValueError('Plugin (export) "{}" not found'.format(plugin_name))
 
-    export_function(table, uri, *args, **kwargs)
+    return export_function(table, uri, *args, **kwargs)

@@ -17,6 +17,7 @@
 
 # TODO: define exit codes
 # TODO: move default options to base command
+# TODO: may move all 'destination' to '--output'
 # TODO: test this whole module
 # TODO: add option to pass 'create_table' options in command-line (like force
 #       fields)
@@ -109,9 +110,9 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
 
     if output_locale is not None:
         with rows.locale_context(output_locale):
-            export_to_uri(destination, table, encoding=output_encoding)
+            export_to_uri(table, destination, encoding=output_encoding)
     else:
-        export_to_uri(destination, table, encoding=output_encoding)
+        export_to_uri(table, destination, encoding=output_encoding)
 
 
 @cli.command(help='Join tables from `source` URIs using `key(s)` to group '
@@ -153,9 +154,9 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
 
     if output_locale is not None:
         with rows.locale_context(output_locale):
-            export_to_uri(destination, result, encoding=output_encoding)
+            export_to_uri(result, destination, encoding=output_encoding)
     else:
-        export_to_uri(destination, result, encoding=output_encoding)
+        export_to_uri(result, destination, encoding=output_encoding)
 
 
 @cli.command(name='sum',
@@ -195,9 +196,9 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 
     if output_locale is not None:
         with rows.locale_context(output_locale):
-            export_to_uri(destination, result, encoding=output_encoding)
+            export_to_uri(result, destination, encoding=output_encoding)
     else:
-        export_to_uri(destination, result, encoding=output_encoding)
+        export_to_uri(result, destination, encoding=output_encoding)
 
 
 @cli.command(name='print', help='Print a table')
@@ -286,7 +287,6 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
 def query(input_encoding, output_encoding, input_locale, output_locale,
         verify_ssl, fields, output, query, sources):
 
-    # TODO: may move all 'destination' to '--output'
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or sys.stdout.encoding or \
                       DEFAULT_OUTPUT_ENCODING
@@ -326,9 +326,9 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
     else:
         if output_locale is not None:
             with rows.locale_context(output_locale):
-                export_to_uri(output, result, encoding=output_encoding)
+                export_to_uri(result, output, encoding=output_encoding)
         else:
-            export_to_uri(output, result, encoding=output_encoding)
+            export_to_uri(result, output, encoding=output_encoding)
 
 
 if __name__ == '__main__':
