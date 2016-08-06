@@ -254,6 +254,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.DateField.deserialize(deserialized),
                          deserialized)
         self.assertEqual(fields.DateField.deserialize(None), None)
+        self.assertEqual(fields.DateField.deserialize(''), None)
         self.assertEqual(fields.DateField.serialize(deserialized),
                          serialized)
         self.assertIs(type(fields.DateField.serialize(deserialized)),
