@@ -368,7 +368,6 @@ class TextField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(TextField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
         elif 'encoding' in kwargs:

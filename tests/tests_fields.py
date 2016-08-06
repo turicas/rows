@@ -70,6 +70,7 @@ class FieldsTestCase(unittest.TestCase):
             self.assertIs(fields.BoolField.deserialize(value), False)
 
         self.assertIs(fields.BoolField.deserialize(None), None)
+        self.assertEqual(fields.BoolField.deserialize(''), None)
 
         true_values = ('True', b'True', 'true', b'true', 'yes', b'yes', True)
         for value in true_values:
@@ -333,6 +334,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.TextField.deserialize('Álvaro'),
                          'Álvaro')
         self.assertIs(fields.TextField.deserialize(None), None)
+        self.assertIs(fields.TextField.deserialize(''), '')
         self.assertEqual(fields.TextField.serialize('Álvaro'),
                          'Álvaro')
         self.assertIs(type(fields.TextField.serialize('Álvaro')),
