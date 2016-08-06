@@ -214,48 +214,60 @@ class RowsTestMixIn(object):
 
     def assert_BoolField(self, expected_value, value, *args, **kwargs):
         value = str(value)
-        if expected_value is True:
+        if expected_value is None:
+            assert value.lower() in NONE_VALUES
+        elif expected_value is True:
             assert value.lower() in ('true', b'true', 'yes', b'yes')
         elif expected_value is False:
             assert value.lower() in ('false', b'false', 'no', b'no')
         else:
-            # TODO: what about None?
             raise ValueError('expected_value is not True or False')
 
     def assert_IntegerField(self, expected_value, value, *args, **kwargs):
-        self.assertIn(value, (expected_value, str(expected_value)))
-
+        if expected_value is None:
+            assert value.lower() in NONE_VALUES
+        else:
+            self.assertIn(value, (expected_value, str(expected_value)))
 
     def assert_FloatField(self, expected_value, value, *args, **kwargs):
-        if type(value) != type(expected_value):
+        if expected_value is None:
+            assert value.lower() in NONE_VALUES
+        elif type(value) != type(expected_value):
             self.assertEqual(value, str(expected_value))
         else:
             self.assertAlmostEqual(expected_value, value, places=5)
 
-
     def assert_DecimalField(self, expected_value, value, *args, **kwargs):
-        return self.assert_FloatField(expected_value, value)
-
+        if expected_value is None:
+            assert value.lower() in NONE_VALUES
+        else:
+            self.assert_FloatField(expected_value, value)
 
     def assert_PercentField(self, expected_value, value, *args, **kwargs):
-        float_value = float(expected_value) * 100
-        possible_values = [str(float_value) + '%',
-                           str(float_value) + '.0%',
-                           str(float_value) + '.00%']
-        if int(float_value) == float_value:
-            possible_values.append(str(int(float_value)) + '%')
-        self.assertIn(value, possible_values)
-
+        if expected_value is None:
+            assert value.lower() in NONE_VALUES
+        else:
+            float_value = float(expected_value) * 100
+            possible_values = [str(float_value) + '%',
+                            str(float_value) + '.0%',
+                            str(float_value) + '.00%']
+            if int(float_value) == float_value:
+                possible_values.append(str(int(float_value)) + '%')
+            self.assertIn(value, possible_values)
 
     def assert_DateField(self, expected_value, value, *args, **kwargs):
-        value = str(value)
-        if value.endswith('00:00:00'):
-            value = value[:-9]
-        self.assertEqual(str(expected_value), value)
-
+        if expected_value is None:
+            assert value.lower() in NONE_VALUES
+        else:
+            value = str(value)
+            if value.endswith('00:00:00'):
+                value = value[:-9]
+            self.assertEqual(str(expected_value), value)
 
     def assert_DatetimeField(self, expected_value, value, *args, **kwargs):
-        if type(value) is datetime.datetime and \
+        if expected_value is None:
+            assert value.lower() in NONE_VALUES
+        elif type(value) is datetime.datetime and \
                 type(expected_value) is datetime.datetime:
             # if both types are datetime, check delta
             # XLSX plugin has not a good precision and will change milliseconds
