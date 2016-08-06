@@ -280,4 +280,11 @@ class RowsTestMixIn(object):
             self.assertEqual(str(expected_value).replace(' ', 'T'), value)
 
     def assert_TextField(self, expected_value, value, *args, **kwargs):
-        self.assertEqual(expected_value, value)
+        if expected_value is None:
+            assert value is None or value.lower() in NONE_VALUES
+        elif expected_value == '':
+            # Some plugins return `None` instead of empty strings for cells
+            # with blank values and we don't have an way to differentiate
+            assert value in (None, '')
+        else:
+            self.assertEqual(expected_value, value)
