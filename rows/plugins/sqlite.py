@@ -48,18 +48,20 @@ DEFAULT_TYPE = 'BLOB'
 def _python_to_sqlite(field_types):
 
     def convert_value(field_type, value):
-        if field_type in (fields.BinaryField,
-                          fields.BoolField,
-                          fields.DateField,
-                          fields.DatetimeField,
-                          fields.FloatField,
-                          fields.IntegerField,
-                          fields.TextField):
+        if field_type in (
+                fields.BinaryField,
+                fields.BoolField,
+                fields.DateField,
+                fields.DatetimeField,
+                fields.FloatField,
+                fields.IntegerField,
+                fields.TextField
+        ):
             return value
 
         elif field_type in (fields.DecimalField,
                             fields.PercentField):
-            return float(value)
+            return float(value) if value is not None else None
 
         else:  # don't know this field
             return field_type.serialize(value)
