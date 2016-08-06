@@ -213,25 +213,24 @@ class RowsTestMixIn(object):
         return asserts[field_name](expected_value, value, *args, **kwargs)
 
     def assert_BoolField(self, expected_value, value, *args, **kwargs):
-        value = str(value)
         if expected_value is None:
-            assert value.lower() in NONE_VALUES
+            assert value is None or value.lower() in NONE_VALUES
         elif expected_value is True:
-            assert value.lower() in ('true', b'true', 'yes', b'yes')
+            assert str(value).lower() in ('true', b'true', 'yes', b'yes')
         elif expected_value is False:
-            assert value.lower() in ('false', b'false', 'no', b'no')
+            assert str(value).lower() in ('false', b'false', 'no', b'no')
         else:
             raise ValueError('expected_value is not True or False')
 
     def assert_IntegerField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
-            assert value.lower() in NONE_VALUES
+            assert value is None or value.lower() in NONE_VALUES
         else:
             self.assertIn(value, (expected_value, str(expected_value)))
 
     def assert_FloatField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
-            assert value.lower() in NONE_VALUES
+            assert value is None or value.lower() in NONE_VALUES
         elif type(value) != type(expected_value):
             self.assertEqual(value, str(expected_value))
         else:
@@ -239,13 +238,13 @@ class RowsTestMixIn(object):
 
     def assert_DecimalField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
-            assert value.lower() in NONE_VALUES
+            assert value is None or value.lower() in NONE_VALUES
         else:
             self.assert_FloatField(expected_value, value)
 
     def assert_PercentField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
-            assert value.lower() in NONE_VALUES
+            assert value is None or value.lower() in NONE_VALUES
         else:
             float_value = float(expected_value) * 100
             possible_values = [str(float_value) + '%',
@@ -257,7 +256,7 @@ class RowsTestMixIn(object):
 
     def assert_DateField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
-            assert value.lower() in NONE_VALUES
+            assert value is None or value.lower() in NONE_VALUES
         else:
             value = str(value)
             if value.endswith('00:00:00'):
@@ -266,7 +265,7 @@ class RowsTestMixIn(object):
 
     def assert_DatetimeField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
-            assert value.lower() in NONE_VALUES
+            assert value is None or value.lower() in NONE_VALUES
         elif type(value) is datetime.datetime and \
                 type(expected_value) is datetime.datetime:
             # if both types are datetime, check delta
