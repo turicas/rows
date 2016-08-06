@@ -79,8 +79,8 @@ def _python_to_xls(field_types):
 
 def cell_value(sheet, row, col):
     cell = sheet.cell(row, col)
-
     field_type = CELL_TYPES[cell.ctype]
+
     if field_type is None:
         return None
 
@@ -101,10 +101,16 @@ def cell_value(sheet, row, col):
         book = sheet.book
         xf = book.xf_list[cell.xf_index]
         fmt = book.format_map[xf.format_key]
+
         if fmt.format_str.endswith('%'):
-            return '{}%'.format(cell.value * 100)
+            # TODO: we may optimize this approach: we're converting to string
+            # and the library is detecting the type when we could just say to
+            # the library this value is PercentField
+            return '{}%'.format(value * 100) if value else None
+
         elif type(value) == float and int(value) == value:
             return int(value)
+
         else:
             return value
 
@@ -120,17 +126,13 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
         sheet = book.sheet_by_index(sheet_index)
     # TODO: may re-use Excel data types
 
-    # Get field names
-    header = [cell_value(sheet, start_row, column_index)
-              for column_index in range(start_column, sheet.ncols)]
-
-    # Get sheet rows
+    # Get header and rows
     table_rows = [[cell_value(sheet, row_index, column_index)
                    for column_index in range(start_column, sheet.ncols)]
-                  for row_index in range(start_row + 1, sheet.nrows)]
+                  for row_index in range(start_row, sheet.nrows)]
 
     meta = {'imported_from': 'xls', 'filename': filename,}
-    return create_table([header] + table_rows, meta=meta, *args, **kwargs)
+    return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
 def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
