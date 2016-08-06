@@ -15,6 +15,8 @@
   detect.
 - [#176](https://github.com/turicas/rows/issues/176) Problem using quotes on
   CSV plugin.
+- [#179](https://github.com/turicas/rows/issues/179) Fix double quote problem
+  on `rows.utils.slug`
 
 ## Version `0.2.0`
 
