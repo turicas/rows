@@ -239,6 +239,8 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
     if fields_except is not None:
         fields_except = _get_field_names(fields_except, table_field_names)
 
+    # TODO: should set `export_fields = None` if `--fields` and
+    # `--fields-except` are `None`
     if fields is not None and fields_except is None:
         export_fields = fields
     elif fields is not None and fields_except is not None:

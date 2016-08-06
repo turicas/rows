@@ -129,8 +129,11 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
         raise ValueError('Table type not recognized')
 
     if export_fields is None:
+        # we use already slugged-fieldnames
         export_fields = table.fields.keys()
-    export_fields = make_header(export_fields)
+    else:
+        # we need to slug all the field names
+        export_fields = make_header(export_fields)
 
     fields = table.fields
     table_field_names = fields.keys()
