@@ -30,71 +30,89 @@ from rows.table import Table
 
 
 NONE_VALUES = list(fields.NULL) + ['', None]
-FIELDS = OrderedDict([('bool_column', fields.BoolField),
-                      ('integer_column', fields.IntegerField),
-                      ('float_column', fields.FloatField),
-                      ('decimal_column', fields.FloatField),
-                      ('percent_column', fields.PercentField),
-                      ('date_column', fields.DateField),
-                      ('datetime_column', fields.DatetimeField),
-                      ('unicode_column', fields.TextField),
-                      ('null_column', fields.BinaryField),])
+FIELDS = OrderedDict([
+    ('bool_column', fields.BoolField),
+    ('integer_column', fields.IntegerField),
+    ('float_column', fields.FloatField),
+    ('decimal_column', fields.FloatField),
+    ('percent_column', fields.PercentField),
+    ('date_column', fields.DateField),
+    ('datetime_column', fields.DatetimeField),
+    ('unicode_column', fields.TextField),
+])
 FIELD_NAMES = FIELDS.keys()
 EXPECTED_ROWS = [
-        {'float_column': 3.141592,
-         'decimal_column': 3.141592,
-         'bool_column': True,
-         'integer_column': 1,
-         'date_column': datetime.date(2015, 1, 1),
-         'datetime_column': datetime.datetime(2015, 8, 18, 15, 10),
-         'percent_column': Decimal('0.01'),
-         'unicode_column': 'Álvaro',
-         'null_column': ''.encode('utf-8')},
-        {'float_column': 1.234,
-         'decimal_column': 1.234,
-         'bool_column': False,
-         'integer_column': 2,
-         'date_column': datetime.date(1999, 2, 3),
-         'datetime_column': datetime.datetime(1999, 2, 3, 0, 1, 2),
-         'percent_column': Decimal('0.1169'),
-         'unicode_column': 'àáãâä¹²³',
-         'null_column': '-'.encode('utf-8')},
-        {'float_column': 4.56,
-         'decimal_column': 4.56,
-         'bool_column': True,
-         'integer_column': 3,
-         'date_column': datetime.date(2050, 1, 2),
-         'datetime_column': datetime.datetime(2050, 1, 2, 23, 45, 31),
-         'percent_column': Decimal('0.12'),
-         'unicode_column': 'éèẽêë',
-         'null_column': 'null'.encode('utf-8')},
-        {'float_column': 7.89,
-         'decimal_column': 7.89,
-         'bool_column': False,
-         'integer_column': 4,
-         'date_column': datetime.date(2015, 8, 18),
-         'datetime_column': datetime.datetime(2015, 8, 18, 22, 21, 33),
-         'percent_column': Decimal('0.1364'),
-         'unicode_column': '~~~~',
-         'null_column': 'nil'.encode('utf-8')},
-        {'float_column': 9.87,
-         'decimal_column': 9.87,
-         'bool_column': True,
-         'integer_column': 5,
-         'date_column': datetime.date(2015, 3, 4),
-         'datetime_column': datetime.datetime(2015, 3, 4, 16, 0, 1),
-         'percent_column': Decimal('0.1314'),
-         'unicode_column': 'álvaro',
-         'null_column': 'none'.encode('utf-8')},
-        {'float_column': 1.2345,
-         'decimal_column': 1.2345,
-         'bool_column': False,
-         'integer_column': 6,
-         'date_column': datetime.date(2015, 5, 6),
-         'datetime_column': datetime.datetime(2015, 5, 6, 12, 1, 2),
-         'percent_column': Decimal('0.02'),
-         'unicode_column': 'test',
-         'null_column': 'n/a'.encode('utf-8')},]
+        {
+            'float_column': 3.141592,
+            'decimal_column': 3.141592,
+            'bool_column': True,
+            'integer_column': 1,
+            'date_column': datetime.date(2015, 1, 1),
+            'datetime_column': datetime.datetime(2015, 8, 18, 15, 10),
+            'percent_column': Decimal('0.01'),
+            'unicode_column': 'Álvaro',
+        },
+        {
+            'float_column': 1.234,
+             'decimal_column': 1.234,
+             'bool_column': False,
+             'integer_column': 2,
+             'date_column': datetime.date(1999, 2, 3),
+             'datetime_column': datetime.datetime(1999, 2, 3, 0, 1, 2),
+             'percent_column': Decimal('0.1169'),
+             'unicode_column': 'àáãâä¹²³',
+        },
+        {
+            'float_column': 4.56,
+            'decimal_column': 4.56,
+            'bool_column': True,
+            'integer_column': 3,
+            'date_column': datetime.date(2050, 1, 2),
+            'datetime_column': datetime.datetime(2050, 1, 2, 23, 45, 31),
+            'percent_column': Decimal('0.12'),
+            'unicode_column': 'éèẽêë',
+        },
+        {
+            'float_column': 7.89,
+             'decimal_column': 7.89,
+             'bool_column': False,
+             'integer_column': 4,
+             'date_column': datetime.date(2015, 8, 18),
+             'datetime_column': datetime.datetime(2015, 8, 18, 22, 21, 33),
+             'percent_column': Decimal('0.1364'),
+             'unicode_column': '~~~~',
+        },
+        {
+            'float_column': 9.87,
+            'decimal_column': 9.87,
+            'bool_column': True,
+            'integer_column': 5,
+            'date_column': datetime.date(2015, 3, 4),
+            'datetime_column': datetime.datetime(2015, 3, 4, 16, 0, 1),
+            'percent_column': Decimal('0.1314'),
+            'unicode_column': 'álvaro',
+        },
+        {
+            'float_column': 1.2345,
+            'decimal_column': 1.2345,
+            'bool_column': False,
+            'integer_column': 6,
+            'date_column': datetime.date(2015, 5, 6),
+            'datetime_column': datetime.datetime(2015, 5, 6, 12, 1, 2),
+            'percent_column': Decimal('0.02'),
+            'unicode_column': 'test',
+        },
+        {
+            'float_column': None,
+            'decimal_column': None,
+            'bool_column': None,
+            'integer_column': None,
+            'date_column': None,
+            'datetime_column': None,
+            'percent_column': None,
+            'unicode_column': '',
+        }
+]
 table = Table(fields=FIELDS)
 for row in EXPECTED_ROWS:
     table.append(row)
@@ -191,54 +209,64 @@ class RowsTestMixIn(object):
                    'percent_column': self.assert_PercentField,
                    'date_column': self.assert_DateField,
                    'datetime_column': self.assert_DatetimeField,
-                   'unicode_column': self.assert_TextField,
-                   'null_column': self.assert_None_value, }
+                   'unicode_column': self.assert_TextField, }
         return asserts[field_name](expected_value, value, *args, **kwargs)
 
     def assert_BoolField(self, expected_value, value, *args, **kwargs):
-        value = str(value)
-        if expected_value is True:
-            assert value.lower() in ('true', b'true', 'yes', b'yes')
+        if expected_value is None:
+            assert value is None or value.lower() in NONE_VALUES
+        elif expected_value is True:
+            assert str(value).lower() in ('true', b'true', 'yes', b'yes')
         elif expected_value is False:
-            assert value.lower() in ('false', b'false', 'no', b'no')
+            assert str(value).lower() in ('false', b'false', 'no', b'no')
         else:
-            # TODO: what about None?
             raise ValueError('expected_value is not True or False')
 
     def assert_IntegerField(self, expected_value, value, *args, **kwargs):
-        self.assertIn(value, (expected_value, str(expected_value)))
-
+        if expected_value is None:
+            assert value is None or value.lower() in NONE_VALUES
+        else:
+            self.assertIn(value, (expected_value, str(expected_value)))
 
     def assert_FloatField(self, expected_value, value, *args, **kwargs):
-        if type(value) != type(expected_value):
+        if expected_value is None:
+            assert value is None or value.lower() in NONE_VALUES
+        elif type(value) != type(expected_value):
             self.assertEqual(value, str(expected_value))
         else:
             self.assertAlmostEqual(expected_value, value, places=5)
 
-
     def assert_DecimalField(self, expected_value, value, *args, **kwargs):
-        return self.assert_FloatField(expected_value, value)
-
+        if expected_value is None:
+            assert value is None or value.lower() in NONE_VALUES
+        else:
+            self.assert_FloatField(expected_value, value)
 
     def assert_PercentField(self, expected_value, value, *args, **kwargs):
-        float_value = float(expected_value) * 100
-        possible_values = [str(float_value) + '%',
-                           str(float_value) + '.0%',
-                           str(float_value) + '.00%']
-        if int(float_value) == float_value:
-            possible_values.append(str(int(float_value)) + '%')
-        self.assertIn(value, possible_values)
-
+        if expected_value is None:
+            assert value is None or value.lower() in NONE_VALUES
+        else:
+            float_value = float(expected_value) * 100
+            possible_values = [str(float_value) + '%',
+                            str(float_value) + '.0%',
+                            str(float_value) + '.00%']
+            if int(float_value) == float_value:
+                possible_values.append(str(int(float_value)) + '%')
+            self.assertIn(value, possible_values)
 
     def assert_DateField(self, expected_value, value, *args, **kwargs):
-        value = str(value)
-        if value.endswith('00:00:00'):
-            value = value[:-9]
-        self.assertEqual(str(expected_value), value)
-
+        if expected_value is None:
+            assert value is None or value.lower() in NONE_VALUES
+        else:
+            value = str(value)
+            if value.endswith('00:00:00'):
+                value = value[:-9]
+            self.assertEqual(str(expected_value), value)
 
     def assert_DatetimeField(self, expected_value, value, *args, **kwargs):
-        if type(value) is datetime.datetime and \
+        if expected_value is None:
+            assert value is None or value.lower() in NONE_VALUES
+        elif type(value) is datetime.datetime and \
                 type(expected_value) is datetime.datetime:
             # if both types are datetime, check delta
             # XLSX plugin has not a good precision and will change milliseconds
@@ -251,10 +279,12 @@ class RowsTestMixIn(object):
             value = str(value)
             self.assertEqual(str(expected_value).replace(' ', 'T'), value)
 
-
     def assert_TextField(self, expected_value, value, *args, **kwargs):
-        self.assertEqual(expected_value, value)
-
-
-    def assert_None_value(self, expected_value, value, *args, **kwargs):
-        self.assertIn(value, NONE_VALUES)
+        if expected_value is None:
+            assert value is None or value.lower() in NONE_VALUES
+        elif expected_value == '':
+            # Some plugins return `None` instead of empty strings for cells
+            # with blank values and we don't have an way to differentiate
+            assert value in (None, '')
+        else:
+            self.assertEqual(expected_value, value)

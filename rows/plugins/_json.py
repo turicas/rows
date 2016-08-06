@@ -21,7 +21,7 @@ import datetime
 import decimal
 import json
 
-from rows.fields import DateField, DatetimeField, DecimalField, PercentField
+from rows import fields
 from rows.plugins.utils import (create_table, export_data,
                                 get_filename_and_fobj, prepare_to_export)
 
@@ -42,10 +42,21 @@ def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
 
 
 def _convert(value, field_type, *args, **kwargs):
-    if field_type in (DateField, DatetimeField, DecimalField, PercentField):
-        value = field_type.serialize(value, *args, **kwargs)
-
-    return value
+    if value is None or field_type in (
+                fields.BinaryField,
+                fields.BoolField,
+                fields.FloatField,
+                fields.IntegerField,
+                fields.JSONField,
+                fields.TextField,
+    ):
+        # If the field_type is one of those, the value can be passed directly
+        # to the JSON encoder
+        return value
+    else:
+        # The field type is not represented natively in JSON, then it needs to
+        # be serialized (converted to a string)
+        return field_type.serialize(value, *args, **kwargs)
 
 
 def export_to_json(table, filename_or_fobj=None, encoding='utf-8', indent=None,
@@ -61,6 +72,7 @@ def export_to_json(table, filename_or_fobj=None, encoding='utf-8', indent=None,
 
     result = json.dumps(data, indent=indent)
     if indent is not None:
+        # clean up empty spaces at the end of lines
         result = '\n'.join(line.rstrip() for line in result.splitlines())
 
     return export_data(filename_or_fobj, result)
