@@ -31,13 +31,10 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(slug('Álvaro Justen'), 'alvaro_justen')
         self.assertEqual(slug("Moe's Bar"), 'moes_bar')
         self.assertEqual(slug("-----te-----st------"), 'te_st')
-
-    def test_slug_double_underscore(self):
-        'Reported in <https://github.com/turicas/rows/issues/179>'
-
+        # As in <https://github.com/turicas/rows/issues/179>
         self.assertEqual(slug('Query Occurrence"( % ),"First Seen'),
                          'query_occurrence_first_seen')
-        self.assertEqual(slug(' álvaro  justen% '), 'alvaro_justen')
+        self.assertEqual(slug(' ÁLVARO  justen% '), 'alvaro_justen')
 
     def test_ipartition(self):
         iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]

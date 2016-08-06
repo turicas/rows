@@ -46,25 +46,28 @@ SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
 def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
          replace_with_separator=' -_'):
+    '''Slugfy text
+
+    Example: ' ÁLVARO justen% ' -> 'alvaro_justen'
+    '''
 
     # Convert everything to unicode.
-    # Example: b' álvaro justen% ' -> u' álvaro justen% '
+    # Example: b' ÁLVARO justen% ' -> u' ÁLVARO justen% '
     if isinstance(text, str):
         text = text.decode(encoding or 'ascii')
 
     # Strip non-ASCII characters
-    # Example: u' álvaro  justen% ' -> ' alvaro  justen% '
+    # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
     text = normalize('NFKD', text.strip()).encode('ascii', 'ignore')
 
     # Replace spaces and other chars with separator
-    # Example: u' alvaro  justen% ' -> u'_alvaro__justen%_'
+    # Example: u' ALVARO  justen% ' -> u'_ALVARO__justen%_'
     for char in replace_with_separator:
         text = text.replace(char, separator)
 
-    # Remove non-permitted characters
-    # Example: u'_alvaro__justen%_' -> u'_alvaro__justen_'
-    strict_text = [x for x in text if x in permitted_chars]
-    text = ''.join(strict_text).lower()
+    # Remove non-permitted characters and put everything to lowercase
+    # Example: u'_ALVARO__justen%_' -> u'_alvaro__justen_'
+    text = filter(lambda char: char in permitted_chars, text).lower()
 
     # Remove double occurrencies of separator
     # Example: u'_alvaro__justen_' -> u'_alvaro_justen_'
@@ -74,12 +77,7 @@ def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
 
     # Strip separators
     # Example: u'_alvaro_justen_' -> u'alvaro_justen'
-    if text.startswith(separator):
-        text = text[len(separator):]
-    if text.endswith(separator):
-        text = text[:-len(separator)]
-
-    return text
+    return text.strip(separator)
 
 
 def ipartition(iterable, partition_size):
