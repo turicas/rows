@@ -14,32 +14,31 @@ from rows.plugins.utils import (create_table, get_filename_and_fobj,
                                 prepare_to_export)
 
 
-def _get_cell_value(sheet, row_index, col_index):
-    return sheet.cell(row=row_index + 1, column=col_index + 1).value
-
-
-def _read_row(sheet, row_index, last_column):
-    return [cell_to_python(sheet.cell(row=row_index + 1, column=column))
-            for column in range(1, last_column + 2)]
-
-
-def cell_to_python(cell):
+def _cell_to_python(cell):
     '''Convert a PyOpenXL's `Cell` object to the corresponding Python object'''
 
-    if cell.value == u"=TRUE()":
+    value = cell.value
+
+    if value == '=TRUE()':
         return True
-    elif cell.value == u"=FALSE()":
+
+    elif value == '=FALSE()':
         return False
-    elif cell.number_format.lower() == "yyyy-mm-dd":
-        return str(cell.value).split(" 00:00:00")[0]
-    elif cell.number_format.lower() == "yyyy-mm-dd hh:mm:ss":
-        return str(cell.value).split('.')[0]
-    elif cell.number_format.endswith("%"):
-        return "{}%".format(cell.value * 100)
-    elif cell.value is None:
+
+    elif cell.number_format.lower() == 'yyyy-mm-dd':
+        return str(value).split(' 00:00:00')[0]
+
+    elif cell.number_format.lower() == 'yyyy-mm-dd hh:mm:ss':
+        return str(value).split('.')[0]
+
+    elif cell.number_format.endswith('%'):
+        return '{}%'.format(value * 100) if value else None
+
+    elif value is None:
         return ''
+
     else:
-        return cell.value
+        return value
 
 
 def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
