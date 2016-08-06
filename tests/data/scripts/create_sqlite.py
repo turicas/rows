@@ -10,15 +10,16 @@ input_filename = '../all-field-types.csv'
 output_filename = '../all-field-types.sqlite'
 
 
-field_types = OrderedDict([('bool_column', 'INTEGER'),
-                           ('integer_column', 'INTEGER'),
-                           ('float_column', 'FLOAT'),
-                           ('decimal_column', 'FLOAT'),
-                           ('percent_column', 'TEXT'),
-                           ('date_column', 'TEXT'),
-                           ('datetime_column', 'TEXT'),
-                           ('unicode_column', 'TEXT'),
-                           ('null_column', 'TEXT'), ])
+field_types = OrderedDict([
+    ('bool_column', 'INTEGER'),
+    ('integer_column', 'INTEGER'),
+    ('float_column', 'FLOAT'),
+    ('decimal_column', 'FLOAT'),
+    ('percent_column', 'TEXT'),
+    ('date_column', 'TEXT'),
+    ('datetime_column', 'TEXT'),
+    ('unicode_column', 'TEXT'),
+])
 column_types = ', '.join(['{} {}'.format(key, value)
                           for key, value in field_types.items()])
 create_sql = 'CREATE TABLE rows ({})'.format(column_types)
