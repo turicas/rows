@@ -15,8 +15,8 @@
   detect.
 - [#176](https://github.com/turicas/rows/issues/176) Problem using quotes on
   CSV plugin.
-- [#179](https://github.com/turicas/rows/issues/179) Fix double quote problem
-  on `rows.utils.slug`
+- [#179](https://github.com/turicas/rows/issues/179) Fix double underscore
+  problem on `rows.utils.slug`
 - [#175](https://github.com/turicas/rows/issues/175) Fix `None`
   serialization/deserialization in all plugins (and also field types)
 
