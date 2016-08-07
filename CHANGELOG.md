@@ -17,6 +17,9 @@
   CSV plugin.
 - [#179](https://github.com/turicas/rows/issues/179) Fix double quote problem
   on `rows.utils.slug`
+- [#175](https://github.com/turicas/rows/issues/175) Fix `None`
+  serialization/deserialization in all plugins (and also field types)
+
 
 ## Version `0.2.0`
 
