@@ -22,6 +22,7 @@ import tempfile
 
 from collections import Iterator
 from unicodedata import normalize
+from urlparse import urlparse
 
 try:
     import magic
@@ -97,6 +98,29 @@ def ipartition(iterable, partition_size):
                 break
         if data:
             yield data
+
+
+TRANSLATE_PLUGIN_NAME = {
+        'htm': 'html',
+        'text': 'txt',
+        'db': 'sqlite',
+}
+
+def plugin_name_by_uri(uri):
+    'Return the plugin name based on the URI'
+
+    # TODO: parse URIs like 'sqlite://' also
+    parsed = urlparse(uri)
+    basename = os.path.basename(parsed.path)
+
+    if not basename.strip():
+        raise RuntimeError('Could not identify file format.')
+
+    plugin_name = basename.split('.')[-1].lower()
+    if plugin_name in TRANSLATE_PLUGIN_NAME:
+        plugin_name = TRANSLATE_PLUGIN_NAME[plugin_name]
+
+    return plugin_name
 
 
 def download_file(uri, verify_ssl):
