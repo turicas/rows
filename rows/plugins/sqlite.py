@@ -24,8 +24,8 @@ import sqlite3
 import rows.fields as fields
 
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
-                                make_unique_name, prepare_to_export)
-from rows.utils import ipartition
+                                ipartition, make_unique_name,
+                                prepare_to_export)
 
 
 SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
