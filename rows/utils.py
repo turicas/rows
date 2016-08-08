@@ -17,6 +17,8 @@
 
 from __future__ import unicode_literals
 
+import cgi
+import mimetypes
 import os
 import tempfile
 
@@ -28,19 +30,26 @@ try:
     import magic
 except ImportError:
     magic = None
+else:
+    if not hasattr(magic, 'detect_from_content'):
+        # This is not the file-magic library
+        magic = None
+
+
 import requests
+chardet = requests.compat.chardet
 try:
     import urllib3
 except ImportError:
     from requests.packages import urllib3
+else:
+    try:
+        urllib3.disable_warnings()
+    except AttributeError:
+        # old versions of urllib3 or requests
+        pass
 
 import rows
-
-try:
-    urllib3.disable_warnings()
-except AttributeError:
-    # old versions of urllib3 or requests
-    pass
 
 SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
