@@ -14,5 +14,5 @@ rows convert $FILENAME.sqlite $FILENAME.json
 # When converting to JSON we cannot guarantee field order!
 
 # `convert` can also sort the data before saving it into the CSV file
-rows convert -input-locale=$LOCALE --input-encoding=utf-8 \
+rows convert --input-locale=$LOCALE --input-encoding=utf-8 \
              --order-by=^pessoas $URL $FILENAME-sorted.csv
