@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #       fields)
 
 import shlex
+import sqlite3
 import sys
 
 from io import BytesIO
@@ -32,7 +33,8 @@ import requests.exceptions
 
 import rows
 
-from rows.utils import import_from_uri, export_to_uri
+from rows.utils import (detect_source, export_to_uri, import_from_source,
+                        import_from_uri)
 from rows.plugins.utils import make_header
 
 
@@ -285,34 +287,59 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
 @click.argument('query', required=True)
 @click.argument('sources', nargs=-1, required=True)
 def query(input_encoding, output_encoding, input_locale, output_locale,
-        verify_ssl, fields, output, query, sources):
+          verify_ssl, fields, output, query, sources):
 
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or sys.stdout.encoding or \
                       DEFAULT_OUTPUT_ENCODING
+
     if not query.lower().startswith('select'):
         field_names = '*' if fields is None else fields
         table_names = ', '.join(['table{}'.format(index)
                                  for index in range(1, len(sources) + 1)])
         query = 'SELECT {} FROM {} WHERE {}'.format(field_names, table_names,
                                                     query)
-    if input_locale is not None:
-        with rows.locale_context(input_locale):
+
+    if len(sources) == 1:
+        source = detect_source(sources[0], verify_ssl=verify_ssl)
+
+        if source.plugin_name != 'sqlite':
+            if input_locale is not None:
+                with rows.locale_context(input_locale):
+                    table = import_from_source(source, DEFAULT_INPUT_ENCODING)
+            else:
+                table = import_from_source(source, DEFAULT_INPUT_ENCODING)
+
+            sqlite_connection = sqlite3.Connection(':memory:')
+            rows.export_to_sqlite(table,
+                                  sqlite_connection,
+                                  table_name='table1')
+            result = rows.import_from_sqlite(sqlite_connection, query=query)
+
+        else:
+            # Optimization: query the SQLite database directly
+            result = import_from_source(source,
+                                        DEFAULT_INPUT_ENCODING,
+                                        query=query)
+
+    else:
+        if input_locale is not None:
+            with rows.locale_context(input_locale):
+                tables = [_import_table(source, encoding=input_encoding,
+                                        verify_ssl=verify_ssl)
+                          for source in sources]
+        else:
             tables = [_import_table(source, encoding=input_encoding,
                                     verify_ssl=verify_ssl)
-                     for source in sources]
-    else:
-        tables = [_import_table(source, encoding=input_encoding,
-                                verify_ssl=verify_ssl)
-                  for source in sources]
+                      for source in sources]
 
-    sqlite_connection = rows.export_to_sqlite(tables[0], ':memory:',
-                                              table_name='table1')
-    for index, table in enumerate(tables[1:], start=2):
-        rows.export_to_sqlite(table, sqlite_connection,
-                              table_name='table{}'.format(index))
+        sqlite_connection = sqlite3.Connection(':memory:')
+        for index, table in enumerate(tables, start=1):
+            rows.export_to_sqlite(table,
+                                  sqlite_connection,
+                                  table_name='table{}'.format(index))
 
-    result = rows.import_from_sqlite(sqlite_connection, query=query)
+        result = rows.import_from_sqlite(sqlite_connection, query=query)
 
     if output is None:
         fobj = BytesIO()
