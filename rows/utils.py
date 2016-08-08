@@ -182,83 +182,163 @@ def plugin_name_by_uri(uri):
     return plugin_name
 
 
-def download_file(uri, verify_ssl):
-    response = requests.get(uri, verify=verify_ssl)
-    content = response.content
-    if magic is not None:
-        encoding = magic.detect_from_content(content).encoding
+def extension_by_plugin_name(plugin_name):
+    'Return the file extension used by this plugin'
+
+    # TODO: should get this information from the plugin
+    return plugin_name
+
+
+def normalize_mime_type(mime_type, mime_name, file_extension):
+
+    file_extension = file_extension.lower() if file_extension else ''
+    mime_name = mime_name.lower() if mime_name else ''
+    mime_type = mime_type.lower() if mime_type else ''
+
+    if mime_type == 'text/plain' and file_extension in TEXT_PLAIN:
+        return TEXT_PLAIN[file_extension]
+
+    elif mime_type == 'application/octet-stream' and mime_name in OCTET_STREAM:
+        return OCTET_STREAM[mime_name]
+
+    elif file_extension in FILE_EXTENSIONS:
+        return FILE_EXTENSIONS[file_extension]
+
     else:
-        encoding = response.encoding
+        return mime_type
 
-    # TODO: try to guess with uri.split('/')[-1].split('.')[-1].lower()
-    # TODO: try to guess with file-magic lib
-    try:
-        content_type = response.headers['content-type']
-        plugin_name = content_type.split('/')[-1].split(';')[0].lower()
-    except (KeyError, IndexError):
-        try:
-            plugin_name = uri.split('/')[-1].split('.')[-1].lower()
-        except IndexError:
-            raise RuntimeError('Could not identify file type.')
 
+def plugin_name_by_mime_type(mime_type, mime_name, file_extension):
+    'Return the plugin name based on the MIME type'
+
+    return MIME_TYPE_TO_PLUGIN_NAME.get(
+            normalize_mime_type(mime_type, mime_name, file_extension),
+            None)
+
+
+def detect_local_source(path, content, mime_type=None, encoding=None):
+
+    # TODO: may add sample_size
+
+    filename = os.path.basename(path)
+    parts = filename.split('.')
+    extension = parts[-1] if len(parts) > 1 else None
+
+    if magic is not None:
+        detected = magic.detect_from_content(content)
+        encoding = detected.encoding or encoding
+        mime_name = detected.name
+        mime_type = detected.mime_type or mime_type
+
+    else:
+        encoding = chardet.detect(content)['encoding'] or encoding
+        mime_name = None
+        mime_type = mime_type or mimetypes.guess_type(filename)[0]
+
+    plugin_name = plugin_name_by_mime_type(mime_type, mime_name, extension)
+    if encoding == 'binary':
+        encoding = None
+
+    return Source(uri=path,
+                  plugin_name=plugin_name,
+                  encoding=encoding)
+
+
+def local_file(path, sample_size=8192):
+
+    # TODO: may change sample_size
+    with open(path, 'rb') as fobj:
+        content = fobj.read(sample_size)
+
+    source = detect_local_source(path, content, mime_type=None, encoding=None)
+
+    return Source(uri=path,
+                  plugin_name=source.plugin_name,
+                  encoding=source.encoding,
+                  delete=False)
+
+
+def download_file(uri, verify_ssl=True, timeout=5):
+
+    response = requests.get(uri, verify=verify_ssl, timeout=timeout)
+    content = response.content
+
+    filename = uri
+    encoding = None
+    mime_type = None
+
+    # Extract data from headers to help plugin + encoding detection, if
+    # available
+    headers = response.headers
+    if 'content-type' in headers:
+        mime_type, options = cgi.parse_header(headers['content-type'])
+        encoding = options.get('charset', encoding)
+    if 'content-disposition' in headers:
+        _, options = cgi.parse_header(headers['content-disposition'])
+        filename = options.get('filename', filename)
+
+    # TODO: may send only a sample (chardet can be very slow if content is big)
+    source = detect_local_source(filename, content, mime_type, encoding)
+
+    # Save file locally
+    extension = extension_by_plugin_name(source.plugin_name)
     tmp = tempfile.NamedTemporaryFile()
-    filename = '{}.{}'.format(tmp.name, plugin_name)
+    filename = '{}.{}'.format(tmp.name, extension)
     tmp.close()
     with open(filename, 'wb') as fobj:
         fobj.write(content)
 
-    return {'filename': filename, 'encoding': encoding, }
+    return Source(uri=filename,
+                  plugin_name=source.plugin_name,
+                  encoding=source.encoding,
+                  delete=True)
 
 
-def get_data_from_uri(uri, verify_ssl):
+def detect_source(uri, verify_ssl, timeout=5):
+    '''Return a `rows.Source` with information for a given URI
+
+    If URI starts with "http" or "https" the file will be downloaded.
+
+    This function should only be used if the URI already exists because it's
+    going to download/open the file to detect its encoding and MIME type.
+    '''
+
+    # TODO: should also supporte other schemes, like file://, sqlite:// etc.
+
     if uri.startswith('http://') or uri.startswith('https://'):
-        should_delete = True
-        file_attributes = download_file(uri, verify_ssl=verify_ssl)
-        filename = file_attributes['filename']
-        encoding = file_attributes['encoding']
+        return download_file(uri, verify_ssl=verify_ssl, timeout=timeout)
+
     else:
-        should_delete = False
-        filename = uri
-        encoding = None
-
-    plugin_name = filename.split('.')[-1].lower()
-    if plugin_name == 'htm':
-        plugin_name = 'html'
-    elif plugin_name == 'text':
-        plugin_name = 'txt'
-    elif plugin_name == 'json':
-        plugin_name = 'json'
-
-    return {'should_delete': should_delete,
-            'filename': filename,
-            'plugin_name': plugin_name,
-            'encoding': encoding, }
+        return local_file(uri)
 
 
-def import_from_uri(uri, default_encoding, verify_ssl=True, *args, **kwargs):
-    # TODO: support '-' also
-    file_attributes = get_data_from_uri(uri, verify_ssl=verify_ssl)
-    should_delete = file_attributes['should_delete']
-    filename = file_attributes['filename']
-    plugin_name = file_attributes['plugin_name']
-    encoding = file_attributes['encoding']
-    if kwargs.get('encoding', None) is None:
-        if encoding is not None:
-            kwargs['encoding'] = encoding
-        else:
-            kwargs['encoding'] = default_encoding
+def import_from_source(source, default_encoding, *args, **kwargs):
+    'Import data described in a `rows.Source` into a `rows.Table`'
+
+    plugin_name = source.plugin_name
+    kwargs['encoding'] = kwargs.get('encoding', None) or \
+                         source.encoding or \
+                         default_encoding
 
     try:
         import_function = getattr(rows, 'import_from_{}'.format(plugin_name))
     except AttributeError:
         raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
 
-    table = import_function(filename, *args, **kwargs)
+    table = import_function(source.uri, *args, **kwargs)
 
-    if should_delete:
-        os.unlink(filename)
+    if source.delete:
+        os.unlink(source.uri)
 
     return table
+
+
+def import_from_uri(uri, default_encoding, verify_ssl=True, *args, **kwargs):
+    'Given an URI, detects plugin and encoding and imports into a `rows.Table`'
+
+    # TODO: support '-' also
+    source = detect_source(uri, verify_ssl=verify_ssl)
+    return import_from_source(source, default_encoding, *args, **kwargs)
 
 
 def export_to_uri(table, uri, *args, **kwargs):
