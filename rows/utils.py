@@ -109,11 +109,61 @@ def ipartition(iterable, partition_size):
             yield data
 
 
-TRANSLATE_PLUGIN_NAME = {
-        'htm': 'html',
-        'text': 'txt',
-        'db': 'sqlite',
+# TODO: should get this information from the plugins
+TEXT_PLAIN = {
+        'txt': 'text/txt',
+        'text': 'text/txt',
+        'csv': 'text/csv',
+        'json': 'application/json',
 }
+OCTET_STREAM = {
+        'microsoft ooxml': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'par archive data': 'application/parquet',
+}
+FILE_EXTENSIONS = {
+        'csv': 'text/csv',
+        'db': 'application/x-sqlite3',
+        'htm': 'text/html',
+        'html': 'text/html',
+        'json': 'application/json',
+        'ods': 'application/vnd.oasis.opendocument.spreadsheet',
+        'parquet': 'application/parquet',
+        'sqlite': 'application/x-sqlite3',
+        'text': 'text/txt',
+        'tsv': 'text/csv',
+        'txt': 'text/txt',
+        'xls': 'application/vnd.ms-excel',
+        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+}
+MIME_TYPE_TO_PLUGIN_NAME = {
+        'application/json': 'json',
+        'application/parquet': 'parquet',
+        'application/vnd.ms-excel': 'xls',
+        'application/vnd.oasis.opendocument.spreadsheet': 'ods',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+        'application/x-sqlite3': 'sqlite',
+        'text/csv': 'csv',
+        'text/html': 'html',
+        'text/txt': 'txt',
+}
+
+
+class Source(object):
+    'Define a source to import a `rows.Table`'
+
+    __slots__ = ['plugin_name', 'uri', 'encoding', 'delete']
+
+    def __init__(self, plugin_name=None, uri=None, encoding=None,
+                 delete=False):
+        self.plugin_name = plugin_name
+        self.uri = uri
+        self.delete = delete
+        self.encoding = encoding
+
+    def __repr__(self):
+        return 'Source(plugin_name={}, uri={}, encoding={}, delete={})'\
+                .format(self.plugin_name, self.uri, self.encoding, self.delete)
+
 
 def plugin_name_by_uri(uri):
     'Return the plugin name based on the URI'
@@ -126,8 +176,8 @@ def plugin_name_by_uri(uri):
         raise RuntimeError('Could not identify file format.')
 
     plugin_name = basename.split('.')[-1].lower()
-    if plugin_name in TRANSLATE_PLUGIN_NAME:
-        plugin_name = TRANSLATE_PLUGIN_NAME[plugin_name]
+    if plugin_name in FILE_EXTENSIONS:
+        plugin_name = MIME_TYPE_TO_PLUGIN_NAME[FILE_EXTENSIONS[plugin_name]]
 
     return plugin_name
 
