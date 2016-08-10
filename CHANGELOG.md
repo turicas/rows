@@ -2,7 +2,7 @@
 
 ## Version `0.2.1`
 
-**Released on: (under development)**
+**Released on: 2016-08-10**
 
 ### Backwards Incompatible Changes
 
