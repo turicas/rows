@@ -1,5 +1,50 @@
 # rows' Log of Changes
 
+## Version `0.2.1`
+
+**Released on: 2016-08-10**
+
+### Backwards Incompatible Changes
+
+- `rows.utils.export_to_uri` signature is now like `rows.export_to_*` (first
+  the `rows.Table` object, then the URI)
+- Changed default table name in `import_from_sqlite` and `export_to_sqlite`
+  (from `rows` and `rows_{number}` to `table{number}`)
+
+
+### Bug Fixes
+
+- [#170](https://github.com/turicas/rows/issues/170) (SQLite plugin) Error
+  converting `int` and `float` when value is `None`.
+- [#168](https://github.com/turicas/rows/issues/168) Use `Field.serialize`
+  if does not know the field type (affecting: XLS, XLSX and SQLite plugins).
+- [#167](https://github.com/turicas/rows/issues/167) Use more data to detect
+  dialect, delimit the possible delimiters and fallback to excel if can't
+  detect.
+- [#176](https://github.com/turicas/rows/issues/176) Problem using quotes on
+  CSV plugin.
+- [#179](https://github.com/turicas/rows/issues/179) Fix double underscore
+  problem on `rows.utils.slug`
+- [#175](https://github.com/turicas/rows/issues/175) Fix `None`
+  serialization/deserialization in all plugins (and also field types)
+- [#172](https://github.com/turicas/rows/issues/172) Expose all tables in `rows
+  query` for SQLite databases
+- Fix `examples/cli/convert.sh` (missing `-`)
+- Avoids SQL injection in table name
+
+
+### Enhancements and Refactorings
+
+- Refactor `rows.utils.import_from_uri`
+- Encoding and file type are better detected on `rows.utils.import_from_uri`
+- Added helper functions to `rows.utils` regarding encoding and file
+  type/plugin detection
+- There's a better description of plugin metadata (MIME types accepted) on
+  `rows.utils` (should be refactored to be inside each plugin)
+- Moved `slug` and `ipartition` functions to `rows.plugins.utils`
+- Optimize `rows query` when using only one SQLite source
+
+
 ## Version `0.2.0`
 
 **Released on: 2016-07-15**

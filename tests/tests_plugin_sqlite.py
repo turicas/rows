@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@ import sqlite3
 import tempfile
 import unittest
 
+from collections import OrderedDict
+
 import mock
 
 import rows
@@ -34,6 +36,7 @@ from rows import fields
 class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'sqlite'
+    file_extension = 'sqlite'
     filename = 'tests/data/all-field-types.sqlite'
     override_fields = {'percent_column': fields.FloatField,
                        'bool_column': fields.IntegerField, }
@@ -78,6 +81,16 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_create_table_data(call_args, filename=connection)
         connection.close()
 
+    def test_sqlite_injection(self):
+        connection = rows.export_to_sqlite(utils.table, ':memory:')
+        with self.assertRaises(ValueError):
+            rows.import_from_sqlite(connection,
+                                    table_name='table1", "sqlite_master')
+
+        with self.assertRaises(ValueError):
+            rows.export_to_sqlite(utils.table, ':memory:',
+                                  table_name='table1", "sqlite_master')
+
     def test_export_to_sqlite_filename(self):
         # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -105,42 +118,72 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         first_table = utils.table
         second_table = utils.table + utils.table
-        third_table = utils.table + utils.table + utils.table
-        fourth_table = utils.table + utils.table + utils.table
 
-        rows.export_to_sqlite(first_table, temp.name, table_name='rows')
-        rows.export_to_sqlite(second_table, temp.name, table_name='rows')
-        rows.export_to_sqlite(third_table, temp.name, table_name='test')
-        rows.export_to_sqlite(fourth_table, temp.name, table_name='test')
+        rows.export_to_sqlite(first_table, temp.name)  # table1
+        rows.export_to_sqlite(second_table, temp.name)  # table2
 
         result_first_table = rows.import_from_sqlite(temp.name,
-                                                     table_name='rows')
+                                                     table_name='table1')
         result_second_table = rows.import_from_sqlite(temp.name,
-                                                      table_name='rows_2')
-        result_third_table = rows.import_from_sqlite(temp.name,
-                                                     table_name='test')
-        result_fourth_table = rows.import_from_sqlite(temp.name,
-                                                      table_name='test_2')
+                                                      table_name='table2')
         self.assert_table_equal(result_first_table, first_table)
         self.assert_table_equal(result_second_table, second_table)
-        self.assert_table_equal(result_third_table, third_table)
-        self.assert_table_equal(result_fourth_table, fourth_table)
 
-    @mock.patch('rows.plugins.sqlite.serialize')
-    def test_export_to_sqlite_uses_serialize(self, mocked_serialize):
+    def test_export_to_sqlite_forcing_table_name_appends_rows(self):
+        # TODO: may test file contents
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+
+        rows.export_to_sqlite(utils.table, temp.name, table_name='rows')
+        rows.export_to_sqlite(utils.table, temp.name, table_name='rows')
+
+        result_table = rows.import_from_sqlite(temp.name, table_name='rows')
+
+        self.assertEqual(len(result_table), 2 * len(utils.table))
+        self.assert_table_equal(result_table, utils.table + utils.table)
+
+    @mock.patch('rows.plugins.sqlite.prepare_to_export')
+    def test_export_to_sqlite_uses_prepare_to_export(self,
+            mocked_prepare_to_export):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         encoding = 'iso-8859-15'
         kwargs = {'test': 123, 'parameter': 3.14, }
-        mocked_serialize.return_value = \
-                iter(rows.plugins.utils.serialize(utils.table))
+        mocked_prepare_to_export.return_value = \
+                iter(rows.plugins.utils.prepare_to_export(utils.table))
 
         rows.export_to_sqlite(utils.table, temp.name, encoding=encoding,
                               **kwargs)
-        self.assertTrue(mocked_serialize.called)
-        self.assertEqual(mocked_serialize.call_count, 1)
+        self.assertTrue(mocked_prepare_to_export.called)
+        self.assertEqual(mocked_prepare_to_export.call_count, 1)
 
-        call = mocked_serialize.call_args
+        call = mocked_prepare_to_export.call_args
         self.assertEqual(call[0], (utils.table, ))
         kwargs['encoding'] = encoding
         self.assertEqual(call[1], kwargs)
+
+    def test_issue_170(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+
+        table = rows.Table(fields=
+                OrderedDict([('intvalue', rows.fields.IntegerField),
+                             ('floatvalue', rows.fields.FloatField)]))
+        table.append({'intvalue': 42, 'floatvalue': 3.14})
+        table.append({'intvalue': None, 'floatvalue': None})
+
+        # should not raise an exception
+        rows.export_to_sqlite(table, temp.name)
+
+    def test_issue_168(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        table = rows.Table(fields=
+                OrderedDict([('jsoncolumn', rows.fields.JSONField)]))
+        table.append({'jsoncolumn': '{"python": 42}'})
+        rows.export_to_sqlite(table, filename)
+
+        table2 = rows.import_from_sqlite(filename)
+        self.assert_table_equal(table, table2)

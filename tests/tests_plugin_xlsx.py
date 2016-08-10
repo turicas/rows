@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import tempfile
 import unittest
 
+from collections import OrderedDict
 from io import BytesIO
 
 import mock
@@ -32,10 +33,14 @@ import utils
 class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'xlsx'
+    file_extension = 'xlsx'
     filename = 'tests/data/all-field-types.xlsx'
 
     def test_imports(self):
-        self.assertIs(rows.import_from_xlsx, rows.plugins.xlsx.import_from_xlsx)
+        self.assertIs(rows.import_from_xlsx,
+                      rows.plugins.xlsx.import_from_xlsx)
+        self.assertIs(rows.export_to_xlsx,
+                      rows.plugins.xlsx.export_to_xlsx)
 
     @mock.patch('rows.plugins.xlsx.create_table')
     def test_import_from_xlsx_uses_create_table(self, mocked_create_table):
@@ -115,3 +120,16 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call = mocked_prepare_to_export.call_args
         self.assertEqual(call[0], (utils.table, ))
         self.assertEqual(call[1], kwargs)
+
+    def test_issue_168(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        table = rows.Table(fields=
+                OrderedDict([('jsoncolumn', rows.fields.JSONField)]))
+        table.append({'jsoncolumn': '{"python": 42}'})
+        rows.export_to_xlsx(table, filename)
+
+        table2 = rows.import_from_xlsx(filename)
+        self.assert_table_equal(table, table2)

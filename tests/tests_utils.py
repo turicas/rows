@@ -17,34 +17,16 @@
 
 from __future__ import unicode_literals
 
-import types
 import unittest
 
-from collections import OrderedDict
-
-from rows.utils import ipartition, slug
-
-
-class UtilsTestCase(unittest.TestCase):
-
-    def test_slug(self):
-        self.assertEqual(slug('Álvaro Justen'), 'alvaro_justen')
-        self.assertEqual(slug("Moe's Bar"), 'moes_bar')
-        self.assertEqual(slug("-----te-----st------"), 'te_st')
-
-    def test_ipartition(self):
-        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        result = ipartition(iterable, 3)
-        self.assertEqual(type(result), types.GeneratorType)
-        self.assertEqual(list(result), [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]])
-
-        result = ipartition(iterable, 2)
-        self.assertEqual(type(result), types.GeneratorType)
-        self.assertEqual(list(result), [[1, 2], [3, 4], [5, 6], [7, 8],
-                                        [9, 10]])
-
-
-    # TODO: test download_file
-    # TODO: test get_uri_information
-    # TODO: test import_from_uri (test also args like encoding)
-    # TODO: test export_to_uri (test also args like encoding)
+# TODO: test detect_local_source
+# TODO: test detect_source
+# TODO: test download_file
+# TODO: test export_to_uri
+# TODO: test extension_by_plugin_name
+# TODO: test import_from_source
+# TODO: test import_from_uri
+# TODO: test local_file
+# TODO: test normalize_mime_type
+# TODO: test plugin_name_by_mime_type
+# TODO: test plugin_name_by_uri

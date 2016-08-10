@@ -99,7 +99,7 @@ class Table(MutableSequence):
                                  .format(len(values), len(self)))
 
             from rows.fields import detect_types
-            from rows.utils import slug
+            from rows.plugins.utils import slug
 
             field_name = slug(key)
             is_new_field = field_name not in self.field_names

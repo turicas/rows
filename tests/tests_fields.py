@@ -70,6 +70,7 @@ class FieldsTestCase(unittest.TestCase):
             self.assertIs(fields.BoolField.deserialize(value), False)
 
         self.assertIs(fields.BoolField.deserialize(None), None)
+        self.assertEqual(fields.BoolField.deserialize(''), None)
 
         true_values = ('True', b'True', 'true', b'true', 'yes', b'yes', True)
         for value in true_values:
@@ -253,6 +254,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.DateField.deserialize(deserialized),
                          deserialized)
         self.assertEqual(fields.DateField.deserialize(None), None)
+        self.assertEqual(fields.DateField.deserialize(''), None)
         self.assertEqual(fields.DateField.serialize(deserialized),
                          serialized)
         self.assertIs(type(fields.DateField.serialize(deserialized)),
@@ -333,6 +335,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.TextField.deserialize('Álvaro'),
                          'Álvaro')
         self.assertIs(fields.TextField.deserialize(None), None)
+        self.assertIs(fields.TextField.deserialize(''), '')
         self.assertEqual(fields.TextField.serialize('Álvaro'),
                          'Álvaro')
         self.assertIs(type(fields.TextField.serialize('Álvaro')),
@@ -360,15 +363,16 @@ class FieldUtilsTestCase(unittest.TestCase):
         lines = [line.split(','.encode('utf-8')) for line in lines]
         self.fields = lines[0]
         self.data = lines[1:]
-        self.expected = {'bool_column': fields.BoolField,
-                         'integer_column': fields.IntegerField,
-                         'float_column': fields.FloatField,
-                         'decimal_column': fields.FloatField,
-                         'percent_column': fields.PercentField,
-                         'date_column': fields.DateField,
-                         'datetime_column': fields.DatetimeField,
-                         'unicode_column': fields.TextField,
-                         'null_column': fields.BinaryField, }
+        self.expected = {
+                'bool_column': fields.BoolField,
+                'integer_column': fields.IntegerField,
+                'float_column': fields.FloatField,
+                'decimal_column': fields.FloatField,
+                'percent_column': fields.PercentField,
+                'date_column': fields.DateField,
+                'datetime_column': fields.DatetimeField,
+                'unicode_column': fields.TextField,
+        }
 
     def test_detect_types_utf8(self):
         result = fields.detect_types(

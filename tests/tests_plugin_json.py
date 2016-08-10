@@ -22,6 +22,9 @@ import json
 import tempfile
 import unittest
 
+from collections import Counter
+from collections import OrderedDict
+from collections import defaultdict
 from textwrap import dedent
 
 import mock
@@ -33,6 +36,7 @@ import utils
 class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'json'
+    file_extension = 'json'
     filename = 'tests/data/all-field-types.json'
     encoding = 'utf-8'
 
@@ -143,16 +147,31 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         with open(temp.name, 'rb') as fobj:
             imported_json = json.load(fobj)
 
+        COLUMN_TYPE = {
+                'float_column': float,
+                'decimal_column': float,
+                'bool_column': bool,
+                'integer_column': int,
+                'date_column': unicode,
+                'datetime_column': unicode,
+                'percent_column': unicode,
+                'unicode_column': unicode,
+        }
+        field_types = defaultdict(list)
         for row in imported_json:
-            self.assertEqual(type(row['float_column']), float)
-            self.assertEqual(type(row['decimal_column']), float)
-            self.assertEqual(type(row['bool_column']), bool)
-            self.assertEqual(type(row['integer_column']), int)
-            self.assertEqual(type(row['date_column']), unicode)
-            self.assertEqual(type(row['datetime_column']), unicode)
-            self.assertEqual(type(row['percent_column']), unicode)
-            self.assertEqual(type(row['unicode_column']), unicode)
-            self.assertEqual(type(row['null_column']), unicode)
+            for field_name, value in row.items():
+                field_types[field_name].append(type(value))
+        # We test if the JSON was created serializing all the fields correctly
+        # (some as native JSON values, like int and float) and others needed to
+        # be serialized, like date, datetime etc.
+        for field_name, value_types in field_types.items():
+            if field_name != 'unicode_column':
+                self.assertEqual(Counter(value_types),
+                                 Counter({type(None): 1,
+                                          COLUMN_TYPE[field_name]: 6}))
+            else:
+                self.assertEqual(Counter(value_types),
+                                 Counter({COLUMN_TYPE[field_name]: 7}))
 
     def test_export_to_json_indent(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -170,3 +189,16 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
             self.assertTrue(line.startswith('    '))
         self.assertEqual(result[-2], '  }')
         self.assertEqual(result[-1], ']')
+
+    def test_issue_168(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        table = rows.Table(fields=
+                OrderedDict([('jsoncolumn', rows.fields.JSONField)]))
+        table.append({'jsoncolumn': '{"python": 42}'})
+        rows.export_to_json(table, filename)
+
+        table2 = rows.import_from_json(filename)
+        self.assert_table_equal(table, table2)
