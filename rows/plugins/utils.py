@@ -17,12 +17,70 @@
 
 from __future__ import unicode_literals
 
-from collections import OrderedDict
+from collections import Iterator, OrderedDict
 from itertools import chain, islice
+from unicodedata import normalize
 
 from rows.fields import detect_types
 from rows.table import FlexibleTable, Table
-from rows.utils import slug, SLUG_CHARS
+
+
+SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
+
+
+def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
+         replace_with_separator=' -_'):
+    '''Slugfy text
+
+    Example: ' ÁLVARO  justen% ' -> 'alvaro_justen'
+    '''
+
+    # Convert everything to unicode.
+    # Example: b' ÁLVARO justen% ' -> u' ÁLVARO justen% '
+    if isinstance(text, str):
+        text = text.decode(encoding or 'ascii')
+
+    # Strip non-ASCII characters
+    # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
+    text = normalize('NFKD', text.strip()).encode('ascii', 'ignore')
+
+    # Replace spaces and other chars with separator
+    # Example: u' ALVARO  justen% ' -> u'_ALVARO__justen%_'
+    for char in replace_with_separator:
+        text = text.replace(char, separator)
+
+    # Remove non-permitted characters and put everything to lowercase
+    # Example: u'_ALVARO__justen%_' -> u'_alvaro__justen_'
+    text = filter(lambda char: char in permitted_chars, text).lower()
+
+    # Remove double occurrencies of separator
+    # Example: u'_alvaro__justen_' -> u'_alvaro_justen_'
+    double_separator = separator + separator
+    while double_separator in text:
+        text = text.replace(double_separator, separator)
+
+    # Strip separators
+    # Example: u'_alvaro_justen_' -> u'alvaro_justen'
+    return text.strip(separator)
+
+
+def ipartition(iterable, partition_size):
+    if not isinstance(iterable, Iterator):
+        iterator = iter(iterable)
+    else:
+        iterator = iterable
+
+    finished = False
+    while not finished:
+        data = []
+        for _ in range(partition_size):
+            try:
+                data.append(iterator.next())
+            except StopIteration:
+                finished = True
+                break
+        if data:
+            yield data
 
 
 def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
@@ -36,34 +94,40 @@ def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
     return filename, fobj
 
 
-def make_unique_name(name, existing_names, name_format='{name}_{index}'):
+def make_unique_name(name, existing_names, name_format='{name}_{index}',
+                     start=2):
     '''Return a unique name based on `name_format` and `name`.'''
 
+    index = start
     new_name = name
-    index = 2
     while new_name in existing_names:
         new_name = name_format.format(name=name, index=index)
         index += 1
+
     return new_name
 
-def make_header(data, permit_not=False):
-    slug_chars = SLUG_CHARS
-    if permit_not:
-        slug_chars += '^'
+
+def make_header(field_names, permit_not=False):
+    'Return unique and slugged field names'
+
+    slug_chars = SLUG_CHARS if not permit_not else SLUG_CHARS + '^'
 
     header = [slug(field_name, permitted_chars=slug_chars)
-              for field_name in data]
-    field_names = []
+              for field_name in field_names]
+    result = []
     for index, field_name in enumerate(header):
         if not field_name:
             field_name = 'field_{}'.format(index)
-        if field_name[0].isdigit():
+        elif field_name[0].isdigit():
             field_name = 'field_{}'.format(field_name)
-        if field_name in field_names:
+
+        if field_name in result:
             field_name = make_unique_name(name=field_name,
-                                          existing_names=field_names)
-        field_names.append(field_name)
-    return field_names
+                                          existing_names=result,
+                                          start=2)
+        result.append(field_name)
+
+    return result
 
 
 def create_table(data, meta=None, fields=None, skip_header=True,

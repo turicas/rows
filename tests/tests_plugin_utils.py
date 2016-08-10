@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import itertools
 import random
 import tempfile
+import types
 import unittest
 
 from collections import OrderedDict
@@ -32,6 +33,31 @@ import rows.plugins.utils as plugins_utils
 from rows import fields
 
 import utils
+
+
+class GenericUtilsTestCase(unittest.TestCase):
+
+    def test_slug(self):
+        self.assertEqual(plugins_utils.slug('Álvaro Justen'), 'alvaro_justen')
+        self.assertEqual(plugins_utils.slug("Moe's Bar"), 'moes_bar')
+        self.assertEqual(plugins_utils.slug("-----te-----st------"), 'te_st')
+        # As in <https://github.com/turicas/rows/issues/179>
+        self.assertEqual(
+                plugins_utils.slug('Query Occurrence"( % ),"First Seen'),
+                'query_occurrence_first_seen')
+        self.assertEqual(plugins_utils.slug(' ÁLVARO  justen% '),
+                         'alvaro_justen')
+
+    def test_ipartition(self):
+        iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        result = plugins_utils.ipartition(iterable, 3)
+        self.assertEqual(type(result), types.GeneratorType)
+        self.assertEqual(list(result), [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]])
+
+        result = plugins_utils.ipartition(iterable, 2)
+        self.assertEqual(type(result), types.GeneratorType)
+        self.assertEqual(list(result), [[1, 2], [3, 4], [5, 6], [7, 8],
+                                        [9, 10]])
 
 
 def possible_field_names_errors(error_fields):
@@ -285,6 +311,12 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result = plugins_utils.make_unique_name(name, existing_names,
                                                 name_format)
         self.assertEqual(result, '4_test')
+
+        existing_names = ['test', '2_test', '3_test', '5_test']
+        result = plugins_utils.make_unique_name(name, existing_names,
+                                                name_format,
+                                                start=1)
+        self.assertEqual(result, '1_test')
 
     def test_export_data(self):
         data = 'python rules'.encode('utf-8')
