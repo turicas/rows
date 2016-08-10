@@ -1,5 +1,19 @@
 # rows' Log of Changes
 
+
+## Version `0.3.0`
+
+**Released on: (under development)**
+
+### Backwards Incompatible Changes
+
+### Bug Fixes
+
+### Enhancements and Refactorings
+
+### New Features
+
+
 ## Version `0.2.1`
 
 **Released on: 2016-08-10**
