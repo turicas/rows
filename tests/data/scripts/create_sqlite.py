@@ -22,16 +22,14 @@ field_types = OrderedDict([
 ])
 column_types = ', '.join(['{} {}'.format(key, value)
                           for key, value in field_types.items()])
-create_sql = 'CREATE TABLE rows ({})'.format(column_types)
+create_sql = 'CREATE TABLE table1 ({})'.format(column_types)
 field_names = ', '.join(field_types.keys())
 placeholders = ', '.join(['?' for _ in field_types])
-insert_sql = 'INSERT INTO rows ({}) VALUES ({})'.format(field_names,
+insert_sql = 'INSERT INTO table1 ({}) VALUES ({})'.format(field_names,
                                                         placeholders)
 
-try:
+if os.path.exists(output_filename):
     os.unlink(output_filename)
-except OSError:
-    pass
 
 connection = sqlite3.connect(output_filename)
 connection.execute(create_sql)
@@ -39,3 +37,4 @@ with open(input_filename) as fobj:
     data = fobj.read().decode('utf-8').splitlines()
 for row in data[1:]:
     connection.execute(insert_sql, row.split(','))
+connection.commit()

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -32,16 +32,17 @@ SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
 SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS {table_name} ({field_types})'
 SQL_SELECT_ALL = 'SELECT * FROM {table_name}'
 SQL_INSERT = 'INSERT INTO {table_name} ({field_names}) VALUES ({placeholders})'
-
-SQLITE_TYPES = {fields.BinaryField: 'BLOB',
-                fields.BoolField: 'INTEGER',
-                fields.IntegerField: 'INTEGER',
-                fields.FloatField: 'REAL',
-                fields.DecimalField: 'REAL',
-                fields.PercentField: 'REAL',
-                fields.DateField: 'TEXT',
-                fields.DatetimeField: 'TEXT',
-                fields.TextField: 'TEXT', }
+SQLITE_TYPES = {
+        fields.BinaryField: 'BLOB',
+        fields.BoolField: 'INTEGER',
+        fields.DateField: 'TEXT',
+        fields.DatetimeField: 'TEXT',
+        fields.DecimalField: 'REAL',
+        fields.FloatField: 'REAL',
+        fields.IntegerField: 'INTEGER',
+        fields.PercentField: 'REAL',
+        fields.TextField: 'TEXT',
+}
 DEFAULT_TYPE = 'BLOB'
 
 
@@ -74,22 +75,25 @@ def _python_to_sqlite(field_types):
 
 
 def _get_connection(filename_or_connection):
-    if isinstance(filename_or_connection, basestring):
+
+    if isinstance(filename_or_connection, basestring):  # filename
         return sqlite3.connect(filename_or_connection)
-    else:
+
+    else:  # already a connection
         return filename_or_connection
 
 
-def import_from_sqlite(filename_or_connection, table_name='rows', query=None,
+def import_from_sqlite(filename_or_connection, table_name='table1', query=None,
                        *args, **kwargs):
+
     connection = _get_connection(filename_or_connection)
     cursor = connection.cursor()
     sql = query if query else SQL_SELECT_ALL.format(table_name=table_name)
 
-    cursor.execute(sql)
+    table_rows = list(cursor.execute(sql)) # TODO: may be lazy
     header = [info[0] for info in cursor.description]
-    table_rows = list(cursor)  # TODO: may not put everything in memory
     cursor.close()
+    # TODO: should close connection also?
 
     meta = {'imported_from': 'sqlite', 'filename': filename_or_connection, }
     return create_table([header] + table_rows, meta=meta, *args, **kwargs)
