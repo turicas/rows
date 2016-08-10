@@ -312,6 +312,12 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
                                                 name_format)
         self.assertEqual(result, '4_test')
 
+        existing_names = ['test', '2_test', '3_test', '5_test']
+        result = plugins_utils.make_unique_name(name, existing_names,
+                                                name_format,
+                                                start=1)
+        self.assertEqual(result, '1_test')
+
     def test_export_data(self):
         data = 'python rules'.encode('utf-8')
         temp = tempfile.NamedTemporaryFile(delete=False)

@@ -94,32 +94,40 @@ def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
     return filename, fobj
 
 
-def make_unique_name(name, existing_names, name_format='{name}_{index}'):
+def make_unique_name(name, existing_names, name_format='{name}_{index}',
+                     start=2):
     '''Return a unique name based on `name_format` and `name`.'''
 
+    index = start
     new_name = name
-    index = 2
     while new_name in existing_names:
         new_name = name_format.format(name=name, index=index)
         index += 1
+
     return new_name
 
-def make_header(data, permit_not=False):
+
+def make_header(field_names, permit_not=False):
+    'Return unique and slugged field names'
+
     slug_chars = SLUG_CHARS if not permit_not else SLUG_CHARS + '^'
 
     header = [slug(field_name, permitted_chars=slug_chars)
-              for field_name in data]
-    field_names = []
+              for field_name in field_names]
+    result = []
     for index, field_name in enumerate(header):
         if not field_name:
             field_name = 'field_{}'.format(index)
-        if field_name[0].isdigit():
+        elif field_name[0].isdigit():
             field_name = 'field_{}'.format(field_name)
-        if field_name in field_names:
+
+        if field_name in result:
             field_name = make_unique_name(name=field_name,
-                                          existing_names=field_names)
-        field_names.append(field_name)
-    return field_names
+                                          existing_names=result,
+                                          start=2)
+        result.append(field_name)
+
+    return result
 
 
 def create_table(data, meta=None, fields=None, skip_header=True,

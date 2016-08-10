@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -108,26 +108,29 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         first_table = utils.table
         second_table = utils.table + utils.table
-        third_table = utils.table + utils.table + utils.table
-        fourth_table = utils.table + utils.table + utils.table
 
-        rows.export_to_sqlite(first_table, temp.name, table_name='rows')
-        rows.export_to_sqlite(second_table, temp.name, table_name='rows')
-        rows.export_to_sqlite(third_table, temp.name, table_name='test')
-        rows.export_to_sqlite(fourth_table, temp.name, table_name='test')
+        rows.export_to_sqlite(first_table, temp.name)  # table1
+        rows.export_to_sqlite(second_table, temp.name)  # table2
 
         result_first_table = rows.import_from_sqlite(temp.name,
-                                                     table_name='rows')
+                                                     table_name='table1')
         result_second_table = rows.import_from_sqlite(temp.name,
-                                                      table_name='rows_2')
-        result_third_table = rows.import_from_sqlite(temp.name,
-                                                     table_name='test')
-        result_fourth_table = rows.import_from_sqlite(temp.name,
-                                                      table_name='test_2')
+                                                      table_name='table2')
         self.assert_table_equal(result_first_table, first_table)
         self.assert_table_equal(result_second_table, second_table)
-        self.assert_table_equal(result_third_table, third_table)
-        self.assert_table_equal(result_fourth_table, fourth_table)
+
+    def test_export_to_sqlite_forcing_table_name_appends_rows(self):
+        # TODO: may test file contents
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+
+        rows.export_to_sqlite(utils.table, temp.name, table_name='rows')
+        rows.export_to_sqlite(utils.table, temp.name, table_name='rows')
+
+        result_table = rows.import_from_sqlite(temp.name, table_name='rows')
+
+        self.assertEqual(len(result_table), 2 * len(utils.table))
+        self.assert_table_equal(result_table, utils.table + utils.table)
 
     @mock.patch('rows.plugins.sqlite.prepare_to_export')
     def test_export_to_sqlite_uses_prepare_to_export(self,

@@ -99,23 +99,29 @@ def import_from_sqlite(filename_or_connection, table_name='table1', query=None,
     return create_table([header] + table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_sqlite(table, filename_or_connection, table_name='rows',
-                     batch_size=100, *args, **kwargs):
+def export_to_sqlite(table, filename_or_connection, table_name=None,
+                     table_name_format='table{index}', batch_size=100,
+                     *args, **kwargs):
     # TODO: should add transaction support?
 
     prepared_table = prepare_to_export(table, *args, **kwargs)
     connection = _get_connection(filename_or_connection)
-    table_names = [item[0]
-                   for item in connection.execute(SQL_TABLE_NAMES).fetchall()]
-    table_name = make_unique_name(name=table_name, existing_names=table_names)
+    cursor = connection.cursor()
+
+    if table_name is None:
+        table_names = [item[0] for item in cursor.execute(SQL_TABLE_NAMES)]
+        table_name = make_unique_name(table_name_format.format(index=1),
+                                      existing_names=table_names,
+                                      name_format=table_name_format,
+                                      start=1)
 
     field_names = prepared_table.next()
     field_types = map(table.fields.get, field_names)
     columns = ['{} {}'.format(field_name,
                               SQLITE_TYPES.get(field_type, DEFAULT_TYPE))
                for field_name, field_type in zip(field_names, field_types)]
-    connection.execute(SQL_CREATE_TABLE.format(table_name=table_name,
-                                               field_types=', '.join(columns)))
+    cursor.execute(SQL_CREATE_TABLE.format(table_name=table_name,
+                                           field_types=', '.join(columns)))
 
     insert_sql = SQL_INSERT.format(
             table_name=table_name,
@@ -123,7 +129,7 @@ def export_to_sqlite(table, filename_or_connection, table_name='rows',
             placeholders=', '.join('?' for _ in field_names))
     _convert_row = _python_to_sqlite(field_types)
     for batch in ipartition(prepared_table, batch_size):
-        connection.executemany(insert_sql, map(_convert_row, batch))
+        cursor.executemany(insert_sql, map(_convert_row, batch))
 
     connection.commit()
     return connection
