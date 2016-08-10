@@ -81,6 +81,16 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_create_table_data(call_args, filename=connection)
         connection.close()
 
+    def test_sqlite_injection(self):
+        connection = rows.export_to_sqlite(utils.table, ':memory:')
+        with self.assertRaises(ValueError):
+            rows.import_from_sqlite(connection,
+                                    table_name='table1", "sqlite_master')
+
+        with self.assertRaises(ValueError):
+            rows.export_to_sqlite(utils.table, ':memory:',
+                                  table_name='table1", "sqlite_master')
+
     def test_export_to_sqlite_filename(self):
         # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)

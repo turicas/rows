@@ -18,8 +18,8 @@
 from __future__ import unicode_literals
 
 import datetime
-
 import sqlite3
+import string
 
 import rows.fields as fields
 
@@ -29,9 +29,9 @@ from rows.plugins.utils import (create_table, get_filename_and_fobj,
 
 
 SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
-SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS {table_name} ({field_types})'
-SQL_SELECT_ALL = 'SELECT * FROM {table_name}'
-SQL_INSERT = 'INSERT INTO {table_name} ({field_names}) VALUES ({placeholders})'
+SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS "{table_name}" ({field_types})'
+SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
+SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) VALUES ({placeholders})'
 SQLITE_TYPES = {
         fields.BinaryField: 'BLOB',
         fields.BoolField: 'INTEGER',
@@ -83,14 +83,36 @@ def _get_connection(filename_or_connection):
         return filename_or_connection
 
 
+def _valid_table_name(name):
+    '''Verify if a given table name is valid for `rows`
+
+    Rules:
+    - Should start with a letter or '_'
+    - Letters can be capitalized or not
+    - Acceps letters, numbers and _
+    '''
+
+    if name[0] not in '_' + string.letters or \
+       not set(name).issubset('_' + string.letters + string.digits):
+        return False
+
+    else:
+        return True
+
+
 def import_from_sqlite(filename_or_connection, table_name='table1', query=None,
                        *args, **kwargs):
 
     connection = _get_connection(filename_or_connection)
     cursor = connection.cursor()
-    sql = query if query else SQL_SELECT_ALL.format(table_name=table_name)
 
-    table_rows = list(cursor.execute(sql)) # TODO: may be lazy
+    if query is None:
+        if not _valid_table_name(table_name):
+            raise ValueError('Invalid table name: {}'.format(table_name))
+
+        query  = SQL_SELECT_ALL.format(table_name=table_name)
+
+    table_rows = list(cursor.execute(query)) # TODO: may be lazy
     header = [info[0] for info in cursor.description]
     cursor.close()
     # TODO: should close connection also?
@@ -114,6 +136,9 @@ def export_to_sqlite(table, filename_or_connection, table_name=None,
                                       existing_names=table_names,
                                       name_format=table_name_format,
                                       start=1)
+
+    elif not _valid_table_name(table_name):
+            raise ValueError('Invalid table name: {}'.format(table_name))
 
     field_names = prepared_table.next()
     field_types = map(table.fields.get, field_names)
