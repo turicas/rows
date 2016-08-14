@@ -35,7 +35,7 @@ from rows.plugins.txt import import_from_txt, export_to_txt
 # Have dependencies
 
 try:
-    from rows.plugins.html import import_from_html, export_to_html
+    from rows.plugins.plugin_html import import_from_html, export_to_html
     from rows.plugins.xpath import import_from_xpath
 except ImportError:
     pass

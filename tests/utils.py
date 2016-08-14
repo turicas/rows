@@ -173,7 +173,9 @@ class RowsTestMixIn(object):
             filename = self.filename
         kwargs = call_args[1]
         expected_meta = {'imported_from': self.plugin_name,
-                         'filename': filename, }
+                         'filename': filename,}
+        if self.assert_meta_encoding:
+            expected_meta['encoding'] = self.encoding
         self.assertEqual(kwargs['meta'], expected_meta)
         del kwargs['meta']
         self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs,

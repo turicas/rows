@@ -17,8 +17,12 @@
 
 from __future__ import unicode_literals
 
-import HTMLParser
-import string
+try:
+    from HTMLParser import HTMLParser  # Python 2
+except:
+    from html.parser import HTMLParser  # Python 3
+
+import six
 
 from lxml.html import document_fromstring
 from lxml.etree import tostring as to_string, strip_tags
@@ -27,20 +31,20 @@ from rows.plugins.utils import (create_table, export_data,
                                 get_filename_and_fobj, serialize)
 
 
-unescape = HTMLParser.HTMLParser().unescape
+unescape = HTMLParser().unescape
 
 
 def _get_content(element):
-    content = to_string(element)
-    content = content[content.find('>') + 1:content.rfind('<')].strip()
-    return unescape(content)
+    return element.text + \
+            ''.join(to_string(child, encoding=six.text_type)
+                    for child in element.getchildren())
 
 
 def _get_row(row, column_tag, preserve_html, properties):
     if not preserve_html:
-        data = map(_extract_node_text, row.xpath(column_tag))
+        data = list(map(_extract_node_text, row.xpath(column_tag)))
     else:
-        data = map(_get_content, row.xpath(column_tag))
+        data = list(map(_get_content, row.xpath(column_tag)))
 
     if properties:
         data.append(dict(row.attrib))
@@ -53,8 +57,7 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
                      properties=False, table_tag='table', row_tag='tr',
                      column_tag='td|th', *args, **kwargs):
 
-    filename, fobj = get_filename_and_fobj(filename_or_fobj)
-    kwargs['encoding'] = encoding
+    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
     html = fobj.read().decode(encoding)
     html_tree = document_fromstring(html)
     tables = html_tree.xpath('//{}'.format(table_tag))
@@ -77,21 +80,22 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
         # The field names will be the first table row, so we need to strip HTML
         # from it even if `preserve_html` is `True` (it's `True` only for rows,
         # not for the header).
-        table_rows[0] = map(_extract_node_text, row_elements[0])
+        table_rows[0] = list(map(_extract_node_text, row_elements[0]))
 
     max_columns = max(map(len, table_rows))
     if ignore_colspan:
         table_rows = filter(lambda row: len(row) == max_columns, table_rows)
 
-    meta = {'imported_from': 'html', 'filename': filename,}
+    meta = {'imported_from': 'html',
+            'filename': filename,
+            'encoding': encoding,}
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
 def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
                    **kwargs):
-    kwargs['encoding'] = encoding
     serialized_table = serialize(table, *args, **kwargs)
-    fields = serialized_table.next()
+    fields = next(serialized_table)
     result = ['<table>\n\n', '  <thead>\n', '    <tr>\n']
     header = ['      <th> {} </th>\n'.format(field) for field in fields]
     result.extend(header)
@@ -103,20 +107,18 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
             result.extend(['      <td> ', value, ' </td>\n'])
         result.append('    </tr>\n\n')
     result.append('  </tbody>\n\n</table>\n')
-    new_result = [value.encode(encoding) if isinstance(value, unicode)
-                  else value
-                  for value in result]
-    html = ''.encode(encoding).join(new_result)
+    html = ''.join(result).encode(encoding)
 
-    return export_data(filename_or_fobj, html)
+    return export_data(filename_or_fobj, html, mode='wb')
 
 
 def _extract_node_text(node):
     'Extract text from a given lxml node'
 
-    texts = map(string.strip,
-                map(unescape,
-                    node.xpath('.//text()')))
+    texts = map(six.text_type.strip,
+                map(six.text_type,
+                    map(unescape,
+                        node.xpath('.//text()'))))
     return ' '.join(text for text in texts if text)
 
 
