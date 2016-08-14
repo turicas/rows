@@ -22,7 +22,10 @@ import mimetypes
 import os
 import tempfile
 
-from urlparse import urlparse
+try:
+    from urlparse import urlparse  # Python 2
+except ImportError:
+    from urllib.parse import urlparse  # Python 3
 
 try:
     import magic
