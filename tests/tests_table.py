@@ -22,11 +22,15 @@ import unittest
 
 from collections import OrderedDict
 
+import six
+
 import rows
 import rows.fields as fields
 
 from rows.table import FlexibleTable, Table
 
+
+binary_type_name = six.binary_type.__name__
 
 class TableTestCase(unittest.TestCase):
 
@@ -76,31 +80,32 @@ class TableTestCase(unittest.TestCase):
         with self.assertRaises(ValueError) as context_manager:
             self.table.append({'name': 'Álvaro Justen'.encode('utf-8'),
                                'birthdate': '1987-04-29'})
-        self.assertEqual(type(context_manager.exception), UnicodeDecodeError)
+        self.assertEqual(type(context_manager.exception), ValueError)
+        self.assertEqual(context_manager.exception.args[0],
+                         'Binary is not supported')
 
         with self.assertRaises(ValueError) as context_manager:
             self.table.append({'name': u'Álvaro Justen', 'birthdate': 'WRONG'})
         self.assertEqual(type(context_manager.exception), ValueError)
         self.assertIn('does not match format',
-                      context_manager.exception.message)
+                      context_manager.exception.args[0])
 
     def test_table_getitem_invalid_type(self):
         with self.assertRaises(ValueError) as exception_context:
             self.table[3.14]
-        self.assertEqual(exception_context.exception.message,
+        self.assertEqual(exception_context.exception.args[0],
                          'Unsupported key type: float')
 
         with self.assertRaises(ValueError) as exception_context:
             self.table[b'name']
-        self.assertEqual(exception_context.exception.message,
-                         'Unsupported key type: str')
-        # TODO: should change to 'bytes' on Python3
+        self.assertEqual(exception_context.exception.args[0],
+                         'Unsupported key type: {}'.format(binary_type_name))
 
     def test_table_getitem_column_doesnt_exist(self):
         with self.assertRaises(KeyError) as exception_context:
             self.table['doesnt-exist']
 
-        self.assertEqual(exception_context.exception.message,
+        self.assertEqual(exception_context.exception.args[0],
                          'doesnt-exist')
 
     def test_table_getitem_column_happy_path(self):
@@ -121,8 +126,10 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(self.table[0].birthdate, datetime.date(2000, 1, 1))
 
     def test_field_names_and_types(self):
-        self.assertEqual(self.table.field_names, self.table.fields.keys())
-        self.assertEqual(self.table.field_types, self.table.fields.values())
+        self.assertEqual(self.table.field_names,
+                         list(self.table.fields.keys()))
+        self.assertEqual(self.table.field_types,
+                         list(self.table.fields.values()))
 
     def test_table_setitem_column_happy_path_new_column(self):
         number_of_fields = len(self.table.fields)
@@ -169,7 +176,7 @@ class TableTestCase(unittest.TestCase):
 
         self.assertEqual(len(self.table), 3)
         self.assertEqual(len(self.table.fields), number_of_fields)
-        self.assertEqual(exception_context.exception.message,
+        self.assertEqual(exception_context.exception.args[0],
                          'Values length (2) should be the same as Table '
                          'length (3)')
 
@@ -182,7 +189,7 @@ class TableTestCase(unittest.TestCase):
 
         self.assertEqual(len(self.table), 3)  # should not add any row
         self.assertDictEqual(fields, self.table.fields)  # should not add field
-        self.assertEqual(exception_context.exception.message,
+        self.assertEqual(exception_context.exception.args[0],
                          'Unsupported key type: float')
 
         with self.assertRaises(ValueError) as exception_context:
@@ -190,9 +197,8 @@ class TableTestCase(unittest.TestCase):
 
         self.assertEqual(len(self.table), 3)  # should not add any row
         self.assertDictEqual(fields, self.table.fields)  # should not add field
-        self.assertEqual(exception_context.exception.message,
-                         'Unsupported key type: str')
-        # TODO: should change to 'bytes' on Python3
+        self.assertEqual(exception_context.exception.args[0],
+                         'Unsupported key type: {}'.format(binary_type_name))
 
     def test_table_delitem_row(self):
         table_rows = [row for row in self.table]
@@ -207,7 +213,7 @@ class TableTestCase(unittest.TestCase):
         with self.assertRaises(KeyError) as exception_context:
             del self.table['doesnt-exist']
 
-        self.assertEqual(exception_context.exception.message,
+        self.assertEqual(exception_context.exception.args[0],
                          'doesnt-exist')
 
     def test_table_delitem_column_happy_path(self):
@@ -235,7 +241,7 @@ class TableTestCase(unittest.TestCase):
 
         self.assertEqual(len(self.table), 3)  # should not del any row
         self.assertDictEqual(fields, self.table.fields)  # should not del field
-        self.assertEqual(exception_context.exception.message,
+        self.assertEqual(exception_context.exception.args[0],
                          'Unsupported key type: float')
 
         with self.assertRaises(ValueError) as exception_context:
@@ -243,9 +249,8 @@ class TableTestCase(unittest.TestCase):
 
         self.assertEqual(len(self.table), 3)  # should not del any row
         self.assertDictEqual(fields, self.table.fields)  # should not del field
-        self.assertEqual(exception_context.exception.message,
-                         'Unsupported key type: str')
-        # TODO: should change to 'bytes' on Python3
+        self.assertEqual(exception_context.exception.args[0],
+                         'Unsupported key type: {}'.format(binary_type_name))
 
     def test_table_add(self):
         self.assertIs(self.table + 0, self.table)
@@ -307,9 +312,8 @@ class TestFlexibleTable(unittest.TestCase):
         self.table.append({'a': 123, 'b': 3.14, })
         self.assertEqual(self.table[0].a, 123)
         self.assertEqual(self.table[0].b, 3.14)
-        self.assertEqual(self.table.fields,
-                         OrderedDict([('a', fields.IntegerField),
-                                      ('b', fields.FloatField)]))
+        self.assertEqual(self.table.fields['a'], fields.IntegerField)
+        self.assertEqual(self.table.fields['b'], fields.FloatField)
 
         # Values are checked based on field types when appending
         with self.assertRaises(ValueError):
