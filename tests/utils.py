@@ -40,7 +40,7 @@ FIELDS = OrderedDict([
     ('datetime_column', fields.DatetimeField),
     ('unicode_column', fields.TextField),
 ])
-FIELD_NAMES = FIELDS.keys()
+FIELD_NAMES = list(FIELDS.keys())
 EXPECTED_ROWS = [
         {
             'float_column': 3.141592,
@@ -246,11 +246,14 @@ class RowsTestMixIn(object):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
         else:
-            float_value = float(expected_value) * 100
-            possible_values = [str(float_value) + '%',
-                            str(float_value) + '.0%',
-                            str(float_value) + '.00%']
-            if int(float_value) == float_value:
+            float_value = str(Decimal(expected_value) * 100)[:-2]
+            if float_value.endswith('.'):
+                float_value = float_value[:-1]
+
+            possible_values = [float_value + '%',
+                               float_value + '.0%',
+                               float_value + '.00%']
+            if '.' not in float_value:
                 possible_values.append(str(int(float_value)) + '%')
             self.assertIn(value, possible_values)
 
