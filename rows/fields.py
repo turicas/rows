@@ -26,6 +26,8 @@ import types
 
 from decimal import Decimal, InvalidOperation
 
+import six
+
 
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
@@ -33,7 +35,7 @@ __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
            'EmailField', 'TextField', 'BinaryField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
-NULL = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
+NULL = ('-', 'null', 'none', 'nil', 'n/a', 'na')
 
 
 class Field(object):
@@ -43,7 +45,7 @@ class Field(object):
     actually implements what is expected in the BinaryField
     """
 
-    TYPE = (types.NoneType, )
+    TYPE = (type(None), )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -79,14 +81,14 @@ class BinaryField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (types.StringType, )
+    TYPE = (six.binary_type, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
-        if value is None:
-            value = ''
-
-        return cls.TYPE[0](value)
+        if value is not None:
+            return value
+        else:
+            return b''
 
 
     @classmethod
@@ -104,7 +106,7 @@ class BoolField(Field):
     attributes like `TRUE_VALUES` and `FALSE_VALUES`)
     """
 
-    TYPE = (types.BooleanType, )
+    TYPE = (bool, )
     SERIALIZED_VALUES = {True: 'true', False: 'false', None: ''}
     TRUE_VALUES = ('true', 'yes')
     FALSE_VALUES = ('false', 'no')
@@ -135,7 +137,7 @@ class IntegerField(Field):
     Is locale-aware
     """
 
-    TYPE = (types.IntType, )
+    TYPE = (int, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -143,7 +145,7 @@ class IntegerField(Field):
             return ''
 
         if SHOULD_NOT_USE_LOCALE:
-            return types.UnicodeType(value)
+            return six.text_type(value)
         else:
             grouping = kwargs.get('grouping', None)
             return locale.format('%d', value, grouping=grouping)
@@ -171,7 +173,7 @@ class FloatField(Field):
     Is locale-aware
     """
 
-    TYPE = (types.FloatType, )
+    TYPE = (float, )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -179,7 +181,7 @@ class FloatField(Field):
             return ''
 
         if SHOULD_NOT_USE_LOCALE:
-            return types.UnicodeType(value)
+            return six.text_type(value)
         else:
             grouping = kwargs.get('grouping', None)
             return locale.format('%f', value, grouping=grouping)
@@ -210,7 +212,7 @@ class DecimalField(Field):
         if value is None:
             return ''
 
-        value_as_string = types.UnicodeType(value)
+        value_as_string = six.text_type(value)
         if SHOULD_NOT_USE_LOCALE:
             return value_as_string
         else:
@@ -229,7 +231,7 @@ class DecimalField(Field):
         if value is None or isinstance(value, cls.TYPE):
             return value
         elif type(value) in (int, float):
-            return Decimal(str(value))
+            return Decimal(six.text_type(value))
 
         if SHOULD_NOT_USE_LOCALE:
             try:
@@ -277,7 +279,7 @@ class PercentField(DecimalField):
         elif value == Decimal('0'):
             return '0.00%'
 
-        value = Decimal(str(value * 100)[:-2])
+        value = Decimal(six.text_type(value * 100)[:-2])
         value = super(PercentField, cls).serialize(value, *args, **kwargs)
         return '{}%'.format(value)
 
@@ -310,7 +312,7 @@ class DateField(Field):
         if value is None:
             return ''
 
-        return types.UnicodeType(value.strftime(cls.OUTPUT_FORMAT))
+        return six.text_type(value.strftime(cls.OUTPUT_FORMAT))
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -319,8 +321,6 @@ class DateField(Field):
             return value
 
         value = as_string(value)
-        if isinstance(value, unicode):
-            value = value.encode('utf-8')
 
         dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
         return datetime.date(dt_object.year, dt_object.month, dt_object.day)
@@ -341,7 +341,7 @@ class DatetimeField(Field):
         if value is None:
             return ''
 
-        return types.UnicodeType(value.isoformat())
+        return six.text_type(value.isoformat())
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -364,16 +364,14 @@ class TextField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (types.UnicodeType, )
+    TYPE = (six.text_type, )
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         if value is None or isinstance(value, cls.TYPE):
             return value
-        elif 'encoding' in kwargs:
-            return as_string(value).decode(kwargs['encoding'])
         else:
-            return cls.TYPE[0](value)
+            return as_string(value)
 
 
 class EmailField(TextField):
@@ -390,7 +388,7 @@ class EmailField(TextField):
         if value is None:
             return ''
 
-        return types.UnicodeType(value)
+        return six.text_type(value)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -411,7 +409,7 @@ class JSONField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (types.ListType, types.DictType)
+    TYPE = (list, dict)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -419,24 +417,26 @@ class JSONField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if isinstance(value, types.UnicodeType):
-            value = value.encode('utf-8')
-
         if value is None or isinstance(value, cls.TYPE):
             return value
         else:
             return json.loads(value)
 
 
-AVAILABLE_FIELD_TYPES = [locals()[element] for element in __all__
-                         if 'Field' in element and element != 'Field']
+local_vars = locals()
+TYPES = [(key, local_vars.get(key))
+         for key in __all__
+         if key not in ('Field', 'BinaryField')]
+AVAILABLE_FIELD_TYPES = [item[1] for item in TYPES]
 
 
 def as_string(value):
-    if isinstance(value, types.StringTypes):
+    if isinstance(value, six.binary_type):
+        raise ValueError('Binary is not supported')
+    elif isinstance(value, six.text_type):
         return value
     else:
-        return types.StringType(value)
+        return six.text_type(value)
 
 
 def is_null(value):
@@ -467,14 +467,15 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
     # TODO: may receive 'type hints'
     # TODO: should support receiving unicode objects directly
     # TODO: should expect data in unicode or will be able to use binary data?
+
     field_values = list(field_values)
     if not field_values:
         return collections.OrderedDict([(field_name, BinaryField)
                                         for field_name in field_names])
 
     number_of_fields = len(field_names)
-    columns = zip(*[row for row in field_values
-                    if len(row) == number_of_fields])
+    columns = list(zip(*[row for row in field_values
+                         if len(row) == number_of_fields]))
 
     if len(columns) != number_of_fields:
         raise ValueError('Number of fields differ')
@@ -508,12 +509,9 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
     return detected_types
 
 
-TYPES = [(key, locals().get(key)) for key in __all__]
-
-
 def identify_type(value):
     value_type = type(value)
-    if value_type not in (str, unicode):
+    if value_type not in (six.text_type, six.binary_type):
         possible_types = [type_class for type_name, type_class in TYPES
                           if value_type in type_class.TYPE]
         if not possible_types:
