@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import binascii
 import collections
 import datetime
 import json
@@ -24,6 +25,7 @@ import locale
 import re
 import types
 
+from base64 import b64decode, b64encode
 from decimal import Decimal, InvalidOperation
 
 import six
@@ -32,7 +34,7 @@ import six
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
            'DateField', 'DecimalField', 'PercentField', 'JSONField',
-           'EmailField', 'TextField', 'BinaryField', 'Field']
+           'EmailField', 'BinaryField', 'TextField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 NULL = ('-', 'null', 'none', 'nil', 'n/a', 'na')
@@ -87,17 +89,30 @@ class BinaryField(Field):
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is not None:
-            return value
+            if not isinstance(value, six.binary_type):
+                raise ValueError("Can't be {}".format(cls.__name__))
+            else:
+                try:
+                    return b64encode(value).decode('ascii')
+                except (TypeError, binascii.Error):
+                    return value
         else:
-            return b''
-
+            return ''
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if value is None:
-            return None
+        if value is not None:
+            if isinstance(value, six.binary_type):
+                return value
+            elif isinstance(value, six.text_type):
+                try:
+                    return b64decode(value)
+                except (TypeError, binascii.Error):
+                    raise ValueError("Can't decode base64")
+            else:
+                raise ValueError("Can't be {}".format(cls.__name__))
         else:
-            return six.binary_type(value)
+            return b''
 
 
 class BoolField(Field):
@@ -425,9 +440,7 @@ class JSONField(Field):
 
 
 local_vars = locals()
-TYPES = [(key, local_vars.get(key))
-         for key in __all__
-         if key not in ('Field', 'BinaryField')]
+TYPES = [(key, local_vars.get(key)) for key in __all__ if key != 'Field']
 AVAILABLE_FIELD_TYPES = [item[1] for item in TYPES]
 
 

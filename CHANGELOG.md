@@ -23,7 +23,8 @@
 
 ### New Features
 
-- Support for Python 3
+- Support for Python 3 (finally!);
+- `rows.fields.BinaryField` now automatically uses base64 to encode/decode;
 - Added `encoding` information to `rows.Table` metadata in text plugins;
 - Added `sheet_name` information to `rows.Table` metadata in XLS and XLSX
   plugins.

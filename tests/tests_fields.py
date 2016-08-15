@@ -23,6 +23,7 @@ import json
 import platform
 import unittest
 
+from base64 import b64encode
 from decimal import Decimal
 
 import rows
@@ -49,15 +50,35 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(type(fields.Field.serialize('Álvaro')), six.text_type)
 
     def test_BinaryField(self):
-        serialized = 'Álvaro'.encode('utf-8')
+        deserialized = 'Álvaro'.encode('utf-8')
+        serialized = b64encode(deserialized).decode('ascii')
+
         self.assertEqual(fields.BinaryField.TYPE, (bytes, ))
-        self.assertIs(fields.BinaryField.deserialize(None), None)
-        self.assertEqual(fields.BinaryField.deserialize(serialized), serialized)
-        self.assertIs(type(fields.BinaryField.deserialize(serialized)), bytes)
-        self.assertEqual(fields.BinaryField.serialize(None), b'')
-        self.assertIs(type(fields.BinaryField.serialize(None)), bytes)
-        self.assertEqual(fields.BinaryField.serialize(serialized), serialized)
-        self.assertIs(type(fields.BinaryField.serialize(serialized)), bytes)
+
+        self.assertEqual(fields.BinaryField.serialize(None), '')
+        self.assertIs(type(fields.BinaryField.serialize(None)), six.text_type)
+        self.assertEqual(fields.BinaryField.serialize(deserialized),
+                         serialized)
+        self.assertIs(type(fields.BinaryField.serialize(deserialized)),
+                      six.text_type)
+        with self.assertRaises(ValueError):
+            fields.BinaryField.serialize(42)
+        with self.assertRaises(ValueError):
+            fields.BinaryField.serialize(3.14)
+        with self.assertRaises(ValueError):
+            fields.BinaryField.serialize('Álvaro')
+
+        self.assertIs(fields.BinaryField.deserialize(None), b'')
+        self.assertEqual(fields.BinaryField.deserialize(serialized),
+                         deserialized)
+        self.assertIs(type(fields.BinaryField.deserialize(serialized)),
+                      six.binary_type)
+        with self.assertRaises(ValueError):
+            fields.BinaryField.deserialize(42)
+        with self.assertRaises(ValueError):
+            fields.BinaryField.deserialize(3.14)
+        with self.assertRaises(ValueError):
+            fields.BinaryField.deserialize('Álvaro')
 
     def test_BoolField(self):
         self.assertEqual(fields.BoolField.TYPE, (bool, ))
@@ -372,7 +393,16 @@ class FieldUtilsTestCase(unittest.TestCase):
 
     def test_detect_types_binary(self):
         expected = {key: fields.BinaryField for key in self.expected.keys()}
+
+        # first, try values as (`bytes`/`str`)
         values = [[value.encode('utf-8') for value in row]
+                  for row in self.data]
+        result = fields.detect_types(self.fields, values)
+        self.assertDictEqual(dict(result), expected)
+
+        # second, try base64-encoded values (as `str`/`unicode`)
+        values = [[b64encode(value.encode('utf-8')).decode('ascii')
+                   for value in row]
                   for row in self.data]
         result = fields.detect_types(self.fields, values)
         self.assertDictEqual(dict(result), expected)
@@ -380,6 +410,40 @@ class FieldUtilsTestCase(unittest.TestCase):
     def test_detect_types(self):
         result = fields.detect_types(self.fields, self.data)
         self.assertDictEqual(dict(result), self.expected)
+
+    def test_precedence(self):
+        field_types = [
+                ('bool', fields.BoolField),
+                ('integer', fields.IntegerField),
+                ('float', fields.FloatField),
+                ('datetime', fields.DatetimeField),
+                ('date', fields.DateField),
+                ('float', fields.FloatField),
+                ('percent', fields.PercentField),
+                ('json', fields.JSONField),
+                ('email', fields.EmailField),
+                ('binary1', fields.BinaryField),
+                ('binary2', fields.BinaryField),
+                ('text', fields.TextField),
+            ]
+        data = [
+                [
+                    'false',
+                    '42',
+                    '3.14',
+                    '2016-08-15T05:21:10',
+                    '2016-08-15',
+                    '2.71',
+                    '76.38%',
+                    '{"key": "value"}',
+                    'test@example.com',
+                    'cHl0aG9uIHJ1bGVz',
+                    b'python rules',
+                    'Álvaro Justen'
+                ]
+            ]
+        result = fields.detect_types([item[0] for item in field_types], data)
+        self.assertDictEqual(dict(result), dict(field_types))
 
 
 class FieldsFunctionsTestCase(unittest.TestCase):
