@@ -1,6 +1,6 @@
 # coding: utf-8
 
-import sys
+import os
 
 from collections import OrderedDict
 
@@ -8,7 +8,8 @@ import rows
 
 # taken from:
 # http://www.supercom.gob.ec/es/informate-y-participa/directorio-de-medios/21-radiodifusoras
-filename = 'tests/data/ecuador-medios-radiodifusoras.html'
+filename = os.path.join(os.path.dirname(__file__),
+                        '../../tests/data/ecuador-medios-radiodifusoras.html')
 rows_xpath = '//*[@class="entry-container"]/*[@class="row-fluid"]/*[@class="span6"]'
 fields_xpath = OrderedDict([
         ('url', './/h2/a/@href'),

@@ -47,6 +47,7 @@ def import_from_uwsgi_log(filename):
 
 
 if __name__ == '__main__':
+
     table = import_from_uwsgi_log('uwsgi.log')
     for row in table:
-        print row
+        print(row)
