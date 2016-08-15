@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -27,8 +27,8 @@ from io import BytesIO
 import mock
 
 import rows
-import rows.plugins.csv
-import utils
+import rows.plugins.plugin_csv
+import tests.utils as utils
 
 
 def make_csv_data(quote_char, field_delimiter, line_delimiter):
@@ -48,25 +48,29 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     file_extension = 'csv'
     filename = 'tests/data/all-field-types.csv'
     encoding = 'utf-8'
+    assert_meta_encoding = True
 
     def test_imports(self):
-        self.assertIs(rows.import_from_csv, rows.plugins.csv.import_from_csv)
-        self.assertIs(rows.export_to_csv, rows.plugins.csv.export_to_csv)
+        self.assertIs(rows.import_from_csv, rows.plugins.plugin_csv.import_from_csv)
+        self.assertIs(rows.export_to_csv, rows.plugins.plugin_csv.export_to_csv)
 
-    @mock.patch('rows.plugins.csv.create_table')
+    @mock.patch('rows.plugins.plugin_csv.create_table')
     def test_import_from_csv_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
-        kwargs = {'encoding': 'utf-8', 'some_key': 123, 'other': 456, }
-        result = rows.import_from_csv(self.filename, **kwargs)
+        kwargs = {'some_key': 123, 'other': 456, }
+        result = rows.import_from_csv(self.filename, encoding='utf-8',
+                                      **kwargs)
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
         call = mocked_create_table.call_args
-        kwargs['meta'] = {'imported_from': 'csv', 'filename': self.filename, }
+        kwargs['meta'] = {'imported_from': 'csv',
+                          'filename': self.filename,
+                          'encoding': 'utf-8',}
         self.assertEqual(call[1], kwargs)
 
-    @mock.patch('rows.plugins.csv.create_table')
+    @mock.patch('rows.plugins.plugin_csv.create_table')
     def test_import_from_csv_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -81,7 +85,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args)
 
-    @mock.patch('rows.plugins.csv.create_table')
+    @mock.patch('rows.plugins.plugin_csv.create_table')
     def test_import_from_csv_discover_dialect(self, mocked_create_table):
         data, lines = make_csv_data(quote_char="'",
                                     field_delimiter=";",
@@ -94,7 +98,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call_args = mocked_create_table.call_args_list[0]
         self.assertEqual(data, list(call_args[0][0]))
 
-    @mock.patch('rows.plugins.csv.create_table')
+    @mock.patch('rows.plugins.plugin_csv.create_table')
     def test_import_from_csv_force_dialect(self, mocked_create_table):
         data, lines = make_csv_data(quote_char="'",
                                     field_delimiter="\t",
@@ -119,7 +123,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             row1value1;row1value2
             row2value1;row2value2
             ''').strip()
-        with open(filename, 'w') as fobj:
+        with open(filename, 'wb') as fobj:
             fobj.write(data.encode('utf-8'))
 
         table = rows.import_from_csv(filename, encoding='utf-8')
@@ -159,14 +163,14 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertDictEqual(table[1].jsoncolumn1, {'c': 44})
         self.assertDictEqual(table[1].jsoncolumn2, {'d': 45})
 
-    @mock.patch('rows.plugins.csv.serialize')
+    @mock.patch('rows.plugins.plugin_csv.serialize')
     def test_export_to_csv_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        kwargs = {'test': 123, 'parameter': 3.14, 'encoding': 'utf-8', }
+        kwargs = {'test': 123, 'parameter': 3.14, }
         mocked_serialize.return_value = iter([utils.table.fields.keys()])
 
-        rows.export_to_csv(utils.table, temp.name, **kwargs)
+        rows.export_to_csv(utils.table, temp.name, encoding='utf-8', **kwargs)
         self.assertTrue(mocked_serialize.called)
         self.assertEqual(mocked_serialize.call_count, 1)
 
