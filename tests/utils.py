@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@ import os
 
 from collections import OrderedDict
 from decimal import Decimal
+
+import six
 
 import rows.fields as fields
 
@@ -168,14 +170,16 @@ class RowsTestMixIn(object):
         self.assertEqual(first, second)
 
     def assert_create_table_data(self, call_args, field_ordering=True,
-                                 filename=None):
+                                 filename=None, expected_meta=None):
         if filename is None:
             filename = self.filename
         kwargs = call_args[1]
-        expected_meta = {'imported_from': self.plugin_name,
-                         'filename': filename,}
-        if self.assert_meta_encoding:
-            expected_meta['encoding'] = self.encoding
+        if expected_meta is None:
+            expected_meta = {'imported_from': self.plugin_name,
+                             'filename': filename,}
+            if self.assert_meta_encoding:
+                expected_meta['encoding'] = self.encoding
+
         self.assertEqual(kwargs['meta'], expected_meta)
         del kwargs['meta']
         self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs,
@@ -252,11 +256,17 @@ class RowsTestMixIn(object):
             if float_value.endswith('.'):
                 float_value = float_value[:-1]
 
-            possible_values = [float_value + '%',
-                               float_value + '.0%',
-                               float_value + '.00%']
+            possible_values = []
+
             if '.' not in float_value:
                 possible_values.append(str(int(float_value)) + '%')
+
+            float_value = float(float_value)
+            possible_values.extend([
+                six.text_type(float_value) + '%',
+                six.text_type(float_value) + '.0%',
+                six.text_type(float_value) + '.00%'])
+
             self.assertIn(value, possible_values)
 
     def assert_DateField(self, expected_value, value, *args, **kwargs):

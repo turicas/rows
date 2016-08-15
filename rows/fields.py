@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ class BinaryField(Field):
         if value is None:
             return None
         else:
-            return cls.TYPE[0](value)
+            return six.binary_type(value)
 
 
 class BoolField(Field):

@@ -27,7 +27,7 @@ import mock
 
 import rows
 import rows.plugins.xlsx
-import utils
+import tests.utils as utils
 
 
 class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -35,6 +35,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
     plugin_name = 'xlsx'
     file_extension = 'xlsx'
     filename = 'tests/data/all-field-types.xlsx'
+    assert_meta_encoding = False
 
     def test_imports(self):
         self.assertIs(rows.import_from_xlsx,
@@ -52,7 +53,9 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(result, 42)
 
         call = mocked_create_table.call_args
-        kwargs['meta'] = {'imported_from': 'xlsx', 'filename': self.filename, }
+        kwargs['meta'] = {'imported_from': 'xlsx',
+                          'filename': self.filename,
+                          'sheet_name': 'Sheet1',}
         self.assertEqual(call[1], kwargs)
 
     @mock.patch('rows.plugins.xlsx.create_table')
@@ -62,13 +65,19 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # import using filename
         table_1 = rows.import_from_xlsx(self.filename)
         call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(call_args)
+        self.assert_create_table_data(call_args,
+                expected_meta={'imported_from': 'xlsx',
+                               'filename': self.filename,
+                               'sheet_name': 'Sheet1',})
 
         # import using fobj
         with open(self.filename, 'rb') as fobj:
             table_2 = rows.import_from_xlsx(fobj)
         call_args = mocked_create_table.call_args_list[1]
-        self.assert_create_table_data(call_args)
+        self.assert_create_table_data(call_args,
+                expected_meta={'imported_from': 'xlsx',
+                               'filename': self.filename,
+                               'sheet_name': 'Sheet1',})
 
     def test_export_to_xlsx_filename(self):
         temp = tempfile.NamedTemporaryFile()
