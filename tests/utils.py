@@ -158,7 +158,8 @@ class RowsTestMixIn(object):
                     expected_value = override_fields[field_name]\
                             .deserialize(expected_value)
                 if float not in (type(value), type(expected_value)):
-                    self.assertEqual(value, expected_value)
+                    self.assertEqual(value, expected_value,
+                            'Field {} value mismatch'.format(field_name))
                 else:
                     self.assertAlmostEqual(value, expected_value)
 
@@ -260,6 +261,7 @@ class RowsTestMixIn(object):
 
             if '.' not in float_value:
                 possible_values.append(str(int(float_value)) + '%')
+                possible_values.append(str(int(float_value)) + '.00%')
 
             float_value = float(float_value)
             possible_values.extend([
