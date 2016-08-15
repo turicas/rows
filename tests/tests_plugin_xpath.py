@@ -27,7 +27,7 @@ import mock
 
 import rows
 import rows.plugins.xpath
-import utils
+import tests.utils as utils
 
 
 class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -35,16 +35,17 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
     filename = 'tests/data/ecuador-medios-radiodifusoras.html'
     encoding = 'utf-8'
     expected_data = 'tests/data/ecuador-medios-radiodifusoras.csv'
+    assert_meta_encoding = True
 
     def setUp(self):
         rows_xpath = '//*[@class="entry-container"]/*[@class="row-fluid"]/*[@class="span6"]'
         fields_xpath = OrderedDict([
-                ('url', '//h2/a/@href'),
-                ('name', '//h2/a/text()'),
-                ('address', '//div[@class="spField field_direccion"]/text()'),
-                ('phone', '//div[@class="spField field_telefono"]/text()'),
-                ('website', '//div[@class="spField field_sitio_web"]/text()'),
-                ('email', '//div[@class="spField field_email"]/text()'), ])
+                ('url', './/h2/a/@href'),
+                ('name', './/h2/a/text()'),
+                ('address', './/div[@class="spField field_direccion"]/text()'),
+                ('phone', './/div[@class="spField field_telefono"]/text()'),
+                ('website', './/div[@class="spField field_sitio_web"]/text()'),
+                ('email', './/div[@class="spField field_email"]/text()'), ])
         self.kwargs = {'rows_xpath': rows_xpath,
                        'fields_xpath': fields_xpath, }
 
@@ -60,7 +61,9 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
                                        encoding=self.encoding,
                                        **self.kwargs)
 
-        expected_meta = {'imported_from': 'xpath', 'filename': self.filename,}
+        expected_meta = {'imported_from': 'xpath',
+                         'filename': self.filename,
+                         'encoding': self.encoding, }
         self.assertEqual(table.meta, expected_meta)
 
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -74,12 +77,14 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_import_from_xpath_fobj(self):
         # TODO: may test with codecs.open passing an encoding
-        with open(self.filename) as fobj:
+        with open(self.filename, mode='rb') as fobj:
             table = rows.import_from_xpath(fobj,
                                            encoding=self.encoding,
                                            **self.kwargs)
 
-        expected_meta = {'imported_from': 'xpath', 'filename': self.filename,}
+        expected_meta = {'imported_from': 'xpath',
+                         'filename': self.filename,
+                         'encoding': self.encoding, }
         self.assertEqual(table.meta, expected_meta)
 
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -111,14 +116,18 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
     @mock.patch('rows.plugins.xpath.create_table')
     def test_import_from_xpath_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
-        kwargs = {'encoding': 'iso-8859-15', 'some_key': 123, 'other': 456, }
+        encoding = 'iso-8859-15'
+        kwargs = {'some_key': 123, 'other': 456, }
         self.kwargs.update(kwargs)
 
-        result = rows.import_from_xpath(self.filename, **self.kwargs)
+        result = rows.import_from_xpath(self.filename, encoding=encoding,
+                                        **self.kwargs)
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
         call = mocked_create_table.call_args
-        kwargs['meta'] = {'imported_from': 'xpath', 'filename': self.filename,}
+        kwargs['meta'] = {'imported_from': 'xpath',
+                          'filename': self.filename,
+                          'encoding': encoding, }
         self.assertEqual(call[1], kwargs)
