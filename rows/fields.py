@@ -36,6 +36,7 @@ __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 NULL = ('-', 'null', 'none', 'nil', 'n/a', 'na')
+NULL_BYTES = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
 
 
 class Field(object):
@@ -442,9 +443,12 @@ def as_string(value):
 def is_null(value):
     if value is None:
         return True
-
-    value_str = as_string(value).strip().lower()
-    return not value_str or value_str in NULL
+    elif type(value) is six.binary_type:
+        value = value.strip().lower()
+        return not value or value in NULL_BYTES
+    else:
+        value_str = as_string(value).strip().lower()
+        return not value_str or value_str in NULL
 
 
 def unique_values(values):
@@ -484,9 +488,12 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
                                               for field_name in field_names])
     for index, field_name in enumerate(field_names):
         data = unique_values(columns[index])
+        native_types = set(type(value) for value in data)
 
         if not data:
             # all rows with an empty field -> BinaryField (can't identify)
+            identified_type = BinaryField
+        elif native_types == set([six.binary_type]):
             identified_type = BinaryField
         else:
             # ok, let's try to identify the type of this column by

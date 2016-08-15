@@ -370,12 +370,12 @@ class FieldUtilsTestCase(unittest.TestCase):
         result = fields.detect_types(self.fields, [])
         self.assertDictEqual(dict(result), expected)
 
-    def test_detect_types_encoded_should_raise_error(self):
-        with self.assertRaises(ValueError):
-            fields.detect_types(
-                    self.fields,
-                    [[value.encode('utf-8') for value in row]
-                     for row in self.data])
+    def test_detect_types_binary(self):
+        expected = {key: fields.BinaryField for key in self.expected.keys()}
+        values = [[value.encode('utf-8') for value in row]
+                  for row in self.data]
+        result = fields.detect_types(self.fields, values)
+        self.assertDictEqual(dict(result), expected)
 
     def test_detect_types(self):
         result = fields.detect_types(self.fields, self.data)
@@ -394,11 +394,7 @@ class FieldsFunctionsTestCase(unittest.TestCase):
         self.assertTrue(fields.is_null('-'))
 
         self.assertFalse(fields.is_null('Álvaro'))
-
-        with self.assertRaises(ValueError) as exception_context:
-            fields.is_null('Álvaro'.encode('utf-8'))
-        self.assertEqual(exception_context.exception.args[0],
-                         'Binary is not supported')
+        self.assertFalse(fields.is_null('Álvaro'.encode('utf-8')))
 
     def test_as_string(self):
         self.assertEqual(fields.as_string(None), 'None')
