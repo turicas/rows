@@ -34,6 +34,6 @@ except ImportError:
     xlsx = None
 
 try:
-    from . import _parquet as parquet
+    from . import plugin_parquet as parquet
 except ImportError:
     parquet = None
