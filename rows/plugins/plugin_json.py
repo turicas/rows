@@ -21,15 +21,21 @@ import datetime
 import decimal
 import json
 
+import six
+
 from rows import fields
 from rows.plugins.utils import (create_table, export_data,
                                 get_filename_and_fobj, prepare_to_export)
 
 
 def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
-    'Import data from a JSON file'
+    '''Import a JSON file or file-like object into a `rows.Table`
 
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
+    If a file-like object is provided it MUST be open in text (non-binary) mode
+    on Python 3 and could be open in both binary or text mode on Python 2.
+    '''
+
+    filename, fobj = get_filename_and_fobj(filename_or_fobj)
 
     json_obj = json.load(fobj, encoding=encoding)
     field_names = json_obj[0].keys()
@@ -62,6 +68,11 @@ def _convert(value, field_type, *args, **kwargs):
 
 def export_to_json(table, filename_or_fobj=None, encoding='utf-8', indent=None,
                    *args, **kwargs):
+    '''Export a `rows.Table` to a JSON file or file-like object
+
+    If a file-like object is provided it MUST be open in binary mode (like in
+    `open('myfile.json', mode='wb')`).
+    '''
     # TODO: will work only if table.fields is OrderedDict
 
     fields = table.fields
@@ -72,8 +83,11 @@ def export_to_json(table, filename_or_fobj=None, encoding='utf-8', indent=None,
             for row in prepared_table]
 
     result = json.dumps(data, indent=indent)
+    if type(result) is six.text_type:  # Python 3
+        result = result.encode(encoding)
+
     if indent is not None:
         # clean up empty spaces at the end of lines
-        result = '\n'.join(line.rstrip() for line in result.splitlines())
+        result = b'\n'.join(line.rstrip() for line in result.splitlines())
 
-    return export_data(filename_or_fobj, result)
+    return export_data(filename_or_fobj, result, mode='wb')

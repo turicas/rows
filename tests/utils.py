@@ -188,6 +188,7 @@ class RowsTestMixIn(object):
 
     def assert_table_data(self, data, args, kwargs, field_ordering):
         data = list(data)
+        data[0] = list(data[0])
         if field_ordering:
             self.assertEqual(data[0], FIELD_NAMES)
 

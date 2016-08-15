@@ -27,6 +27,7 @@ from collections import OrderedDict
 from collections import defaultdict
 from textwrap import dedent
 
+import six
 import mock
 
 import rows
@@ -73,7 +74,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_create_table_data(call_args, field_ordering=False)
 
         # import using fobj
-        with open(self.filename, 'rb') as fobj:
+        with open(self.filename) as fobj:
             table_2 = rows.import_from_json(fobj)
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args, field_ordering=False)
@@ -126,7 +127,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         call = mocked_export_data.call_args
         self.assertEqual(call[0][0], temp.name)
-        self.assertEqual(call[1], {})
+        self.assertEqual(call[1], {'mode': 'wb'})
 
     def test_export_to_json_filename(self):
         # TODO: may test file contents
@@ -152,7 +153,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         rows.export_to_json(utils.table, temp.name)
 
-        with open(temp.name, 'rb') as fobj:
+        with open(temp.name) as fobj:
             imported_json = json.load(fobj)
 
         COLUMN_TYPE = {
@@ -160,10 +161,10 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 'decimal_column': float,
                 'bool_column': bool,
                 'integer_column': int,
-                'date_column': unicode,
-                'datetime_column': unicode,
-                'percent_column': unicode,
-                'unicode_column': unicode,
+                'date_column': six.text_type,
+                'datetime_column': six.text_type,
+                'percent_column': six.text_type,
+                'unicode_column': six.text_type,
         }
         field_types = defaultdict(list)
         for row in imported_json:
