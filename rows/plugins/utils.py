@@ -47,7 +47,7 @@ def slug(text, separator='_', permitted_chars=SLUG_CHARS,
 
     # Remove non-permitted characters and put everything to lowercase
     # Example: u'_ALVARO__justen%_' -> u'_alvaro__justen_'
-    text = ''.join(filter(lambda char: char in permitted_chars, text)).lower()
+    text = ''.join(char for char in text if char in permitted_chars).lower()
 
     # Remove double occurrencies of separator
     # Example: u'_alvaro__justen_' -> u'_alvaro_justen_'
@@ -154,7 +154,7 @@ def create_table(data, meta=None, fields=None, skip_header=True,
         if skip_header:
             _ = next(table_rows)
 
-        header = make_header(fields.keys())
+        header = make_header(list(fields.keys()))
         fields = OrderedDict([(field_name, fields[key])
                               for field_name, key in zip(header, fields)])
 

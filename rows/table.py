@@ -54,9 +54,9 @@ class Table(MutableSequence):
         if 'imported_from' in self.meta:
             imported = ' (from {})'.format(self.meta['imported_from'])
 
-        return u'<rows.Table{} {} fields, {} rows>'.format(imported,
-                                                           len(self.fields),
-                                                           length)
+        return '<rows.Table{} {} fields, {} rows>'.format(imported,
+                                                          len(self.fields),
+                                                          length)
 
     def _make_row(self, row):
         # TODO: should be able to customize row type (namedtuple, dict etc.)
@@ -199,8 +199,7 @@ class FlexibleTable(Table):
         self.Row = namedtuple('Row', self.field_names)
 
     def _make_row(self, row):
-        field_names = row.keys()
-        for field_name in field_names:
+        for field_name in row.keys():
             if field_name not in self.field_names:
                 self._add_field(field_name, identify_type(row[field_name]))
 

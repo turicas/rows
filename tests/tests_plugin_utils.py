@@ -221,7 +221,6 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             flexible.append(row._asdict())
 
         field_names = list(flexible.fields.keys())
-        field_types = flexible.fields.values()
         prepared = plugins_utils.prepare_to_export(flexible)
         self.assertEqual(next(prepared), field_names)
 
@@ -238,7 +237,6 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
                              for key, value in row._asdict().items()})
 
         field_names = list(flexible.fields.keys())
-        field_types = flexible.fields.values()
         export_fields = field_names[:len(field_names) // 2]
         print([(x, type(x)) for x in export_fields])
         prepared = plugins_utils.prepare_to_export(flexible,
@@ -282,7 +280,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_serialize(self):
         result = plugins_utils.serialize(utils.table)
-        field_types = utils.table.fields.values()
+        field_types = list(utils.table.fields.values())
         self.assertEqual(next(result), list(utils.table.fields.keys()))
 
         for row, expected_row in zip(result, utils.table._rows):

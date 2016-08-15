@@ -84,7 +84,7 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
 
     max_columns = max(map(len, table_rows))
     if ignore_colspan:
-        table_rows = filter(lambda row: len(row) == max_columns, table_rows)
+        table_rows = [row for row in table_rows if len(row) == max_columns]
 
     meta = {'imported_from': 'html',
             'filename': filename,

@@ -37,12 +37,12 @@ class TableTestCase(unittest.TestCase):
     def setUp(self):
         self.table = Table(fields={'name': rows.fields.TextField,
                                    'birthdate': rows.fields.DateField, })
-        self.first_row = {'name': u'Álvaro Justen',
+        self.first_row = {'name': 'Álvaro Justen',
                           'birthdate': datetime.date(1987, 4, 29)}
         self.table.append(self.first_row)
-        self.table.append({'name': u'Somebody',
+        self.table.append({'name': 'Somebody',
                            'birthdate': datetime.date(1990, 2, 1)})
-        self.table.append({'name': u'Douglas Adams',
+        self.table.append({'name': 'Douglas Adams',
                            'birthdate': '1952-03-11'})
 
     def test_Table_is_present_on_main_namespace(self):
@@ -54,16 +54,16 @@ class TableTestCase(unittest.TestCase):
 
         table_rows = [row for row in self.table]
         self.assertEqual(len(table_rows), 3)
-        self.assertEqual(table_rows[0].name, u'Álvaro Justen')
+        self.assertEqual(table_rows[0].name, 'Álvaro Justen')
         self.assertEqual(table_rows[0].birthdate, datetime.date(1987, 4, 29))
-        self.assertEqual(table_rows[1].name, u'Somebody')
+        self.assertEqual(table_rows[1].name, 'Somebody')
         self.assertEqual(table_rows[1].birthdate, datetime.date(1990, 2, 1))
-        self.assertEqual(table_rows[2].name, u'Douglas Adams')
+        self.assertEqual(table_rows[2].name, 'Douglas Adams')
         self.assertEqual(table_rows[2].birthdate, datetime.date(1952, 3, 11))
 
     def test_table_slicing(self):
         self.assertEqual(len(self.table[::2]), 2)
-        self.assertEqual(self.table[::2][0].name, u'Álvaro Justen')
+        self.assertEqual(self.table[::2][0].name, 'Álvaro Justen')
 
     def test_table_slicing_error(self):
         with self.assertRaises(ValueError) as context_manager:
@@ -71,9 +71,9 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(type(context_manager.exception), ValueError)
 
     def test_table_insert_row(self):
-        self.table.insert(1, {'name': u'Grace Hopper',
+        self.table.insert(1, {'name': 'Grace Hopper',
                               'birthdate': datetime.date(1909, 12, 9)})
-        self.assertEqual(self.table[1].name, u'Grace Hopper')
+        self.assertEqual(self.table[1].name, 'Grace Hopper')
 
     def test_table_append_error(self):
         # TODO: may mock these validations and test only on *Field tests
@@ -85,7 +85,7 @@ class TableTestCase(unittest.TestCase):
                          'Binary is not supported')
 
         with self.assertRaises(ValueError) as context_manager:
-            self.table.append({'name': u'Álvaro Justen', 'birthdate': 'WRONG'})
+            self.table.append({'name': 'Álvaro Justen', 'birthdate': 'WRONG'})
         self.assertEqual(type(context_manager.exception), ValueError)
         self.assertIn('does not match format',
                       context_manager.exception.args[0])
@@ -245,7 +245,7 @@ class TableTestCase(unittest.TestCase):
                          'Unsupported key type: float')
 
         with self.assertRaises(ValueError) as exception_context:
-            self.table[b'name'] = []  # u'name' actually exists
+            self.table[b'name'] = []  # 'name' actually exists
 
         self.assertEqual(len(self.table), 3)  # should not del any row
         self.assertDictEqual(fields, self.table.fields)  # should not del field

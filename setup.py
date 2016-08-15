@@ -15,6 +15,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import unicode_literals
+
 from setuptools import setup
 
 
@@ -46,7 +48,7 @@ setup(name='rows',
                    'no matter the format'),
       long_description=LONG_DESCRIPTION,
       version='0.3.0dev1',
-      author=u'Álvaro Justen',
+      author='Álvaro Justen',
       author_email='alvarojusten@gmail.com',
       url='https://github.com/turicas/rows/',
       packages=['rows', 'rows.plugins'],

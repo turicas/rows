@@ -38,14 +38,13 @@ def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
     filename, fobj = get_filename_and_fobj(filename_or_fobj)
 
     json_obj = json.load(fobj, encoding=encoding)
-    field_names = json_obj[0].keys()
+    field_names = list(json_obj[0].keys())
     table_rows = [[item[key] for key in field_names] for item in json_obj]
 
-    data = [field_names] + table_rows
     meta = {'imported_from': 'json',
             'filename': filename,
             'encoding': encoding,}
-    return create_table(data, meta=meta, *args, **kwargs)
+    return create_table([field_names] + table_rows, meta=meta, *args, **kwargs)
 
 
 def _convert(value, field_type, *args, **kwargs):
