@@ -25,7 +25,7 @@ EXTRA_REQUIREMENTS = {
         'cli': ['click', 'requests'],
         'html': ['lxml'], # apt: libxslt-dev libxml2-dev
         'ods': ['lxml'],
-        'parquet': ['parquet'],
+        'parquet': ['parquet>=1.1'],
         'xls': ['xlrd', 'xlwt'],
         'xlsx': ['openpyxl'],
         'xpath': ['lxml'],
