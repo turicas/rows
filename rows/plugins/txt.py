@@ -46,10 +46,18 @@ def import_from_txt(filename_or_fobj, encoding='utf-8', *args, **kwargs):
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_txt(table, filename_or_fobj=None, encoding='utf-8', *args, **kwargs):
+def export_to_txt(table, filename_or_fobj=None, encoding=None,
+                  *args, **kwargs):
+    '''Export a `rows.Table` to text
+
+    This function can return the result as a string or save into a file (via
+    filename or file-like object).
+
+    `encoding` could be `None` if no filename/file-like object is specified,
+    then the return type will be `six.text_type`.
+    '''
     # TODO: should be able to change DASH, PLUS and PIPE
     # TODO: will work only if table.fields is OrderedDict
-    # TODO: should use fobj? What about creating a method like json.dumps?
 
     serialized_table = serialize(table, *args, **kwargs)
     field_names = next(serialized_table)
@@ -68,6 +76,9 @@ def export_to_txt(table, filename_or_fobj=None, encoding='utf-8', *args, **kwarg
         row_data = ' {} '.format(PIPE).join(values)
         result.append('{} {} {}'.format(PIPE, row_data, PIPE))
     result.extend([split_line, ''])
-    data = '\n'.join(result).encode(encoding)
+    data = '\n'.join(result)
+
+    if encoding is not None:
+        data = data.encode(encoding)
 
     return export_data(filename_or_fobj, data, mode='wb')

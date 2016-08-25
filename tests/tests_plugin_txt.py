@@ -23,6 +23,7 @@ import unittest
 from collections import OrderedDict
 
 import mock
+import six
 
 import rows
 import rows.plugins.txt
@@ -112,9 +113,9 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        rows.export_to_txt(utils.table, temp.name)
+        rows.export_to_txt(utils.table, temp.name, encoding='utf-8')
 
-        table = rows.import_from_txt(temp.name)
+        table = rows.import_from_txt(temp.name, encoding='utf-8')
         self.assert_table_equal(table, utils.table)
 
         with open(temp.name, mode='rb') as fobj:
@@ -126,11 +127,10 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        rows.export_to_txt(utils.table, temp.file)
+        rows.export_to_txt(utils.table, temp.file, encoding='utf-8')
 
-        table = rows.import_from_txt(temp.name)
+        table = rows.import_from_txt(temp.name, encoding='utf-8')
         self.assert_table_equal(table, utils.table)
-
 
     def test_issue_168(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -140,7 +140,11 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.Table(fields=
                 OrderedDict([('jsoncolumn', rows.fields.JSONField)]))
         table.append({'jsoncolumn': '{"python": 42}'})
-        rows.export_to_txt(table, filename)
+        rows.export_to_txt(table, filename, encoding='utf-8')
 
-        table2 = rows.import_from_txt(filename)
+        table2 = rows.import_from_txt(filename, encoding='utf-8')
         self.assert_table_equal(table, table2)
+
+    def test_export_to_text_should_return_unicode(self):
+        result = rows.export_to_txt(utils.table)
+        self.assertEqual(type(result), six.text_type)
