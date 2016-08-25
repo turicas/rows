@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+import codecs
 import datetime
 import re
 
@@ -29,10 +30,12 @@ UWSGI_DATETIME_FORMAT = '%a %b %d %H:%M:%S %Y'
 strptime = datetime.datetime.strptime
 
 
-def import_from_uwsgi_log(filename):
-    fields = UWSGI_FIELDS.keys()
+def import_from_uwsgi_log(filename, encoding):
+
     table = Table(fields=UWSGI_FIELDS)
-    with open(filename) as fobj:
+    field_names = list(UWSGI_FIELDS.keys())
+
+    with codecs.open(filename, encoding=encoding) as fobj:
         for line in fobj:
             result = REGEXP_UWSGI_LOG.findall(line)
             if result:
@@ -42,12 +45,13 @@ def import_from_uwsgi_log(filename):
                 # Convert generation time (micros -> seconds)
                 data[5] = float(data[5]) / 1000000
                 table.append({field_name: value
-                              for field_name, value in zip(fields, data)})
+                              for field_name, value in zip(field_names, data)})
+
     return table
 
 
 if __name__ == '__main__':
 
-    table = import_from_uwsgi_log('uwsgi.log')
+    table = import_from_uwsgi_log('uwsgi.log', 'utf-8')
     for row in table:
         print(row)
