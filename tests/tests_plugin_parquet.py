@@ -62,9 +62,9 @@ class PluginParquetTestCase(unittest.TestCase):
 
     def test_imports(self):
         self.assertIs(rows.import_from_parquet,
-                      rows.plugins.parquet.import_from_parquet)
+                      rows.plugins.plugin_parquet.import_from_parquet)
 
-    @mock.patch('rows.plugins.parquet.create_table')
+    @mock.patch('rows.plugins.plugin_parquet.create_table')
     def test_import_from_parquet_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {'some_key': 123, 'other': 456, }
@@ -84,7 +84,7 @@ class PluginParquetTestCase(unittest.TestCase):
                           'filename': self.filename, }
         self.assertEqual(call[1], kwargs)
 
-    @mock.patch('rows.plugins.parquet.create_table')
+    @mock.patch('rows.plugins.plugin_parquet.create_table')
     def test_import_from_parquet_retrieve_desired_data(self,
                                                        mocked_create_table):
         mocked_create_table.return_value = 42
