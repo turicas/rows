@@ -53,6 +53,9 @@ class FieldsTestCase(unittest.TestCase):
         deserialized = 'Álvaro'.encode('utf-8')
         serialized = b64encode(deserialized).decode('ascii')
 
+        self.assertEqual(type(deserialized), six.binary_type)
+        self.assertEqual(type(serialized), six.text_type)
+
         self.assertEqual(fields.BinaryField.TYPE, (bytes, ))
 
         self.assertEqual(fields.BinaryField.serialize(None), '')
@@ -81,6 +84,15 @@ class FieldsTestCase(unittest.TestCase):
             fields.BinaryField.deserialize(3.14)
         with self.assertRaises(ValueError):
             fields.BinaryField.deserialize('Álvaro')
+
+        self.assertEqual(fields.BinaryField.deserialize(deserialized),
+                         deserialized)
+        self.assertEqual(fields.BinaryField.deserialize(serialized),
+                         deserialized)
+        self.assertEqual(
+                fields.BinaryField.deserialize(serialized.encode('ascii')),
+                serialized.encode('ascii')
+            )
 
     def test_BoolField(self):
         self.assertEqual(fields.BoolField.TYPE, (bool, ))
@@ -394,15 +406,16 @@ class FieldUtilsTestCase(unittest.TestCase):
         self.assertDictEqual(dict(result), expected)
 
     def test_detect_types_binary(self):
-        expected = {key: fields.BinaryField for key in self.expected.keys()}
 
         # first, try values as (`bytes`/`str`)
+        expected = {key: fields.BinaryField for key in self.expected.keys()}
         values = [[value.encode('utf-8') for value in row]
                   for row in self.data]
         result = fields.detect_types(self.fields, values)
         self.assertDictEqual(dict(result), expected)
 
         # second, try base64-encoded values (as `str`/`unicode`)
+        expected = {key: fields.TextField for key in self.expected.keys()}
         values = [[b64encode(value.encode('utf-8')).decode('ascii')
                    for value in row]
                   for row in self.data]
@@ -439,7 +452,7 @@ class FieldUtilsTestCase(unittest.TestCase):
                     '76.38%',
                     '{"key": "value"}',
                     'test@example.com',
-                    'cHl0aG9uIHJ1bGVz',
+                    b'cHl0aG9uIHJ1bGVz',
                     b'python rules',
                     'Álvaro Justen'
                 ]

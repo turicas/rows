@@ -1,5 +1,8 @@
 # coding: utf-8
 
+from __future__ import print_function
+from __future__ import unicode_literals
+
 # This example was based on:
 # https://github.com/compjour/search-script-scrape/blob/master/scripts/42.py
 

@@ -34,7 +34,7 @@ import six
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
            'DateField', 'DecimalField', 'PercentField', 'JSONField',
-           'EmailField', 'BinaryField', 'TextField', 'Field']
+           'EmailField', 'TextField', 'BinaryField', 'Field']
 REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 NULL = ('-', 'null', 'none', 'nil', 'n/a', 'na')
