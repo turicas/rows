@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@ import tempfile
 import unittest
 
 from collections import OrderedDict
+from io import BytesIO
+from textwrap import dedent
 
 import mock
 
@@ -263,6 +265,35 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 '<td> t0,1r5c0 </td>', '<td> t0,1r5c1 </td>', '</tr>',
                 '</table>']
         self.assertEqual(cleanup_lines(table[1].t00r0c1), expected_data)
+
+    def test_preserve_html_None(self):
+        html = dedent('''
+        <html>
+          <body>
+            <table>
+              <tr>
+                <td><b>f1</b></td>
+                <td>f2</td>
+                <td>f3</td>
+              </tr>
+              <tr>
+                <td><i>r0f1</i></td>
+                <td><i>r0f2</i></td>
+                <td><i>r0f3</i></td>
+              </tr>
+            </table>
+          </body>
+        </html>
+        ''').encode('utf-8')
+        table = rows.import_from_html(BytesIO(html),
+                                      encoding='utf-8',
+                                      preserve_html=True)
+        table2 = rows.import_from_html(BytesIO(html),
+                                      encoding='utf-8',
+                                      preserve_html=False)
+        self.assertEqual(table[0].f1, '<i>r0f1</i>')
+        self.assertEqual(table[0].f2, '<i>r0f2</i>')
+        self.assertEqual(table[0].f3, '<i>r0f3</i>')
 
     @mock.patch('rows.plugins.plugin_html.create_table')
     def test_preserve_html_and_not_skip_header(self, mocked_create_table):

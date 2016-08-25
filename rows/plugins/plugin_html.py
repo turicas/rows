@@ -35,7 +35,7 @@ unescape = HTMLParser().unescape
 
 
 def _get_content(element):
-    return element.text + \
+    return (element.text if element.text is not None else '') + \
             ''.join(to_string(child, encoding=six.text_type)
                     for child in element.getchildren())
 
