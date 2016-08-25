@@ -131,3 +131,16 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
                           'filename': self.filename,
                           'encoding': encoding, }
         self.assertEqual(call[1], kwargs)
+
+    def test_xpath_must_be_text_type(self):
+        with self.assertRaises(TypeError):
+            rows.import_from_xpath(self.filename,
+                                   encoding=self.encoding,
+                                   rows_xpath=b'//div',
+                                   fields_xpath={'f1': './/span'})
+
+        with self.assertRaises(TypeError):
+            rows.import_from_xpath(self.filename,
+                                   encoding=self.encoding,
+                                   rows_xpath='//div',
+                                   fields_xpath={'f1': b'.//span'})

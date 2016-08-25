@@ -62,6 +62,11 @@ def _get_row_data(fields_xpath):
 def import_from_xpath(filename_or_fobj, rows_xpath, fields_xpath,
                       encoding='utf-8', *args, **kwargs):
 
+    types = set([type(rows_xpath)] + \
+                [type(xpath) for xpath in fields_xpath.values()])
+    if types != set([six.text_type]):
+        raise TypeError('XPath must be {}'.format(six.text_type.__name__))
+
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
     xml = fobj.read().decode(encoding)
     tree = tree_from_string(xml)
