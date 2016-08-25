@@ -107,7 +107,7 @@ class BinaryField(Field):
             elif isinstance(value, six.text_type):
                 try:
                     return b64decode(value)
-                except (TypeError, binascii.Error):
+                except (TypeError, ValueError, binascii.Error):
                     raise ValueError("Can't decode base64")
             else:
                 raise ValueError("Can't be {}".format(cls.__name__))

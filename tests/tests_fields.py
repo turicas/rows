@@ -67,6 +67,8 @@ class FieldsTestCase(unittest.TestCase):
             fields.BinaryField.serialize(3.14)
         with self.assertRaises(ValueError):
             fields.BinaryField.serialize('Álvaro')
+        with self.assertRaises(ValueError):
+            fields.BinaryField.serialize('123')
 
         self.assertIs(fields.BinaryField.deserialize(None), b'')
         self.assertEqual(fields.BinaryField.deserialize(serialized),
