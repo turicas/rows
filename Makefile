@@ -1,5 +1,4 @@
 test:
-	coverage erase
 	tox
 
 clean:
