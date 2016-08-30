@@ -64,10 +64,15 @@ or:
     cd rows
     python setup.py install
 
+The use of virtualenv is recommended.
 
-The plugins `csv`, `txt`, `json` and `sqlite` are built-in by default but if
-you want to use another one you need to explicitly install its dependencies,
-for example:
+You can create a development image using Docker:
+
+    cat Dockerfile | docker build -t turicas/rows:latest -
+
+The plugins `csv`, `dicts`, `json`, `json`, `sqlite` and `txt` are built-in by
+default but if you want to use another one you need to explicitly install its
+dependencies, for example:
 
     pip install rows[html]
     pip install rows[xls]
