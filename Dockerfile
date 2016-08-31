@@ -3,8 +3,19 @@ MAINTAINER	Álvaro Justen <https://github.com/turicas>
 
 # install system dependencies
 RUN apt-get update
-RUN apt-get install -y git build-essential libsnappy-dev locales python-dev \
-                       python-pip && apt-get clean
+RUN apt-get install --no-install-recommends -y build-essential git locales \
+                                               python-dev python-lxml \
+                                               python-pip python-snappy \
+                                               python-thrift && \
+    apt-get clean
+
+#thrift (used by parquet plugin) is the only which needs build-essential and
+#python-dev to be installed (installing python-thrift doesn't do the job).
+
+#You can build other Python libraries from source by installing:
+#  libsnappy-dev libxml2-dev libxslt-dev libz-dev
+#and not installing:
+#  python-lxml python-snappy
 
 # configure locale (needed to run tests)
 RUN echo 'en_US.UTF-8 UTF-8' > /etc/locale.gen
