@@ -68,4 +68,4 @@ if plugins.parquet:
     import_from_parquet = plugins.parquet.import_from_parquet
 
 
-__version__ = '0.3.0dev1'
+__version__ = '0.3.0'

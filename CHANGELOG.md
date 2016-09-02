@@ -1,9 +1,12 @@
 # rows' Log of Changes
 
+## Version `0.3.1`
+
+**Released on: (under development)**
 
 ## Version `0.3.0`
 
-**Released on: (under development)**
+**Released on: 2016-09-02**
 
 ### Backwards Incompatible Changes
 
