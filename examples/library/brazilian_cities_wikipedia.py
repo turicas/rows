@@ -6,7 +6,10 @@ import re
 
 from collections import OrderedDict
 from io import BytesIO
-from urllib2 import urlparse
+try:
+    from urlparse import urljoin # Python 2
+except ImportError:
+    from urllib.parse import urljoin  # Python 3
 
 import requests
 import rows
@@ -30,7 +33,7 @@ def transform(row, table):
     'Transform row "link" into full URL and add "state" based on "name"'
 
     data = row._asdict()
-    data['link'] = urlparse.urljoin('https://pt.wikipedia.org', data['link'])
+    data['link'] = urljoin('https://pt.wikipedia.org', data['link'])
     data['name'], data['state'] = regexp_city_state.findall(data['name'])[0]
     return data
 

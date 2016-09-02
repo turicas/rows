@@ -4,7 +4,7 @@
 click
 lxml
 openpyxl
-parquet
+parquet>=1.1
 requests
 xlrd
 xlwt
@@ -17,6 +17,4 @@ mock
 nose
 pylint
 yanc
-
-# PyPI tools
-pypissh
+tox

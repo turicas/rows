@@ -25,7 +25,7 @@ from collections import OrderedDict
 import rows
 import rows.operations
 
-import utils
+import tests.utils as utils
 
 
 class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -47,7 +47,7 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_transform_feature(self):
 
         def transformation_function(row, table):
-            if row.percent_column < 0.1269:
+            if row.percent_column is None or row.percent_column < 0.1269:
                 return None  # discard this row
 
             new = row._asdict()
@@ -89,7 +89,7 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         self.assertEqual(len(new_table), 2)
         self.assertEqual(len(new_table.fields), len(table))
-        self.assertEqual(new_table.fields.keys(), [row.key for row in table])
+        self.assertEqual(new_table.field_names, [row.key for row in table])
         self.assertEqual(new_table[0].first_key, 'first_value_1')
         self.assertEqual(new_table[0].second_key, 1)
         self.assertEqual(new_table[0].third_key, 3.14)

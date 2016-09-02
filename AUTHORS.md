@@ -21,3 +21,5 @@ Created and maintained by Álvaro Justen aka turicas:
 - Evaldo Junior <https://github.com/infog>
 - Rhenan Bartels <https://github.com/RhenanBartels>
 - Mauro Baraldi <https://github.com/MauroBaraldi>
+- Henrique Bastos <https://github.com/henriquebastos>
+- Rômulo Collopy <https://github.com/romulocollopy>

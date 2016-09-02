@@ -1,6 +1,5 @@
 test:
-	coverage erase
-	nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/*.py
+	tox
 
 clean:
 	find -regex '.*\.pyc' -exec rm {} \;
@@ -8,6 +7,7 @@ clean:
 	rm -rf reg-settings.py
 	rm -rf MANIFEST dist build *.egg-info
 	rm -rf rows.1
+	rm -rf .tox
 
 install:
 	make clean

@@ -20,6 +20,8 @@ from __future__ import unicode_literals
 from collections import MutableSequence, namedtuple, OrderedDict, Sized
 from operator import itemgetter
 
+import six
+
 from rows.fields import identify_type
 
 
@@ -39,11 +41,11 @@ class Table(MutableSequence):
 
     @property
     def field_names(self):
-        return self.fields.keys()
+        return list(self.fields.keys())
 
     @property
     def field_types(self):
-        return self.fields.values()
+        return list(self.fields.values())
 
     def __repr__(self):
         length = len(self._rows) if isinstance(self._rows, Sized) else '?'
@@ -52,9 +54,9 @@ class Table(MutableSequence):
         if 'imported_from' in self.meta:
             imported = ' (from {})'.format(self.meta['imported_from'])
 
-        return u'<rows.Table{} {} fields, {} rows>'.format(imported,
-                                                           len(self.fields),
-                                                           length)
+        return '<rows.Table{} {} fields, {} rows>'.format(imported,
+                                                          len(self.fields),
+                                                          length)
 
     def _make_row(self, row):
         # TODO: should be able to customize row type (namedtuple, dict etc.)
@@ -75,7 +77,7 @@ class Table(MutableSequence):
             return self.Row(*self._rows[key])
         elif key_type == slice:
             return [self.Row(*row) for row in self._rows[key]]
-        elif key_type == unicode:  # TODO: change to 'str' on Python3
+        elif key_type is six.text_type:
             try:
                 field_index = self.field_names.index(key)
             except ValueError:
@@ -91,7 +93,7 @@ class Table(MutableSequence):
         key_type = type(key)
         if key_type == int:
             self._rows[key] = self._make_row(value)
-        elif key_type == unicode:  # TODO: change to 'str' on Python3
+        elif key_type is six.text_type:
             values = list(value)  # I'm not lazy, sorry
             if len(values) != len(self):
                 raise ValueError('Values length ({}) should be the same as '
@@ -123,7 +125,7 @@ class Table(MutableSequence):
         key_type = type(key)
         if key_type == int:
             del self._rows[key]
-        elif key_type == unicode:  # TODO: change to 'str' on Python3
+        elif key_type is six.text_type:
             try:
                 field_index = self.field_names.index(key)
             except ValueError:
@@ -154,8 +156,10 @@ class Table(MutableSequence):
             raise ValueError('Tables have incompatible fields')
 
         table = Table(fields=self.fields)
-        map(lambda row: table.append(row._asdict()), self)
-        map(lambda row: table.append(row._asdict()), other)
+        for row in self:
+            table.append(row._asdict())
+        for row in other:
+            table.append(row._asdict())
         return table
 
     def order_by(self, key):
@@ -166,7 +170,7 @@ class Table(MutableSequence):
             key = key[1:]
             reverse = True
 
-        field_names = self.fields.keys()
+        field_names = self.field_names
         if key not in field_names:
             raise ValueError('Field "{}" does not exist'.format(key))
 
@@ -192,13 +196,10 @@ class FlexibleTable(Table):
 
     def _add_field(self, field_name, field_type):
         self.fields[field_name] = field_type
-        self.field_names.append(field_name)
-        self.field_types.append(field_type)
         self.Row = namedtuple('Row', self.field_names)
 
     def _make_row(self, row):
-        field_names = row.keys()
-        for field_name in field_names:
+        for field_name in row.keys():
             if field_name not in self.field_names:
                 self._add_field(field_name, identify_type(row[field_name]))
 

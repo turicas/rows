@@ -9,9 +9,25 @@
 
 ### Bug Fixes
 
+- Return `None` on XLS blank cells
+
+
 ### Enhancements and Refactorings
 
+- `rows.fields.detect_fields` will consider `BinaryField` if all the values are
+  `str` (Python 2)/`bytes` (Python 3) and all other fields will work only with
+  `unicode` (Python 2)/`str` (Python 3);
+- Plugins HTML and XPath now uses a better way to return inner HTML (when
+  `preserve_html=True`);
+
+
 ### New Features
+
+- Support for Python 3 (finally!);
+- `rows.fields.BinaryField` now automatically uses base64 to encode/decode;
+- Added `encoding` information to `rows.Table` metadata in text plugins;
+- Added `sheet_name` information to `rows.Table` metadata in XLS and XLSX
+  plugins.
 
 
 ## Version `0.2.1`

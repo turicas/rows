@@ -28,7 +28,7 @@ import mock
 import rows
 import rows.plugins.sqlite
 import rows.plugins.utils
-import utils
+import tests.utils as utils
 
 from rows import fields
 
@@ -38,6 +38,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
     plugin_name = 'sqlite'
     file_extension = 'sqlite'
     filename = 'tests/data/all-field-types.sqlite'
+    assert_meta_encoding = False
     override_fields = {'percent_column': fields.FloatField,
                        'bool_column': fields.IntegerField, }
     # SQLite does not support "Decimal" type, so `PercentField` will be

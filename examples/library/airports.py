@@ -9,6 +9,8 @@
 # or
 #     aptitude install python-requests python-rows
 
+from __future__ import unicode_literals
+
 from io import BytesIO
 
 import requests
@@ -28,4 +30,6 @@ for row in table:
     if row.city_2 is not None:
         code_to_city[row.code_2] = row.city_2
 
-# Have fun!
+codes = sorted(code_to_city.keys())
+for code in codes:
+    print('{} = {}'.format(code, code_to_city[code]))

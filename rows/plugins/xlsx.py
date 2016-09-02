@@ -1,10 +1,26 @@
 # coding: utf-8
 
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import unicode_literals
 
 import datetime
 import decimal
 
+from decimal import Decimal
 from io import BytesIO
 
 from openpyxl import load_workbook, Workbook
@@ -32,7 +48,13 @@ def _cell_to_python(cell):
         return str(value).split('.')[0]
 
     elif cell.number_format.endswith('%'):
-        return '{}%'.format(value * 100) if value else None
+        if value is not None:
+            value = str(Decimal(str(value)) * 100)[:-2]
+            if value.endswith('.'):
+                value = value[:-1]
+            return '{}%'.format(value)
+        else:
+            return None
 
     elif value is None:
         return ''
@@ -55,7 +77,9 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
                   for row_index in range(start_row, end_row + 1)]
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, dont_open=True)
-    metadata = {'imported_from': 'xlsx', 'filename': filename, }
+    metadata = {'imported_from': 'xlsx',
+                'filename': filename,
+                'sheet_name': sheet_name, }
     return create_table(table_rows, meta=metadata, *args, **kwargs)
 
 
@@ -103,13 +127,13 @@ def export_to_xlsx(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
     prepared_table = prepare_to_export(table, *args, **kwargs)
 
     # Write header
-    field_names = prepared_table.next()
+    field_names = next(prepared_table)
     for col_index, field_name in enumerate(field_names):
         cell = sheet.cell(row=1, column=col_index + 1)
         cell.value = field_name
 
     # Write sheet rows
-    _convert_row = _python_to_cell(map(table.fields.get, field_names))
+    _convert_row = _python_to_cell(list(map(table.fields.get, field_names)))
     for row_index, row in enumerate(prepared_table, start=1):
         for col_index, (value, number_format) in enumerate(_convert_row(row)):
             cell = sheet.cell(row=row_index + 1, column=col_index + 1)
