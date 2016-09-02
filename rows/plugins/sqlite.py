@@ -103,7 +103,7 @@ def _valid_table_name(name):
 
 
 def import_from_sqlite(filename_or_connection, table_name='table1', query=None,
-                       *args, **kwargs):
+                       query_args=None, *args, **kwargs):
 
     connection = _get_connection(filename_or_connection)
     cursor = connection.cursor()
@@ -114,7 +114,10 @@ def import_from_sqlite(filename_or_connection, table_name='table1', query=None,
 
         query  = SQL_SELECT_ALL.format(table_name=table_name)
 
-    table_rows = list(cursor.execute(query)) # TODO: may be lazy
+    if query_args is None:
+        query_args = tuple()
+
+    table_rows = list(cursor.execute(query, query_args)) # TODO: may be lazy
     header = [six.text_type(info[0]) for info in cursor.description]
     cursor.close()
     # TODO: should close connection also?

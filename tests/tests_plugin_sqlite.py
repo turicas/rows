@@ -188,3 +188,11 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table2 = rows.import_from_sqlite(filename)
         self.assert_table_equal(table, table2)
+
+    def test_import_from_sqlite_query_args(self):
+        connection = rows.export_to_sqlite(utils.table, ':memory:')
+        table = rows.import_from_sqlite(connection,
+                query='SELECT * FROM table1 WHERE float_column > ?',
+                query_args=(3, ))
+        for row in table:
+            self.assertTrue(row.float_column > 3)

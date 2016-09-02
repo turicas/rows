@@ -30,7 +30,9 @@
 - `rows.fields.BinaryField` now automatically uses base64 to encode/decode;
 - Added `encoding` information to `rows.Table` metadata in text plugins;
 - Added `sheet_name` information to `rows.Table` metadata in XLS and XLSX
-  plugins.
+  plugins;
+- [#190](https://github.com/turicas/rows/issues/190) Add `query_args` to
+  `import_from_sqlite`.
 
 
 ## Version `0.2.1`
