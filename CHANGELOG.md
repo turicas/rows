@@ -9,7 +9,9 @@
 
 ### Bug Fixes
 
-- Return `None` on XLS blank cells
+- Return `None` on XLS blank cells;
+- [#188](https://github.com/turicas/rows/issues/188) Change `sample_size` on
+  encoding detection.
 
 
 ### Enhancements and Refactorings
@@ -19,6 +21,7 @@
   `unicode` (Python 2)/`str` (Python 3);
 - Plugins HTML and XPath now uses a better way to return inner HTML (when
   `preserve_html=True`);
+- [#189](https://github.com/turicas/rows/issues/189) Optimize `Table.__add__`.
 
 
 ### New Features
