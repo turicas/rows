@@ -279,6 +279,8 @@ def import_from_uri(uri, default_encoding, verify_ssl=True, *args, **kwargs):
     'Given an URI, detects plugin and encoding and imports into a `rows.Table`'
 
     # TODO: support '-' also
+    # TODO: (optimization) if `kwargs.get('encoding', None) is not None` we can
+    #       skip encoding detection.
     source = detect_source(uri, verify_ssl=verify_ssl)
     return import_from_source(source, default_encoding, *args, **kwargs)
 

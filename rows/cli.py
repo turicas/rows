@@ -98,7 +98,7 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = _import_table(source, encoding=input_encoding,
-                                verify_ssl=verify_ssl)
+                                  verify_ssl=verify_ssl)
     else:
         table = _import_table(source, encoding=input_encoding,
                               verify_ssl=verify_ssl)
