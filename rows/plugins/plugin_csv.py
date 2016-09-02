@@ -71,7 +71,8 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
     return create_table(reader, meta=meta, *args, **kwargs)
 
 
-def export_to_csv(table, filename_or_fobj=None, encoding='utf-8', *args, **kwargs):
+def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
+                  dialect=unicodecsv.excel, *args, **kwargs):
     '''Export a `rows.Table` to a CSV file
 
     If a file-like object is provided it MUST be in binary mode, like in
@@ -87,7 +88,7 @@ def export_to_csv(table, filename_or_fobj=None, encoding='utf-8', *args, **kwarg
     else:
         fobj = BytesIO()
 
-    writer = unicodecsv.writer(fobj, encoding=encoding)
+    writer = unicodecsv.writer(fobj, encoding=encoding, dialect=dialect)
     for row in serialize(table, *args, **kwargs):
         writer.writerow(row)
 

@@ -32,7 +32,9 @@
 - Added `sheet_name` information to `rows.Table` metadata in XLS and XLSX
   plugins;
 - [#190](https://github.com/turicas/rows/issues/190) Add `query_args` to
-  `import_from_sqlite`.
+  `import_from_sqlite`;
+- [#177](https://github.com/turicas/rows/issues/177) Add `dialect` to
+  `export_to_csv`.
 
 
 ## Version `0.2.1`

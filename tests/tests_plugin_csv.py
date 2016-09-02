@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import csv
 import tempfile
 import textwrap
 import unittest
@@ -244,3 +245,8 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table2 = rows.import_from_csv(filename)
         self.assert_table_equal(table, table2)
+
+    def test_export_to_csv_accepts_dialect(self):
+        result_1 = rows.export_to_csv(utils.table, dialect=csv.excel_tab)
+        result_2 = rows.export_to_csv(utils.table, dialect=csv.excel)
+        self.assertEqual(result_1.replace(b'\t', b','), result_2)
