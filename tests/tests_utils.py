@@ -17,7 +17,37 @@
 
 from __future__ import unicode_literals
 
+import tempfile
 import unittest
+
+import rows.utils
+
+import tests.utils as utils
+
+
+class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
+
+    def test_local_file_sample_size(self):
+
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+
+        header = b'field1,field2,field3\r\n'
+        row_data = b'non-ascii-field-1,non-ascii-field-2,non-ascii-field-3\r\n'
+        encoding = 'iso-8859-1'
+        temp.file.write(header)
+        counter = len(header)
+        increment = len(row_data)
+        while counter <= 8192:
+            temp.file.write(row_data)
+            counter += increment
+        temp.file.write('Álvaro,àáááããçc,ádfáffad\r\n'.encode(encoding))
+        temp.file.close()
+
+        result = rows.utils.local_file(temp.name)
+        self.assertEqual(result.uri, temp.name)
+        self.assertEqual(result.encoding, encoding)
+        self.assertEqual(result.delete, False)
 
 # TODO: test detect_local_source
 # TODO: test detect_source

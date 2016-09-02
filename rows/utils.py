@@ -186,7 +186,7 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
                   encoding=encoding)
 
 
-def local_file(path, sample_size=8192):
+def local_file(path, sample_size=1048576):
 
     # TODO: may change sample_size
     with open(path, 'rb') as fobj:
