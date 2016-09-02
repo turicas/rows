@@ -13,6 +13,12 @@ automatically detect types and give you high-level Python objects so you can
 start **working with the data** instead of **trying to parse it**. It is also
 locale-and-unicode aware. :)
 
+Have you ever lost your precious time reading a CSV that had a different
+dialect? Or trying to learn a whole new library API to read a new tabular data
+format your customer just sent? You've got gray hair when trying to access
+some data and the only answer was `UnicodeDecodeError`? So,
+[rows](https://github.com/turicas/rows) was custom made for you! :-)
+
 > Note: if you're using [rows][rows] in some project please [tell
 > us][rows-issue-103]! :-)
 
@@ -135,7 +141,7 @@ Then you can iterate over it:
 ```python
 def print_person(person):
     can = 'can' if person.can else "just can't"
-    print u'{} is {} years old and {}'.format(person.name, person.age, can)
+    print(u'{} is {} years old and {}'.format(person.name, person.age, can))
 
 for person in table:
     print_person(person)  # namedtuples are returned
@@ -180,17 +186,17 @@ url = 'http://unitedstates.sunlightfoundation.com/legislators/legislators.csv'
 csv = requests.get(url).content  # Download CSV data
 legislators = rows.import_from_csv(BytesIO(csv))  # already imported!
 
-print 'Hey, rows automatically identified the types:'
+print('Hey, rows automatically identified the types:')
 for field_name, field_type in legislators.fields.items():
-    print '{} is {}'.format(field_name, field_type)
+    print('{} is {}'.format(field_name, field_type))
 ```
 
 And you'll see something like this:
 
 ```
 [...]
-in_office is <class 'rows.fields.BoolField'>
-gender is <class 'rows.fields.UnicodeField'>
+in_office is <class 'rows.fields.IntegerField'>
+gender is <class 'rows.fields.TextField'>
 [...]
 birthdate is <class 'rows.fields.DateField'>
 ```
@@ -198,11 +204,9 @@ birthdate is <class 'rows.fields.DateField'>
 We can then work on this data:
 
 ```python
-women_in_office = filter(lambda row: row.in_office and row.gender == 'F',
-                         legislators)
-men_in_office = filter(lambda row: row.in_office and row.gender == 'M',
-                       legislators)
-print 'Women vs Men: {} vs {}'.format(len(women_in_office), len(men_in_office))
+women = sum(1 for row in legislators if row.in_office and row.gender == 'F')
+men = sum(1 for row in legislators if row.in_office and row.gender == 'M')
+print('Women vs Men (in office): {} vs {}'.format(women, men))
 ```
 
 Then you'll see effects of our sexist society:
@@ -216,8 +220,8 @@ Now, let's compare ages:
 ```python
 legislators.order_by('birthdate')
 older, younger = legislators[-1], legislators[0]
-print '{}, {} is older than {}, {}'.format(older.lastname, older.firstname,
-                                           younger.lastname, younger.firstname)
+print('{}, {} is older than {}, {}'.format(
+        older.lastname, older.firstname, younger.lastname, younger.firstname))
 ```
 
 The output:
@@ -415,7 +419,7 @@ with rows.locale_context(name='pt_BR.UTF-8', category=locale.LC_NUMERIC):
 
 total_population = sum(city.pessoas for city in rio)
 # 'pessoas' is the fieldname related to the number of people in each city
-print 'Rio de Janeiro has {} inhabitants'.format(total_population)
+print('Rio de Janeiro has {} inhabitants'.format(total_population))
 ```
 
 The column `pessoas` will be imported as an `IntegerField` and the result is:
