@@ -22,7 +22,10 @@ import mimetypes
 import os
 import tempfile
 
-from urlparse import urlparse
+try:
+    from urlparse import urlparse  # Python 2
+except ImportError:
+    from urllib.parse import urlparse  # Python 3
 
 try:
     import magic
@@ -183,7 +186,7 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
                   encoding=encoding)
 
 
-def local_file(path, sample_size=8192):
+def local_file(path, sample_size=1048576):
 
     # TODO: may change sample_size
     with open(path, 'rb') as fobj:
@@ -276,6 +279,8 @@ def import_from_uri(uri, default_encoding, verify_ssl=True, *args, **kwargs):
     'Given an URI, detects plugin and encoding and imports into a `rows.Table`'
 
     # TODO: support '-' also
+    # TODO: (optimization) if `kwargs.get('encoding', None) is not None` we can
+    #       skip encoding detection.
     source = detect_source(uri, verify_ssl=verify_ssl)
     return import_from_source(source, default_encoding, *args, **kwargs)
 

@@ -13,6 +13,12 @@ automatically detect types and give you high-level Python objects so you can
 start **working with the data** instead of **trying to parse it**. It is also
 locale-and-unicode aware. :)
 
+Have you ever lost your precious time reading a CSV that had a different
+dialect? Or trying to learn a whole new library API to read a new tabular data
+format your customer just sent? You've got gray hair when trying to access
+some data and the only answer was `UnicodeDecodeError`? So,
+[rows](https://github.com/turicas/rows) was custom made for you! :-)
+
 > Note: if you're using [rows][rows] in some project please [tell
 > us][rows-issue-103]! :-)
 
@@ -64,10 +70,15 @@ or:
     cd rows
     python setup.py install
 
+The use of virtualenv is recommended.
 
-The plugins `csv`, `txt`, `json` and `sqlite` are built-in by default but if
-you want to use another one you need to explicitly install its dependencies,
-for example:
+You can create a development image using Docker:
+
+    cat Dockerfile | docker build -t turicas/rows:latest -
+
+The plugins `csv`, `dicts`, `json`, `json`, `sqlite` and `txt` are built-in by
+default but if you want to use another one you need to explicitly install its
+dependencies, for example:
 
     pip install rows[html]
     pip install rows[xls]
@@ -130,7 +141,7 @@ Then you can iterate over it:
 ```python
 def print_person(person):
     can = 'can' if person.can else "just can't"
-    print u'{} is {} years old and {}'.format(person.name, person.age, can)
+    print(u'{} is {} years old and {}'.format(person.name, person.age, can))
 
 for person in table:
     print_person(person)  # namedtuples are returned
@@ -175,17 +186,17 @@ url = 'http://unitedstates.sunlightfoundation.com/legislators/legislators.csv'
 csv = requests.get(url).content  # Download CSV data
 legislators = rows.import_from_csv(BytesIO(csv))  # already imported!
 
-print 'Hey, rows automatically identified the types:'
+print('Hey, rows automatically identified the types:')
 for field_name, field_type in legislators.fields.items():
-    print '{} is {}'.format(field_name, field_type)
+    print('{} is {}'.format(field_name, field_type))
 ```
 
 And you'll see something like this:
 
 ```
 [...]
-in_office is <class 'rows.fields.BoolField'>
-gender is <class 'rows.fields.UnicodeField'>
+in_office is <class 'rows.fields.IntegerField'>
+gender is <class 'rows.fields.TextField'>
 [...]
 birthdate is <class 'rows.fields.DateField'>
 ```
@@ -193,11 +204,9 @@ birthdate is <class 'rows.fields.DateField'>
 We can then work on this data:
 
 ```python
-women_in_office = filter(lambda row: row.in_office and row.gender == 'F',
-                         legislators)
-men_in_office = filter(lambda row: row.in_office and row.gender == 'M',
-                       legislators)
-print 'Women vs Men: {} vs {}'.format(len(women_in_office), len(men_in_office))
+women = sum(1 for row in legislators if row.in_office and row.gender == 'F')
+men = sum(1 for row in legislators if row.in_office and row.gender == 'M')
+print('Women vs Men (in office): {} vs {}'.format(women, men))
 ```
 
 Then you'll see effects of our sexist society:
@@ -211,8 +220,8 @@ Now, let's compare ages:
 ```python
 legislators.order_by('birthdate')
 older, younger = legislators[-1], legislators[0]
-print '{}, {} is older than {}, {}'.format(older.lastname, older.firstname,
-                                           younger.lastname, younger.firstname)
+print('{}, {} is older than {}, {}'.format(
+        older.lastname, older.firstname, younger.lastname, younger.firstname))
 ```
 
 The output:
@@ -410,7 +419,7 @@ with rows.locale_context(name='pt_BR.UTF-8', category=locale.LC_NUMERIC):
 
 total_population = sum(city.pessoas for city in rio)
 # 'pessoas' is the fieldname related to the number of people in each city
-print 'Rio de Janeiro has {} inhabitants'.format(total_population)
+print('Rio de Janeiro has {} inhabitants'.format(total_population))
 ```
 
 The column `pessoas` will be imported as an `IntegerField` and the result is:
@@ -445,6 +454,17 @@ Run tests:
     make test
 
 or (if you don't have `make`):
+
+    tox
+
+you can also run tox against an especific python version:
+
+    tox -e py27
+    tox -e py35
+
+*tox known issuses* : runing tox with py27 eviron may raise InvocationError in non Linux environments. To avoid it you may rebuild tox environment in every run with: `tox -e py27 -r`
+
+or if you want to run nosetests directly:
 
     nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/*.py
 

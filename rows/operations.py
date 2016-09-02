@@ -28,7 +28,8 @@ def join(keys, tables):
 
     # Make new (merged) Table fields
     fields = OrderedDict()
-    map(lambda table: fields.update(table.fields), tables)
+    for table in tables:
+        fields.update(table.fields)
     # TODO: may raise an error if a same field is different in some tables
 
     # Check if all keys are inside merged Table's fields
@@ -58,8 +59,8 @@ def transform(fields, function, *tables):
     new_table = Table(fields=fields)
 
     for table in tables:
-        map(new_table.append,
-            filter(bool, map(lambda row: function(row, table), table)))
+        for row in filter(bool, map(lambda row: function(row, table), table)):
+            new_table.append(row)
 
     return new_table
 

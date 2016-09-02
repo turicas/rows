@@ -24,13 +24,14 @@ import mock
 import rows
 import rows.fields as fields
 import rows.plugins.ods
-import utils
+import tests.utils as utils
 
 
 class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'ods'
     filename = 'tests/data/all-field-types.ods'
+    assert_meta_encoding = False
 
     def test_imports(self):
         self.assertIs(rows.import_from_ods, rows.plugins.ods.import_from_ods)

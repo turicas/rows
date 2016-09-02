@@ -98,14 +98,14 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = _import_table(source, encoding=input_encoding,
-                                verify_ssl=verify_ssl)
+                                  verify_ssl=verify_ssl)
     else:
         table = _import_table(source, encoding=input_encoding,
                               verify_ssl=verify_ssl)
 
     if order_by is not None:
         order_by = _get_field_names(order_by,
-                                    table.fields.keys(),
+                                    table.field_names,
                                     permit_not=True)
         # TODO: use complete list of `order_by` fields
         table.order_by(order_by[0].replace('^', '-'))
@@ -149,7 +149,7 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
 
     if order_by is not None:
         order_by = _get_field_names(order_by,
-                                    result.fields.keys(),
+                                    result.field_names,
                                     permit_not=True)
         # TODO: use complete list of `order_by` fields
         result.order_by(order_by[0].replace('^', '-'))
@@ -191,7 +191,7 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 
     if order_by is not None:
         order_by = _get_field_names(order_by,
-                                    result.fields.keys(),
+                                    result.field_names,
                                     permit_not=True)
         # TODO: use complete list of `order_by` fields
         result.order_by(order_by[0].replace('^', '-'))
@@ -236,7 +236,7 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
                               verify_ssl=verify_ssl,
                               index=table_index)
 
-    table_field_names = table.fields.keys()
+    table_field_names = table.field_names
     if fields is not None:
         fields = _get_field_names(fields, table_field_names)
     if fields_except is not None:
@@ -248,10 +248,12 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
         export_fields = fields
     elif fields is not None and fields_except is not None:
         export_fields = list(fields)
-        map(export_fields.remove, fields_except)
+        for field_to_remove in fields_except:
+            export_fields.remove(field_to_remove)
     elif fields is None and fields_except is not None:
         export_fields = list(table_field_names)
-        map(export_fields.remove, fields_except)
+        for field_to_remove in fields_except:
+            export_fields.remove(field_to_remove)
     else:
         export_fields = table_field_names
 

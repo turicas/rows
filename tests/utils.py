@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@ import os
 from collections import OrderedDict
 from decimal import Decimal
 
+import six
+
 import rows.fields as fields
 
 from rows.table import Table
@@ -40,7 +42,7 @@ FIELDS = OrderedDict([
     ('datetime_column', fields.DatetimeField),
     ('unicode_column', fields.TextField),
 ])
-FIELD_NAMES = FIELDS.keys()
+FIELD_NAMES = list(FIELDS.keys())
 EXPECTED_ROWS = [
         {
             'float_column': 3.141592,
@@ -156,7 +158,8 @@ class RowsTestMixIn(object):
                     expected_value = override_fields[field_name]\
                             .deserialize(expected_value)
                 if float not in (type(value), type(expected_value)):
-                    self.assertEqual(value, expected_value)
+                    self.assertEqual(value, expected_value,
+                            'Field {} value mismatch'.format(field_name))
                 else:
                     self.assertAlmostEqual(value, expected_value)
 
@@ -168,12 +171,16 @@ class RowsTestMixIn(object):
         self.assertEqual(first, second)
 
     def assert_create_table_data(self, call_args, field_ordering=True,
-                                 filename=None):
+                                 filename=None, expected_meta=None):
         if filename is None:
             filename = self.filename
         kwargs = call_args[1]
-        expected_meta = {'imported_from': self.plugin_name,
-                         'filename': filename, }
+        if expected_meta is None:
+            expected_meta = {'imported_from': self.plugin_name,
+                             'filename': filename,}
+            if self.assert_meta_encoding:
+                expected_meta['encoding'] = self.encoding
+
         self.assertEqual(kwargs['meta'], expected_meta)
         del kwargs['meta']
         self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs,
@@ -181,6 +188,7 @@ class RowsTestMixIn(object):
 
     def assert_table_data(self, data, args, kwargs, field_ordering):
         data = list(data)
+        data[0] = list(data[0])
         if field_ordering:
             self.assertEqual(data[0], FIELD_NAMES)
 
@@ -246,12 +254,22 @@ class RowsTestMixIn(object):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
         else:
-            float_value = float(expected_value) * 100
-            possible_values = [str(float_value) + '%',
-                            str(float_value) + '.0%',
-                            str(float_value) + '.00%']
-            if int(float_value) == float_value:
+            float_value = str(Decimal(expected_value) * 100)[:-2]
+            if float_value.endswith('.'):
+                float_value = float_value[:-1]
+
+            possible_values = []
+
+            if '.' not in float_value:
                 possible_values.append(str(int(float_value)) + '%')
+                possible_values.append(str(int(float_value)) + '.00%')
+
+            float_value = float(float_value)
+            possible_values.extend([
+                six.text_type(float_value) + '%',
+                six.text_type(float_value) + '.0%',
+                six.text_type(float_value) + '.00%'])
+
             self.assertIn(value, possible_values)
 
     def assert_DateField(self, expected_value, value, *args, **kwargs):

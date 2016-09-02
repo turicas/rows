@@ -28,21 +28,17 @@ from rows.table import FlexibleTable, Table
 SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
 
-def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
+def slug(text, separator='_', permitted_chars=SLUG_CHARS,
          replace_with_separator=' -_'):
     '''Slugfy text
 
     Example: ' ÁLVARO  justen% ' -> 'alvaro_justen'
     '''
 
-    # Convert everything to unicode.
-    # Example: b' ÁLVARO justen% ' -> u' ÁLVARO justen% '
-    if isinstance(text, str):
-        text = text.decode(encoding or 'ascii')
-
     # Strip non-ASCII characters
     # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
-    text = normalize('NFKD', text.strip()).encode('ascii', 'ignore')
+    text = normalize('NFKD', text.strip()).encode('ascii', 'ignore')\
+                                          .decode('ascii')
 
     # Replace spaces and other chars with separator
     # Example: u' ALVARO  justen% ' -> u'_ALVARO__justen%_'
@@ -51,7 +47,7 @@ def slug(text, encoding=None, separator='_', permitted_chars=SLUG_CHARS,
 
     # Remove non-permitted characters and put everything to lowercase
     # Example: u'_ALVARO__justen%_' -> u'_alvaro__justen_'
-    text = filter(lambda char: char in permitted_chars, text).lower()
+    text = ''.join(char for char in text if char in permitted_chars).lower()
 
     # Remove double occurrencies of separator
     # Example: u'_alvaro__justen_' -> u'_alvaro_justen_'
@@ -75,7 +71,7 @@ def ipartition(iterable, partition_size):
         data = []
         for _ in range(partition_size):
             try:
-                data.append(iterator.next())
+                data.append(next(iterator))
             except StopIteration:
                 finished = True
                 break
@@ -138,7 +134,7 @@ def create_table(data, meta=None, fields=None, skip_header=True,
     sample_rows = []
 
     if fields is None:
-        header = make_header(table_rows.next())
+        header = make_header(next(table_rows))
 
         if samples is not None:
             sample_rows = list(islice(table_rows, 0, samples))
@@ -156,9 +152,9 @@ def create_table(data, meta=None, fields=None, skip_header=True,
             raise ValueError('`fields` must be an `OrderedDict`')
 
         if skip_header:
-            _ = table_rows.next()
+            _ = next(table_rows)
 
-        header = make_header(fields.keys())
+        header = make_header(list(fields.keys()))
         fields = OrderedDict([(field_name, fields[key])
                               for field_name, key in zip(header, fields)])
 
@@ -194,13 +190,12 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
 
     if export_fields is None:
         # we use already slugged-fieldnames
-        export_fields = table.fields.keys()
+        export_fields = table.field_names
     else:
         # we need to slug all the field names
         export_fields = make_header(export_fields)
 
-    fields = table.fields
-    table_field_names = fields.keys()
+    table_field_names = table.field_names
     diff = set(export_fields) - set(table_field_names)
     if diff:
         field_names = ', '.join('"{}"'.format(field) for field in diff)
@@ -209,7 +204,7 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
     yield export_fields
 
     if table_type is Table:
-        field_indexes = map(table_field_names.index, export_fields)
+        field_indexes = list(map(table_field_names.index, export_fields))
         for row in table._rows:
             yield [row[field_index] for field_index in field_indexes]
     elif table_type is FlexibleTable:
@@ -220,7 +215,7 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
 def serialize(table, *args, **kwargs):
     prepared_table = prepare_to_export(table, *args, **kwargs)
 
-    field_names = prepared_table.next()
+    field_names = next(prepared_table)
     yield field_names
 
     field_types = [table.fields[field_name] for field_name in field_names]

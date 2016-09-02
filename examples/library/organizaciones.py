@@ -3,11 +3,9 @@
 # This example downloads some Ecuatorian organizations in JSON, extracts the
 # desired `dict`s, then import then into a `rows.Table` object to finally
 # export as XLS.
-# Install dependencies by running: pip install rows[xls]
+# Install dependencies by running: pip install requests rows[xls]
 
-import json
-import urllib
-
+import requests
 import rows
 
 
@@ -16,8 +14,8 @@ URL = 'http://www.onumujeres-ecuador.org/geovisor/data/organizaciones.php'
 def download_organizations():
     'Download organizations JSON and extract its properties'
 
-    page = urllib.urlopen(URL)
-    data = json.loads(page.read())
+    response = requests.get(URL)
+    data = response.json()
     organizations = [organization['properties']
                      for organization in data['features']]
     return rows.import_from_dicts(organizations)

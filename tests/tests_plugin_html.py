@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -21,12 +21,14 @@ import tempfile
 import unittest
 
 from collections import OrderedDict
+from io import BytesIO
+from textwrap import dedent
 
 import mock
 
 import rows
-import rows.plugins.html
-import utils
+import rows.plugins.plugin_html
+import tests.utils as utils
 
 
 # TODO: test unescape
@@ -46,39 +48,48 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
     file_extension = 'html'
     filename = 'tests/data/all-field-types.html'
     encoding = 'utf-8'
+    assert_meta_encoding = True
 
     def test_imports(self):
         self.assertIs(rows.import_from_html,
-                      rows.plugins.html.import_from_html)
-        self.assertIs(rows.export_to_html, rows.plugins.html.export_to_html)
+                      rows.plugins.plugin_html.import_from_html)
+        self.assertIs(rows.export_to_html, rows.plugins.plugin_html.export_to_html)
 
     def test_import_from_html_filename(self):
         table = rows.import_from_html(self.filename, encoding=self.encoding)
         self.assert_table_equal(table, utils.table)
 
-        expected_meta = {'imported_from': 'html', 'filename': self.filename,}
+        expected_meta = {'imported_from': 'html',
+                         'filename': self.filename,
+                         'encoding': self.encoding,}
         self.assertEqual(table.meta, expected_meta)
 
     def test_import_from_html_fobj(self):
         # TODO: may test with codecs.open passing an encoding
-        with open(self.filename) as fobj:
+        with open(self.filename, mode='rb') as fobj:
             table = rows.import_from_html(fobj, encoding=self.encoding)
         self.assert_table_equal(table, utils.table)
 
-        expected_meta = {'imported_from': 'html', 'filename': self.filename,}
+        expected_meta = {'imported_from': 'html',
+                         'filename': self.filename,
+                         'encoding': self.encoding,}
         self.assertEqual(table.meta, expected_meta)
 
-    @mock.patch('rows.plugins.html.create_table')
+    @mock.patch('rows.plugins.plugin_html.create_table')
     def test_import_from_html_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
-        kwargs = {'encoding': 'iso-8859-15', 'some_key': 123, 'other': 456, }
-        result = rows.import_from_html(self.filename, **kwargs)
+        kwargs = {'some_key': 123, 'other': 456, }
+        result = rows.import_from_html(self.filename,
+                                       encoding='iso-8859-1',
+                                       **kwargs)
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
         call = mocked_create_table.call_args
-        kwargs['meta'] = {'imported_from': 'html', 'filename': self.filename, }
+        kwargs['meta'] = {'imported_from': 'html',
+                          'filename': self.filename,
+                          'encoding': 'iso-8859-1',}
         self.assertEqual(call[1], kwargs)
 
     def test_export_to_html_filename(self):
@@ -93,21 +104,21 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_export_to_html_fobj(self):
         # TODO: may test with codecs.open passing an encoding
         # TODO: may test file contents
-        temp = tempfile.NamedTemporaryFile(delete=False)
+        temp = tempfile.NamedTemporaryFile(delete=False, mode='wb')
         self.files_to_delete.append(temp.name)
         rows.export_to_html(utils.table, temp.file)
 
         table = rows.import_from_html(temp.name)
         self.assert_table_equal(table, utils.table)
 
-    @mock.patch('rows.plugins.html.serialize')
+    @mock.patch('rows.plugins.plugin_html.serialize')
     def test_export_to_html_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        kwargs = {'test': 123, 'parameter': 3.14, 'encoding': 'utf-8', }
+        kwargs = {'test': 123, 'parameter': 3.14,}
         mocked_serialize.return_value = iter([utils.table.fields.keys()])
 
-        rows.export_to_html(utils.table, temp.name, **kwargs)
+        rows.export_to_html(utils.table, temp.name, encoding='utf-8', **kwargs)
         self.assertTrue(mocked_serialize.called)
         self.assertEqual(mocked_serialize.call_count, 1)
 
@@ -115,7 +126,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(call[0], (utils.table, ))
         self.assertEqual(call[1], kwargs)
 
-    @mock.patch('rows.plugins.html.export_data')
+    @mock.patch('rows.plugins.plugin_html.export_data')
     def test_export_to_html_uses_export_data(self, mocked_export_data):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
@@ -129,12 +140,12 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         call = mocked_export_data.call_args
         self.assertEqual(call[0][0], temp.name)
-        self.assertEqual(call[1], {})
+        self.assertEqual(call[1], {'mode': 'wb'})
 
     def test_export_to_html_none(self):
         # TODO: may test with codecs.open passing an encoding
         # TODO: may test file contents
-        temp = tempfile.NamedTemporaryFile(delete=False)
+        temp = tempfile.NamedTemporaryFile(delete=False, mode='rb+')
         self.files_to_delete.append(temp.name)
         result = rows.export_to_html(utils.table)
         rows.export_to_html(utils.table, temp.file)
@@ -143,7 +154,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_table_index(self):
         filename = 'tests/data/simple-table.html'
-        fobj = open(filename)
+        fobj = open(filename, mode='rb')
 
         table_1 = rows.import_from_html(fobj)
         self.assertEqual(set(table_1.fields.keys()), set(['t0r0c0', 't0r0c1']))
@@ -162,7 +173,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_table_thead_tbody(self):
         filename = 'tests/data/table-thead-tbody.html'
-        fobj = open(filename)
+        fobj = open(filename, mode='rb')
 
         table = rows.import_from_html(fobj)
         self.assertEqual(set(table.fields.keys()), set(['t1', 't2']))
@@ -174,7 +185,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_nested_tables_outer(self):
         filename = 'tests/data/nested-table.html'
-        fobj = open(filename)
+        fobj = open(filename, mode='rb')
 
         table = rows.import_from_html(fobj)
         self.assertEqual(set(table.fields.keys()),
@@ -201,7 +212,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_nested_tables_first_inner(self):
         filename = 'tests/data/nested-table.html'
-        fobj = open(filename)
+        fobj = open(filename, mode='rb')
 
         table = rows.import_from_html(fobj, index=1)
         self.assertEqual(set(table.fields.keys()),
@@ -226,7 +237,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_nested_tables_second_inner(self):
         filename = 'tests/data/nested-table.html'
-        fobj = open(filename)
+        fobj = open(filename, mode='rb')
 
         table = rows.import_from_html(fobj, index=2)
         self.assertEqual(set(table.fields.keys()),
@@ -238,9 +249,10 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_preserve_html(self):
         filename = 'tests/data/nested-table.html'
-        fobj = open(filename)
+        fobj = open(filename, mode='rb')
 
         table = rows.import_from_html(fobj, preserve_html=True)
+        # TODO: test without passing encoding
         expected_data = [
                 '<table>', '<tr>', '<td> t0,1r0c0 </td>',
                 '<td> t0,1r0c1 </td>', '</tr>', '<tr>', '<td> t0,1r1c0 </td>',
@@ -254,7 +266,36 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 '</table>']
         self.assertEqual(cleanup_lines(table[1].t00r0c1), expected_data)
 
-    @mock.patch('rows.plugins.html.create_table')
+    def test_preserve_html_None(self):
+        html = dedent('''
+        <html>
+          <body>
+            <table>
+              <tr>
+                <td><b>f1</b></td>
+                <td>f2</td>
+                <td>f3</td>
+              </tr>
+              <tr>
+                <td><i>r0f1</i></td>
+                <td><i>r0f2</i></td>
+                <td><i>r0f3</i></td>
+              </tr>
+            </table>
+          </body>
+        </html>
+        ''').encode('utf-8')
+        table = rows.import_from_html(BytesIO(html),
+                                      encoding='utf-8',
+                                      preserve_html=True)
+        table2 = rows.import_from_html(BytesIO(html),
+                                      encoding='utf-8',
+                                      preserve_html=False)
+        self.assertEqual(table[0].f1, '<i>r0f1</i>')
+        self.assertEqual(table[0].f2, '<i>r0f2</i>')
+        self.assertEqual(table[0].f3, '<i>r0f3</i>')
+
+    @mock.patch('rows.plugins.plugin_html.create_table')
     def test_preserve_html_and_not_skip_header(self, mocked_create_table):
         filename = 'tests/data/table-with-sections.html'
 
@@ -262,7 +303,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # should not preserve HTML inside first row
         table_1 = rows.import_from_html(filename, index=1, preserve_html=True)
         call_args = mocked_create_table.call_args_list.pop()
-        data = call_args[0][0]
+        data = list(call_args[0][0])
         kwargs = call_args[1]
 
         self.assertEqual(kwargs.get('fields', None), None)
@@ -283,7 +324,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table_2 = rows.import_from_html(filename, index=1, fields=fields,
                                         preserve_html=True, skip_header=False)
         call_args = mocked_create_table.call_args_list.pop()
-        data = call_args[0][0]
+        data = list(call_args[0][0])
         kwargs = call_args[1]
 
         self.assertEqual(kwargs.get('fields', None), fields)
@@ -295,7 +336,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_ignore_colspan(self):
         filename = 'tests/data/colspan-table.html'
-        fobj = open(filename)
+        fobj = open(filename, mode='rb')
 
         table = rows.import_from_html(fobj, ignore_colspan=True)
         self.assertEqual(set(table.fields.keys()), set(['field1', 'field2']))
@@ -305,19 +346,19 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[1].field1, 'row2field1')
         self.assertEqual(table[1].field2, 'row2field2')
 
-        fobj = open(filename)
+        fobj = open(filename, mode='rb')
         with self.assertRaises(ValueError) as raises:
             table = rows.import_from_html(fobj, ignore_colspan=False)
-        self.assertEqual(raises.exception.message, 'Number of fields differ')
+        self.assertEqual(raises.exception.args[0], 'Number of fields differ')
 
     def test_extract_properties(self):
         filename = 'tests/data/properties-table.html'
-        fobj = open(filename)
+        fobj = open(filename, mode='rb')
 
         table = rows.import_from_html(fobj, properties=True)
-        self.assertEqual(table.fields.keys(),
+        self.assertEqual(table.field_names,
                          ['field1', 'field2', 'properties'])
-        self.assertEqual(table.fields.values(),
+        self.assertEqual(table.field_types,
                          [rows.fields.TextField,
                           rows.fields.TextField,
                           rows.fields.JSONField])
@@ -351,7 +392,7 @@ class PluginHtmlUtilsTestCase(unittest.TestCase):
     html = '<a href="some-url" class="some-class"> some text </a> other'
 
     def test_tag_to_dict(self):
-        result = rows.plugins.html.tag_to_dict(self.html)
+        result = rows.plugins.plugin_html.tag_to_dict(self.html)
         expected = {'text': ' some text ', 'class': 'some-class',
                     'href': 'some-url'}
         self.assertEqual(result, expected)
@@ -366,12 +407,12 @@ class PluginHtmlUtilsTestCase(unittest.TestCase):
         node = document_fromstring(html)
         desired_node = node.xpath('//a')[0]
         expected = 'bold link bold text'
-        result = rows.plugins.html._extract_node_text(desired_node)
+        result = rows.plugins.plugin_html._extract_node_text(desired_node)
         self.assertEqual(result, expected)
 
     def test_extract_text_from_html(self):
         expected = 'some text other'
-        result = rows.plugins.html.extract_text(self.html)
+        result = rows.plugins.plugin_html.extract_text(self.html)
         self.assertEqual(result, expected)
 
         # Real HTML from
@@ -383,13 +424,13 @@ class PluginHtmlUtilsTestCase(unittest.TestCase):
                         <span id="GridVoos_LABEL3_0">%)</span>
                   </td>'''
         expected = '0 ( 0 %)'
-        result = rows.plugins.html.extract_text(html)
+        result = rows.plugins.plugin_html.extract_text(html)
         self.assertEqual(result, expected)
 
         # test HTML unescape
         html = '<b>&Aacute;lvaro &amp; Python</b>'
         expected = 'Álvaro & Python'
-        result = rows.plugins.html.extract_text(html)
+        result = rows.plugins.plugin_html.extract_text(html)
         self.assertEqual(result, expected)
 
     def test_extract_links_from_html(self):
@@ -403,5 +444,5 @@ class PluginHtmlUtilsTestCase(unittest.TestCase):
         '''
         expected = ['http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=608466',
                     'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=701712']
-        result = rows.plugins.html.extract_links(html)
+        result = rows.plugins.plugin_html.extract_links(html)
         self.assertEqual(result, expected)

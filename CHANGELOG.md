@@ -1,5 +1,45 @@
 # rows' Log of Changes
 
+## Version `0.3.1`
+
+**Released on: (under development)**
+
+## Version `0.3.0`
+
+**Released on: 2016-09-02**
+
+### Backwards Incompatible Changes
+
+### Bug Fixes
+
+- Return `None` on XLS blank cells;
+- [#188](https://github.com/turicas/rows/issues/188) Change `sample_size` on
+  encoding detection.
+
+
+### Enhancements and Refactorings
+
+- `rows.fields.detect_fields` will consider `BinaryField` if all the values are
+  `str` (Python 2)/`bytes` (Python 3) and all other fields will work only with
+  `unicode` (Python 2)/`str` (Python 3);
+- Plugins HTML and XPath now uses a better way to return inner HTML (when
+  `preserve_html=True`);
+- [#189](https://github.com/turicas/rows/issues/189) Optimize `Table.__add__`.
+
+
+### New Features
+
+- Support for Python 3 (finally!);
+- `rows.fields.BinaryField` now automatically uses base64 to encode/decode;
+- Added `encoding` information to `rows.Table` metadata in text plugins;
+- Added `sheet_name` information to `rows.Table` metadata in XLS and XLSX
+  plugins;
+- [#190](https://github.com/turicas/rows/issues/190) Add `query_args` to
+  `import_from_sqlite`;
+- [#177](https://github.com/turicas/rows/issues/177) Add `dialect` to
+  `export_to_csv`.
+
+
 ## Version `0.2.1`
 
 **Released on: 2016-08-10**

@@ -6,9 +6,10 @@ from io import BytesIO
 
 import requests
 import rows
+import six
 
-from rows.plugins.html import extract_links, extract_text
-
+extract_links = rows.plugins.html.extract_links
+extract_text = rows.plugins.html.extract_text
 
 # Get the HTML
 url = 'http://wnpp.debian.net/'
@@ -24,7 +25,7 @@ def transform(row, table):
     data = row._asdict()
     data['links'] = ' '.join(extract_links(row.project))
     for key, value in data.items():
-        if isinstance(value, basestring):
+        if isinstance(value, six.text_type):
             data[key] = extract_text(value)
     return data
 

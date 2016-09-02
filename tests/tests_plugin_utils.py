@@ -26,13 +26,14 @@ import unittest
 from collections import OrderedDict
 
 import mock
+import six
 
 import rows
 import rows.plugins.utils as plugins_utils
 
 from rows import fields
 
-import utils
+import tests.utils as utils
 
 
 class GenericUtilsTestCase(unittest.TestCase):
@@ -102,7 +103,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
                       ['3', 1.23, 'Justen']]
         table = plugins_utils.create_table([header] + table_rows,
                                            import_fields=None)
-        self.assertEqual(table.fields.keys(), header)
+        self.assertEqual(list(table.fields.keys()), header)
         self.assertEqual(table[0].field1, 1)
         self.assertEqual(table[0].field2, 3.14)
         self.assertEqual(table[0].field3, 'Álvaro')
@@ -110,7 +111,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         import_fields = ['field3', 'field2']
         table = plugins_utils.create_table([header] + table_rows,
                                            import_fields=import_fields)
-        self.assertEqual(table.fields.keys(), import_fields)
+        self.assertEqual(list(table.fields.keys()), import_fields)
         self.assertEqual(table[0]._asdict(),
                          OrderedDict([('field3', 'Álvaro'), ('field2', 3.14)]))
 
@@ -126,7 +127,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             plugins_utils.create_table([header] + table_rows,
                                        import_fields=import_fields)
 
-        self.assertIn(exception_context.exception.message,
+        self.assertIn(exception_context.exception.args[0],
                       possible_field_names_errors(error_fields))
 
     def test_create_table_repeated_field_names(self):
@@ -135,7 +136,8 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
                       ['2', 2.71, 'turicas'],
                       ['3', 1.23, 'Justen']]
         table = plugins_utils.create_table([header] + table_rows)
-        self.assertEqual(table.fields.keys(), ['first', 'first_2', 'first_3'])
+        self.assertEqual(list(table.fields.keys()),
+                         ['first', 'first_2', 'first_3'])
         self.assertEqual(table[0].first, 1)
         self.assertEqual(table[0].first_2, 3.14)
         self.assertEqual(table[0].first_3, 'Álvaro')
@@ -145,7 +147,8 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
                       ['2', 2.71, 'turicas'],
                       ['3', 1.23, 'Justen']]
         table = plugins_utils.create_table([header] + table_rows)
-        self.assertEqual(table.fields.keys(), ['field', 'field_1', 'field_2'])
+        self.assertEqual(list(table.fields.keys()),
+                         ['field', 'field_1', 'field_2'])
         self.assertEqual(table[0].field, 1)
         self.assertEqual(table[0].field_1, 3.14)
         self.assertEqual(table[0].field_2, 'Álvaro')
@@ -154,7 +157,8 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         header = ['first', 'first', 'first']
         table_rows = []
         table = plugins_utils.create_table([header] + table_rows)
-        self.assertEqual(table.fields.keys(), ['first', 'first_2', 'first_3'])
+        self.assertEqual(list(table.fields.keys()),
+                         ['first', 'first_2', 'first_3'])
         self.assertEqual(len(table), 0)
 
     def test_create_table_force_types(self):
@@ -173,42 +177,42 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result = plugins_utils.prepare_to_export(utils.table,
                                                  export_fields=None)
 
-        self.assertEqual(utils.table.fields.keys(), result.next())
+        self.assertEqual(list(utils.table.fields.keys()), next(result))
 
         for row in utils.table._rows:
-            self.assertEqual(row, result.next())
+            self.assertEqual(row, next(result))
 
         with self.assertRaises(StopIteration):
-            result.next()
+            next(result)
 
     def test_prepare_to_export_some_fields(self):
-        field_names = utils.table.fields.keys()
+        field_names = list(utils.table.fields.keys())
         number_of_fields = random.randint(2, len(field_names) - 1)
         some_fields = [field_names[index] for index in range(number_of_fields)]
         random.shuffle(some_fields)
         result = plugins_utils.prepare_to_export(utils.table,
                                                  export_fields=some_fields)
 
-        self.assertEqual(some_fields, result.next())
+        self.assertEqual(some_fields, next(result))
 
         for row in utils.table:
             expected_row = [getattr(row, field_name)
                             for field_name in some_fields]
-            self.assertEqual(expected_row, result.next())
+            self.assertEqual(expected_row, next(result))
 
         with self.assertRaises(StopIteration):
-            result.next()
+            next(result)
 
     def test_prepare_to_export_some_fields_dont_exist(self):
-        field_names = utils.table.fields.keys()
+        field_names = list(utils.table.fields.keys())
         error_fields = ['does_not_exist', 'java']
         export_fields = field_names + error_fields
         result = plugins_utils.prepare_to_export(utils.table,
                                                  export_fields=export_fields)
         with self.assertRaises(ValueError) as exception_context:
-            result.next()
+            next(result)
 
-        self.assertIn(exception_context.exception.message,
+        self.assertIn(exception_context.exception.args[0],
                       possible_field_names_errors(error_fields))
 
     def test_prepare_to_export_with_FlexibleTable(self):
@@ -216,10 +220,9 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         for row in utils.table:
             flexible.append(row._asdict())
 
-        field_names = flexible.fields.keys()
-        field_types = flexible.fields.values()
+        field_names = list(flexible.fields.keys())
         prepared = plugins_utils.prepare_to_export(flexible)
-        self.assertEqual(prepared.next(), field_names)
+        self.assertEqual(next(prepared), field_names)
 
         for row, expected_row in zip(prepared, flexible._rows):
             values = [expected_row[field_name] for field_name in field_names]
@@ -228,14 +231,17 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_prepare_to_export_with_FlexibleTable_and_export_fields(self):
         flexible = rows.FlexibleTable()
         for row in utils.table:
-            flexible.append(row._asdict())
+            # convertion to text_type is needed on Python 2 since namedtuples'
+            # keys are bytes, not unicode
+            flexible.append({six.text_type(key): value
+                             for key, value in row._asdict().items()})
 
-        field_names = flexible.fields.keys()
-        field_types = flexible.fields.values()
+        field_names = list(flexible.fields.keys())
         export_fields = field_names[:len(field_names) // 2]
+        print([(x, type(x)) for x in export_fields])
         prepared = plugins_utils.prepare_to_export(flexible,
                                                    export_fields=export_fields)
-        self.assertEqual(prepared.next(), export_fields)
+        self.assertEqual(next(prepared), export_fields)
 
         for row, expected_row in zip(prepared, flexible._rows):
             values = [expected_row[field_name] for field_name in export_fields]
@@ -247,26 +253,26 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         expected_message = 'Table type not recognized'
 
         with self.assertRaises(ValueError) as exception_context:
-            plugins_utils.prepare_to_export(1).next()
-        self.assertEqual(exception_context.exception.message, expected_message)
+            next(plugins_utils.prepare_to_export(1))
+        self.assertEqual(exception_context.exception.args[0], expected_message)
 
         with self.assertRaises(ValueError) as exception_context:
-            plugins_utils.prepare_to_export(42.0).next()
-        self.assertEqual(exception_context.exception.message, expected_message)
+            next(plugins_utils.prepare_to_export(42.0))
+        self.assertEqual(exception_context.exception.args[0], expected_message)
 
         with self.assertRaises(ValueError) as exception_context:
-            plugins_utils.prepare_to_export([list('abc'), [1, 2, 3]]).next()
-        self.assertEqual(exception_context.exception.message, expected_message)
+            next(plugins_utils.prepare_to_export([list('abc'), [1, 2, 3]]))
+        self.assertEqual(exception_context.exception.args[0], expected_message)
 
-    @mock.patch('rows.plugins.utils.prepare_to_export')
+    @mock.patch('rows.plugins.utils.prepare_to_export',
+                return_value=iter([[], [], []]))
     def test_serialize_should_call_prepare_to_export(self,
             mocked_prepare_to_export):
         table = utils.table
         kwargs = {'export_fields': 123, 'other_parameter': 3.14, }
         result = plugins_utils.serialize(table, **kwargs)
         self.assertFalse(mocked_prepare_to_export.called)
-        field_names = result.next()
-        table_rows = list(result)
+        field_names, table_rows = next(result), list(result)
         self.assertTrue(mocked_prepare_to_export.called)
         self.assertEqual(mocked_prepare_to_export.call_count, 1)
         self.assertEqual(mock.call(table, **kwargs),
@@ -274,8 +280,8 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_serialize(self):
         result = plugins_utils.serialize(utils.table)
-        field_types = utils.table.fields.values()
-        self.assertEqual(result.next(), utils.table.fields.keys())
+        field_types = list(utils.table.fields.values())
+        self.assertEqual(next(result), list(utils.table.fields.keys()))
 
         for row, expected_row in zip(result, utils.table._rows):
             values = [field_type.serialize(value)

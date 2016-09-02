@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@ from __future__ import unicode_literals
 
 # General imports
 
+import rows.plugins as plugins
+
 from rows.operations import join, transform, transpose
 from rows.table import Table, FlexibleTable
 from rows.localization import locale_context
@@ -26,44 +28,44 @@ from rows.localization import locale_context
 
 # Don't have dependencies or dependencies installed on `install_requires`
 
-from rows.plugins._json import import_from_json, export_to_json
-from rows.plugins.dicts import import_from_dicts, export_to_dicts
-from rows.plugins.csv import import_from_csv, export_to_csv
-from rows.plugins.txt import import_from_txt, export_to_txt
+import_from_json = plugins.json.import_from_json
+export_to_json = plugins.json.export_to_json
 
+import_from_dicts = plugins.dicts.import_from_dicts
+export_to_dicts = plugins.dicts.export_to_dicts
+
+import_from_csv = plugins.csv.import_from_csv
+export_to_csv = plugins.csv.export_to_csv
+
+import_from_txt = plugins.txt.import_from_txt
+export_to_txt = plugins.txt.export_to_txt
 
 # Have dependencies
 
-try:
-    from rows.plugins.html import import_from_html, export_to_html
-    from rows.plugins.xpath import import_from_xpath
-except ImportError:
-    pass
+if plugins.html:
+    import_from_html = plugins.html.import_from_html
+    export_to_html = plugins.html.export_to_html
 
-try:
-    from rows.plugins.ods import import_from_ods
-except ImportError:
-    pass
+if plugins.xpath:
+    import_from_xpath = plugins.xpath.import_from_xpath
 
-try:
-    from rows.plugins.sqlite import import_from_sqlite, export_to_sqlite
-except ImportError:
-    pass
+if plugins.ods:
+    import_from_ods = plugins.ods.import_from_ods
 
-try:
-    from rows.plugins.xls import import_from_xls, export_to_xls
-except ImportError:
-    pass
+if plugins.sqlite:
+    import_from_sqlite = plugins.sqlite.import_from_sqlite
+    export_to_sqlite = plugins.sqlite.export_to_sqlite
 
-try:
-    from rows.plugins.xlsx import import_from_xlsx, export_to_xlsx
-except ImportError:
-    pass
+if plugins.xls:
+    import_from_xls = plugins.xls.import_from_xls
+    export_to_xls = plugins.xls.export_to_xls
 
-try:
-    from rows.plugins._parquet import import_from_parquet
-except ImportError:
-    pass
+if plugins.xlsx:
+    import_from_xlsx = plugins.xlsx.import_from_xlsx
+    export_to_xlsx = plugins.xlsx.export_to_xlsx
+
+if plugins.parquet:
+    import_from_parquet = plugins.parquet.import_from_parquet
 
 
-__version__ = '0.2.1'
+__version__ = '0.3.0'

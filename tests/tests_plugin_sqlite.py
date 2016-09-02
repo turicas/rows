@@ -28,7 +28,7 @@ import mock
 import rows
 import rows.plugins.sqlite
 import rows.plugins.utils
-import utils
+import tests.utils as utils
 
 from rows import fields
 
@@ -38,6 +38,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
     plugin_name = 'sqlite'
     file_extension = 'sqlite'
     filename = 'tests/data/all-field-types.sqlite'
+    assert_meta_encoding = False
     override_fields = {'percent_column': fields.FloatField,
                        'bool_column': fields.IntegerField, }
     # SQLite does not support "Decimal" type, so `PercentField` will be
@@ -187,3 +188,11 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table2 = rows.import_from_sqlite(filename)
         self.assert_table_equal(table, table2)
+
+    def test_import_from_sqlite_query_args(self):
+        connection = rows.export_to_sqlite(utils.table, ':memory:')
+        table = rows.import_from_sqlite(connection,
+                query='SELECT * FROM table1 WHERE float_column > ?',
+                query_args=(3, ))
+        for row in table:
+            self.assertTrue(row.float_column > 3)

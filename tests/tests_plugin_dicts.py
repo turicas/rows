@@ -26,7 +26,7 @@ import mock
 
 import rows
 import rows.plugins.dicts
-import utils
+import tests.utils as utils
 
 
 class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):

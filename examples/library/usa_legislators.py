@@ -18,18 +18,16 @@ table = rows.import_from_csv(csv)
 
 # Analyze
 total = len(table)
-total_in_office = len(filter(lambda row: row.in_office, table))
-men = len(filter(lambda row: row.gender == 'M', table))
-men_in_office = len(filter(lambda row: row.gender == 'M' and row.in_office,
-                           table))
-women = len(filter(lambda row: row.gender == 'F', table))
-women_in_office = len(filter(lambda row: row.gender == 'F' and row.in_office,
-                             table))
+total_in_office = sum(1 for row in table if row.in_office)
+men = sum(1 for row in table if row.gender == 'M')
+men_in_office = sum(1 for row in table if row.gender == 'M' and row.in_office)
+women = sum(1 for row in table if row.gender == 'F')
+women_in_office = sum(1 for row in table if row.gender == 'F' and row.in_office)
 
 # View
-print ('  Men: {}/{} ({:02.2f}%), in office: {}/{} ({:02.2f}%)'
-       .format(men, total, 100 * men / float(total), men_in_office,
+print('  Men: {}/{} ({:02.2f}%), in office: {}/{} ({:02.2f}%)'
+      .format(men, total, 100 * men / float(total), men_in_office,
                total_in_office, 100 * men_in_office / float(total)))
-print ('Women: {}/{} ({:02.2f}%), in office: {}/{} ({:02.2f}%)'
-       .format(women, total, 100 * women / float(total), women_in_office,
+print('Women: {}/{} ({:02.2f}%), in office: {}/{} ({:02.2f}%)'
+      .format(women, total, 100 * women / float(total), women_in_office,
                total_in_office, 100 * women_in_office / float(total)))
