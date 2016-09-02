@@ -156,10 +156,7 @@ class Table(MutableSequence):
             raise ValueError('Tables have incompatible fields')
 
         table = Table(fields=self.fields)
-        for row in self:
-            table.append(row._asdict())
-        for row in other:
-            table.append(row._asdict())
+        table._rows = self._rows + other._rows
         return table
 
     def order_by(self, key):

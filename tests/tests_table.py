@@ -18,6 +18,8 @@
 from __future__ import unicode_literals
 
 import datetime
+import math
+import time
 import unittest
 
 from collections import OrderedDict
@@ -28,6 +30,8 @@ import rows
 import rows.fields as fields
 
 from rows.table import FlexibleTable, Table
+
+import tests.utils as utils
 
 
 binary_type_name = six.binary_type.__name__
@@ -292,6 +296,26 @@ class TableTestCase(unittest.TestCase):
     def test_table_repr(self):
         expected = '<rows.Table 2 fields, 3 rows>'
         self.assertEqual(expected, repr(self.table))
+
+    def test_table_add_time(self):
+        '''rows.Table.__add__ should be constant time
+
+        To test it we double table size for each round and then compare the
+        standard deviation to the mean (it will be almost the mean if the
+        algorithm is not fast enough and almost 10% of the mean if it's good).
+        '''
+        rounds = []
+        table = utils.table
+        for _ in range(5):
+            start = time.time()
+            table = table + table
+            end = time.time()
+            rounds.append(end - start)
+
+        mean = sum(rounds) / len(rounds)
+        stdev = math.sqrt((1.0 / (len(rounds) - 1)) *
+                          sum((value - mean) ** 2 for value in rounds))
+        self.assertTrue(0.2 * mean > stdev)
 
 
 class TestFlexibleTable(unittest.TestCase):
