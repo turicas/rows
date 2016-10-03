@@ -31,7 +31,12 @@ class Table(MutableSequence):
         # TODO: should we really use OrderedDict here?
         # TODO: should use slug on each field name automatically or inside each
         #       plugin?
-        self.fields = OrderedDict(fields)
+        from rows.plugins.utils import slug
+
+        aux_fields = OrderedDict(fields)
+
+        self.fields = OrderedDict(
+            [(slug(name), type) for name, type in aux_fields.items()])
 
         # TODO: should be able to customize row return type (namedtuple, dict
         #       etc.)
