@@ -457,12 +457,12 @@ or (if you don't have `make`):
 
     tox
 
-you can also run tox against an especific python version:
+you can also run tox against an specific python version:
 
     tox -e py27
     tox -e py35
 
-*tox known issuses* : runing tox with py27 eviron may raise InvocationError in non Linux environments. To avoid it you may rebuild tox environment in every run with: `tox -e py27 -r`
+*tox known issues* : running tox with py27 environ may raise InvocationError in non Linux environments. To avoid it you may rebuild tox environment in every run with: `tox -e py27 -r`
 
 or if you want to run nosetests directly:
 
