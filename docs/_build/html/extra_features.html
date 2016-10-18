@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Extra features &#8212; rows 0.3.1dev0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.3.1dev0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="rows 0.3.1dev0 documentation" href="index.html" />
+    <link rel="next" title="Developing" href="developing.html" />
+    <link rel="prev" title="Examples" href="examples.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="extra-features">
+<span id="id1"></span><h1>Extra features<a class="headerlink" href="#extra-features" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="plugins">
+<h2>Plugins<a class="headerlink" href="#plugins" title="Permalink to this headline">¶</a></h2>
+<p>The idea behing plugins is very simple: you write a little piece of code which
+extracts data from/to some specific format and the library will do the other
+tasks for you. So writing a plugin is as easy as reading from/writing to the
+file format you want. Currently we have the following plugins:</p>
+<ul class="simple">
+<li>CSV: use <strong>rows.import_from_csv</strong> and <strong>rows.export_to_csv</strong> (dependencies are
+installed by default)</li>
+<li>TXT: use <strong>rows.export_to_txt</strong> (no dependencies)</li>
+<li>JSON: use <strong>rows.import_from_json</strong> and <strong>rows.export_to_json</strong> (no dependencies)</li>
+<li>HTML: use <strong>rows.import_from_html</strong> and <strong>rows.export_to_html</strong> (dependencies
+must be installed with <strong>pip install rows[html]</strong>)</li>
+<li>XPath: use <strong>rows.import_from_xpath</strong> passing the following arguments:
+<strong>filename_or_fobj</strong>, <strong>rows_xpath</strong> and <strong>fields_xpath</strong> (dependencies must be
+installed with <strong>pip install rows[xpath]</strong>) &#8211; see an example in
+<strong>examples/library/ecuador_radiodifusoras.py</strong>.</li>
+<li>Parquet: use <strong>rows.import_from_parquet</strong> passing the filename (dependencies
+must be installed with <strong>pip install rows[parquet]</strong> and if the data is
+compressed using snappy you also need to install <strong>rows[parquet-snappy]</strong> and
+the <strong>libsnappy-dev</strong> system library) &#8211; read [this blog post][blog-rows-parquet]
+for more details and one example</li>
+<li>XLS: use <strong>rows.import_from_xls</strong> and <strong>rows.export_to_xls</strong> (dependencies must
+be installed with <strong>pip install rows[xls]</strong>)</li>
+<li>XLSX: use <strong>rows.import_from_xlsx</strong> and <strong>rows.export_to_xlsx</strong> (dependencies
+must be installed with <strong>pip install rows[xlsx]</strong>)</li>
+<li>SQLite: use <strong>rows.import_from_sqlite</strong> and <strong>rows.export_to_sqlite</strong> (no
+dependencies)</li>
+<li>ODS: use <strong>rows.import_from_ods</strong> (dependencies must be installed with <strong>pip
+install rows[ods]</strong>)</li>
+</ul>
+<p>More plugins are coming (like PDF, DBF etc.) and we&#8217;re going to re-design the
+plugin interface so you can create your own easily. Feel free to contribute.
+:-)</p>
+<div class="section" id="common-parameters">
+<h3>Common Parameters<a class="headerlink" href="#common-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Each plugin has its own parameters (like <strong>encoding</strong> in <strong>import_from_html</strong> and
+<strong>sheet_name</strong> in <strong>import_from_xls</strong>) but all plugins use the same mechanism to
+prepare a <strong>rows.Table</strong> before exporting, so they also have some common
+parameters you can pass to <strong>export_to_X</strong>. They are:</p>
+<ul class="simple">
+<li><strong>export_fields</strong>: a <strong>list</strong> with field names to export (other fields will be
+ignored) &#8211; fields will be exported in this order.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="command-line-interface">
+<h2>Command-Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline">¶</a></h2>
+<p><strong>rows</strong> exposes a command-line interface with the common operations such as
+convert data between plugins, sum, sort and join <strong>Table</strong>&#8216;s.</p>
+<p>Run <strong>rows &#8211;help</strong> to see the available commands and take a look at
+<strong>rows/cli.py</strong>. We still need to improve the CLI docs, sorry.</p>
+</div>
+<div class="section" id="locale">
+<h2>Locale<a class="headerlink" href="#locale" title="Permalink to this headline">¶</a></h2>
+<p>Many fields inside <strong>rows.fields</strong> are locale-aware. If you have some data using
+Brazilian Portuguese number formatting, for example (<strong>,</strong> as decimal separators
+and <strong>.</strong> as thousands separator) you can configure this into the library and
+<strong>rows</strong> will automatically understand these numbers!</p>
+<p>Let&#8217;s see it working by extracting the population of cities in Rio de Janeiro
+state:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">locale</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">rows</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;http://cidades.ibge.gov.br/comparamun/compara.php?idtema=1&amp;codv=v01&amp;coduf=33&#39;</span>
+<span class="n">html</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span>
+<span class="k">with</span> <span class="n">rows</span><span class="o">.</span><span class="n">locale_context</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;pt_BR.UTF-8&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="n">locale</span><span class="o">.</span><span class="n">LC_NUMERIC</span><span class="p">):</span>
+    <span class="n">rio</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">import_from_html</span><span class="p">(</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">html</span><span class="p">))</span>
+
+<span class="n">total_population</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">city</span><span class="o">.</span><span class="n">pessoas</span> <span class="k">for</span> <span class="n">city</span> <span class="ow">in</span> <span class="n">rio</span><span class="p">)</span>
+<span class="c1"># &#39;pessoas&#39; is the fieldname related to the number of people in each city</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Rio de Janeiro has {} inhabitants&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">total_population</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The column <strong>pessoas</strong> will be imported as an <strong>IntegerField</strong> and the result is:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Rio</span> <span class="n">de</span> <span class="n">Janeiro</span> <span class="n">has</span> <span class="mi">15989929</span> <span class="n">inhabitants</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="operations">
+<h2>Operations<a class="headerlink" href="#operations" title="Permalink to this headline">¶</a></h2>
+<p>Available operations: <strong>join</strong>, <strong>transform</strong> and <strong>serialize</strong>.</p>
+<p>TODO. See <strong>rows/operations.py</strong>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Extra features</a><ul>
+<li><a class="reference internal" href="#plugins">Plugins</a><ul>
+<li><a class="reference internal" href="#common-parameters">Common Parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#command-line-interface">Command-Line Interface</a></li>
+<li><a class="reference internal" href="#locale">Locale</a></li>
+<li><a class="reference internal" href="#operations">Operations</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="examples.html" title="previous chapter">Examples</a></li>
+      <li>Next: <a href="developing.html" title="next chapter">Developing</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/extra_features.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Álvaro Justen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/extra_features.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Examples &#8212; rows 0.3.1dev0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.3.1dev0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="rows 0.3.1dev0 documentation" href="index.html" />
+    <link rel="next" title="Extra features" href="extra_features.html" />
+    <link rel="prev" title="Installing rows" href="installing.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="examples">
+<span id="id1"></span><h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<p>A common use case is to have a <strong>list</strong> of <strong>dict</strong>&#8216;s &#8211; you can also import it, and
+<strong>rows</strong> will automatically fill in the blanks (your <strong>dict</strong>&#8216;s don&#8217;t need to have
+the same keys) and convert data</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">rows</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">u&#39;Álvaro Justen&#39;</span><span class="p">,</span> <span class="s1">&#39;age&#39;</span><span class="p">:</span> <span class="mi">28</span><span class="p">,</span> <span class="s1">&#39;can&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">u&#39;Another Guy&#39;</span><span class="p">,</span> <span class="s1">&#39;age&#39;</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span> <span class="s1">&#39;can&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">},]</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">import_from_dicts</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this case, <strong>table.fields</strong> will be created automatically (<strong>rows</strong> will
+identify the field type for each <strong>dict</strong> key).</p>
+<p>Then you can iterate over it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">print_person</span><span class="p">(</span><span class="n">person</span><span class="p">):</span>
+    <span class="n">can</span> <span class="o">=</span> <span class="s1">&#39;can&#39;</span> <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">can</span> <span class="k">else</span> <span class="s2">&quot;just can&#39;t&quot;</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">u&#39;{} is {} years old and {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">age</span><span class="p">,</span> <span class="n">can</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">table</span><span class="p">:</span>
+    <span class="n">print_person</span><span class="p">(</span><span class="n">person</span><span class="p">)</span>  <span class="c1"># namedtuples are returned</span>
+</pre></div>
+</div>
+<p>You&#8217;ll see:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Álvaro</span> <span class="n">Justen</span> <span class="ow">is</span> <span class="mi">28</span> <span class="n">years</span> <span class="n">old</span> <span class="ow">and</span> <span class="n">just</span> <span class="n">can</span><span class="s1">&#39;t.</span>
+<span class="n">Another</span> <span class="n">Guy</span> <span class="ow">is</span> <span class="mi">42</span> <span class="n">years</span> <span class="n">old</span> <span class="ow">and</span> <span class="n">can</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>As you specified field types (<strong>my_fields</strong>) you don&#8217;t need to insert data using
+the correct types. Actually you can insert strings and the library will
+automatically convert it for you:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;...&#39;</span><span class="p">,</span> <span class="s1">&#39;age&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;can&#39;</span><span class="p">:</span> <span class="s1">&#39;false&#39;</span><span class="p">})</span>
+<span class="n">print_person</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># yes, you can index it!</span>
+</pre></div>
+</div>
+<p>And the output:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">...</span> <span class="ow">is</span> <span class="kc">None</span> <span class="n">years</span> <span class="n">old</span> <span class="ow">and</span> <span class="n">just</span> <span class="n">can</span><span class="s1">&#39;t</span>
+</pre></div>
+</div>
+<div class="section" id="importing-data">
+<h2>Importing Data<a class="headerlink" href="#importing-data" title="Permalink to this headline">¶</a></h2>
+<p><strong>rows</strong> will help you importing data: its plugins will do the hard job of
+parsing each supported file format so you don&#8217;t need to. They can help you
+exporting data also. For example, let&#8217;s download a CSV from the Web and import
+it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">rows</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;http://unitedstates.sunlightfoundation.com/legislators/legislators.csv&#39;</span>
+<span class="n">csv</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span>  <span class="c1"># Download CSV data</span>
+<span class="n">legislators</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">import_from_csv</span><span class="p">(</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">csv</span><span class="p">))</span>  <span class="c1"># already imported!</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Hey, rows automatically identified the types:&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_type</span> <span class="ow">in</span> <span class="n">legislators</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;{} is {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">field_type</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>And you&#8217;ll see something like this:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>[...]
+in_office is &lt;class &#39;rows.fields.IntegerField&#39;&gt;
+gender is &lt;class &#39;rows.fields.TextField&#39;&gt;
+[...]
+birthdate is &lt;class &#39;rows.fields.DateField&#39;&gt;
+</pre></div>
+</div>
+<p>We can then work on this data:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">women</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">legislators</span> <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">in_office</span> <span class="ow">and</span> <span class="n">row</span><span class="o">.</span><span class="n">gender</span> <span class="o">==</span> <span class="s1">&#39;F&#39;</span><span class="p">)</span>
+<span class="n">men</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">legislators</span> <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">in_office</span> <span class="ow">and</span> <span class="n">row</span><span class="o">.</span><span class="n">gender</span> <span class="o">==</span> <span class="s1">&#39;M&#39;</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Women vs Men (in office): {} vs {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">women</span><span class="p">,</span> <span class="n">men</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Then you&#8217;ll see effects of our sexist society:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Women</span> <span class="n">vs</span> <span class="n">Men</span><span class="p">:</span> <span class="mi">108</span> <span class="n">vs</span> <span class="mi">432</span>
+</pre></div>
+</div>
+<p>Now, let&#8217;s compare ages:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">legislators</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s1">&#39;birthdate&#39;</span><span class="p">)</span>
+<span class="n">older</span><span class="p">,</span> <span class="n">younger</span> <span class="o">=</span> <span class="n">legislators</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">legislators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;{}, {} is older than {}, {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">older</span><span class="o">.</span><span class="n">lastname</span><span class="p">,</span> <span class="n">older</span><span class="o">.</span><span class="n">firstname</span><span class="p">,</span> <span class="n">younger</span><span class="o">.</span><span class="n">lastname</span><span class="p">,</span> <span class="n">younger</span><span class="o">.</span><span class="n">firstname</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The output:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Stefanik</span><span class="p">,</span> <span class="n">Elise</span> <span class="ow">is</span> <span class="n">older</span> <span class="n">than</span> <span class="n">Byrd</span><span class="p">,</span> <span class="n">Robert</span>
+</pre></div>
+</div>
+<p>You can also get a whole column, like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">legislators</span><span class="p">[</span><span class="s1">u&#39;gender&#39;</span><span class="p">]</span>
+<span class="go">[u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> u&#39;F&#39;,</span>
+<span class="go"> u&#39;M&#39;,</span>
+<span class="go"> ...]</span>
+</pre></div>
+</div>
+<p>And change the whole column (or add a new one):</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">legislators</span><span class="p">[</span><span class="s1">u&#39;gender&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">u&#39;male&#39;</span> <span class="k">if</span> <span class="n">gender</span> <span class="o">==</span> <span class="s1">u&#39;M&#39;</span> <span class="k">else</span> <span class="s1">u&#39;female&#39;</span>
+<span class="go">                              for gender in legislators[u&#39;gender&#39;]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">legislators</span><span class="p">[</span><span class="s1">u&#39;gender&#39;</span><span class="p">]</span>
+<span class="go">[u&#39;male&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> u&#39;female&#39;,</span>
+<span class="go"> u&#39;male&#39;,</span>
+<span class="go"> ...]</span>
+</pre></div>
+</div>
+<p>Or delete it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="s1">u&#39;gender&#39;</span> <span class="ow">in</span> <span class="n">legislators</span><span class="o">.</span><span class="n">field_names</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">legislators</span><span class="p">[</span><span class="s1">u&#39;gender&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s1">u&#39;gender&#39;</span> <span class="ow">in</span> <span class="n">legislators</span><span class="o">.</span><span class="n">field_names</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">legislators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">gender</span>
+<span class="go">[...]</span>
+<span class="go">AttributeError: &#39;Row&#39; object has no attribute &#39;gender&#39;</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Note that <strong>native Python objects</strong> are returned for each row inside a</div>
+<div class="line"><strong>namedtuple</strong>! The library recognizes each field type and converts it</div>
+<div class="line"><strong>automagically</strong> no matter which plugin you&#8217;re using to import the data.</div>
+</div>
+</div>
+<div class="section" id="common-parameters">
+<h2>Common Parameters<a class="headerlink" href="#common-parameters" title="Permalink to this headline">¶</a></h2>
+<p>Each plugin has its own parameters (like <strong>index</strong> in <strong>import_from_html</strong> and
+<strong>sheet_name</strong> in <strong>import_from_xls</strong>) but all plugins create a <strong>rows.Table</strong> object
+so they also have some common parameters you can pass to <strong>import_from_X</strong>. They
+are:</p>
+<ul class="simple">
+<li><strong>fields</strong>: an <strong>OrderedDict</strong> with field names and types (disable automatic
+detection of types).</li>
+<li><strong>skip_header</strong>: Ignore header row. Only used if <strong>fields</strong> is not <strong>None</strong>.
+Default: <strong>True</strong>.</li>
+<li><strong>import_fields</strong>: a <strong>list</strong> with field names to import (other fields will be
+ignored) &#8211; fields will be imported in this order.</li>
+<li><strong>samples</strong>: number of sample rows to use on field type autodetect algorithm.
+Default: <strong>None</strong> (use all rows).</li>
+</ul>
+</div>
+<div class="section" id="exporting-data">
+<h2>Exporting Data<a class="headerlink" href="#exporting-data" title="Permalink to this headline">¶</a></h2>
+<p>If you have a <strong>Table</strong> object you can export it to all available plugins which
+have the &#8220;export&#8221; feature. Let&#8217;s use the HTML plugin:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">rows</span><span class="o">.</span><span class="n">export_to_html</span><span class="p">(</span><span class="n">legislators</span><span class="p">,</span> <span class="s1">&#39;legislators.html&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And you&#8217;ll get:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ head legislators.html
+&lt;table&gt;
+
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt; title &lt;/th&gt;
+      &lt;th&gt; firstname &lt;/th&gt;
+      &lt;th&gt; middlename &lt;/th&gt;
+      &lt;th&gt; lastname &lt;/th&gt;
+      &lt;th&gt; name_suffix &lt;/th&gt;
+      &lt;th&gt; nickname &lt;/th&gt;
+</pre></div>
+</div>
+<p>Now you have finished the quickstart guide. See the <a class="reference external" href="https://github.com/turicas/rows/tree/develop/examples">examples</a> folder for more examples.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Examples</a><ul>
+<li><a class="reference internal" href="#importing-data">Importing Data</a></li>
+<li><a class="reference internal" href="#common-parameters">Common Parameters</a></li>
+<li><a class="reference internal" href="#exporting-data">Exporting Data</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="installing.html" title="previous chapter">Installing rows</a></li>
+      <li>Next: <a href="extra_features.html" title="next chapter">Extra features</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/examples.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Álvaro Justen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/examples.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

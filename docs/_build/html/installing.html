@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installing rows &#8212; rows 0.3.1dev0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.3.1dev0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="rows 0.3.1dev0 documentation" href="index.html" />
+    <link rel="next" title="Examples" href="examples.html" />
+    <link rel="prev" title="Welcome to rows’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installing-rows">
+<span id="installing"></span><h1>Installing rows<a class="headerlink" href="#installing-rows" title="Permalink to this headline">¶</a></h1>
+<p>Directly from <a class="reference external" href="http://pypi.python.org/pypi/rows">PyPI</a>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">rows</span>
+</pre></div>
+</div>
+<p>You can also install directly from the GitHub repository to have the newest
+features (not pretty stable) by running:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">turicas</span><span class="o">/</span><span class="n">rows</span><span class="o">.</span><span class="n">git</span><span class="nd">@develop</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">turicas</span><span class="o">/</span><span class="n">rows</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">rows</span>
+<span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">install</span>
+</pre></div>
+</div>
+<p>The use of <strong>virtualenv</strong> is recommended.</p>
+<p>You can create a development image using Docker:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cat</span> <span class="n">Dockerfile</span> <span class="o">|</span> <span class="n">docker</span> <span class="n">build</span> <span class="o">-</span><span class="n">t</span> <span class="n">turicas</span><span class="o">/</span><span class="n">rows</span><span class="p">:</span><span class="n">latest</span> <span class="o">-</span>
+</pre></div>
+</div>
+<p>The plugins <strong>csv</strong>, <strong>dicts</strong>, <strong>json</strong>, <strong>json</strong>, <strong>sqlite</strong> and <strong>txt</strong> are built-in by
+default but if you want to use another one you need to explicitly install its
+dependencies, for example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">rows</span><span class="p">[</span><span class="n">html</span><span class="p">]</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">rows</span><span class="p">[</span><span class="n">xls</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>You also need to install some dependencies to use the [command-line
+interface][rows-cli]. You can do it installing the <strong>cli</strong> extra requirement:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">rows</span><span class="p">[</span><span class="n">cli</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>And - easily - you can install all the dependencies by using the <strong>all</strong> extra
+requirement:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">rows</span><span class="p">[</span><span class="nb">all</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>If you use Debian <a class="reference external" href="https://www.debian.org/releases/sid/">sid</a> or <a class="reference external" href="https://www.debian.org/releases/testing/">testing</a> you can
+install it directly from the main repository by running:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">aptitude</span> <span class="n">install</span> <span class="n">python</span><span class="o">-</span><span class="n">rows</span>  <span class="c1"># Python library only</span>
+<span class="n">aptitude</span> <span class="n">install</span> <span class="n">rows</span>  <span class="c1"># Python library + CLI</span>
+</pre></div>
+</div>
+<p>And in Fedora:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dnf</span> <span class="n">install</span> <span class="n">python</span><span class="o">-</span><span class="n">row</span>  <span class="c1"># Python library + CLI</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to rows&#8217;s documentation!</a></li>
+      <li>Next: <a href="examples.html" title="next chapter">Examples</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/installing.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Álvaro Justen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/installing.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
