@@ -27,4 +27,8 @@ man:
 	head -1 rows.1.txt > rows.1
 	txt2man rows.1.txt | egrep -v '^\.TH' >> rows.1
 
-.PHONY:	test clean lint lint-tests install uninstall man
+dev-setup:
+	pip install --editable .[all]
+	pip install	-r requirements-development.txt
+
+.PHONY:	test clean lint lint-tests install uninstall man dev-setup 
