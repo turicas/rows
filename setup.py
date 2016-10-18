@@ -21,15 +21,16 @@ from setuptools import setup
 
 
 EXTRA_REQUIREMENTS = {
-        'csv': ['unicodecsv'],
-        'cli': ['click', 'requests'],
-        'html': ['lxml'], # apt: libxslt-dev libxml2-dev
-        'ods': ['lxml'],
-        'parquet': ['parquet>=1.1'],
-        'xls': ['xlrd', 'xlwt'],
-        'xlsx': ['openpyxl'],
-        'xpath': ['lxml'],
-        'detect': ['file-magic'], }
+    'csv': ['unicodecsv'],
+    'cli': ['click', 'requests'],
+    'html': ['lxml'],  # apt: libxslt-dev libxml2-dev
+    'ods': ['lxml'],
+    'parquet': ['parquet>=1.1'],
+    'xls': ['xlrd', 'xlwt'],
+    'xlsx': ['openpyxl'],
+    'xpath': ['lxml'],
+    'detect': ['file-magic'],
+}
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = ['six'] + EXTRA_REQUIREMENTS['csv']
 LONG_DESCRIPTION = '''
@@ -40,7 +41,7 @@ locale-and-unicode aware. :)
 
 See a quick start tutorial at:
     https://github.com/turicas/rows/blob/develop/README.md
-'''.strip()
+    '''.strip()
 
 
 setup(name='rows',
@@ -56,12 +57,12 @@ setup(name='rows',
       extras_require=EXTRA_REQUIREMENTS,
       keywords=['tabular', 'table', 'csv', 'xls', 'xlsx', 'xpath', 'sqlite',
                 'html', 'rows', 'data', 'opendata'],
-      entry_points = {
+      entry_points={
           'console_scripts': [
               'rows = rows.cli:cli',
-              ],
+          ],
       },
-      classifiers = [
+      classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Environment :: Console',
           'Intended Audience :: Developers',
@@ -75,5 +76,4 @@ setup(name='rows',
           'Topic :: Software Development :: Libraries :: Python Modules',
           'Topic :: Text Processing :: Markup :: HTML',
           'Topic :: Utilities',
-      ]
-)
+      ])
