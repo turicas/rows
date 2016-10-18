@@ -21,6 +21,8 @@ import cgi
 import mimetypes
 import os
 import tempfile
+import sys
+from io import BytesIO
 
 try:
     from urlparse import urlparse  # Python 2
@@ -162,7 +164,10 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
 
     # TODO: may add sample_size
 
-    filename = os.path.basename(path)
+    if isinstance(path, BytesIO):
+        filename = '-'
+    else:
+        filename = os.path.basename(path)
     parts = filename.split('.')
     extension = parts[-1] if len(parts) > 1 else None
 
@@ -178,6 +183,10 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
         mime_type = mime_type or mimetypes.guess_type(filename)[0]
 
     plugin_name = plugin_name_by_mime_type(mime_type, mime_name, extension)
+    if plugin_name == None:
+        plugin_name = 'csv'
+        path = sys.stdin
+
     if encoding == 'binary':
         encoding = None
 
@@ -188,9 +197,16 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
 
 def local_file(path, sample_size=1048576):
 
-    # TODO: may change sample_size
-    with open(path, 'rb') as fobj:
-        content = fobj.read(sample_size)
+    if path == '-':
+        if (sys.version_info > (3, 5)):
+            content = sys.stdin.buffer.read()
+        else:
+            content = sys.stdin.read()
+        path = BytesIO(content) 
+    else:
+        # TODO: may change sample_size
+        with open(path, 'rb') as fobj:
+            content = fobj.read(sample_size)
 
     source = detect_local_source(path, content, mime_type=None, encoding=None)
 
@@ -249,7 +265,6 @@ def detect_source(uri, verify_ssl, timeout=5):
 
     if uri.startswith('http://') or uri.startswith('https://'):
         return download_file(uri, verify_ssl=verify_ssl, timeout=timeout)
-
     else:
         return local_file(uri)
 

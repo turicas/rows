@@ -73,7 +73,6 @@ def _get_field_names(field_names, table_field_names, permit_not=False):
     else:
         return new_field_names
 
-
 @click.group()
 @click.version_option(version=rows.__version__, prog_name='rows')
 def cli():
