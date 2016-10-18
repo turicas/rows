@@ -54,3 +54,8 @@ try:
     from . import plugin_parquet as parquet
 except ImportError:
     parquet = None
+
+try:
+    from . import _pandas as pandas
+except ImportError:
+    pandas = None
