@@ -16,6 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from . import plugin_json as json
+from . import plugin_yaml as yaml
 from . import dicts as dicts
 from . import plugin_csv as csv
 from . import txt as txt
