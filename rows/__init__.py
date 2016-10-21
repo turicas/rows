@@ -27,6 +27,9 @@ from rows.localization import locale_context
 
 
 # Don't have dependencies or dependencies installed on `install_requires`
+import_from_yaml = plugins.yaml.import_from_yaml
+export_to_yaml = plugins.yaml.export_to_yaml
+
 
 import_from_json = plugins.json.import_from_json
 export_to_json = plugins.json.export_to_json

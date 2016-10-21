@@ -1,6 +1,9 @@
 test:
 	tox
 
+tests_nose: 
+	nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/*.py
+
 clean:
 	find -regex '.*\.pyc' -exec rm {} \;
 	find -regex '.*~' -exec rm {} \;
@@ -27,4 +30,8 @@ man:
 	head -1 rows.1.txt > rows.1
 	txt2man rows.1.txt | egrep -v '^\.TH' >> rows.1
 
-.PHONY:	test clean lint lint-tests install uninstall man
+dev-setup:
+	pip install --editable .[all]
+	pip install	-r requirements-development.txt
+
+.PHONY:	test clean lint lint-tests install uninstall man dev-setup tests_nose
