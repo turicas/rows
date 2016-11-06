@@ -67,5 +67,8 @@ if plugins.xlsx:
 if plugins.parquet:
     import_from_parquet = plugins.parquet.import_from_parquet
 
+if plugins.jupyter:
+    head = plugins.jupyter.head
+    tail = plugins.jupyter.tail
 
 __version__ = '0.3.1dev0'
