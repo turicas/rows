@@ -22,6 +22,12 @@ try:
 except:
     from html.parser import HTMLParser  # Python 3
 
+
+try:
+    from html import escape  # Python 3
+except:
+    from cgi import escape  # Python 2
+
 import six
 
 from lxml.html import document_fromstring
@@ -104,7 +110,7 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
         css_class = 'odd' if index % 2 == 1 else 'even'
         result.append('    <tr class="{}">\n'.format(css_class))
         for value in row:
-            result.extend(['      <td> ', value, ' </td>\n'])
+            result.extend(['      <td> ', escape(value), ' </td>\n'])
         result.append('    </tr>\n\n')
     result.append('  </tbody>\n\n</table>\n')
     html = ''.join(result).encode(encoding)
