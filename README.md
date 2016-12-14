@@ -313,6 +313,71 @@ are:
 
 ### Exporting Data
 
+You can export data using plugins, without a filename the result is returned and can be printed.
+
+```python
+import rows
+from collections import OrderedDict
+from rows import fields, Table
+
+my_fields = OrderedDict([('name', fields.TextField),
+                         ('age', fields.IntegerField),
+                         ('can', fields.BoolField)])
+table = Table(fields=my_fields)
+table.append({'name': u'Álvaro Justen', 'age': 28, 'can': False})
+table.append({'name': u'Another Guy', 'age': 42, 'can': True})
+print(rows.export_to_txt(table))
+```
+
+The result is:
+```
++---------------+-----+-------+
+|      name     | age |  can  |
++---------------+-----+-------+
+| Álvaro Justen |  28 | false |
+|   Another Guy |  42 |  true |
++---------------+-----+-------+
+```
+
+You can use the csv plugin:
+```python
+print(rows.export_to_csv(table))
+```
+
+You will get:
+```
+name,age,can
+Álvaro Justen,28,false
+Another Guy,42,true
+```
+
+Or the json plugin:
+```python
+print(rows.export_to_json(table))
+```
+
+And the result is:
+```
+[{"age": 28, "name": "\u00c1lvaro Justen", "can": false}, {"age": 42, "name": "Another Guy", "can": true}]
+```
+
+You can save the results to a file like object, BytesIO for example:
+
+```python
+from io import BytesIO
+b = BytesIO()
+rows.export_to_csv(table, b)
+b.seek(0)  # You need to point the file cursor to the first position.
+print(b.read())
+```
+
+The output is:
+```
+name,age,can
+Álvaro Justen,28,false
+Another Guy,42,true
+```
+
 If you have a `Table` object you can export it to all available plugins which
 have the "export" feature. Let's use the HTML plugin:
 
@@ -334,6 +399,35 @@ $ head legislators.html
       <th> lastname </th>
       <th> name_suffix </th>
       <th> nickname </th>
+```
+
+You can read and write data to a sqlite database:
+
+```python
+connection = rows.export_to_sqlite(table, ':memory:')
+list(connection.execute('select * from table1 where age < 42').fetchall())
+```
+
+You get the following output:
+```
+[('Álvaro Justen', 28, 0)]
+```
+
+It is possible to import from a database also:
+
+```python
+table2 = rows.import_from_sqlite(connection, query='select * from table1 where age < 42')
+print(rows.export_to_txt(table2))
+```
+
+The output of the command is:
+
+```
++---------------+-----+-----+
+|      name     | age | can |
++---------------+-----+-----+
+| Álvaro Justen |  28 |   0 |
++---------------+-----+-----+
 ```
 
 Now you have finished the quickstart guide. See the `examples` folder for more
