@@ -23,3 +23,4 @@ Created and maintained by Álvaro Justen aka turicas:
 - Mauro Baraldi <https://github.com/MauroBaraldi>
 - Henrique Bastos <https://github.com/henriquebastos>
 - Rômulo Collopy <https://github.com/romulocollopy>
+- Davi Oliveira <https://github.com/arloc>

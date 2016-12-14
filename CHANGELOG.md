@@ -4,6 +4,13 @@
 
 **Released on: (under development)**
 
+
+### Bug Fixes
+
+- [#200](https://github.com/turicas/rows/pull/200) Unescape HTML when exporting
+  (thanks to [@arloc](https://github.com/arloc))
+
+
 ## Version `0.3.0`
 
 **Released on: 2016-09-02**
