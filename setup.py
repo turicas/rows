@@ -29,7 +29,9 @@ EXTRA_REQUIREMENTS = {
         'xls': ['xlrd', 'xlwt'],
         'xlsx': ['openpyxl'],
         'xpath': ['lxml'],
-        'detect': ['file-magic'], }
+        'detect': ['file-magic'],
+        'pandas': ['pandas'],
+}
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = ['six'] + EXTRA_REQUIREMENTS['csv']
 LONG_DESCRIPTION = '''

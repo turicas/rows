@@ -67,5 +67,8 @@ if plugins.xlsx:
 if plugins.parquet:
     import_from_parquet = plugins.parquet.import_from_parquet
 
+if plugins.pandas:
+    import_from_pandas = plugins._pandas.import_from_pandas
+    export_to_pandas = plugins._pandas.export_to_pandas
 
 __version__ = '0.3.1dev0'
