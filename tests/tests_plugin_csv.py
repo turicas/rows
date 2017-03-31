@@ -270,5 +270,5 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         tricky_table = err * 1000 + bytes(range(256))
         self.assertRaises(csv.Error, rows.import_from_csv, BytesIO(tricky_table))
 
-        with self.assertRaisesRegex(csv.Error, 'Excel'):
+        with self.assertRaisesRegex(csv.Error, 'Details'):
             tricked = rows.import_from_csv(BytesIO(tricky_table), encoding='utf-8')
