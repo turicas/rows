@@ -250,3 +250,25 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result_1 = rows.export_to_csv(utils.table, dialect=csv.excel_tab)
         result_2 = rows.export_to_csv(utils.table, dialect=csv.excel)
         self.assertEqual(result_1.replace(b'\t', b','), result_2)
+
+    def test_issue_218_revert_guess(self):
+
+        err = b"""problematic_text,cool_number\n,42\n"Problematic text with\
+        commas, ""quotes"" and a cool number: 4,2", 84"""
+
+        csv_input = BytesIO(err)
+        table = rows.import_from_csv(csv_input, dialect='excel')
+        as_list = list(table)
+        csv_input = BytesIO(err)
+        table = rows.import_from_csv(csv_input)
+        self.assertEqual(as_list, list(table))
+
+    def test_issue_218_better_msg(self):
+        err = b"""problematic_text,cool_number\n,42\n"Problematic text with\
+                commas, ""quotes"" and a cool number: 4,2", 84"""
+
+        tricky_table = err * 1000 + bytes(range(256))
+        self.assertRaises(csv.Error, rows.import_from_csv, BytesIO(tricky_table))
+
+        with self.assertRaisesRegex(csv.Error, 'Excel'):
+            tricked = rows.import_from_csv(BytesIO(tricky_table), encoding='utf-8')

@@ -58,7 +58,9 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
 
+    guessed = False
     if dialect is None:
+        guessed = True
         cursor = fobj.tell()
         dialect = discover_dialect(fobj.read(sample_size), encoding)
         fobj.seek(cursor)
@@ -68,7 +70,17 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
     meta = {'imported_from': 'csv',
             'filename': filename,
             'encoding': encoding,}
-    return create_table(reader, meta=meta, *args, **kwargs)
+    try:
+        table = create_table(reader, meta=meta, *args, **kwargs)
+    except ValueError:
+        if guessed:
+            fobj.seek(cursor)
+            reader = unicodecsv.reader(fobj, encoding=encoding,
+                                       dialect=unicodecsv.excel)
+            table = create_table(reader, meta=meta, *args, **kwargs)
+        else:
+            raise
+    return table
 
 
 def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
