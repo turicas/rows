@@ -392,7 +392,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         ]))
         table.append({'unescaped_content': '<&>'})
         output = rows.export_to_html(table)
-        self.assertIn('<td> &lt;&amp;&gt; </td>', output)
+        self.assertIn(b'<td> &lt;&amp;&gt; </td>', output)
 
 
 class PluginHtmlUtilsTestCase(unittest.TestCase):
