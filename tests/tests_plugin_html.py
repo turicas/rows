@@ -386,6 +386,14 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table2 = rows.import_from_html(filename)
         self.assert_table_equal(table, table2)
 
+    def test_export_to_html_unescaped_content(self):
+        table = rows.Table(fields=OrderedDict([
+            ('unescaped_content', rows.fields.TextField)
+        ]))
+        table.append({'unescaped_content': '<&>'})
+        output = rows.export_to_html(table)
+        self.assertIn(b'<td> &lt;&amp;&gt; </td>', output)
+
 
 class PluginHtmlUtilsTestCase(unittest.TestCase):
 

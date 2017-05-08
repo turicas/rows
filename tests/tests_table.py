@@ -306,7 +306,7 @@ class TableTestCase(unittest.TestCase):
         '''
         rounds = []
         table = utils.table
-        for _ in range(5):
+        for _ in range(10):
             start = time.time()
             table = table + table
             end = time.time()

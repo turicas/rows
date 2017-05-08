@@ -27,6 +27,17 @@ import tests.utils as utils
 
 class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
+    def assert_encoding(self, first, second):
+        '''Assert encoding equality
+
+        `iso-8859-1` should be detected as the same as `iso-8859-8`
+        as described in <https://github.com/turicas/rows/issues/194>
+        (affects Debian and Fedora packaging)
+        '''
+
+        self.assertEqual(first.lower().split('-')[:-1],
+                         second.lower().split('-')[:-1])
+
     def test_local_file_sample_size(self):
 
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -46,7 +57,7 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         result = rows.utils.local_file(temp.name)
         self.assertEqual(result.uri, temp.name)
-        self.assertEqual(result.encoding, encoding)
+        self.assert_encoding(result.encoding, encoding)
         self.assertEqual(result.delete, False)
 
 # TODO: test detect_local_source

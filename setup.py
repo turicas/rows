@@ -21,15 +21,16 @@ from setuptools import setup
 
 
 EXTRA_REQUIREMENTS = {
-        'csv': ['unicodecsv'],
-        'cli': ['click', 'requests'],
-        'html': ['lxml'], # apt: libxslt-dev libxml2-dev
-        'ods': ['lxml'],
-        'parquet': ['parquet>=1.1'],
-        'xls': ['xlrd', 'xlwt'],
-        'xlsx': ['openpyxl'],
-        'xpath': ['lxml'],
-        'detect': ['file-magic'], }
+    'csv': ['unicodecsv'],
+    'cli': ['click', 'requests'],
+    'html': ['lxml'],  # apt: libxslt-dev libxml2-dev
+    'ods': ['lxml'],
+    'parquet': ['parquet>=1.1'],
+    'xls': ['xlrd', 'xlwt'],
+    'xlsx': ['openpyxl'],
+    'xpath': ['lxml'],
+    'detect': ['file-magic'],
+}
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = ['six'] + EXTRA_REQUIREMENTS['csv']
 LONG_DESCRIPTION = '''
@@ -40,14 +41,14 @@ locale-and-unicode aware. :)
 
 See a quick start tutorial at:
     https://github.com/turicas/rows/blob/develop/README.md
-'''.strip()
+    '''.strip()
 
 
 setup(name='rows',
       description=('A common, beautiful interface to tabular data, '
                    'no matter the format'),
       long_description=LONG_DESCRIPTION,
-      version='0.3.0',
+      version='0.3.1',
       author='Álvaro Justen',
       author_email='alvarojusten@gmail.com',
       url='https://github.com/turicas/rows/',
@@ -56,12 +57,12 @@ setup(name='rows',
       extras_require=EXTRA_REQUIREMENTS,
       keywords=['tabular', 'table', 'csv', 'xls', 'xlsx', 'xpath', 'sqlite',
                 'html', 'rows', 'data', 'opendata'],
-      entry_points = {
+      entry_points={
           'console_scripts': [
               'rows = rows.cli:cli',
-              ],
+          ],
       },
-      classifiers = [
+      classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Environment :: Console',
           'Intended Audience :: Developers',
@@ -71,9 +72,9 @@ setup(name='rows',
           'Natural Language :: English',
           'Operating System :: OS Independent',
           'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.5',
           'Topic :: Database',
           'Topic :: Software Development :: Libraries :: Python Modules',
           'Topic :: Text Processing :: Markup :: HTML',
           'Topic :: Utilities',
-      ]
-)
+      ])
