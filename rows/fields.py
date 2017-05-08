@@ -465,15 +465,11 @@ def is_null(value):
 
 
 def unique_values(values):
-    value_types = set(type(value) for value in values)
-    if dict not in value_types:
-        return set([value for value in set(values) if not is_null(value)])
-    else:
-        result = []
-        for value in values:
-            if not is_null(value) and value not in result:
-                result.append(value)
-        return result
+    result = []
+    for value in values:
+        if not is_null(value) and value not in result:
+            result.append(value)
+    return result
 
 
 def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
@@ -504,13 +500,13 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
         native_types = set(type(value) for value in data)
 
         if not data:
-            # all rows with an empty field -> BinaryField (can't identify)
+            # all values with an empty field (can't identify) -> BinaryField
             identified_type = BinaryField
         elif native_types == set([six.binary_type]):
             identified_type = BinaryField
         else:
             # ok, let's try to identify the type of this column by
-            # converting every non-null value in the sample
+            # trying to convert every non-null value in the sample
             possible_types = list(field_types)
             for value in data:
                 cant_be = set()
