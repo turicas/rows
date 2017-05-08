@@ -79,7 +79,7 @@ And the output:
 ```
 
 
-### Importing Data
+## Importing Data
 
 `rows` will help you importing data: its plugins will do the hard job of
 parsing each supported file format so you don't need to. They can help you
@@ -203,7 +203,7 @@ AttributeError: 'Row' object has no attribute 'gender'
 > *automagically* no matter which plugin you're using to import the data.
 
 
-#### Common Parameters
+### Common Parameters
 
 Each plugin has its own parameters (like `index` in `import_from_html` and
 `sheet_name` in `import_from_xls`) but all plugins create a `rows.Table` object
@@ -225,7 +225,7 @@ are:
   Default: `None` (use all rows).
 
 
-### Exporting Data
+## Exporting Data
 
 If you have a `Table` object you can export it to all available plugins which
 have the "export" feature. Let's use the HTML plugin:
@@ -249,6 +249,118 @@ $ head legislators.html
       <th> name_suffix </th>
       <th> nickname </th>
 ```
+
+
+### Exporting to memory
+
+For some plugins you don't need to specify a filename, so the result will be
+returned for you as a `str`. Example:
+
+```python
+fields_to_export = ('title', 'firstname', 'lastname', 'party')
+content = rows.export_to_txt(legislators, export_fields=fields_to_export)
+print(content)
+```
+
+The result will be:
+
+```text
++-------+-------------+--------------------+-------+
+| title |  firstname  |      lastname      | party |
++-------+-------------+--------------------+-------+
+|   Sen |      Robert |               Byrd |     D |
+|   Rep |       Ralph |               Hall |     R |
+|   Sen |         Ted |            Stevens |     R |
+|   Sen |       Frank |         Lautenberg |     D |
+[...]
+|   Rep |       Aaron |             Schock |     R |
+|   Rep |        Matt |              Gaetz |     R |
+|   Rep |        Trey |      Hollingsworth |     R |
+|   Rep |        Mike |          Gallagher |     R |
+|   Rep |       Elise |           Stefanik |     R |
++-------+-------------+--------------------+-------+
+```
+
+The plugins `csv`, `json` and `html` will have the same behaviour.
+
+
+#### Using file-objects
+
+The majority of plugins also accept file-objects instead of filenames (for
+importing and also for exporting), for example:
+
+```python
+from io import BytesIO
+
+fobj = BytesIO()
+rows.export_to_csv(legislators, fobj)
+fobj.seek(0)  # You need to point the file cursor to the first position.
+print(fobj.read())
+```
+
+The following text will be printed:
+
+```text
+b"title,firstname,lastname,party\r\nSen,Robert,Byrd,D\r\nRep,Ralph,Hall,R[...]"
+```
+
+On `sqlite` plugin the returned object is a `sqlite3.Connection`:
+
+```python
+connection = rows.export_to_sqlite(legislators, ':memory:')
+query = 'SELECT firstname, lastname FROM table1 WHERE birthdate > 1980-01-01'
+connection = rows.export_to_sqlite(legislators, ':memory:')
+print(list(connection.execute(query).fetchall()))
+```
+
+You'll get the following output:
+
+```text
+[('Darren', 'Soto'), ('Adam', 'Kinzinger'), ('Ron', 'DeSantis'), (...)]
+```
+
+And you can use `sqlite3.Connection` when importing, too:
+
+```python
+table = rows.import_from_sqlite(connection, query=query)
+print(rows.export_to_txt(table))
+```
+
+The following output will be printed:
+
+```text
++-----------+-----------------+
+| firstname |     lastname    |
++-----------+-----------------+
+|    Darren |            Soto |
+|      Adam |       Kinzinger |
+|       Ron |        DeSantis |
+| Stephanie |          Murphy |
+|      Seth |         Moulton |
+|     Jaime | Herrera Beutler |
+|      Pete |         Aguilar |
+|     Scott |          Taylor |
+|       Jim |           Banks |
+|     Ruben |         Gallego |
+|       Lee |          Zeldin |
+|    Carlos |         Curbelo |
+|    Justin |           Amash |
+|     Ruben |          Kihuen |
+|     Jason |           Smith |
+|     Brian |            Mast |
+|    Joseph |         Kennedy |
+|      Eric |        Swalwell |
+|     Tulsi |         Gabbard |
+|     Aaron |          Schock |
+|      Matt |           Gaetz |
+|      Trey |   Hollingsworth |
+|      Mike |       Gallagher |
+|     Elise |        Stefanik |
++-----------+-----------------+
+```
+
+
+## Learn more
 
 Now you have finished the quickstart guide. See the [examples][rows-examples]
 folder for more examples.
