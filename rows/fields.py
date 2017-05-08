@@ -35,7 +35,7 @@ import six
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
            'DateField', 'DecimalField', 'PercentField', 'JSONField',
            'EmailField', 'TextField', 'BinaryField', 'Field']
-REGEXP_ONLY_NUMBERS = re.compile('[^0-9]')
+REGEXP_ONLY_NUMBERS = re.compile('[^0-9\-]')
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 NULL = ('-', 'null', 'none', 'nil', 'n/a', 'na')
 NULL_BYTES = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
@@ -257,9 +257,9 @@ class DecimalField(Field):
         else:
             locale_vars = locale.localeconv()
             decimal_separator = locale_vars['decimal_point']
-            interesting_vars = ['decimal_point', 'mon_decimal_point',
+            interesting_vars = ('decimal_point', 'mon_decimal_point',
                                 'mon_thousands_sep', 'negative_sign',
-                                'positive_sign', 'thousands_sep']
+                                'positive_sign', 'thousands_sep')
             chars = (locale_vars[x].replace('.', r'\.').replace('-', r'\-')
                      for x in interesting_vars)
             interesting_chars = ''.join(set(chars))
