@@ -48,7 +48,7 @@ setup(name='rows',
       description=('A common, beautiful interface to tabular data, '
                    'no matter the format'),
       long_description=LONG_DESCRIPTION,
-      version='0.3.1dev0',
+      version='0.3.1',
       author='Álvaro Justen',
       author_email='alvarojusten@gmail.com',
       url='https://github.com/turicas/rows/',
