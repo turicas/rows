@@ -24,3 +24,4 @@ Created and maintained by Álvaro Justen aka turicas:
 - Henrique Bastos <https://github.com/henriquebastos>
 - Rômulo Collopy <https://github.com/romulocollopy>
 - Davi Oliveira <https://github.com/arloc>
+- Ellison Leão <https://github.com/ellisonleao>
