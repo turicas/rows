@@ -27,4 +27,7 @@ man:
 	head -1 rows.1.txt > rows.1
 	txt2man rows.1.txt | egrep -v '^\.TH' >> rows.1
 
-.PHONY:	test clean lint lint-tests install uninstall man
+release:
+	python setup.py bdist bdist_wheel bdist_egg upload
+
+.PHONY:	test clean lint lint-tests install uninstall man release
