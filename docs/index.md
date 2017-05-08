@@ -32,6 +32,7 @@ some data and the only answer was `UnicodeDecodeError`? So,
 - [Table operations][doc-operations]
 - [Contributing][doc-contributing]
 - [Useful links][doc-links]
+- [Log of changes][doc-changelog]
 
 
 ## Basic Usage
@@ -122,6 +123,7 @@ This library is released under the [GNU General Public License version
 [doc-locale]: locale.md
 [doc-operations]: operations.md
 [doc-plugins]: plugins.md
+[doc-changelog]: changelog.md
 [doc-quick-start]: quick-start.md
 [gpl3]: http://www.gnu.org/licenses/gpl-3.0.html
 [rows-issue-103]: https://github.com/turicas/rows/issues/103

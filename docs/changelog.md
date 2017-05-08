@@ -23,7 +23,7 @@
 - [#200](https://github.com/turicas/rows/pull/200) Escape output when exporting
   to HTML (thanks to [@arloc](https://github.com/arloc))
 - Fix some tests
-- [#215](https://github.com/turicas/rows/issue/215) DecimalField does not
+- [#215](https://github.com/turicas/rows/issues/215) DecimalField does not
   handle negative values correctly if using locale (thanks to
   [@draug3n](https://github.com/draug3n) for reporting)
 
