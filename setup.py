@@ -39,9 +39,8 @@ automatically detect types and give you high-level Python objects so you can
 start working with the data instead of trying to parse it. It is also
 locale-and-unicode aware. :)
 
-See a quick start tutorial at:
-    https://github.com/turicas/rows/blob/develop/README.md
-    '''.strip()
+Read the documentation and learn how simple is to use it: http://turicas.info/rows
+'''.strip()
 
 
 setup(name='rows',
@@ -55,8 +54,7 @@ setup(name='rows',
       packages=['rows', 'rows.plugins'],
       install_requires=INSTALL_REQUIREMENTS,
       extras_require=EXTRA_REQUIREMENTS,
-      keywords=['tabular', 'table', 'csv', 'xls', 'xlsx', 'xpath', 'sqlite',
-                'html', 'rows', 'data', 'opendata'],
+      keywords='tabular table csv xls xlsx xpath ods sqlite html rows data opendata',
       entry_points={
           'console_scripts': [
               'rows = rows.cli:cli',
