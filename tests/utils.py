@@ -118,6 +118,19 @@ for row in EXPECTED_ROWS:
 table._meta = {'test': 123}
 
 
+class LazyGenerator(object):
+
+    def __init__(self, max_number):
+        self.max_number = max_number
+        self.last = None
+
+    def __iter__(self):
+        yield ['number', 'number_sq', 'number_double']
+        for number in range(self.max_number):
+            self.last = number
+            yield [self.last, self.last ** 2, self.last * 2]
+
+
 class RowsTestMixIn(object):
 
     maxDiff = None

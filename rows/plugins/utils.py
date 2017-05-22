@@ -22,7 +22,7 @@ from itertools import chain, islice
 from unicodedata import normalize
 
 from rows.fields import detect_types
-from rows.table import FlexibleTable, Table
+from rows.table import FlexibleTable, Table, LazyTable
 
 SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
@@ -125,9 +125,21 @@ def make_header(field_names, permit_not=False):
     return result
 
 
+def get_row_data(full_field_names, field_names):
+
+    field_indexes = [full_field_names.index(field_name)
+                     for field_name in field_names]
+
+    def func(rows_data):
+        for row_data in rows_data:
+            yield [row_data[field_index] for field_index in field_indexes]
+
+    return func
+
+
 def create_table(data, meta=None, fields=None, skip_header=True,
                  import_fields=None, samples=None, force_types=None,
-                 *args, **kwargs):
+                 lazy=False, *args, **kwargs):
     # TODO: add auto_detect_types=True parameter
     table_rows = iter(data)
     sample_rows = []
@@ -172,11 +184,22 @@ def create_table(data, meta=None, fields=None, skip_header=True,
             new_fields[field_name] = fields[field_name]
         fields = new_fields
 
-    table = Table(fields=fields, meta=meta)
-    # TODO: put this inside Table.__init__
-    for row in chain(sample_rows, table_rows):
-        table.append({field_name: value
-                      for field_name, value in zip(header, row)})
+    if not lazy:
+        table = Table(fields=fields, meta=meta)
+        # TODO: put this inside Table.__init__
+        for row in chain(sample_rows, table_rows):
+            table.append({field_name: value
+                          for field_name, value in zip(header, row)})
+
+    else:
+        data = chain(sample_rows, table_rows)
+        field_names = fields.keys()
+
+        if header != field_names:
+            rows_data = get_row_data(header, field_names)
+            data = chain(rows_data(sample_rows), rows_data(table_rows))
+
+        table = LazyTable(fields=fields, data=data, meta=meta)
 
     return table
 
