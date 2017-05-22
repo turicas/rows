@@ -29,6 +29,9 @@ import six
 
 import rows
 import rows.plugins.utils as plugins_utils
+from rows import fields
+from rows.table import LazyTable
+
 import tests.utils as utils
 from rows import fields
 
@@ -171,6 +174,45 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
                                            force_types=force_types)
         for field_name, field_type in force_types.items():
             self.assertEqual(table.fields[field_name], field_type)
+
+    def test_create_table_returns_LazyTable(self):
+        header = ['field1', 'field2', 'field3']
+        table_rows = [['1', '3.14', 'Álvaro'],
+                      ['2', '2.71', 'turicas'],
+                      ['3', '1.23', 'Justen']]
+        force_types = {'field2': rows.fields.DecimalField}
+
+        table = plugins_utils.create_table([header] + table_rows,
+                                           force_types=force_types, lazy=True)
+        self.assertTrue(isinstance(table, LazyTable))
+
+    def test_create_table_LazyTable_import_fields(self):
+        max_number = 1000
+        data = utils.LazyGenerator(max_number)
+        import_fields = ['number_double', 'number_sq']
+
+        table = plugins_utils.create_table(data,
+                                           import_fields=import_fields,
+                                           samples=None, lazy=True)
+        self.assertEqual(table.field_names, import_fields)
+
+        expected_data = [{'number_double': number * 2,
+                          'number_sq': number ** 2}
+                         for number in range(max_number)]
+        data = [dict(row._asdict()) for row in table]
+        self.assertEqual(data, expected_data)
+
+    def test_create_table_sample_size(self):
+        max_number = 1000
+        samples = 200
+
+        data = utils.LazyGenerator(max_number)
+        table = plugins_utils.create_table(data, lazy=True, samples=samples)
+        self.assertEqual(data.last, samples - 1)
+
+        data = utils.LazyGenerator(max_number)
+        table = plugins_utils.create_table(data, samples=samples)
+        self.assertEqual(data.last, max_number - 1)
 
     def test_prepare_to_export_all_fields(self):
         result = plugins_utils.prepare_to_export(utils.table,
