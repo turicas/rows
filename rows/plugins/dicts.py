@@ -17,21 +17,38 @@
 
 from __future__ import unicode_literals
 
+from itertools import chain
+
 from rows.plugins.utils import create_table
 
 
-def import_from_dicts(data, *args, **kwargs):
-    'Import data from a list of dicts'
+def import_from_dicts(data, samples=1000, *args, **kwargs):
+    '''Import data from a iterable of dicts in a lazy way
 
-    headers = set()
-    for row in data:
-        headers.update(row.keys())
-    headers = sorted(list(headers))
+    The algorithm will use the `samples` first `dict`s to determine the field
+    names.
+    '''
 
-    data = [[row.get(header, None) for header in headers] for row in data]
+    data = iter(data)
 
+    cached_rows, headers = [], []
+    for index, row in enumerate(data, start=1):
+        cached_rows.append(row)
+
+        for key in row.keys():
+            if key not in headers:
+                headers.append(key)
+
+        if index == samples:
+            break
+
+    data_rows = ([row.get(header, None) for header in headers]
+                 for row in chain(cached_rows, data))
+
+    kwargs['samples'] = samples
     meta = {'imported_from': 'dicts', }
-    return create_table([headers] + data, meta=meta, *args, **kwargs)
+    return create_table(chain([headers], data_rows), meta=meta,
+            *args, **kwargs)
 
 
 def export_to_dicts(table, *args, **kwargs):

@@ -131,6 +131,16 @@ class LazyGenerator(object):
             yield [self.last, self.last ** 2, self.last * 2]
 
 
+class LazyDictGenerator(LazyGenerator):
+
+    def __iter__(self):
+        header = ('number', 'number_sq', 'number_double')
+        for number in range(self.max_number):
+            self.last = number
+            data = (self.last, self.last ** 2, self.last * 2)
+            yield dict(zip(header, data))
+
+
 class RowsTestMixIn(object):
 
     maxDiff = None
