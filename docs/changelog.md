@@ -56,6 +56,11 @@
 - [#181](https://github.com/turicas/rows/issues/181) Create slugs inside
   `Table.__init__`
 - [#221](https://github.com/turicas/rows/issues/221) Error on pip install rows
+- [#238](https://github.com/turicas/rows/issues/238) `import_from_dicts`
+  supports generator as input
+- [#239](https://github.com/turicas/rows/issues/239) `import_from_dicts`
+  maintains header order
+
 
 ## Version `0.3.1`
 

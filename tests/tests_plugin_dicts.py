@@ -17,31 +17,39 @@
 
 from __future__ import unicode_literals
 
+import string
+import random
+import tempfile
 import unittest
+
+from collections import OrderedDict
+from io import BytesIO
 
 import mock
 
 import rows
 import rows.plugins.dicts
+
 import tests.utils as utils
 
 
 class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
-    plugin_name = 'dicts'
-    data = [{'name': 'Álvaro', 'ids': 123, 'number': 3, },
-            {'name': 'Test', 'ids': '456', },  # missing 'number', 'ids' as str
-            {'name': 'Python', 'ids': '123, 456', 'other': 3.14, },]
+    plugin_name = "dicts"
+    data = [
+        {"name": "Álvaro", "ids": 123, "number": 3},
+        {"name": "Test", "ids": "456"},  # missing 'number', 'ids' as str
+        {"name": "Python", "ids": "123, 456", "other": 3.14},
+    ]
 
     def test_imports(self):
-        self.assertIs(rows.import_from_dicts,
-                      rows.plugins.dicts.import_from_dicts)
+        self.assertIs(rows.import_from_dicts, rows.plugins.dicts.import_from_dicts)
         self.assertIs(rows.export_to_dicts, rows.plugins.dicts.export_to_dicts)
 
-    @mock.patch('rows.plugins.dicts.create_table')
+    @mock.patch("rows.plugins.dicts.create_table")
     def test_import_from_dicts_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
-        kwargs = {'some_key': 123, 'other': 456, }
+        kwargs = {"some_key": 123, "other": 456}
 
         result = rows.import_from_dicts(self.data, **kwargs)
 
@@ -50,7 +58,8 @@ class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(result, 42)
 
         call = mocked_create_table.call_args
-        kwargs['meta'] = {'imported_from': 'dicts', }
+        kwargs["meta"] = {"imported_from": "dicts"}
+        kwargs["samples"] = None
         self.assertEqual(call[1], kwargs)
 
     def test_import_from_dicts_return_desired_data(self):
@@ -58,42 +67,62 @@ class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         self.assertEqual(len(table), 3)
         self.assertEqual(len(table.fields), 4)
-        self.assertEqual(set(table.field_names),
-                         set(['ids', 'name', 'number', 'other']))
-        self.assertEqual(table.fields['name'], rows.fields.TextField)
-        self.assertEqual(table.fields['ids'], rows.fields.TextField)
-        self.assertEqual(table.fields['number'], rows.fields.IntegerField)
-        self.assertEqual(table.fields['other'], rows.fields.FloatField)
+        self.assertEqual(
+            set(table.field_names), set(["ids", "name", "number", "other"])
+        )
+        self.assertEqual(table.fields["name"], rows.fields.TextField)
+        self.assertEqual(table.fields["ids"], rows.fields.TextField)
+        self.assertEqual(table.fields["number"], rows.fields.IntegerField)
+        self.assertEqual(table.fields["other"], rows.fields.FloatField)
 
-        self.assertEqual(table[0].name, 'Álvaro')
-        self.assertEqual(table[0].ids, '123')
+        self.assertEqual(table[0].name, "Álvaro")
+        self.assertEqual(table[0].ids, "123")
         self.assertEqual(table[0].number, 3)
         self.assertEqual(table[0].other, None)
-        self.assertEqual(table[1].name, 'Test')
-        self.assertEqual(table[1].ids, '456')
+        self.assertEqual(table[1].name, "Test")
+        self.assertEqual(table[1].ids, "456")
         self.assertEqual(table[1].number, None)
         self.assertEqual(table[1].other, None)
-        self.assertEqual(table[2].name, 'Python')
-        self.assertEqual(table[2].ids, '123, 456')
+        self.assertEqual(table[2].name, "Python")
+        self.assertEqual(table[2].ids, "123, 456")
         self.assertEqual(table[2].number, None)
         self.assertEqual(table[2].other, 3.14)
+
+    def test_import_from_dicts_accepts_generator(self):
+        max_size = 1000
+        samples = 200
+        generator = utils.LazyDictGenerator(max_size)
+        datagen = iter(generator)
+        table = rows.import_from_dicts(datagen, lazy=True, samples=samples)
+        # `create_table` will consume the whole generator
+        self.assertEqual(generator.last, max_size - 1)
+
+        data = list(table)
+        self.assertTrue(len(data), max_size)
+        self.assertEqual(generator.last, max_size - 1)
+
+    def test_import_from_dicts_maintains_header_order(self):
+        headers = list(string.ascii_lowercase)
+        random.shuffle(headers)
+
+        data = [
+            OrderedDict([(header, 1) for header in headers]),
+            OrderedDict([(header, 2) for header in headers]),
+            OrderedDict([(header, 3) for header in headers]),
+            OrderedDict([(header, 4) for header in headers]),
+            OrderedDict([(header, 5) for header in headers]),
+        ]
+        table = rows.import_from_dicts(data)
+        self.assertEqual(table.field_names, headers)
 
     def test_export_to_dicts(self):
         table = rows.import_from_dicts(self.data)
         result = rows.export_to_dicts(table)
         full_data = [
-                {'name': 'Álvaro',
-                 'ids': '123',
-                 'number': 3,
-                 'other': None, },
-                {'name': 'Test',
-                 'ids': '456',
-                 'number': None,
-                 'other': None, },
-                {'name': 'Python',
-                 'ids': '123, 456',
-                 'number': None,
-                 'other': 3.14, },]
+            {"name": "Álvaro", "ids": "123", "number": 3, "other": None},
+            {"name": "Test", "ids": "456", "number": None, "other": None},
+            {"name": "Python", "ids": "123, 456", "number": None, "other": 3.14},
+        ]
 
         self.assertEqual(len(result), len(table))
         for expected, actual in zip(full_data, result):
