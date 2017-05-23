@@ -134,6 +134,30 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[1].field1samefield, 'row2value1')
         self.assertEqual(table[1].field2other, 'row2value2')
 
+    def test_detect_weird_dialect(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        # If the sniffer reads only the first line, it will think the delimiter
+        # is ',' instead of ';'
+        encoding = 'utf-8'
+        data = BytesIO(textwrap.dedent('''
+            field1|field2|field3|field4
+            1|2|3|4
+            5|6|7|8
+            9|0|1|2
+            ''').strip().encode(encoding))
+
+        table = rows.import_from_csv(data, encoding=encoding, lazy=False)
+        self.assertEqual(table.field_names,
+                         ['field1', 'field2', 'field3', 'field4'])
+
+        expected = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 0, 1, 2]]
+        for expected_data, row in zip(expected, table):
+            row = [row.field1, row.field2, row.field3, row.field4]
+            self.assertEqual(expected_data, row)
+
     def test_detect_dialect_using_json(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
         filename = '{}.{}'.format(temp.name, self.file_extension)
