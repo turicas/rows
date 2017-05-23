@@ -49,8 +49,8 @@ elif six.PY3:
 
 
 def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
-                    sample_size=8192, *args, **kwargs):
-    '''Import data from a CSV file
+                    sample_size=262144, *args, **kwargs):
+    '''Import data from a CSV file (automatically detects dialect)
 
     If a file-like object is provided it MUST be in binary mode, like in
     `open(filename, mode='rb')`.
@@ -58,7 +58,6 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
 
-    # TODO: may use a bigger sample_size for detecting delimiter and dialect
     if dialect is None:
         cursor = fobj.tell()
         dialect = discover_dialect(fobj.read(sample_size), encoding)
