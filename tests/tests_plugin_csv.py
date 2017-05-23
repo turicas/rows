@@ -325,3 +325,30 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             [x[0][0] for x in myfunc.call_args_list],
             [3, 6, 9, 10]
         )
+
+    def test_import_from_csv_is_lazy(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+        encoding = 'utf-8'
+        number_of_rows = 1000
+
+        fobj = open(filename, mode='wb+')
+        fobj.write('field1,field2\r\n'.encode(encoding))
+        for index in range(number_of_rows):
+            row_data = ','.join([str(index), str(index ** 2)]) + '\r\n'
+            fobj.write(row_data.encode(encoding))
+        fobj.flush()
+        total_bytes = fobj.tell()
+
+        fobj.seek(0)
+        table = rows.import_from_csv(fobj,
+                                     encoding=encoding,
+                                     dialect=csv.excel,
+                                     samples=1,  # pre-read only the first row
+                                     lazy=True)
+        self.assertEqual(fobj.tell(), 20)  # 20 = len(1st line) + len(2nd line)
+
+        data = list(table)
+        self.assertEqual(len(data), number_of_rows)
+        self.assertEqual(fobj.tell(), total_bytes)
