@@ -99,6 +99,24 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_sqlite(temp.name)
         self.assert_table_equal(table, utils.table)
 
+    def test_import_from_sqlite_is_lazy(self): #, mocked_create_table):
+        connection = mock.MagicMock()
+        cursor = connection.cursor()
+        cursor.description = [('f1', None), ('f2', None), ('f3', None)]
+        gen = utils.LazyGenerator(max_number=1000)
+        igen = iter(gen)
+        next(igen)  # get header out -- does not happen on SQLite
+        cursor.__iter__.return_value = igen
+        cursor.fetchall = lambda: list(gen)
+
+        table = rows.import_from_sqlite(connection, lazy=True, samples=50)
+        self.assertIs(gen.last, 49)
+
+        for index, _ in enumerate(table):
+            if index == 99:
+                break
+        self.assertIs(gen.last, 99)
+
     def test_export_to_sqlite_connection(self):
         # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False, mode='wb')
@@ -122,9 +140,9 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.export_to_sqlite(second_table, temp.name)  # table2
 
         result_first_table = rows.import_from_sqlite(temp.name,
-                                                     table_name='table1')
+                table_name='table1')
         result_second_table = rows.import_from_sqlite(temp.name,
-                                                      table_name='table2')
+                table_name='table2')
         self.assert_table_equal(result_first_table, first_table)
         self.assert_table_equal(result_second_table, second_table)
 
