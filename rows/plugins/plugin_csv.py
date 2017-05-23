@@ -128,7 +128,6 @@ def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
     """
 
     # TODO: will work only if table.fields is OrderedDict
-    # TODO: should use fobj? What about creating a method like json.dumps?
 
     if filename_or_fobj is not None:
         _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
