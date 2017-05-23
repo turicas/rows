@@ -206,15 +206,15 @@ def create_table(data, meta=None, fields=None, skip_header=True,
 
 def prepare_to_export(table, export_fields=None, *args, **kwargs):
     # TODO: optimize for more used cases (export_fields=None)
+
+    # TODO: may create `BaseTable` and use `isinstance` instead
     table_type = type(table)
-    if table_type not in (FlexibleTable, Table):
+    if table_type not in (FlexibleTable, Table, LazyTable):
         raise ValueError('Table type not recognized')
 
-    if export_fields is None:
-        # we use already slugged-fieldnames
+    if export_fields is None:  # Table has slugged fieldnames already
         export_fields = table.field_names
-    else:
-        # we need to slug all the field names
+    else:  # Need to slug all the field names before exporting
         export_fields = make_header(export_fields)
 
     table_field_names = table.field_names
@@ -225,6 +225,7 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
 
     yield export_fields
 
+    # TODO: create a standard API on all `Table` classes
     if table_type is Table:
         field_indexes = list(map(table_field_names.index, export_fields))
         for row in table._rows:
@@ -232,6 +233,9 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
     elif table_type is FlexibleTable:
         for row in table._rows:
             yield [row[field_name] for field_name in export_fields]
+    elif table_type is LazyTable:
+        for row in table:
+            yield [getattr(row, field_name) for field_name in export_fields]
 
 
 def serialize(table, *args, **kwargs):
