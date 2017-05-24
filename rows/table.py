@@ -154,10 +154,10 @@ class Table(MutableSequence):
 
         if not isinstance(self, type(other)) or self.fields != other.fields:
             raise ValueError('Tables have incompatible fields')
-
-        table = Table(fields=self.fields)
-        table._rows = self._rows + other._rows
-        return table
+        else:
+            table = Table(fields=self.fields)
+            table._rows = self._rows + other._rows
+            return table
 
     def order_by(self, key):
         # TODO: implement locale
