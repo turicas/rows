@@ -42,6 +42,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
                       rows.plugins.plugin_json.import_from_json)
         self.assertIs(rows.export_to_json,
                       rows.plugins.plugin_json.export_to_json)
+        self.assertFalse(rows.import_from_json.is_lazy)
 
     @mock.patch('rows.plugins.plugin_json.create_table')
     def test_import_from_json_uses_create_table(self, mocked_create_table):

@@ -175,6 +175,9 @@ def import_from_txt(filename_or_fobj, encoding='utf-8',
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
+import_from_txt.is_lazy = False
+
+
 def export_to_txt(table, filename_or_fobj=None, encoding=None,
                   frame_style="ASCII", safe_none_frame=True, *args, **kwargs):
     """Export a `rows.Table` to text.

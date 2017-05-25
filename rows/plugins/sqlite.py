@@ -133,6 +133,9 @@ def import_from_sqlite(filename_or_connection, table_name='table1', query=None,
     return create_table(data, meta=meta, *args, **kwargs)
 
 
+import_from_sqlite.is_lazy = True
+
+
 def export_to_sqlite(table, filename_or_connection, table_name=None,
                      table_name_format='table{index}', batch_size=100,
                      callback=None, *args, **kwargs):

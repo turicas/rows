@@ -43,6 +43,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
                       rows.plugins.xlsx.import_from_xlsx)
         self.assertIs(rows.export_to_xlsx,
                       rows.plugins.xlsx.export_to_xlsx)
+        self.assertFalse(rows.import_from_xlsx.is_lazy)
 
     @mock.patch('rows.plugins.xlsx.create_table')
     def test_import_from_xlsx_uses_create_table(self, mocked_create_table):

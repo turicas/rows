@@ -52,6 +52,9 @@ def import_from_dicts(data, samples=None, *args, **kwargs):
     return create_table(chain([headers], data_rows), meta=meta, *args, **kwargs)
 
 
+import_from_dicts.is_lazy = False
+
+
 def export_to_dicts(table, *args, **kwargs):
     """Export a `rows.Table` to a list of dicts"""
     field_names = table.field_names

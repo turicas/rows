@@ -68,6 +68,7 @@ def import_from_xpath(filename_or_fobj, rows_xpath, fields_xpath,
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
     xml = fobj.read().decode(encoding)
+    # TODO: make it lazy (is it possible with lxml?)
     tree = tree_from_string(xml)
     row_elements = tree.xpath(rows_xpath)
 
@@ -79,3 +80,6 @@ def import_from_xpath(filename_or_fobj, rows_xpath, fields_xpath,
             'filename': filename,
             'encoding': encoding,}
     return create_table([header] + result_rows, meta=meta, *args, **kwargs)
+
+
+import_from_xpath.is_lazy = False

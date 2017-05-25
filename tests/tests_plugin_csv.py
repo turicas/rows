@@ -56,6 +56,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
                       rows.plugins.plugin_csv.import_from_csv)
         self.assertIs(rows.export_to_csv,
                       rows.plugins.plugin_csv.export_to_csv)
+        self.assertTrue(rows.import_from_csv.is_lazy)
 
     @mock.patch('rows.plugins.plugin_csv.create_table')
     def test_import_from_csv_uses_create_table(self, mocked_create_table):

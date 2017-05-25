@@ -97,6 +97,9 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
+import_from_html.is_lazy = False
+
+
 def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
                    **kwargs):
     """Export and return rows.Table data to HTML file."""
@@ -106,6 +109,7 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
     header = ['      <th> {} </th>\n'.format(field) for field in fields]
     result.extend(header)
     result.extend(['    </tr>\n', '  </thead>\n', '\n', '  <tbody>\n', '\n'])
+    # TODO: could be lazy so we don't need to store the whole table into memory
     for index, row in enumerate(serialized_table, start=1):
         css_class = 'odd' if index % 2 == 1 else 'even'
         result.append('    <tr class="{}">\n'.format(css_class))

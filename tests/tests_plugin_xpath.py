@@ -106,9 +106,9 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
         fields_xpath = OrderedDict([('name', './/text()'),
                                     ('link', './/a/@href')])
         table = rows.import_from_xpath(BytesIO(html),
+                                       encoding='utf-8',
                                        rows_xpath=rows_xpath,
-                                       fields_xpath=fields_xpath,
-                                       encoding='utf-8')
+                                       fields_xpath=fields_xpath)
         self.assertEqual(table[0].name, 'Abadia de Goiás (GO)')
         self.assertEqual(table[1].name, 'Abadiânia (GO)')
 

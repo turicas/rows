@@ -36,6 +36,7 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_imports(self):
         self.assertIs(rows.import_from_ods, rows.plugins.ods.import_from_ods)
+        self.assertFalse(rows.import_from_ods.is_lazy)
 
     @mock.patch('rows.plugins.ods.create_table')
     def test_import_from_ods_uses_create_table(self, mocked_create_table):

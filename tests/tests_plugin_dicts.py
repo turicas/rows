@@ -45,6 +45,7 @@ class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_imports(self):
         self.assertIs(rows.import_from_dicts, rows.plugins.dicts.import_from_dicts)
         self.assertIs(rows.export_to_dicts, rows.plugins.dicts.export_to_dicts)
+        self.assertTrue(rows.import_from_dicts.is_lazy)
 
     @mock.patch("rows.plugins.dicts.create_table")
     def test_import_from_dicts_uses_create_table(self, mocked_create_table):
