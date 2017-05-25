@@ -1,3 +1,6 @@
+envtest: clean
+	nosetests tests/
+
 test:
 	tox
 
@@ -8,6 +11,7 @@ clean:
 	rm -rf MANIFEST dist build *.egg-info
 	rm -rf rows.1
 	rm -rf .tox
+	coverage erase
 
 install:
 	make clean
