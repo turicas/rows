@@ -34,16 +34,22 @@ def import_from_txt(filename_or_fobj, encoding='utf-8', *args, **kwargs):
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
     contents = fobj.read().decode(encoding).strip().splitlines()
 
+    # TODO: make it lazy
+
     # remove '+----+----+' lines
     contents = contents[1:-1]
     del contents[1]
 
     table_rows = [[value.strip() for value in row.split(PIPE)[1:-1]]
                   for row in contents]
+
     meta = {'imported_from': 'txt',
             'filename': filename,
             'encoding': encoding,}
     return create_table(table_rows, meta=meta, *args, **kwargs)
+
+
+import_from_txt.is_lazy = False
 
 
 def export_to_txt(table, filename_or_fobj=None, encoding=None,
@@ -70,6 +76,7 @@ def export_to_txt(table, filename_or_fobj=None, encoding=None,
     split_line = PLUS + PLUS.join(dashes) + PLUS
 
     result = [split_line, header, split_line]
+    # TODO: make it lazy
     for row in table_rows:
         values = [value.rjust(max_sizes[field_name])
                   for field_name, value in zip(field_names, row)]

@@ -117,6 +117,9 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
     return create_table(reader, meta=meta, *args, **kwargs)
 
 
+import_from_csv.is_lazy = True
+
+
 def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
                   dialect=unicodecsv.excel, batch_size=100, *args, **kwargs):
     """Export a `rows.Table` to a CSV file

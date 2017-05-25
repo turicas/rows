@@ -48,6 +48,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
                       rows.plugins.sqlite.import_from_sqlite)
         self.assertIs(rows.export_to_sqlite,
                       rows.plugins.sqlite.export_to_sqlite)
+        self.assertTrue(rows.import_from_sqlite.is_lazy)
 
     @mock.patch('rows.plugins.sqlite.create_table')
     def test_import_from_sqlite_uses_create_table(self, mocked_create_table):

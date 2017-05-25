@@ -140,7 +140,10 @@ def get_row_data(full_field_names, field_names):
 def create_table(data, meta=None, fields=None, skip_header=True,
                  import_fields=None, samples=None, force_types=None,
                  lazy=False, *args, **kwargs):
+    # TODO: change samples to be a fixed number
+    # TODO: may change samples logic (`float('inf')` or `all`)
     # TODO: add auto_detect_types=True parameter
+
     table_rows = iter(data)
     sample_rows = []
 
@@ -161,6 +164,9 @@ def create_table(data, meta=None, fields=None, skip_header=True,
     else:
         if not isinstance(fields, OrderedDict):
             raise ValueError('`fields` must be an `OrderedDict`')
+
+        # TODO: if `fields` is set, we're going to have the wrong order,
+        # compared to the first row (header).
 
         if skip_header:
             next(table_rows)
@@ -186,6 +192,7 @@ def create_table(data, meta=None, fields=None, skip_header=True,
 
     if not lazy:
         table = Table(fields=fields, meta=meta)
+
         # TODO: put this inside Table.__init__
         for row in chain(sample_rows, table_rows):
             table.append({field_name: value

@@ -61,6 +61,7 @@ class PluginParquetTestCase(unittest.TestCase):
     def test_imports(self):
         self.assertIs(rows.import_from_parquet,
                       rows.plugins.plugin_parquet.import_from_parquet)
+        self.assertFalse(rows.import_from_parquet.is_lazy)
 
     @mock.patch('rows.plugins.plugin_parquet.create_table')
     def test_import_from_parquet_uses_create_table(self, mocked_create_table):

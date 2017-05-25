@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertIs(rows.import_from_html,
                       rows.plugins.plugin_html.import_from_html)
         self.assertIs(rows.export_to_html, rows.plugins.plugin_html.export_to_html)
+        self.assertFalse(rows.import_from_html.is_lazy)
 
     def test_import_from_html_filename(self):
         table = rows.import_from_html(self.filename, encoding=self.encoding)
@@ -87,7 +88,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call = mocked_create_table.call_args
         kwargs['meta'] = {'imported_from': 'html',
                           'filename': self.filename,
-                          'encoding': 'iso-8859-1',}
+                          'encoding': 'iso-8859-1', }
         self.assertEqual(call[1], kwargs)
 
     def test_export_to_html_filename(self):

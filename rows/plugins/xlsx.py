@@ -74,10 +74,14 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
                   for row_index in range(start_row, end_row + 1)]
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, dont_open=True)
+
     metadata = {'imported_from': 'xlsx',
                 'filename': filename,
                 'sheet_name': sheet_name, }
     return create_table(table_rows, meta=metadata, *args, **kwargs)
+
+
+import_from_xlsx.is_lazy = False
 
 
 FORMATTING_STYLES = {

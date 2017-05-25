@@ -52,8 +52,12 @@ def import_from_parquet(filename_or_fobj, *args, **kwargs):
                          for schema in parquet._read_footer(fobj).schema
                          if schema.type is not None])
     header = list(types.keys())
-    table_rows = list(parquet.reader(fobj))  # TODO: be lazy
+    # TODO: make it lazy
+    table_rows = list(parquet.reader(fobj))
 
     meta = {'imported_from': 'parquet', 'filename': filename,}
     return create_table([header] + table_rows, meta=meta, force_types=types,
                         *args, **kwargs)
+
+
+import_from_parquet.is_lazy = False

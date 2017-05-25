@@ -51,6 +51,9 @@ def import_from_dicts(data, samples=1000, *args, **kwargs):
             *args, **kwargs)
 
 
+import_from_dicts.is_lazy = True
+
+
 def export_to_dicts(table, *args, **kwargs):
     return [{key: getattr(row, key) for key in table.field_names}
             for row in table]
