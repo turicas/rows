@@ -37,6 +37,7 @@ else:
         magic = None
 
 import requests
+
 chardet = requests.compat.chardet
 try:
     import urllib3
@@ -53,40 +54,40 @@ import rows
 
 # TODO: should get this information from the plugins
 TEXT_PLAIN = {
-        'txt': 'text/txt',
-        'text': 'text/txt',
-        'csv': 'text/csv',
-        'json': 'application/json',
+    'txt': 'text/txt',
+    'text': 'text/txt',
+    'csv': 'text/csv',
+    'json': 'application/json',
 }
 OCTET_STREAM = {
-        'microsoft ooxml': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'par archive data': 'application/parquet',
+    'microsoft ooxml': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'par archive data': 'application/parquet',
 }
 FILE_EXTENSIONS = {
-        'csv': 'text/csv',
-        'db': 'application/x-sqlite3',
-        'htm': 'text/html',
-        'html': 'text/html',
-        'json': 'application/json',
-        'ods': 'application/vnd.oasis.opendocument.spreadsheet',
-        'parquet': 'application/parquet',
-        'sqlite': 'application/x-sqlite3',
-        'text': 'text/txt',
-        'tsv': 'text/csv',
-        'txt': 'text/txt',
-        'xls': 'application/vnd.ms-excel',
-        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'csv': 'text/csv',
+    'db': 'application/x-sqlite3',
+    'htm': 'text/html',
+    'html': 'text/html',
+    'json': 'application/json',
+    'ods': 'application/vnd.oasis.opendocument.spreadsheet',
+    'parquet': 'application/parquet',
+    'sqlite': 'application/x-sqlite3',
+    'text': 'text/txt',
+    'tsv': 'text/csv',
+    'txt': 'text/txt',
+    'xls': 'application/vnd.ms-excel',
+    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 }
 MIME_TYPE_TO_PLUGIN_NAME = {
-        'application/json': 'json',
-        'application/parquet': 'parquet',
-        'application/vnd.ms-excel': 'xls',
-        'application/vnd.oasis.opendocument.spreadsheet': 'ods',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
-        'application/x-sqlite3': 'sqlite',
-        'text/csv': 'csv',
-        'text/html': 'html',
-        'text/txt': 'txt',
+    'application/json': 'json',
+    'application/parquet': 'parquet',
+    'application/vnd.ms-excel': 'xls',
+    'application/vnd.oasis.opendocument.spreadsheet': 'ods',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'application/x-sqlite3': 'sqlite',
+    'text/csv': 'csv',
+    'text/html': 'html',
+    'text/txt': 'txt',
 }
 
 
@@ -103,8 +104,8 @@ class Source(object):
         self.encoding = encoding
 
     def __repr__(self):
-        return 'Source(plugin_name={}, uri={}, encoding={}, delete={})'\
-                .format(self.plugin_name, self.uri, self.encoding, self.delete)
+        return 'Source(plugin_name={}, uri={}, encoding={}, delete={})' \
+            .format(self.plugin_name, self.uri, self.encoding, self.delete)
 
 
 def plugin_name_by_uri(uri):
@@ -132,7 +133,6 @@ def extension_by_plugin_name(plugin_name):
 
 
 def normalize_mime_type(mime_type, mime_name, file_extension):
-
     file_extension = file_extension.lower() if file_extension else ''
     mime_name = mime_name.lower() if mime_name else ''
     mime_type = mime_type.lower() if mime_type else ''
@@ -154,12 +154,11 @@ def plugin_name_by_mime_type(mime_type, mime_name, file_extension):
     'Return the plugin name based on the MIME type'
 
     return MIME_TYPE_TO_PLUGIN_NAME.get(
-            normalize_mime_type(mime_type, mime_name, file_extension),
-            None)
+        normalize_mime_type(mime_type, mime_name, file_extension),
+        None)
 
 
 def detect_local_source(path, content, mime_type=None, encoding=None):
-
     # TODO: may add sample_size
 
     filename = os.path.basename(path)
@@ -187,7 +186,6 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
 
 
 def local_file(path, sample_size=1048576):
-
     # TODO: may change sample_size
     with open(path, 'rb') as fobj:
         content = fobj.read(sample_size)
@@ -201,7 +199,6 @@ def local_file(path, sample_size=1048576):
 
 
 def download_file(uri, verify_ssl=True, timeout=5):
-
     response = requests.get(uri, verify=verify_ssl, timeout=timeout)
     content = response.content
 

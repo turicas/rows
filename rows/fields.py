@@ -23,13 +23,11 @@ import datetime
 import json
 import locale
 import re
-import types
 
 from base64 import b64decode, b64encode
 from decimal import Decimal, InvalidOperation
 
 import six
-
 
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
@@ -48,7 +46,7 @@ class Field(object):
     actually implements what is expected in the BinaryField
     """
 
-    TYPE = (type(None), )
+    TYPE = (type(None),)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -84,7 +82,7 @@ class BinaryField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (six.binary_type, )
+    TYPE = (six.binary_type,)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -122,7 +120,7 @@ class BoolField(Field):
     attributes like `TRUE_VALUES` and `FALSE_VALUES`)
     """
 
-    TYPE = (bool, )
+    TYPE = (bool,)
     SERIALIZED_VALUES = {True: 'true', False: 'false', None: ''}
     TRUE_VALUES = ('true', 'yes')
     FALSE_VALUES = ('false', 'no')
@@ -153,7 +151,7 @@ class IntegerField(Field):
     Is locale-aware
     """
 
-    TYPE = (int, )
+    TYPE = (int,)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -180,7 +178,7 @@ class IntegerField(Field):
 
         value = as_string(value)
         return int(value) if SHOULD_NOT_USE_LOCALE \
-                          else locale.atoi(value)
+            else locale.atoi(value)
 
 
 class FloatField(Field):
@@ -189,7 +187,7 @@ class FloatField(Field):
     Is locale-aware
     """
 
-    TYPE = (float, )
+    TYPE = (float,)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -221,7 +219,7 @@ class DecimalField(Field):
     Is locale-aware
     """
 
-    TYPE = (Decimal, )
+    TYPE = (Decimal,)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -319,7 +317,7 @@ class DateField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (datetime.date, )
+    TYPE = (datetime.date,)
     INPUT_FORMAT = '%Y-%m-%d'
     OUTPUT_FORMAT = '%Y-%m-%d'
 
@@ -348,7 +346,7 @@ class DatetimeField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (datetime.datetime, )
+    TYPE = (datetime.datetime,)
     DATETIME_REGEXP = re.compile('^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]'
                                  '([0-9]{2}):([0-9]{2}):([0-9]{2})$')
 
@@ -380,7 +378,7 @@ class TextField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (six.text_type, )
+    TYPE = (six.text_type,)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -502,7 +500,7 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
         if not data:
             # all values with an empty field (can't identify) -> BinaryField
             identified_type = BinaryField
-        elif native_types == set([six.binary_type]):
+        elif native_types == {six.binary_type}:
             identified_type = BinaryField
         else:
             # ok, let's try to identify the type of this column by

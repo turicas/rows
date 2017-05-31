@@ -25,7 +25,6 @@ from rows.operations import join, transform, transpose
 from rows.table import Table, FlexibleTable
 from rows.localization import locale_context
 
-
 # Don't have dependencies or dependencies installed on `install_requires`
 
 import_from_json = plugins.json.import_from_json
@@ -66,6 +65,5 @@ if plugins.xlsx:
 
 if plugins.parquet:
     import_from_parquet = plugins.parquet.import_from_parquet
-
 
 __version__ = '0.3.2dev0'
