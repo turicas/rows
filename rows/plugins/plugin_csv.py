@@ -23,7 +23,8 @@ import six
 
 import unicodecsv
 
-from rows.plugins.utils import create_table, get_filename_and_fobj, serialize
+from rows.plugins.utils import (create_table, get_filename_and_fobj,
+                                ipartition, serialize)
 
 
 sniffer = unicodecsv.Sniffer()
@@ -72,7 +73,7 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
 
 
 def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
-                  dialect=unicodecsv.excel, *args, **kwargs):
+                  dialect=unicodecsv.excel, batch_size=100, *args, **kwargs):
     '''Export a `rows.Table` to a CSV file
 
     If a file-like object is provided it MUST be in binary mode, like in
@@ -88,9 +89,13 @@ def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
     else:
         fobj = BytesIO()
 
+    # TODO: may use `io.BufferedWriter` instead of `ipartition` so user can
+    # choose the real size (in Bytes) when to flush to the file system, instead
+    # number of rows
     writer = unicodecsv.writer(fobj, encoding=encoding, dialect=dialect)
-    for row in serialize(table, *args, **kwargs):
-        writer.writerow(row)
+    for batch in ipartition(serialize(table, *args, **kwargs), batch_size):
+        # TODO: may add some callback here
+        writer.writerows(batch)
 
     if filename_or_fobj is not None:
         fobj.flush()
