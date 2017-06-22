@@ -377,3 +377,16 @@ class TestFlexibleTable(unittest.TestCase):
         with self.assertRaises(ValueError) as context_manager:
             self.table[[1]]
         self.assertEqual(type(context_manager.exception), ValueError)
+
+    def test_table_iadd(self):
+        table = rows.Table(fields={'f1': rows.fields.IntegerField,
+                                   'f2': rows.fields.FloatField})
+        table.append({'f1': 1, 'f2': 2})
+        table.append({'f1': 3, 'f2': 4})
+
+        self.assertEqual(len(table), 2)
+        table += table
+        self.assertEqual(len(table), 4)
+        data_rows = list(table)
+        self.assertEqual(data_rows[0], data_rows[2])
+        self.assertEqual(data_rows[1], data_rows[3])

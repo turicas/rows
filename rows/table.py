@@ -147,7 +147,9 @@ class Table(MutableSequence):
             return self
         raise ValueError()
 
-    # TODO: fix "table += other"
+    def __iadd__(self, other):
+        return self + other
+
     def __add__(self, other):
         if other == 0:
             return self
