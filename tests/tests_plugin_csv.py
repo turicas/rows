@@ -99,6 +99,25 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call_args = mocked_create_table.call_args_list[0]
         self.assertEqual(data, list(call_args[0][0]))
 
+    def test_import_from_csv_discover_dialect_decode_error(self):
+
+        # Create a 1024-bytes line (if encoded to ASCII, UTF-8 etc.)
+        line = '"' + ('a' * 508) + '", "' + ('b' * 508) + '"\r\n'
+        lines = 256 * line  # 256KiB
+
+        # Now change the last byte (in the 256KiB sample) to have half of a
+        # character representation (when encoded to UTF-8)
+        data = lines[:-3] + '++Á"\r\n'
+        data = data.encode('utf-8')
+
+        # Should not raise `UnicodeDecodeError`
+        table = rows.import_from_csv(BytesIO(data), encoding='utf-8',
+                sample_size=262144)
+
+        last_row = table[-1]
+        last_column = 'b' * 508
+        self.assertEqual(getattr(last_row, last_column), 'b' * 508 + '++Á')
+
     @mock.patch('rows.plugins.plugin_csv.create_table')
     def test_import_from_csv_force_dialect(self, mocked_create_table):
         data, lines = make_csv_data(quote_char="'",
