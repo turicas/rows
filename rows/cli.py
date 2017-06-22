@@ -379,27 +379,30 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
             if input_locale is not None:
                 with rows.locale_context(input_locale):
                     table = import_from_source(source, DEFAULT_INPUT_ENCODING,
-                            samples=samples)
+                            lazy=True, samples=samples)
             else:
                 table = import_from_source(source, DEFAULT_INPUT_ENCODING,
-                        samples=samples)
+                        lazy=True, samples=samples)
 
             sqlite_connection = sqlite3.Connection(':memory:')
             rows.export_to_sqlite(table,
                                   sqlite_connection,
                                   table_name='table1')
-            result = rows.import_from_sqlite(sqlite_connection, query=query)
+            result = rows.import_from_sqlite(sqlite_connection, query=query,
+                    lazy=True, samples=samples)
 
     else:
         # TODO: if all sources are SQLite we can also optimize the import
         if input_locale is not None:
             with rows.locale_context(input_locale):
                 tables = [_import_table(source, encoding=input_encoding,
-                                        verify_ssl=verify_ssl, samples=samples)
+                                        verify_ssl=verify_ssl, lazy=True,
+                                        samples=samples)
                           for source in sources]
         else:
             tables = [_import_table(source, encoding=input_encoding,
-                                    verify_ssl=verify_ssl, samples=samples)
+                                    verify_ssl=verify_ssl, lazy=True,
+                                    samples=samples)
                       for source in sources]
 
         sqlite_connection = sqlite3.Connection(':memory:')
@@ -408,7 +411,8 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
                                   sqlite_connection,
                                   table_name='table{}'.format(index))
 
-        result = rows.import_from_sqlite(sqlite_connection, query=query)
+        result = rows.import_from_sqlite(sqlite_connection, query=query,
+                lazy=True, samples=samples)
 
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or sys.stdout.encoding or \
