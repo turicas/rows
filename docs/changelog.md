@@ -7,6 +7,8 @@
 ### Enhancements
 
 - Added official Python 3.6 support
+- Implemented `Table.__iadd__` (`table += other` will work)
+- `Table.__add__` test is deterministic now
 
 ### Bug Fixes
 
