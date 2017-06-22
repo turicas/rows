@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -73,6 +73,24 @@ def _get_field_names(field_names, table_field_names, permit_not=False):
     else:
         return new_field_names
 
+def _get_import_fields(fields, fields_exclude):
+    if fields is not None and fields_exclude is not None:
+        click.echo('ERROR: `--fields` cannot be used with `--fields-exclude`',
+                   err=True)
+        sys.exit(20)
+    elif fields is not None:
+        return make_header(fields.split(','), permit_not=False)
+    else:
+        return None
+
+def _get_export_fields(table_field_names, fields_exclude):
+    if fields_exclude is not None:
+        fields_exclude = _get_field_names(fields_exclude, table_field_names)
+        return [field_name for field_name in table_field_names
+                if field_name not in fields_exclude]
+    else:
+        return None
+
 
 @click.group()
 @click.version_option(version=rows.__version__, prog_name='rows')
@@ -87,21 +105,25 @@ def cli():
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--order-by')
+@click.option('--fields',
+              help='A comma-separated list of fields to import')
+@click.option('--fields-exclude',
+              help='A comma-separated list of fields to exclude')
 @click.argument('source')
 @click.argument('destination')
 def convert(input_encoding, output_encoding, input_locale, output_locale,
-            verify_ssl, order_by, source, destination):
+            verify_ssl, order_by, fields, fields_exclude, source, destination):
 
-    # TODO: may use sys.stdout.encoding if output_file = '-'
-    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
-
+    import_fields = _get_import_fields(fields, fields_exclude)
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = _import_table(source, encoding=input_encoding,
-                                  verify_ssl=verify_ssl)
+                                  verify_ssl=verify_ssl,
+                                  import_fields=import_fields)
     else:
         table = _import_table(source, encoding=input_encoding,
-                              verify_ssl=verify_ssl)
+                              verify_ssl=verify_ssl,
+                              import_fields=import_fields)
 
     if order_by is not None:
         order_by = _get_field_names(order_by,
@@ -110,11 +132,16 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
         # TODO: use complete list of `order_by` fields
         table.order_by(order_by[0].replace('^', '-'))
 
+    export_fields = _get_export_fields(table.field_names, fields_exclude)
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
     if output_locale is not None:
         with rows.locale_context(output_locale):
-            export_to_uri(table, destination, encoding=output_encoding)
+            export_to_uri(table, destination, encoding=output_encoding,
+                          export_fields=export_fields)
     else:
-        export_to_uri(table, destination, encoding=output_encoding)
+        export_to_uri(table, destination, encoding=output_encoding,
+                      export_fields=export_fields)
 
 
 @cli.command(help='Join tables from `source` URIs using `key(s)` to group '
