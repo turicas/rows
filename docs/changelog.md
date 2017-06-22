@@ -1,8 +1,13 @@
 # rows' Log of Changes
 
-## Version `0.3.2`
+## Version `0.4.0`
 
 **Released on: (under development)**
+
+### Enhancements
+
+- Implemented `Table.__iadd__` (`table += other` will work)
+- `Table.__add__` test is deterministic now
 
 
 ## Version `0.3.1`
