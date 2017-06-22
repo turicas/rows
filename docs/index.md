@@ -11,6 +11,9 @@ format your customer just sent? You've got gray hair when trying to access
 some data and the only answer was `UnicodeDecodeError`? So,
 [rows][rows] was custom made for you - run `pip install rows` and be happy! :-)
 
+The library is officialy supported on Python versions 2.7, 3.5 and 3.6 (but may
+work on other versions too).
+
 > Note: if you're using [rows][rows] in some project please [tell
 > us][rows-issue-103]! :-)
 
