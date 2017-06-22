@@ -1,8 +1,16 @@
 # rows' Log of Changes
 
-## Version `0.3.2`
+## Version `0.4.0`
 
 **Released on: (under development)**
+
+### Enhancements
+
+- Added official Python 3.6 support
+
+### Bug Fixes
+
+- ...
 
 
 ## Version `0.3.1`
