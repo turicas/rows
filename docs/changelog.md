@@ -4,15 +4,20 @@
 
 **Released on: (under development)**
 
-### Enhancements
+### New Features and Enhancaments
 
 - Added official Python 3.6 support
 - Implemented `Table.__iadd__` (`table += other` will work)
 - `Table.__add__` test is deterministic now
+- [#224](https://github.com/turicas/rows/issues/224) Add `|` as possible
+  delimiter (CSV dialect detection)
+- Export CSV in batches
+- Change CSV dialect detection sample size to 256KiB
 
 ### Bug Fixes
 
-- ...
+- [#223](https://github.com/turicas/rows/issues/223) `UnicodeDecodeError` on
+  dialect detection
 
 
 ## Version `0.3.1`
