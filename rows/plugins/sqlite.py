@@ -125,7 +125,7 @@ def import_from_sqlite(filename_or_connection, table_name='table1', query=None,
 
 def export_to_sqlite(table, filename_or_connection, table_name=None,
                      table_name_format='table{index}', batch_size=100,
-                     *args, **kwargs):
+                     callback=None, *args, **kwargs):
     # TODO: should add transaction support?
 
     prepared_table = prepare_to_export(table, *args, **kwargs)
@@ -155,8 +155,17 @@ def export_to_sqlite(table, filename_or_connection, table_name=None,
             field_names=', '.join(field_names),
             placeholders=', '.join('?' for _ in field_names))
     _convert_row = _python_to_sqlite(field_types)
-    for batch in ipartition(prepared_table, batch_size):
-        cursor.executemany(insert_sql, map(_convert_row, batch))
+
+    if callback is None:
+        for batch in ipartition(prepared_table, batch_size):
+            cursor.executemany(insert_sql, map(_convert_row, batch))
+
+    else:
+        total = 0
+        for batch in ipartition(prepared_table, batch_size):
+            cursor.executemany(insert_sql, map(_convert_row, batch))
+            total += len(batch)
+            callback(total)
 
     connection.commit()
     return connection
