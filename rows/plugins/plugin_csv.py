@@ -49,7 +49,7 @@ elif six.PY3:
 
 
 def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
-                    sample_size=8192, *args, **kwargs):
+                    sample_size=8192, fmtparams=None, *args, **kwargs):
     '''Import data from a CSV file
 
     If a file-like object is provided it MUST be in binary mode, like in
@@ -63,7 +63,8 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
         dialect = discover_dialect(fobj.read(sample_size), encoding)
         fobj.seek(cursor)
 
-    reader = unicodecsv.reader(fobj, encoding=encoding, dialect=dialect)
+    fmtparams = fmtparams or {}
+    reader = unicodecsv.reader(fobj, encoding=encoding, dialect=dialect, **fmtparams)
 
     meta = {'imported_from': 'csv',
             'filename': filename,

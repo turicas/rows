@@ -112,6 +112,23 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call_args = mocked_create_table.call_args_list[0]
         self.assertEqual(data, list(call_args[0][0]))
 
+    @mock.patch('rows.plugins.plugin_csv.create_table', mock.Mock())
+    @mock.patch('rows.plugins.plugin_csv.unicodecsv')
+    @mock.patch('rows.plugins.plugin_csv.get_filename_and_fobj', mock.Mock(return_value=('f_name', 'f_obj')))
+    def test_import_from_csv_forcing_fmtparams(self, mocked_unicodecsv):
+        data, lines = make_csv_data(quote_char="'",
+                                    field_delimiter=";",
+                                    line_delimiter="\r\n")
+        fobj = BytesIO()
+        fobj.write(lines.encode('utf-8'))
+        fobj.seek(0)
+
+        rows.import_from_csv(fobj, dialect='excel', fmtparams={'delimiter': ';'})
+
+        mocked_unicodecsv.assert_called_once_with(
+            'f_obj', encoding='utf-8', dialect='excel', delimiter=';'
+        )
+
     def test_detect_dialect_more_data(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
         filename = '{}.{}'.format(temp.name, self.file_extension)
