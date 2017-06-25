@@ -56,9 +56,20 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
     `open(filename, mode='rb')`.
     '''
 
+    error_msg = '''Error importing from CSV. Details:
+    Filename: {filename}
+    File object: {fobj}
+    Dialect (guessed?): {dialect} ({guessed})
+    Encoding: {encoding}
+    Sample size: {sample_size} bytes
+    Reason: {exc}
+    '''
+
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
 
+    guessed = False
     if dialect is None:
+        guessed = True
         cursor = fobj.tell()
         dialect = discover_dialect(fobj.read(sample_size), encoding)
         fobj.seek(cursor)
@@ -68,7 +79,26 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
     meta = {'imported_from': 'csv',
             'filename': filename,
             'encoding': encoding,}
-    return create_table(reader, meta=meta, *args, **kwargs)
+    try:
+        try:
+            table = create_table(reader, meta=meta, *args, **kwargs)
+        except ValueError as e:
+            if guessed:
+                dialect = unicodecsv.excel
+                fobj.seek(cursor)
+                reader = unicodecsv.reader(fobj, encoding=encoding,
+                                           dialect=dialect)
+                table = create_table(reader, meta=meta, *args, **kwargs)
+            else:
+                raise
+    except Exception as e:
+        name = 'Excel' if dialect is unicodecsv.excel else dialect._name
+        error = error_msg.format(filename=filename, fobj=fobj,
+                                 dialect=name, guessed=guessed, encoding=encoding,
+                                 sample_size=sample_size, exc=e)
+        raise unicodecsv.Error(error) from e
+
+    return table
 
 
 def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
