@@ -17,8 +17,12 @@
 
 from __future__ import unicode_literals
 
+import gzip
+import lzma
+import os
 import tempfile
 import unittest
+import zipfile
 
 import rows.utils
 
@@ -71,3 +75,57 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 # TODO: test normalize_mime_type
 # TODO: test plugin_name_by_mime_type
 # TODO: test plugin_name_by_uri
+
+
+class UtilsDecompressTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.contents = 'Ahoy'
+        self.temp = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_decompress_with_gz(self):
+        compressed = os.path.join(self.tmp.name, 'test.gz')
+        with gzip.open(compressed) as compressed_handler:
+            compressed_handler.write(self.contents)
+        decompressed = rows.utils.decompress(compressed)
+        self.assertEqual(self.contents, decompressed.read())
+
+    def test_decompress_with_lzma(self):
+        compressed = os.path.join(self.tmp.name, 'test.lzma')
+        with lzma.open(compressed) as compressed_handler:
+            compressed_handler.write(self.contents)
+        decompressed = rows.utils.decompress(compressed)
+        self.assertEqual(self.contents, decompressed.read())
+
+    def test_decompress_with_xz(self):
+        compressed = os.path.join(self.tmp.name, 'test.gz')
+        with lzma.open(compressed) as compressed_handler:
+            compressed_handler.write(self.contents)
+        decompressed = rows.utils.decompress(compressed)
+        self.assertEqual(self.contents, decompressed.read())
+
+    def test_decompress_with_zip(self):
+        uncompressed = os.path.join(self.tmp.name, 'test.csv')
+        uncompressed_archived_path = os.path.join('test', 'test.csv')
+        compressed = os.path.join(self.tmp.name, 'test.zip')
+
+        with open(uncompressed, 'w') as uncompressed_handler:
+            uncopressed_handler.write(self.contents)
+
+        with zipfile.ZipFile(compressed, mode='w') as handler:
+            handler.write(uncompressed, arcname=uncompressed_archived_path)
+
+        decompressed = rows.utils.decompress(compressed,
+                                             inner=uncompressed_archived_path)
+        self.assertEqual(self.contents, decompressed.read())
+
+    @unittest.skip('TODO')
+    def test_decompress_with_zip_without_inner(self):
+        pass
+
+    @unittest.skip('TODO')
+    def test_decompress_with_incompatible_file(self):
+        pass

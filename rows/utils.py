@@ -297,3 +297,8 @@ def export_to_uri(table, uri, *args, **kwargs):
         raise ValueError('Plugin (export) "{}" not found'.format(plugin_name))
 
     return export_function(table, uri, *args, **kwargs)
+
+
+def decompress(path, **kwargs):
+    'Given a zip, gzip or lzma file returns a decompressed file object'
+    pass  # TODO
