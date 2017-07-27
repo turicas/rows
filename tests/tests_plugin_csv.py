@@ -112,6 +112,20 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call_args = mocked_create_table.call_args_list[0]
         self.assertEqual(data, list(call_args[0][0]))
 
+    @mock.patch('rows.plugins.plugin_csv.create_table')
+    def test_import_from_csv_implements_full_reader_signature(self, mocked_create_table):
+        data, lines = make_csv_data(quote_char='"',
+                                    field_delimiter="\t",
+                                    line_delimiter="\n")
+        fobj = BytesIO()
+        fobj.write(lines.encode('utf-8'))
+        fobj.seek(0)
+
+        rows.import_from_csv(fobj, doublequote=True, delimiter='\t', lineterminator='\n')
+        call_args = mocked_create_table.call_args_list[0]
+        self.assertEqual(data, list(call_args[0][0]))
+
+
     def test_detect_dialect_more_data(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
         filename = '{}.{}'.format(temp.name, self.file_extension)
@@ -250,3 +264,4 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result_1 = rows.export_to_csv(utils.table, dialect=csv.excel_tab)
         result_2 = rows.export_to_csv(utils.table, dialect=csv.excel)
         self.assertEqual(result_1.replace(b'\t', b','), result_2)
+
