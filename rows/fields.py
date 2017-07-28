@@ -63,7 +63,7 @@ class Field(object):
         return value
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         """Deserialize a value just after importing it
 
         `cls.deserialize` should always return a value of type `cls.TYPE` or
@@ -100,7 +100,7 @@ class BinaryField(Field):
             return ''
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         if value is not None:
             if isinstance(value, six.binary_type):
                 return value
@@ -133,7 +133,7 @@ class BoolField(Field):
         return cls.SERIALIZED_VALUES[value]
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         value = super(BoolField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
@@ -167,7 +167,7 @@ class IntegerField(Field):
             return locale.format('%d', value, grouping=grouping)
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         value = super(IntegerField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
@@ -203,7 +203,7 @@ class FloatField(Field):
             return locale.format('%f', value, grouping=grouping)
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         value = super(FloatField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
@@ -242,7 +242,7 @@ class DecimalField(Field):
             return locale.format(string_format, value, grouping=grouping)
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         value = super(DecimalField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
@@ -300,7 +300,7 @@ class PercentField(DecimalField):
         return '{}%'.format(value)
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         if isinstance(value, cls.TYPE):
             return value
         elif is_null(value):
@@ -331,7 +331,7 @@ class DateField(Field):
         return six.text_type(value.strftime(cls.OUTPUT_FORMAT))
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         value = super(DateField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
@@ -360,7 +360,7 @@ class DatetimeField(Field):
         return six.text_type(value.isoformat())
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         value = super(DatetimeField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
@@ -383,7 +383,7 @@ class TextField(Field):
     TYPE = (six.text_type, )
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         if value is None or isinstance(value, cls.TYPE):
             return value
         else:
@@ -407,7 +407,7 @@ class EmailField(TextField):
         return six.text_type(value)
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         value = super(EmailField, cls).deserialize(value)
         if value is None or not value.strip():
             return None
@@ -432,7 +432,7 @@ class JSONField(Field):
         return json.dumps(value)
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value):
         if value is None or isinstance(value, cls.TYPE):
             return value
         else:
@@ -472,8 +472,7 @@ def unique_values(values):
     return result
 
 
-def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
-                 *args, **kwargs):
+def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES):
     """Where the magic happens"""
 
     # TODO: look strategy of csv.Sniffer.has_header
@@ -512,7 +511,7 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
                 cant_be = set()
                 for type_ in possible_types:
                     try:
-                        type_.deserialize(value, *args, **kwargs)
+                        type_.deserialize(value)
                     except (ValueError, TypeError):
                         cant_be.add(type_)
                 for type_to_remove in cant_be:

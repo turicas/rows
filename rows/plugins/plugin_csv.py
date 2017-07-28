@@ -47,6 +47,8 @@ elif six.PY3:
             # Could not detect dialect, fall back to 'excel'
             return unicodecsv.excel
 
+def _pop_dialect_params(params, dialect, parameter):
+        return params.pop(parameter, getattr(dialect, parameter))
 
 def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
                     sample_size=8192, *args, **kwargs):
@@ -58,12 +60,28 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
 
+
     if dialect is None:
         cursor = fobj.tell()
         dialect = discover_dialect(fobj.read(sample_size), encoding)
         fobj.seek(cursor)
+    else:
+        dialect = unicodecsv.get_dialect(dialect)
 
-    reader = unicodecsv.reader(fobj, encoding=encoding, dialect=dialect)
+    reader_kwargs = {
+        'doublequote': _pop_dialect_params(kwargs, dialect, 'doublequote'),
+        'lineterminator': _pop_dialect_params(kwargs, dialect,
+            'lineterminator'),
+        'skipinitialspace': _pop_dialect_params(kwargs, dialect,
+            'skipinitialspace'),
+        'escapechar': _pop_dialect_params(kwargs, dialect, 'escapechar'),
+        'delimiter': _pop_dialect_params(kwargs, dialect, 'delimiter'),
+        'quotechar': _pop_dialect_params(kwargs, dialect, 'quotechar'),
+        'quoting': _pop_dialect_params(kwargs, dialect, 'quoting'),
+        'strict': kwargs.get('strict', False)}
+
+    reader = unicodecsv.reader(
+        fobj, encoding=encoding, dialect=dialect, **reader_kwargs)
 
     meta = {'imported_from': 'csv',
             'filename': filename,
