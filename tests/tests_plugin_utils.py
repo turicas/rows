@@ -94,6 +94,34 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(dict(table_2[1]._asdict()), second_row)
         self.assertEqual(dict(table_2[2]._asdict()), third_row)
 
+    def test_create_table_fields_ordering(self):
+        # From: https://github.com/turicas/rows/issues/239
+
+        data = [
+                ['field1', 'field2'],
+                [1, 2],
+                [3, 4],
+                [5, 6]
+        ]
+        fields = OrderedDict([
+            ('field2', rows.fields.IntegerField),
+            ('field1', rows.fields.IntegerField),
+        ])
+
+        table = plugins_utils.create_table(data,
+                                           fields=fields,
+                                           skip_header=True)
+        self.assertEqual(table.fields, fields)
+        self.assertEqual(table[0].field1, 1)
+        self.assertEqual(table[0].field2, 2)
+        self.assertEqual(table[1].field1, 3)
+        self.assertEqual(table[1].field2, 4)
+        self.assertEqual(table[2].field1, 5)
+        self.assertEqual(table[2].field2, 6)
+
+        # TODO: test also passing import_fields
+        # TODO: test also passing skip_header=False
+
     def test_create_table_import_fields(self):
         header = ['field1', 'field2', 'field3']
         table_rows = [['1', 3.14, 'Álvaro'],
