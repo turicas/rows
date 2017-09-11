@@ -394,5 +394,40 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
             export_to_uri(result, output, encoding=output_encoding)
 
 
+@cli.command(name='schema', help='Identifies table schema')
+@click.option('--input-encoding')
+@click.option('--input-locale')
+@click.option('--verify-ssl', default=True, type=bool)
+@click.option('-f', '--format', 'output_format', default='txt',
+              type=click.Choice(('txt', 'sql',  'django')))
+@click.option('--fields',
+              help='A comma-separated list of fields to inspect')
+@click.option('--fields-exclude',
+              help='A comma-separated list of fields to exclude from inspection')
+@click.option('--samples', type=int, default=5000,
+              help='Number of rows to determine the field types (0 = all)')
+@click.argument('source', required=True)
+@click.argument('output', required=False, default='-')
+def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
+           fields_exclude, samples, source, output):
+
+    samples = samples if samples > 0 else None
+
+    source = detect_source(source, verify_ssl=verify_ssl)
+    if input_locale is not None:
+        with rows.locale_context(input_locale):
+            table = import_from_source(source, DEFAULT_INPUT_ENCODING,
+                                       samples=samples)
+    else:
+        table = import_from_source(source, DEFAULT_INPUT_ENCODING,
+                                   samples=samples)
+
+    if output in ('-', None):
+        output = sys.stdout
+    else:
+        output = open(output, mode='wb')
+    rows.fields.generate_schema(table, output_format, output)
+
+
 if __name__ == '__main__':
     cli()
