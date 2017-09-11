@@ -18,6 +18,7 @@
 
 - [#223](https://github.com/turicas/rows/issues/223) `UnicodeDecodeError` on
   dialect detection
+- [#214](https://github.com/turicas/rows/issues/214) Problem detecting dialect
 
 
 ## Version `0.3.1`

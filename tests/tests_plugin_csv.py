@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -21,9 +21,9 @@ import csv
 import tempfile
 import textwrap
 import unittest
-
 from collections import OrderedDict
 from io import BytesIO
+from textwrap import dedent
 
 import mock
 
@@ -117,6 +117,25 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         last_row = table[-1]
         last_column = 'b' * 508
         self.assertEqual(getattr(last_row, last_column), 'b' * 508 + '++Á')
+
+    def test_import_from_csv_impossible_dialect(self):
+        # Fix a bug from: https://github.com/turicas/rows/issues/214
+        # The following CSV will make the `csv`'s sniff to return an impossible
+        # dialect to be used (having doublequote = False and escapechar =
+        # None). See more at:
+        # https://docs.python.org/3/library/csv.html#csv.Dialect.doublequote
+
+        encoding = 'utf-8'
+        data = dedent('''
+        field1,field2
+        1,2
+        3,4
+        5,6
+        '''.strip()).encode(encoding)
+
+        dialect = rows.plugins.plugin_csv.discover_dialect(data, encoding)
+        self.assertIs(dialect.doublequote, True)
+        self.assertIs(dialect.escapechar, None)
 
     @mock.patch('rows.plugins.plugin_csv.create_table')
     def test_import_from_csv_force_dialect(self, mocked_create_table):

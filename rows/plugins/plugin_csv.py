@@ -39,10 +39,15 @@ if six.PY2:
         """
 
         try:
-            return sniffer.sniff(sample, delimiters=delimiters)
+            dialect = sniffer.sniff(sample, delimiters=delimiters)
 
         except unicodecsv.Error: # Couldn't detect: fall back to 'excel'
-            return unicodecsv.excel
+            dialect = unicodecsv.excel
+
+        if not dialect.doublequote and dialect.escapechar is None:
+            dialect.doublequote = True
+
+        return dialect
 
 elif six.PY3:
 
@@ -72,10 +77,15 @@ elif six.PY3:
                 finished = True
 
         try:
-            return sniffer.sniff(decoded, delimiters=delimiters)
+            dialect = sniffer.sniff(decoded, delimiters=delimiters)
 
         except unicodecsv.Error: # Couldn't detect: fall back to 'excel'
-            return unicodecsv.excel
+            dialect = unicodecsv.excel
+
+        if not dialect.doublequote and dialect.escapechar is None:
+            dialect.doublequote = True
+
+        return dialect
 
 
 def read_sample(fobj, sample):
