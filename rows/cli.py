@@ -22,7 +22,6 @@
 # TODO: add option to pass 'create_table' options in command-line (like force
 #       fields)
 
-import shlex
 import sqlite3
 import sys
 
@@ -36,7 +35,6 @@ import rows
 from rows.utils import (detect_source, export_to_uri, import_from_source,
                         import_from_uri)
 from rows.plugins.utils import make_header
-
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
 DEFAULT_OUTPUT_ENCODING = 'utf-8'
@@ -56,6 +54,7 @@ def _import_table(source, encoding, verify_ssl=True, *args, **kwargs):
         sys.exit(2)
     else:
         return table
+
 
 def _get_field_names(field_names, table_field_names, permit_not=False):
     new_field_names = make_header(field_names.split(','),
@@ -91,7 +90,6 @@ def cli():
 @click.argument('destination')
 def convert(input_encoding, output_encoding, input_locale, output_locale,
             verify_ssl, order_by, source, destination):
-
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
 
@@ -130,7 +128,6 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
 @click.argument('destination')
 def join(input_encoding, output_encoding, input_locale, output_locale,
          verify_ssl, order_by, keys, sources, destination):
-
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
     keys = [key.strip() for key in keys.split(',')]
@@ -139,7 +136,7 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
         with rows.locale_context(input_locale):
             tables = [_import_table(source, encoding=input_encoding,
                                     verify_ssl=verify_ssl)
-                     for source in sources]
+                      for source in sources]
     else:
         tables = [_import_table(source, encoding=input_encoding,
                                 verify_ssl=verify_ssl)
@@ -173,7 +170,6 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
 @click.argument('destination')
 def sum_(input_encoding, output_encoding, input_locale, output_locale,
          verify_ssl, order_by, sources, destination):
-
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
 
@@ -181,7 +177,7 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
         with rows.locale_context(input_locale):
             tables = [_import_table(source, encoding=input_encoding,
                                     verify_ssl=verify_ssl)
-                    for source in sources]
+                      for source in sources]
     else:
         tables = [_import_table(source, encoding=input_encoding,
                                 verify_ssl=verify_ssl)
@@ -216,14 +212,14 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 @click.argument('source', required=True)
 def print_(input_encoding, output_encoding, input_locale, output_locale,
            table_index, verify_ssl, fields, fields_except, order_by, source):
-
     if fields is not None and fields_except is not None:
         click.echo('ERROR: `--fields` cannot be used with `--fields-except`',
                    err=True)
         sys.exit(20)
 
-    output_encoding = output_encoding or sys.stdout.encoding or \
-                      DEFAULT_OUTPUT_ENCODING
+    output_encoding = (
+        output_encoding or sys.stdout.encoding or DEFAULT_OUTPUT_ENCODING
+    )
 
     # TODO: may use `import_fields` for better performance
     if input_locale is not None:
@@ -290,7 +286,6 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
 @click.argument('sources', nargs=-1, required=True)
 def query(input_encoding, output_encoding, input_locale, output_locale,
           verify_ssl, fields, output, query, sources):
-
     # TODO: may use sys.stdout.encoding if output_file = '-'
     output_encoding = output_encoding or sys.stdout.encoding or \
                       DEFAULT_OUTPUT_ENCODING

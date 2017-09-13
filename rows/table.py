@@ -26,7 +26,6 @@ from rows.fields import identify_type
 
 
 class Table(MutableSequence):
-
     def __init__(self, fields, meta=None):
         # TODO: should we really use OrderedDict here?
         # TODO: should use slug on each field name automatically or inside each
@@ -87,7 +86,7 @@ class Table(MutableSequence):
             return [row[field_index] for row in self._rows]
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def __setitem__(self, key, value):
         key_type = type(key)
@@ -106,7 +105,7 @@ class Table(MutableSequence):
             field_name = slug(key)
             is_new_field = field_name not in self.field_names
             field_type = detect_types([field_name],
-                    [[value] for value in values])[field_name]
+                                      [[value] for value in values])[field_name]
             self.fields[field_name] = field_type
             self.Row = namedtuple('Row', self.field_names)
 
@@ -119,7 +118,7 @@ class Table(MutableSequence):
                     row[field_index] = field_type.deserialize(value)
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def __delitem__(self, key):
         key_type = type(key)
@@ -137,7 +136,7 @@ class Table(MutableSequence):
                 row.pop(field_index)
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def insert(self, index, row):
         self._rows.insert(index, self._make_row(row))
@@ -178,7 +177,6 @@ class Table(MutableSequence):
 
 
 class FlexibleTable(Table):
-
     def __init__(self, fields=None, meta=None):
         if fields is None:
             fields = {}
@@ -191,7 +189,7 @@ class FlexibleTable(Table):
             return [self.Row(**row) for row in self._rows[key]]
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def _add_field(self, field_name, field_type):
         self.fields[field_name] = field_type

@@ -12,7 +12,6 @@ import rows.fields
 
 @contextlib.contextmanager
 def locale_context(name, category=locale.LC_ALL):
-
     old_name = locale.getlocale()
     if None not in old_name:
         old_name = '.'.join(old_name)

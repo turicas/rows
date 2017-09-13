@@ -17,8 +17,7 @@
 
 from __future__ import unicode_literals
 
-from setuptools import setup
-
+from setuptools import setup, find_packages
 
 EXTRA_REQUIREMENTS = {
     'csv': ['unicodecsv'],
@@ -42,7 +41,6 @@ locale-and-unicode aware. :)
 Read the documentation and learn how simple is to use it: http://turicas.info/rows
 '''.strip()
 
-
 setup(name='rows',
       description=('A common, beautiful interface to tabular data, '
                    'no matter the format'),
@@ -51,7 +49,8 @@ setup(name='rows',
       author='Álvaro Justen',
       author_email='alvarojusten@gmail.com',
       url='https://github.com/turicas/rows/',
-      packages=['rows', 'rows.plugins'],
+      packages=find_packages(
+          exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
       install_requires=INSTALL_REQUIREMENTS,
       extras_require=EXTRA_REQUIREMENTS,
       keywords='tabular table csv xls xlsx xpath ods sqlite html rows data opendata',
