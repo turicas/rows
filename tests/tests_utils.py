@@ -107,25 +107,6 @@ class UtilsDecompressTestCase(unittest.TestCase):
         decompressed = rows.utils.decompress(compressed)
         self.assertEqual(self.contents, decompressed.read())
 
-    def test_decompress_with_zip(self):
-        uncompressed = os.path.join(self.tmp.name, 'test.csv')
-        uncompressed_archived_path = os.path.join('test', 'test.csv')
-        compressed = os.path.join(self.tmp.name, 'test.zip')
-
-        with open(uncompressed, 'w') as uncompressed_handler:
-            uncopressed_handler.write(self.contents)
-
-        with zipfile.ZipFile(compressed, mode='w') as handler:
-            handler.write(uncompressed, arcname=uncompressed_archived_path)
-
-        decompressed = rows.utils.decompress(compressed,
-                                             inner=uncompressed_archived_path)
-        self.assertEqual(self.contents, decompressed.read())
-
-    @unittest.skip('TODO')
-    def test_decompress_with_zip_without_inner(self):
-        pass
-
     @unittest.skip('TODO')
     def test_decompress_with_incompatible_file(self):
         pass
