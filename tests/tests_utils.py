@@ -17,11 +17,11 @@
 
 from __future__ import unicode_literals
 
+import bz2
 import gzip
 import os
 import tempfile
 import unittest
-import zipfile
 
 try:
     import lzma
@@ -92,6 +92,13 @@ class UtilsDecompressTestCase(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def test_decompress_with_bz2(self):
+        compressed = os.path.join(self.tmp.name, 'test.bz2')
+        with bz2.open(compressed, mode='wb') as compressed_handler:
+            compressed_handler.write(self.contents)
+        decompressed = rows.utils.decompress(compressed)
+        self.assertEqual(self.contents, decompressed.read())
+
     def test_decompress_with_gz(self):
         compressed = os.path.join(self.tmp.name, 'test.gz')
         with gzip.open(compressed, mode='wb') as compressed_handler:
@@ -110,7 +117,7 @@ class UtilsDecompressTestCase(unittest.TestCase):
     @unittest.skipIf(not lzma, 'lzma module not available')
     def test_decompress_with_xz(self):
         compressed = os.path.join(self.tmp.name, 'test.gz')
-        with lzma.open(compressed) as compressed_handilsler:
+        with lzma.open(compressed) as compressed_handler:
             compressed_handler.write(self.contents)
         decompressed = rows.utils.decompress(compressed)
         self.assertEqual(self.contents, decompressed.read())

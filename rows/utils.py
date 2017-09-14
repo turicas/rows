@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import bz2
 import cgi
 import gzip
 import mimetypes
@@ -321,16 +322,37 @@ def decompress(path, **kwargs):
     with open(path, 'rb') as handler:
         mime_type = describe_file_type(filename, handler.read())[0]
 
-    mapping = {
-        'application/gzip': gzip.open,
-        'application/gz': gzip.open,
-    }
-    if lzma:
-        mapping.update({
-            'application/x-xz': lzma.open,
-            'application/x-lzma': lzma.open,
-        })
-    open_compressed = mapping.get(mime_type)
+    bz2_mime_types = (
+        'application/bzip2',
+        'application/octet-stream',
+        'application/x-bz2',
+        'application/x-bzip',
+        'application/x-compressed',
+        'application/x-stuffit'
+    )
+    gzip_mime_types = (
+        'application/gzip',
+        'application/x-gzip',
+        'application/x-gunzip',
+        'application/gzipped',
+        'application/gzip-compressed',
+        'application/x-compressed',
+        'application/x-compress',
+        'gzip/document',
+        'application/octet-stream'
+    )
+    lzma_mime_types = (
+        'application/x-xz',
+        'application/x-lzma'
+    )
+
+    open_compressed = None
+    if mime_type in bz2_mime_types:
+        open_compressed = bz2.open
+    if mime_type in gzip_mime_types:
+        open_compressed = gzip.open
+    if lzma and mime_type in lzma_mime_types:
+        open_compressed = lzma.open
 
     if not open_compressed:
         msg = "Couldn't identify file mimetype, or lzma module isn't available"
