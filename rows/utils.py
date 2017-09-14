@@ -314,9 +314,9 @@ def export_to_uri(table, uri, *args, **kwargs):
 
 def decompress(path, **kwargs):
     """
-    Given a gzip or lzma file returns a decompressed file object. All kwargs
-    are passed to either `gzip.open` or `lzma.open`.
-    :param path: (str) path to a gzip or lzma file
+    Given a bz2, gzip or lzma file returns a decompressed file object. All
+    kwargs are passed to either `bz2.openn`, `gzip.open` or `lzma.open`.
+    :param path: (str) path to a bz2, gzip or lzma file
     """
     filename = os.path.basename(path)
     with open(path, 'rb') as handler:
