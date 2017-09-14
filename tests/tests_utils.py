@@ -18,11 +18,17 @@
 from __future__ import unicode_literals
 
 import gzip
-import lzma
 import os
 import tempfile
 import unittest
 import zipfile
+
+try:
+    import lzma
+except ImportError:
+    lzma = None
+
+import six
 
 import rows.utils
 
@@ -80,7 +86,7 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 class UtilsDecompressTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.contents = 'Ahoy'
+        self.contents = six.b('Ahoy')
         self.temp = tempfile.TemporaryDirectory()
 
     def tearDown(self):
@@ -88,11 +94,12 @@ class UtilsDecompressTestCase(unittest.TestCase):
 
     def test_decompress_with_gz(self):
         compressed = os.path.join(self.tmp.name, 'test.gz')
-        with gzip.open(compressed) as compressed_handler:
+        with gzip.open(compressed, mode='wb') as compressed_handler:
             compressed_handler.write(self.contents)
         decompressed = rows.utils.decompress(compressed)
         self.assertEqual(self.contents, decompressed.read())
 
+    @unittest.skipIf(not lzma, 'lzma module not available')
     def test_decompress_with_lzma(self):
         compressed = os.path.join(self.tmp.name, 'test.lzma')
         with lzma.open(compressed) as compressed_handler:
@@ -100,13 +107,15 @@ class UtilsDecompressTestCase(unittest.TestCase):
         decompressed = rows.utils.decompress(compressed)
         self.assertEqual(self.contents, decompressed.read())
 
+    @unittest.skipIf(not lzma, 'lzma module not available')
     def test_decompress_with_xz(self):
         compressed = os.path.join(self.tmp.name, 'test.gz')
-        with lzma.open(compressed) as compressed_handler:
+        with lzma.open(compressed) as compressed_handilsler:
             compressed_handler.write(self.contents)
         decompressed = rows.utils.decompress(compressed)
         self.assertEqual(self.contents, decompressed.read())
 
-    @unittest.skip('TODO')
     def test_decompress_with_incompatible_file(self):
-        pass
+        with self.assertRaises():
+            with tempfile.NamedTemporaryFile() as tmp:
+                rows.utils.decompress(tmp.name)

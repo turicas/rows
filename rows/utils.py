@@ -18,6 +18,7 @@
 from __future__ import unicode_literals
 
 import cgi
+import gzip
 import mimetypes
 import os
 import tempfile
@@ -26,6 +27,11 @@ try:
     from urlparse import urlparse  # Python 2
 except ImportError:
     from urllib.parse import urlparse  # Python 3
+
+try:
+    import lzma
+except ImportError:
+    lzma = None
 
 try:
     import magic
@@ -158,14 +164,7 @@ def plugin_name_by_mime_type(mime_type, mime_name, file_extension):
             None)
 
 
-def detect_local_source(path, content, mime_type=None, encoding=None):
-
-    # TODO: may add sample_size
-
-    filename = os.path.basename(path)
-    parts = filename.split('.')
-    extension = parts[-1] if len(parts) > 1 else None
-
+def describe_file_type(filename, content, mime_type=None, encoding=None):
     if magic is not None:
         detected = magic.detect_from_content(content)
         encoding = detected.encoding or encoding
@@ -176,6 +175,19 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
         encoding = chardet.detect(content)['encoding'] or encoding
         mime_name = None
         mime_type = mime_type or mimetypes.guess_type(filename)[0]
+
+    return mime_type, encoding, mime_name
+
+def detect_local_source(path, content, mime_type=None, encoding=None):
+    # TODO: may add sample_size
+
+    filename = os.path.basename(path)
+    parts = filename.split('.')
+    extension = parts[-1] if len(parts) > 1 else None
+
+    args = (filename, content)
+    kwargs = dict(mime_type=mime_type, encoding=encoding)
+    mime_type, encoding, mime_name = describe_file_type(*args, **kwargs)
 
     plugin_name = plugin_name_by_mime_type(mime_type, mime_name, extension)
     if encoding == 'binary':
@@ -300,5 +312,29 @@ def export_to_uri(table, uri, *args, **kwargs):
 
 
 def decompress(path, **kwargs):
-    'Given a zip, gzip or lzma file returns a decompressed file object'
-    pass  # TODO
+    """
+    Given a gzip or lzma file returns a decompressed file object. All kwargs
+    are passed to either `gzip.open` or `lzma.open`.
+    :param path: (str) path to a gzip or lzma file
+    """
+    filename = os.path.basename(path)
+    with open(path, 'rb') as handler:
+        mime_type = describe_file_type(filename, handler.read())[0]
+
+    mapping = {
+        'application/gzip': gzip.open,
+        'application/gz': gzip.open,
+    }
+    if lzma:
+        mapping.update({
+            'application/x-xz': lzma.open,
+            'application/x-lzma': lzma.open,
+        })
+    open_compressed = mapping.get(mime_type)
+
+    if not open_compressed:
+        msg = "Couldn't identify file mimetype, or lzma module isn't available"
+        raise RuntimeError(msg)
+
+    with open_compressed(path, **kwargs) as handler:
+        return handler
