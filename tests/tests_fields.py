@@ -198,6 +198,10 @@ class FieldsTestCase(unittest.TestCase):
                          six.text_type)
         self.assertEqual(fields.DecimalField.deserialize('21.21657469231'),
                          Decimal('21.21657469231'))
+        self.assertEqual(fields.DecimalField.deserialize('-21.34'),
+                         Decimal('-21.34'))
+        self.assertEqual(fields.DecimalField.serialize(Decimal('-21.34')),
+                         '-21.34')
         self.assertEqual(fields.DecimalField.deserialize(None), None)
 
         with rows.locale_context(locale_name):
@@ -211,8 +215,12 @@ class FieldsTestCase(unittest.TestCase):
                              '42,0')
             self.assertEqual(fields.DecimalField.serialize(Decimal('42000.0')),
                              '42000,0')
+            self.assertEqual(fields.DecimalField.serialize(Decimal('-42.0')),
+                             '-42,0')
             self.assertEqual(fields.DecimalField.deserialize('42.000,00'),
                              Decimal('42000.00'))
+            self.assertEqual(fields.DecimalField.deserialize('-42.000,00'),
+                             Decimal('-42000.00'))
             self.assertEqual(
                 fields.DecimalField.serialize(
                     Decimal('42000.0'),

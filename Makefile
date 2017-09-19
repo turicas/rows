@@ -1,3 +1,6 @@
+envtest: clean
+	nosetests tests/
+
 test:
 	tox
 
@@ -11,6 +14,7 @@ clean:
 	rm -rf MANIFEST dist build *.egg-info
 	rm -rf rows.1
 	rm -rf .tox
+	coverage erase
 
 install:
 	make clean
@@ -34,4 +38,7 @@ dev-setup:
 	pip install --editable .[all]
 	pip install	-r requirements-development.txt
 
-.PHONY:	test clean lint lint-tests install uninstall man dev-setup tests_nose
+release:
+	python setup.py bdist bdist_wheel bdist_egg upload
+
+.PHONY:	test clean lint lint-tests install uninstall man release

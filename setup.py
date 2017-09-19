@@ -24,13 +24,14 @@ EXTRA_REQUIREMENTS = {
     'csv': ['unicodecsv'],
     'yaml': ['pyyaml'],
     'cli': ['click', 'requests'],
-    'html': ['lxml'],
+    'html': ['lxml'],  # apt: libxslt-dev libxml2-dev
     'ods': ['lxml'],
     'parquet': ['parquet>=1.1'],
     'xls': ['xlrd', 'xlwt'],
     'xlsx': ['openpyxl'],
     'xpath': ['lxml'],
-    'detect': ['file-magic'], }
+    'detect': ['file-magic'],
+}
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = ['six'] + EXTRA_REQUIREMENTS['csv']
 LONG_DESCRIPTION = '''
@@ -39,8 +40,7 @@ automatically detect types and give you high-level Python objects so you can
 start working with the data instead of trying to parse it. It is also
 locale-and-unicode aware. :)
 
-See a quick start tutorial at:
-    https://github.com/turicas/rows/blob/develop/README.md
+Read the documentation and learn how simple is to use it: http://turicas.info/rows
 '''.strip()
 
 
@@ -48,19 +48,18 @@ setup(name='rows',
       description=('A common, beautiful interface to tabular data, '
                    'no matter the format'),
       long_description=LONG_DESCRIPTION,
-      version='0.3.1dev0',
+      version='0.3.2dev0',
       author='Álvaro Justen',
       author_email='alvarojusten@gmail.com',
       url='https://github.com/turicas/rows/',
       packages=['rows', 'rows.plugins'],
       install_requires=INSTALL_REQUIREMENTS,
       extras_require=EXTRA_REQUIREMENTS,
-      keywords=['tabular', 'table', 'csv', 'xls', 'xlsx', 'xpath', 'sqlite',
-                'html', 'rows', 'data', 'opendata'],
+      keywords='tabular table csv xls xlsx xpath ods sqlite html rows data opendata',
       entry_points={
           'console_scripts': [
               'rows = rows.cli:cli',
-              ],
+          ],
       },
       classifiers=[
           'Development Status :: 5 - Production/Stable',
@@ -72,6 +71,8 @@ setup(name='rows',
           'Natural Language :: English',
           'Operating System :: OS Independent',
           'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.5',
+          'Programming Language :: Python :: 3.6',
           'Topic :: Database',
           'Topic :: Software Development :: Libraries :: Python Modules',
           'Topic :: Text Processing :: Markup :: HTML',
