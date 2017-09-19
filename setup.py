@@ -22,6 +22,7 @@ from setuptools import setup
 
 EXTRA_REQUIREMENTS = {
     'csv': ['unicodecsv'],
+    'yaml': ['pyyaml'],
     'cli': ['click', 'requests'],
     'html': ['lxml'],  # apt: libxslt-dev libxml2-dev
     'ods': ['lxml'],

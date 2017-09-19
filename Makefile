@@ -4,6 +4,9 @@ envtest: clean
 test:
 	tox
 
+tests_nose: 
+	nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/*.py
+
 clean:
 	find -regex '.*\.pyc' -exec rm {} \;
 	find -regex '.*~' -exec rm {} \;
@@ -30,6 +33,10 @@ lint-tests:
 man:
 	head -1 rows.1.txt > rows.1
 	txt2man rows.1.txt | egrep -v '^\.TH' >> rows.1
+
+dev-setup:
+	pip install --editable .[all]
+	pip install	-r requirements-development.txt
 
 release:
 	python setup.py bdist bdist_wheel bdist_egg upload
