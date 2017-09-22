@@ -13,6 +13,11 @@
   delimiter (CSV dialect detection)
 - Export CSV in batches
 - Change CSV dialect detection sample size to 256KiB
+- [#242](https://github.com/turicas/rows/issues/242) (CLI) Add
+  `--fields`/`--fields-exclude` to `convert`, `join` and `sum` (and rename
+  `--fields-exclude` on `print`), also remove `--fields` from `query` (is not
+  needed).
+
 
 ### Bug Fixes
 
