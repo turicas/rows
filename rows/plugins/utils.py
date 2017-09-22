@@ -130,40 +130,51 @@ def make_header(field_names, permit_not=False):
 def create_table(data, meta=None, fields=None, skip_header=True,
                  import_fields=None, samples=None, force_types=None,
                  *args, **kwargs):
-    # TODO: add auto_detect_types=True parameter
-    table_rows = iter(data)
-    sample_rows = []
+    '''Create a rows.Table object based on data rows and some configurations
 
-    original_headers = None
-    if fields is None:
-        original_headers = next(table_rows)
-        header = make_header(original_headers)
+    - `skip_header` is only used if `fields` is set
+    - `samples` is only used if `fields` is `None`
+    - `force_types` is only used if `fields` is `None`
+    - `import_fields` can be used either if `fields` is set or not
+    '''
+    # TODO: add warning if using skip_header and create skip_rows
+    #       (int, default = ?). Could be used if `fields` is set or not.
+
+    table_rows = iter(data)
+
+    if fields is None:  # autodetect field types
+        header = make_header(next(table_rows))
 
         if samples is not None:
             sample_rows = list(islice(table_rows, 0, samples))
         else:
             sample_rows = list(table_rows)
+        table_rows = chain(sample_rows, table_rows)
 
+        # TODO: optimize field detection (ignore fields on `force_types` and
+        #       not in `import_fields`).
+        # TODO: add `type_hints` parameter so autodetection can be easier
+        #       (plugins may specify some possible field types).
         fields = detect_types(header, sample_rows, *args, **kwargs)
 
         if force_types is not None:
-            # TODO: optimize field detection (ignore fields on `force_types`)
-            for field_name, field_type in force_types.items():
-                fields[field_name] = field_type
-    else:
+            fields.update(force_types)
+
+    else:  # using provided field types
         if not isinstance(fields, OrderedDict):
             raise ValueError('`fields` must be an `OrderedDict`')
 
         if skip_header:
-            original_headers = next(table_rows)
+            # If we're skipping the header probably this row is not trustable
+            # (can be data or garbage).
+            _ = next(table_rows)
 
         header = make_header(list(fields.keys()))
+
         fields = OrderedDict([(field_name, fields[key])
                               for field_name, key in zip(header, fields)])
 
     if import_fields is not None:
-        # TODO: can optimize if import_fields is not None.
-        #       Example: do not detect all columns
         import_fields = make_header(import_fields)
 
         diff = set(import_fields) - set(header)
@@ -171,17 +182,15 @@ def create_table(data, meta=None, fields=None, skip_header=True,
             field_names = ', '.join('"{}"'.format(field) for field in diff)
             raise ValueError("Invalid field names: {}".format(field_names))
 
-        new_fields = OrderedDict()
-        for field_name in import_fields:
-            new_fields[field_name] = fields[field_name]
-        fields = new_fields
+        fields = OrderedDict([(field_name, fields[field_name])
+                              for field_name in import_fields])
 
-    # TODO: what if original_headers is None?
-    fields_names_indexes = [(field_name, original_headers.index(field_name))
+    fields_names_indexes = [(field_name, header.index(field_name))
                             for field_name in fields.keys()]
+
     # TODO: put this inside Table.__init__
     table = Table(fields=fields, meta=meta)
-    for row in chain(sample_rows, table_rows):
+    for row in table_rows:
         table.append({field_name: row[field_index]
                       for field_name, field_index in fields_names_indexes})
 

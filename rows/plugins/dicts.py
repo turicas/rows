@@ -26,6 +26,9 @@ def import_from_dicts(data, *args, **kwargs):
     headers = set()
     for row in data:
         headers.update(row.keys())
+    # TODO: should not sort
+    # TODO: add doc about NOT USING fields and using import_fields and
+    #       force_fields.
     headers = sorted(list(headers))
 
     data = [[row.get(header, None) for header in headers] for row in data]
