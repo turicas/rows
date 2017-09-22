@@ -205,26 +205,29 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--order-by')
+@click.option('--fields',
+              help='A comma-separated list of fields to import')
+@click.option('--fields-exclude',
+              help='A comma-separated list of fields to exclude')
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('destination')
 def sum_(input_encoding, output_encoding, input_locale, output_locale,
-         verify_ssl, order_by, sources, destination):
+         verify_ssl, order_by, fields, fields_exclude, sources, destination):
 
-    # TODO: may use sys.stdout.encoding if output_file = '-'
-    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
-
+    import_fields = _get_import_fields(fields, fields_exclude)
     if input_locale is not None:
         with rows.locale_context(input_locale):
             tables = [_import_table(source, encoding=input_encoding,
-                                    verify_ssl=verify_ssl)
+                                    verify_ssl=verify_ssl,
+                                    import_fields=import_fields)
                     for source in sources]
     else:
         tables = [_import_table(source, encoding=input_encoding,
-                                verify_ssl=verify_ssl)
+                                verify_ssl=verify_ssl,
+                                import_fields=import_fields)
                   for source in sources]
 
     result = sum(tables)
-
     if order_by is not None:
         order_by = _get_field_names(order_by,
                                     result.field_names,
@@ -232,11 +235,16 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
         # TODO: use complete list of `order_by` fields
         result.order_by(order_by[0].replace('^', '-'))
 
+    export_fields = _get_export_fields(result.field_names, fields_exclude)
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
     if output_locale is not None:
         with rows.locale_context(output_locale):
-            export_to_uri(result, destination, encoding=output_encoding)
+            export_to_uri(result, destination, encoding=output_encoding,
+                          export_fields=export_fields)
     else:
-        export_to_uri(result, destination, encoding=output_encoding)
+        export_to_uri(result, destination, encoding=output_encoding,
+                      export_fields=export_fields)
 
 
 @cli.command(name='print', help='Print a table')
