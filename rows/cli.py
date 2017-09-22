@@ -308,28 +308,26 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--input-locale')
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
-@click.option('--fields')
 @click.option('--output')
 @click.argument('query', required=True)
 @click.argument('sources', nargs=-1, required=True)
 def query(input_encoding, output_encoding, input_locale, output_locale,
-          verify_ssl, fields, output, query, sources):
-
-    # TODO: may use sys.stdout.encoding if output_file = '-'
-    output_encoding = output_encoding or sys.stdout.encoding or \
-                      DEFAULT_OUTPUT_ENCODING
+          verify_ssl, output, query, sources):
 
     if not query.lower().startswith('select'):
-        field_names = '*' if fields is None else fields
         table_names = ', '.join(['table{}'.format(index)
                                  for index in range(1, len(sources) + 1)])
-        query = 'SELECT {} FROM {} WHERE {}'.format(field_names, table_names,
-                                                    query)
+        query = 'SELECT * FROM {} WHERE {}'.format(table_names, query)
 
     if len(sources) == 1:
         source = detect_source(sources[0], verify_ssl=verify_ssl)
 
-        if source.plugin_name != 'sqlite':
+        if source.plugin_name == 'sqlite':
+            # Optimization: query the db directly
+            result = import_from_source(source,
+                                        DEFAULT_INPUT_ENCODING,
+                                        query=query)
+        else:
             if input_locale is not None:
                 with rows.locale_context(input_locale):
                     table = import_from_source(source, DEFAULT_INPUT_ENCODING)
@@ -342,13 +340,8 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
                                   table_name='table1')
             result = rows.import_from_sqlite(sqlite_connection, query=query)
 
-        else:
-            # Optimization: query the SQLite database directly
-            result = import_from_source(source,
-                                        DEFAULT_INPUT_ENCODING,
-                                        query=query)
-
     else:
+        # TODO: if all sources are SQLite we can also optimize the import
         if input_locale is not None:
             with rows.locale_context(input_locale):
                 tables = [_import_table(source, encoding=input_encoding,
@@ -367,6 +360,9 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
 
         result = rows.import_from_sqlite(sqlite_connection, query=query)
 
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or sys.stdout.encoding or \
+                      DEFAULT_OUTPUT_ENCODING
     if output is None:
         fobj = BytesIO()
         if output_locale is not None:
