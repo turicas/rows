@@ -152,15 +152,19 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--order-by')
+@click.option('--fields',
+              help='A comma-separated list of fields to export')
+@click.option('--fields-exclude',
+              help='A comma-separated list of fields to exclude when exporting')
 @click.argument('keys')
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('destination')
 def join(input_encoding, output_encoding, input_locale, output_locale,
-         verify_ssl, order_by, keys, sources, destination):
+         verify_ssl, order_by, fields, fields_exclude, keys, sources,
+         destination):
 
-    # TODO: may use sys.stdout.encoding if output_file = '-'
-    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
-    keys = [key.strip() for key in keys.split(',')]
+    export_fields = _get_import_fields(fields, fields_exclude)
+    keys = make_header(keys.split(','), permit_not=False)
 
     if input_locale is not None:
         with rows.locale_context(input_locale):
@@ -173,7 +177,6 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
                   for source in sources]
 
     result = rows.join(keys, tables)
-
     if order_by is not None:
         order_by = _get_field_names(order_by,
                                     result.field_names,
@@ -181,11 +184,17 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
         # TODO: use complete list of `order_by` fields
         result.order_by(order_by[0].replace('^', '-'))
 
+    if export_fields is None:
+        export_fields = _get_export_fields(result.field_names, fields_exclude)
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
     if output_locale is not None:
         with rows.locale_context(output_locale):
-            export_to_uri(result, destination, encoding=output_encoding)
+            export_to_uri(result, destination, encoding=output_encoding,
+                          export_fields=export_fields)
     else:
-        export_to_uri(result, destination, encoding=output_encoding)
+        export_to_uri(result, destination, encoding=output_encoding,
+                      export_fields=export_fields)
 
 
 @cli.command(name='sum',
