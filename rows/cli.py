@@ -22,6 +22,7 @@
 # TODO: add option to pass 'create_table' options in command-line (like force
 #       fields)
 
+import pathlib
 import shlex
 import sqlite3
 import sys
@@ -30,6 +31,7 @@ from io import BytesIO
 
 import click
 import requests.exceptions
+import requests_cache
 
 import rows
 
@@ -39,9 +41,11 @@ from rows.plugins.utils import make_header
 
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
-DEFAULT_OUTPUT_ENCODING = 'utf-8'
 DEFAULT_INPUT_LOCALE = 'C'
+DEFAULT_OUTPUT_ENCODING = 'utf-8'
 DEFAULT_OUTPUT_LOCALE = 'C'
+HOME_PATH = pathlib.Path.home()
+CACHE_PATH = HOME_PATH / '.cache' / 'rows' / 'http'
 
 
 def _import_table(source, encoding, verify_ssl=True, *args, **kwargs):
@@ -93,9 +97,19 @@ def _get_export_fields(table_field_names, fields_exclude):
 
 
 @click.group()
+@click.option('--http-cache', type=bool, default=True)
+@click.option('--http-cache-path', default=str(CACHE_PATH.absolute()))
 @click.version_option(version=rows.__version__, prog_name='rows')
-def cli():
-    pass
+def cli(http_cache, http_cache_path):
+    if http_cache:
+        http_cache_path = pathlib.Path(http_cache_path).absolute()
+        if not http_cache_path.parent.exists():
+            os.makedirs(str(http_cache_path.parent), exist_ok=True)
+        if str(http_cache_path).lower().endswith('.sqlite'):
+            http_cache_path = \
+                    pathlib.Path(str(http_cache_path)[:-7]).absolute()
+
+        requests_cache.install_cache(str(http_cache_path))
 
 
 @cli.command(help='Convert table on `source` URI to `destination`')
@@ -103,7 +117,7 @@ def cli():
 @click.option('--output-encoding')
 @click.option('--input-locale')
 @click.option('--output-locale')
-@click.option('--verify-ssl', default=True, type=bool)
+@click.option('--verify-ssl', type=bool, default=True)
 @click.option('--order-by')
 @click.option('--fields',
               help='A comma-separated list of fields to import')
