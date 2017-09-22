@@ -254,60 +254,40 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-locale')
 @click.option('--table-index', default=0)
 @click.option('--verify-ssl', default=True, type=bool)
-@click.option('--fields')
-@click.option('--fields-except')
+@click.option('--fields',
+              help='A comma-separated list of fields to import')
+@click.option('--fields-exclude',
+              help='A comma-separated list of fields to exclude')
 @click.option('--order-by')
 @click.argument('source', required=True)
 def print_(input_encoding, output_encoding, input_locale, output_locale,
-           table_index, verify_ssl, fields, fields_except, order_by, source):
+           table_index, verify_ssl, fields, fields_exclude, order_by, source):
 
-    if fields is not None and fields_except is not None:
-        click.echo('ERROR: `--fields` cannot be used with `--fields-except`',
-                   err=True)
-        sys.exit(20)
-
-    output_encoding = output_encoding or sys.stdout.encoding or \
-                      DEFAULT_OUTPUT_ENCODING
-
-    # TODO: may use `import_fields` for better performance
+    import_fields = _get_import_fields(fields, fields_exclude)
+    # TODO: if create_table implements `fields_exclude` this _import_table call
+    # will import only the desired data
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = _import_table(source, encoding=input_encoding,
                                   verify_ssl=verify_ssl,
-                                  index=table_index)
+                                  index=table_index,
+                                  import_fields=import_fields)
     else:
         table = _import_table(source, encoding=input_encoding,
                               verify_ssl=verify_ssl,
-                              index=table_index)
-
-    table_field_names = table.field_names
-    if fields is not None:
-        fields = _get_field_names(fields, table_field_names)
-    if fields_except is not None:
-        fields_except = _get_field_names(fields_except, table_field_names)
-
-    # TODO: should set `export_fields = None` if `--fields` and
-    # `--fields-except` are `None`
-    if fields is not None and fields_except is None:
-        export_fields = fields
-    elif fields is not None and fields_except is not None:
-        export_fields = list(fields)
-        for field_to_remove in fields_except:
-            export_fields.remove(field_to_remove)
-    elif fields is None and fields_except is not None:
-        export_fields = list(table_field_names)
-        for field_to_remove in fields_except:
-            export_fields.remove(field_to_remove)
-    else:
-        export_fields = table_field_names
+                              index=table_index,
+                              import_fields=import_fields)
 
     if order_by is not None:
         order_by = _get_field_names(order_by,
-                                    table_field_names,
+                                    table.field_names,
                                     permit_not=True)
         # TODO: use complete list of `order_by` fields
         table.order_by(order_by[0].replace('^', '-'))
 
+    export_fields = _get_export_fields(table.field_names, fields_exclude)
+    output_encoding = output_encoding or sys.stdout.encoding or \
+                      DEFAULT_OUTPUT_ENCODING
     fobj = BytesIO()
     if output_locale is not None:
         with rows.locale_context(output_locale):
