@@ -2,13 +2,14 @@
 
 # Everything except install_requires
 click
+file-magic
 lxml
 openpyxl
 parquet>=1.1
 requests
+requests-cache
 xlrd
 xlwt
-file-magic
 
 # Test tools
 coverage
