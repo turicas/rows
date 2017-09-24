@@ -408,21 +408,26 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
            fields_exclude, samples, source, output):
 
     samples = samples if samples > 0 else None
+    import_fields = _get_import_fields(fields, fields_exclude)
 
     source = detect_source(source, verify_ssl=verify_ssl)
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = import_from_source(source, DEFAULT_INPUT_ENCODING,
-                                       samples=samples)
+                                       samples=samples,
+                                       import_fields=import_fields)
     else:
         table = import_from_source(source, DEFAULT_INPUT_ENCODING,
-                                   samples=samples)
+                                   samples=samples,
+                                   import_fields=import_fields)
 
+    export_fields = _get_export_fields(table.field_names, fields_exclude)
     if output in ('-', None):
         output = sys.stdout
     else:
         output = open(output, mode='wb')
-    rows.fields.generate_schema(table, output_format, output)
+    rows.fields.generate_schema(table, fields=export_fields,
+                                output_format, output)
 
 
 if __name__ == '__main__':

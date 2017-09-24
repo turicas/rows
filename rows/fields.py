@@ -540,7 +540,7 @@ def identify_type(value):
     return detected
 
 
-def generate_schema(table, output_format, output_fobj):
+def generate_schema(table, export_fields, output_format, output_fobj):
     '''Generate table schema for a specific output format and write
 
     Current supported output formats: 'txt', 'sql' and 'django'.
@@ -553,7 +553,8 @@ def generate_schema(table, output_format, output_fobj):
 
         data = [{'field_name': fieldname,
                  'field_type': fieldtype.__name__.replace('Field', '').lower()}
-                for fieldname, fieldtype in table.fields.items()]
+                for fieldname, fieldtype in table.fields.items()
+                if fieldname in export_fields]
         export_to_txt(import_from_dicts(data), output_fobj)
 
     elif output_format == 'sql':
@@ -573,7 +574,8 @@ def generate_schema(table, output_format, output_fobj):
             fields.JSONField: 'TEXT',
         }
         fields = ['    {} {}'.format(field_name, sql_fields[field_type])
-                for field_name, field_type in table.fields.items()]
+                  for field_name, field_type in table.fields.items()
+                  if field_name in export_fields]
         sql = dedent('''
         CREATE TABLE IF NOT EXISTS {name} (
         {fields}
@@ -604,12 +606,16 @@ def generate_schema(table, output_format, output_fobj):
                              for word in table_name.split('_'))
 
         lines = ['from django.db import models']
-        if fields.JSONField in table.field_types:
+        if fields.JSONField in [table.fields[field_name]
+                                for field_name in export_fields]:
             lines.append('from django.contrib.postgres.fields import JSONField')
         lines.append('')
 
         lines.append('class {}(models.Model):'.format(table_name))
         for field_name, field_type in table.fields.items():
+            if field_name not in export_fields:
+                continue
+
             if field_type is not fields.JSONField:
                 django_type = 'models.{}()'.format(django_fields[field_type])
             else:

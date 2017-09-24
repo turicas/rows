@@ -494,13 +494,16 @@ class FieldsFunctionsTestCase(unittest.TestCase):
         self.assertEqual(exception_context.exception.args[0],
                          'Binary is not supported')
 
-    def assert_generate_schema(self, fmt, expected):
+    def assert_generate_schema(self, fmt, expected, export_fields=None):
         # prepare a consistent table so we can test all formats using it
         table_fields = utils.table.fields.copy()
         table_fields['json_column'] = fields.JSONField
         table_fields['decimal_column'] = fields.DecimalField
         table_fields['percent_column'] = fields.DecimalField
+        if export_fields is None:
+            export_fields = list(table_fields.keys())
         table = rows.Table(fields=table_fields)
+
         for row in utils.table:
             data = row._asdict()
             data['json_column'] = {}
@@ -508,7 +511,7 @@ class FieldsFunctionsTestCase(unittest.TestCase):
         table.meta['filename'] = 'this is my table.csv'
 
         obj = io.StringIO()
-        fields.generate_schema(table, fmt, obj)
+        fields.generate_schema(table, export_fields, fmt, obj)
         obj.seek(0)
         result = obj.read()
 
@@ -565,3 +568,35 @@ class FieldsFunctionsTestCase(unittest.TestCase):
             json_column = JSONField()
         ''')
         self.assert_generate_schema('django', expected)
+
+    def test_generate_schema_restricted_fields(self):
+        expected = dedent('''
+            +-------------+------------+
+            |  field_name | field_type |
+            +-------------+------------+
+            | bool_column |       bool |
+            | json_column |       json |
+            +-------------+------------+
+        ''')
+        self.assert_generate_schema('txt', expected,
+                export_fields=['bool_column', 'json_column'])
+
+        expected = dedent('''
+        CREATE TABLE IF NOT EXISTS this_is_my_table (
+            bool_column BOOL,
+            json_column TEXT
+        );
+        ''')
+        self.assert_generate_schema('sql', expected,
+                export_fields=['bool_column', 'json_column'])
+
+        expected = dedent('''
+        from django.db import models
+        from django.contrib.postgres.fields import JSONField
+
+        class ThisIsMyTable(models.Model):
+            bool_column = models.BooleanField()
+            json_column = JSONField()
+        ''')
+        self.assert_generate_schema('django', expected,
+                export_fields=['bool_column', 'json_column'])
