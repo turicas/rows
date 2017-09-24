@@ -21,7 +21,6 @@ import MySQLdb
 from .rows import Table
 from .utils import ipartition, slug
 
-
 __all__ = [ 'import_from_mysql', 'export_to_mysql']
 
 # TODO: replace 'None' with '' on export_to_*

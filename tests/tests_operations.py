@@ -19,12 +19,10 @@ from __future__ import unicode_literals
 
 import datetime
 import unittest
-
 from collections import OrderedDict
 
 import rows
 import rows.operations
-
 import tests.utils as utils
 
 

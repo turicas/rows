@@ -2,9 +2,7 @@
 
 import os
 import sqlite3
-
 from collections import OrderedDict
-
 
 input_filename = '../all-field-types.csv'
 output_filename = '../all-field-types.sqlite'

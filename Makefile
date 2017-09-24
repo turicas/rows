@@ -13,6 +13,10 @@ clean:
 	rm -rf .tox
 	coverage erase
 
+fix-imports:
+	autoflake --in-place --recursive --remove-unused-variables --remove-all-unused-imports .
+	isort -rc .
+
 install:
 	make clean
 	make uninstall
@@ -34,4 +38,4 @@ man:
 release:
 	python setup.py bdist bdist_wheel bdist_egg upload
 
-.PHONY:	test clean lint lint-tests install uninstall man release
+.PHONY:	test clean fix-imports lint lint-tests install uninstall man release

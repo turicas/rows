@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2016 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2016-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 from __future__ import unicode_literals
 
 import logging
-
 from collections import OrderedDict
 
 from rows import fields
@@ -31,10 +30,7 @@ class NullHandler(logging.Handler):
 
 
 logging.getLogger("parquet").addHandler(NullHandler())
-
-import parquet
-
-
+import parquet  # NOQA
 PARQUET_TO_ROWS = {
         parquet.parquet_thrift.Type.BOOLEAN: fields.BoolField,
         parquet.parquet_thrift.Type.BYTE_ARRAY: fields.BinaryField,

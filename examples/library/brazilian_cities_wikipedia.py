@@ -3,16 +3,18 @@
 from __future__ import unicode_literals
 
 import re
-
 from collections import OrderedDict
 from io import BytesIO
+
+import requests
+
+import rows
+
 try:
     from urlparse import urljoin # Python 2
 except ImportError:
     from urllib.parse import urljoin  # Python 3
 
-import requests
-import rows
 
 
 # Get data from Portuguese Wikipedia

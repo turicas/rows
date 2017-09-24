@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -15,10 +15,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import plugin_json as json
-from . import dicts as dicts
-from . import plugin_csv as csv
-from . import txt as txt
+from . import plugin_json as json  # NOQA
+from . import dicts as dicts  # NOQA
+from . import plugin_csv as csv  # NOQA
+from . import txt as txt  # NOQA
 
 try:
     from . import plugin_html as html

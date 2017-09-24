@@ -17,18 +17,13 @@
 
 from __future__ import unicode_literals
 
-import itertools
 import json
 import tempfile
 import unittest
+from collections import Counter, OrderedDict, defaultdict
 
-from collections import Counter
-from collections import OrderedDict
-from collections import defaultdict
-from textwrap import dedent
-
-import six
 import mock
+import six
 
 import rows
 import tests.utils as utils
@@ -69,13 +64,13 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
 
         # import using filename
-        table_1 = rows.import_from_json(self.filename)
+        rows.import_from_json(self.filename)
         call_args = mocked_create_table.call_args_list[0]
         self.assert_create_table_data(call_args, field_ordering=False)
 
         # import using fobj
         with open(self.filename) as fobj:
-            table_2 = rows.import_from_json(fobj)
+            rows.import_from_json(fobj)
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args, field_ordering=False)
 

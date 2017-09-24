@@ -20,12 +20,10 @@ from __future__ import unicode_literals
 from io import BytesIO
 
 import six
-
 import unicodecsv
 
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
                                 ipartition, serialize)
-
 
 sniffer = unicodecsv.Sniffer()
 

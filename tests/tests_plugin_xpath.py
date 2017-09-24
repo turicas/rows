@@ -19,7 +19,6 @@ from __future__ import unicode_literals
 
 import tempfile
 import unittest
-
 from collections import OrderedDict
 from io import BytesIO
 

@@ -5,8 +5,9 @@ from __future__ import unicode_literals
 from io import BytesIO
 
 import requests
-import rows
 import six
+
+import rows
 
 extract_links = rows.plugins.html.extract_links
 extract_text = rows.plugins.html.extract_text

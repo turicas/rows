@@ -20,8 +20,6 @@ from __future__ import unicode_literals
 import datetime
 import unittest
 
-from rows.table import Table
-
 from uwsgi_log_plugin import import_from_uwsgi_log
 
 

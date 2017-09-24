@@ -22,7 +22,6 @@ import random
 import tempfile
 import types
 import unittest
-
 from collections import OrderedDict
 
 import mock
@@ -30,10 +29,8 @@ import six
 
 import rows
 import rows.plugins.utils as plugins_utils
-
-from rows import fields
-
 import tests.utils as utils
+from rows import fields
 
 
 class GenericUtilsTestCase(unittest.TestCase):

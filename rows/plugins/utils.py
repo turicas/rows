@@ -24,7 +24,6 @@ from unicodedata import normalize
 from rows.fields import detect_types
 from rows.table import FlexibleTable, Table
 
-
 SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
 
@@ -152,7 +151,7 @@ def create_table(data, meta=None, fields=None, skip_header=True,
             raise ValueError('`fields` must be an `OrderedDict`')
 
         if skip_header:
-            _ = next(table_rows)
+            next(table_rows)
 
         header = make_header(list(fields.keys()))
         fields = OrderedDict([(field_name, fields[key])

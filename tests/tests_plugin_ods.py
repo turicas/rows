@@ -22,7 +22,6 @@ import unittest
 import mock
 
 import rows
-import rows.fields as fields
 import rows.plugins.ods
 import tests.utils as utils
 
@@ -54,12 +53,12 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
 
         # import using filename
-        table_1 = rows.import_from_ods(self.filename)
+        rows.import_from_ods(self.filename)
         call_args = mocked_create_table.call_args_list[0]
         self.assert_create_table_data(call_args)
 
         # import using fobj
         with open(self.filename, 'rb') as fobj:
-            table_2 = rows.import_from_ods(fobj)
+            rows.import_from_ods(fobj)
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args)

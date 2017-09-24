@@ -17,20 +17,19 @@
 
 from __future__ import unicode_literals
 
+import six
+from lxml.html import fromstring as tree_from_string
+
+from rows.plugins.utils import create_table, get_filename_and_fobj
+
 try:
     from HTMLParser import HTMLParser  # Python 2
 except ImportError:
     from html.parser import HTMLParser  # Python 3
 
-import string
 
-import six
 
-from lxml.html import fromstring as tree_from_string
-from lxml.etree import strip_tags
-from lxml.etree import tostring as tree_to_string
 
-from rows.plugins.utils import create_table, get_filename_and_fobj
 
 
 unescape = HTMLParser().unescape

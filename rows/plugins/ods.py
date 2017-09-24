@@ -18,10 +18,10 @@
 from __future__ import unicode_literals
 
 import zipfile
-
 from decimal import Decimal
 
-from lxml.etree import tostring as xml_to_string, fromstring as xml_from_string
+from lxml.etree import fromstring as xml_from_string
+from lxml.etree import tostring as xml_to_string
 
 from rows.plugins.utils import create_table, get_filename_and_fobj
 

@@ -17,10 +17,7 @@
 
 from __future__ import unicode_literals
 
-import tempfile
 import unittest
-
-from io import BytesIO
 
 import mock
 

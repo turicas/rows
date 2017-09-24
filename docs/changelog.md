@@ -19,6 +19,8 @@
   needed).
 - [#235](https://github.com/turicas/rows/issues/235) Implement `--http-cache`
   and `--http-cache-path`.
+- [#237](https://github.com/turicas/rows/issues/237) Implement `rows schema`
+  (generates schema in text, SQL and Django models).
 
 
 ### Bug Fixes
