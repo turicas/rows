@@ -22,7 +22,7 @@ from operator import itemgetter
 
 import six
 
-from rows.fields import identify_type
+from rows import fields
 from rows.plugins import utils
 
 
@@ -103,12 +103,9 @@ class Table(MutableSequence):
                                  'Table length ({})'
                                  .format(len(values), len(self)))
 
-            from rows.fields import detect_types
-            from rows.plugins.utils import slug
-
-            field_name = slug(key)
+            field_name = utils.slug(key)
             is_new_field = field_name not in self.field_names
-            field_type = detect_types([field_name],
+            field_type = fields.detect_types([field_name],
                     [[value] for value in values])[field_name]
             self.fields[field_name] = field_type
             self.Row = namedtuple('Row', self.field_names)
@@ -203,7 +200,8 @@ class FlexibleTable(Table):
     def _make_row(self, row):
         for field_name in row.keys():
             if field_name not in self.field_names:
-                self._add_field(field_name, identify_type(row[field_name]))
+                self._add_field(
+                    field_name, fields.identify_type(row[field_name]))
 
         return {field_name: field_type.deserialize(row.get(field_name, None))
                 for field_name, field_type in self.fields.items()}
