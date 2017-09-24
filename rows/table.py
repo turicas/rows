@@ -17,7 +17,7 @@
 
 from __future__ import unicode_literals
 
-from collections import MutableSequence, namedtuple, OrderedDict, Sized
+from collections import MutableSequence, OrderedDict, Sized, namedtuple
 from operator import itemgetter
 
 import six
@@ -90,7 +90,7 @@ class Table(MutableSequence):
             return [row[field_index] for row in self._rows]
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def __setitem__(self, key, value):
         key_type = type(key)
@@ -105,8 +105,8 @@ class Table(MutableSequence):
 
             field_name = utils.slug(key)
             is_new_field = field_name not in self.field_names
-            field_type = fields.detect_types([field_name],
-                    [[value] for value in values])[field_name]
+            field_type = fields.detect_types(
+                [field_name], [[value] for value in values])[field_name]
             self.fields[field_name] = field_type
             self.Row = namedtuple('Row', self.field_names)
 
@@ -119,7 +119,7 @@ class Table(MutableSequence):
                     row[field_index] = field_type.deserialize(value)
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def __delitem__(self, key):
         key_type = type(key)
@@ -137,7 +137,7 @@ class Table(MutableSequence):
                 row.pop(field_index)
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def insert(self, index, row):
         self._rows.insert(index, self._make_row(row))
@@ -191,7 +191,7 @@ class FlexibleTable(Table):
             return [self.Row(**row) for row in self._rows[key]]
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def _add_field(self, field_name, field_type):
         self.fields[field_name] = field_type
