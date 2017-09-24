@@ -28,6 +28,39 @@ elif six.PY3:
     from collections.abc import MutableSequence, Sized
 
 
+class LazyTable(object):
+
+    def __init__(self, fields, data, meta=None):
+        self.fields = OrderedDict(fields)
+
+        self.Row = namedtuple('Row', self.field_names)
+        self.meta = dict(meta) if meta is not None else {}
+        self._rows = data
+
+    @property
+    def field_names(self):
+        return list(self.fields.keys())
+
+    @property
+    def field_types(self):
+        return list(self.fields.values())
+
+    def __repr__(self):
+        imported = ''
+        if 'imported_from' in self.meta:
+            imported = ' (from {})'.format(self.meta['imported_from'])
+
+        return '<rows.LazyTable{}, {} fields>'.format(
+                imported, len(self.fields))
+
+    def __iter__(self):
+        fields = list(self.fields.items())
+        for row in self._rows:
+            yield self.Row(*[field_type.deserialize(value)
+                             for value, (field_name, field_type) in
+                             zip(row, fields)])
+
+
 class Table(MutableSequence):
 
     def __init__(self, fields, meta=None):
