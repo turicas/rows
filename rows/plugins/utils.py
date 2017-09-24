@@ -134,8 +134,10 @@ def create_table(data, meta=None, fields=None, skip_header=True,
     table_rows = iter(data)
     sample_rows = []
 
+    original_headers = None
     if fields is None:
-        header = make_header(next(table_rows))
+        original_headers = next(table_rows)
+        header = make_header(original_headers)
 
         if samples is not None:
             sample_rows = list(islice(table_rows, 0, samples))
@@ -153,7 +155,7 @@ def create_table(data, meta=None, fields=None, skip_header=True,
             raise ValueError('`fields` must be an `OrderedDict`')
 
         if skip_header:
-            next(table_rows)
+            original_headers = next(table_rows)
 
         header = make_header(list(fields.keys()))
         fields = OrderedDict([(field_name, fields[key])
@@ -174,11 +176,14 @@ def create_table(data, meta=None, fields=None, skip_header=True,
             new_fields[field_name] = fields[field_name]
         fields = new_fields
 
-    table = Table(fields=fields, meta=meta)
+    # TODO: what if original_headers is None?
+    fields_names_indexes = [(field_name, original_headers.index(field_name))
+                            for field_name in fields.keys()]
     # TODO: put this inside Table.__init__
+    table = Table(fields=fields, meta=meta)
     for row in chain(sample_rows, table_rows):
-        table.append({field_name: value
-                      for field_name, value in zip(header, row)})
+        table.append({field_name: row[field_index]
+                      for field_name, field_index in fields_names_indexes})
 
     return table
 
