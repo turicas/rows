@@ -18,8 +18,6 @@
 from __future__ import unicode_literals
 
 import datetime
-import math
-import time
 import unittest
 
 from collections import OrderedDict
@@ -32,10 +30,8 @@ import rows.fields as fields
 
 from rows.table import FlexibleTable, Table
 
-import tests.utils as utils
-
-
 binary_type_name = six.binary_type.__name__
+
 
 class TableTestCase(unittest.TestCase):
 
