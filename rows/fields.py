@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -22,8 +22,10 @@ import collections
 import datetime
 import json
 import locale
+import os
 import re
 import types
+from textwrap import dedent
 
 from base64 import b64decode, b64encode
 from decimal import Decimal, InvalidOperation
@@ -474,7 +476,7 @@ def unique_values(values):
 
 def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
                  *args, **kwargs):
-    """Where the magic happens"""
+    'Detect column types (or "where the magic happens")'
 
     # TODO: look strategy of csv.Sniffer.has_header
     # TODO: may receive 'type hints'
@@ -526,6 +528,8 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
 
 
 def identify_type(value):
+    'Identify the field type for a specific value'
+
     value_type = type(value)
     if value_type not in (six.text_type, six.binary_type):
         possible_types = [type_class for type_name, type_class in TYPES
@@ -538,3 +542,83 @@ def identify_type(value):
         detected = detect_types(['some_field'], [[value]])['some_field']
 
     return detected
+
+
+def generate_schema(table, output_format, output_fobj):
+    '''Generate table schema for a specific output format and write
+
+    Current supported output formats: 'txt', 'sql' and 'django'.
+    The table name and all fields names pass for a slugifying process (table
+    name is taken from file name).'''
+
+    if output_format == 'txt':
+        from rows.plugins.dicts import import_from_dicts
+        from rows.plugins.txt import export_to_txt
+
+        data = [{'field_name': fieldname,
+                 'field_type': fieldtype.__name__.replace('Field', '').lower()}
+                for fieldname, fieldtype in table.fields.items()]
+        export_to_txt(import_from_dicts(data), output_fobj)
+
+    elif output_format == 'sql':
+        import rows.fields as fields
+
+        sql_fields = {
+            fields.BinaryField: 'BLOB',
+            fields.BoolField: 'BOOL',
+            fields.IntegerField: 'INT',
+            fields.FloatField: 'FLOAT',
+            fields.PercentField: 'FLOAT',
+            fields.DateField: 'DATE',
+            fields.DatetimeField: 'DATETIME',
+            fields.TextField: 'TEXT',
+            fields.DecimalField: 'FLOAT',
+            fields.EmailField: 'TEXT',
+            fields.JSONField: 'TEXT',
+        }
+        fields = ['    {} {}'.format(field_name, sql_fields[field_type])
+                for field_name, field_type in table.fields.items()]
+        sql = dedent('''
+        CREATE TABLE IF NOT EXISTS {name} (
+        {fields}
+        );
+        ''').strip().format(name=table.name, fields=',\n'.join(fields)) + '\n'
+        output_fobj.write(sql)
+
+    elif output_format == 'django':
+        import rows.fields as fields
+
+        django_fields = {
+            fields.BinaryField: 'BinaryField',
+            fields.BoolField: 'BooleanField',
+            fields.IntegerField: 'IntegerField',
+            fields.FloatField: 'FloatField',
+            fields.PercentField: 'DecimalField',
+            fields.DateField: 'DateField',
+            fields.DatetimeField: 'DateTimeField',
+            fields.TextField: 'TextField',
+            fields.DecimalField: 'DecimalField',
+            fields.EmailField: 'EmailField',
+            fields.JSONField: 'JSONField',
+        }
+        table_name = table.name
+        if table_name == 'table1':
+            table_name = 'MyModel'
+        table_name = ''.join(word.capitalize()
+                             for word in table_name.split('_'))
+
+        lines = ['from django.db import models']
+        if fields.JSONField in table.field_types:
+            lines.append('from django.contrib.postgres.fields import JSONField')
+        lines.append('')
+
+        lines.append('class {}(models.Model):'.format(table_name))
+        for field_name, field_type in table.fields.items():
+            if field_type is not fields.JSONField:
+                django_type = 'models.{}()'.format(django_fields[field_type])
+            else:
+                django_type = 'JSONField()'
+            lines.append('    {} = {}'.format(field_name, django_type))
+
+        result = '\n'.join(lines) + '\n'
+        output_fobj.write(result)

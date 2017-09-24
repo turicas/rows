@@ -390,3 +390,15 @@ class TestFlexibleTable(unittest.TestCase):
         data_rows = list(table)
         self.assertEqual(data_rows[0], data_rows[2])
         self.assertEqual(data_rows[1], data_rows[3])
+
+    def test_table_name(self):
+        table = rows.Table(
+                fields=collections.OrderedDict([('a', fields.TextField), ])
+        )
+
+        self.assertTrue('filename' not in table.meta)
+        self.assertEqual(table.name, 'table1')
+
+        table.meta['filename'] = 'This is THE name.csv'
+        self.assertTrue('filename' in table.meta)
+        self.assertEqual(table.name, 'this_is_the_name')
