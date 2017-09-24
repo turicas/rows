@@ -23,6 +23,7 @@ from operator import itemgetter
 import six
 
 from rows.fields import identify_type
+from rows.plugins import utils
 
 
 class Table(MutableSequence):
@@ -31,12 +32,10 @@ class Table(MutableSequence):
         # TODO: should we really use OrderedDict here?
         # TODO: should use slug on each field name automatically or inside each
         #       plugin?
-        from rows.plugins.utils import slug
-
         aux_fields = OrderedDict(fields)
 
         self.fields = OrderedDict(
-            [(slug(name), type) for name, type in aux_fields.items()])
+            [(utils.slug(name), type) for name, type in aux_fields.items()])
 
         # TODO: should be able to customize row return type (namedtuple, dict
         #       etc.)
