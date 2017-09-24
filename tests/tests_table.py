@@ -50,6 +50,13 @@ class TableTestCase(unittest.TestCase):
         self.table.append({'name': 'Douglas Adams',
                            'birthdate': '1952-03-11'})
 
+    def test_table_init_slug_creation_on_fields(self):
+        table = rows.Table(fields=OrderedDict([
+            ('Query Occurrence"( % ),"First Seen', rows.fields.FloatField),
+        ]))
+
+        self.assertIn('query_occurrence_first_seen', table.fields)
+
     def test_Table_is_present_on_main_namespace(self):
         self.assertIn('Table', dir(rows))
         self.assertIs(Table, rows.Table)
