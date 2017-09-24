@@ -422,12 +422,13 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
                                    import_fields=import_fields)
 
     export_fields = _get_export_fields(table.field_names, fields_exclude)
+    if export_fields is None:
+        export_fields = table.field_names
     if output in ('-', None):
         output = sys.stdout
     else:
-        output = open(output, mode='wb')
-    rows.fields.generate_schema(table, fields=export_fields,
-                                output_format, output)
+        output = open(output, mode='w', encoding='utf-8')
+    rows.fields.generate_schema(table, export_fields, output_format, output)
 
 
 if __name__ == '__main__':
