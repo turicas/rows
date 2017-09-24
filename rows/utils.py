@@ -22,6 +22,10 @@ import mimetypes
 import os
 import tempfile
 
+import requests
+
+import rows
+
 try:
     from urlparse import urlparse  # Python 2
 except ImportError:
@@ -36,7 +40,6 @@ else:
         # This is not the file-magic library
         magic = None
 
-import requests
 chardet = requests.compat.chardet
 try:
     import urllib3
@@ -49,7 +52,6 @@ else:
         # old versions of urllib3 or requests
         pass
 
-import rows
 
 # TODO: should get this information from the plugins
 TEXT_PLAIN = {

@@ -22,16 +22,12 @@ import collections
 import datetime
 import json
 import locale
-import os
 import re
-import types
-from textwrap import dedent
-
 from base64 import b64decode, b64encode
 from decimal import Decimal, InvalidOperation
+from textwrap import dedent
 
 import six
-
 
 # Order matters here
 __all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',

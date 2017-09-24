@@ -17,12 +17,11 @@
 
 from __future__ import unicode_literals
 
-import unittest
 import platform
+import unittest
 
 import rows
 import rows.fields
-
 from rows.localization import locale_context
 
 

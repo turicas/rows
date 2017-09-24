@@ -19,7 +19,6 @@ from __future__ import unicode_literals
 
 from setuptools import setup
 
-
 EXTRA_REQUIREMENTS = {
     'csv': ['unicodecsv'],
     'cli': ['click', 'requests', 'requests-cache'],

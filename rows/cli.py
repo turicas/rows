@@ -23,10 +23,8 @@
 #       fields)
 
 import pathlib
-import shlex
 import sqlite3
 import sys
-
 from io import BytesIO
 
 import click
@@ -34,11 +32,9 @@ import requests.exceptions
 import requests_cache
 
 import rows
-
+from rows.plugins.utils import make_header
 from rows.utils import (detect_source, export_to_uri, import_from_source,
                         import_from_uri)
-from rows.plugins.utils import make_header
-
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
 DEFAULT_INPUT_LOCALE = 'C'

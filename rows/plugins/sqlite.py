@@ -17,18 +17,15 @@
 
 from __future__ import unicode_literals
 
-import datetime
 import sqlite3
 import string
 
 import six
 
 import rows.fields as fields
-
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
                                 ipartition, make_unique_name,
                                 prepare_to_export)
-
 
 SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
 SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS "{table_name}" ({field_types})'

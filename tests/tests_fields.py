@@ -17,7 +17,6 @@
 
 from __future__ import unicode_literals
 
-import collections
 import datetime
 import io
 import json
@@ -27,11 +26,11 @@ from base64 import b64encode
 from decimal import Decimal
 from textwrap import dedent
 
-import rows
 import six
+
+import rows
 from rows import fields
 from tests import utils
-
 
 if platform.system() == 'Windows':
     locale_name = 'ptb_bra'

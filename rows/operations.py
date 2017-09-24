@@ -19,8 +19,8 @@ from __future__ import unicode_literals
 
 from collections import OrderedDict
 
-from rows.table import Table
 from rows.plugins.utils import create_table
+from rows.table import Table
 
 
 def join(keys, tables):

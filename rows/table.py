@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,7 +17,8 @@
 
 from __future__ import unicode_literals
 
-from collections import MutableSequence, namedtuple, OrderedDict, Sized
+import os
+from collections import MutableSequence, OrderedDict, Sized, namedtuple
 from operator import itemgetter
 
 import six

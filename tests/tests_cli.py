@@ -19,8 +19,6 @@ from __future__ import unicode_literals
 
 import unittest
 
-import rows.cli as cli
-
 
 class CliTestCase(unittest.TestCase):
     # TODO: test everything

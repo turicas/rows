@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,23 +17,16 @@
 
 from __future__ import unicode_literals
 
+import collections
 import datetime
-import math
-import time
 import unittest
-
-from collections import OrderedDict
 
 import mock
 import six
 
 import rows
 import rows.fields as fields
-
 from rows.table import FlexibleTable, Table
-
-import tests.utils as utils
-
 
 binary_type_name = six.binary_type.__name__
 

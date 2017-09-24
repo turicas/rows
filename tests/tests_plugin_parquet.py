@@ -18,13 +18,11 @@
 from __future__ import unicode_literals
 
 import unittest
-
 from collections import OrderedDict
 
 import mock
 
 import rows
-
 
 DATA = [['nation_key', 'name', 'region_key', 'comment_col'],
         [0, b'ALGERIA', 0, b' haggle. carefully final deposits detect slyly agai'],
@@ -90,7 +88,7 @@ class PluginParquetTestCase(unittest.TestCase):
         mocked_create_table.return_value = 42
 
         # import using filename
-        table = rows.import_from_parquet(self.filename)
+        rows.import_from_parquet(self.filename)
         args = mocked_create_table.call_args[0][0]
 
         self.assertEqual(args, DATA)
