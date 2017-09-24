@@ -98,29 +98,34 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # From: https://github.com/turicas/rows/issues/239
 
         data = [
-                ['field1', 'field2'],
-                [1, 2],
-                [3, 4],
-                [5, 6]
+                ['field1', 'field2', 'field3'],
+                [1, 'str1', 1.2],
+                [2, 'str2', 2.3],
+                [3, 'str3', 3.4]
         ]
         fields = OrderedDict([
-            ('field2', rows.fields.IntegerField),
+            ('field3', rows.fields.FloatField),
+            ('field2', rows.fields.TextField),
             ('field1', rows.fields.IntegerField),
         ])
 
+        import_fields = ['field2', 'field1', 'field3']
+        table = plugins_utils.create_table(data,
+                                           fields=fields,
+                                           import_fields=import_fields,
+                                           skip_header=False)
+        self.assertEqual(list(table.fields.keys()), import_fields)
+        for row, row_data in zip(table, data[1:]):
+            self.assertEqual(row_data, [row.field1, row.field2, row.field3])
+
+        # TODO: passing skip_header=True and unordered fields (with or
+        # without import_fields) is a WRONG use case.
         table = plugins_utils.create_table(data,
                                            fields=fields,
                                            skip_header=True)
         self.assertEqual(table.fields, fields)
-        self.assertEqual(table[0].field1, 1)
-        self.assertEqual(table[0].field2, 2)
-        self.assertEqual(table[1].field1, 3)
-        self.assertEqual(table[1].field2, 4)
-        self.assertEqual(table[2].field1, 5)
-        self.assertEqual(table[2].field2, 6)
-
-        # TODO: test also passing import_fields
-        # TODO: test also passing skip_header=False
+        for row, row_data in zip(table, data[1:]):
+            self.assertEqual(row_data, [row.field1, row.field2, row.field3])
 
     def test_create_table_import_fields(self):
         header = ['field1', 'field2', 'field3']
