@@ -152,17 +152,19 @@ class Table(MutableSequence):
             return self
         raise ValueError()
 
-    # TODO: fix "table += other"
+    def __iadd__(self, other):
+        return self + other
+
     def __add__(self, other):
         if other == 0:
             return self
 
         if not isinstance(self, type(other)) or self.fields != other.fields:
             raise ValueError('Tables have incompatible fields')
-
-        table = Table(fields=self.fields)
-        table._rows = self._rows + other._rows
-        return table
+        else:
+            table = Table(fields=self.fields)
+            table._rows = self._rows + other._rows
+            return table
 
     def order_by(self, key):
         # TODO: implement locale

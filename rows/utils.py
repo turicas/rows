@@ -258,9 +258,9 @@ def import_from_source(source, default_encoding, *args, **kwargs):
     'Import data described in a `rows.Source` into a `rows.Table`'
 
     plugin_name = source.plugin_name
-    kwargs['encoding'] = kwargs.get('encoding', None) or \
-                         source.encoding or \
-                         default_encoding
+    kwargs['encoding'] = (kwargs.get('encoding', None) or
+                          source.encoding or
+                          default_encoding)
 
     try:
         import_function = getattr(rows, 'import_from_{}'.format(plugin_name))

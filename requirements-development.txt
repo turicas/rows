@@ -18,3 +18,7 @@ nose
 pylint
 yanc
 tox
+
+# Doc tools
+sphinx
+recommonmark

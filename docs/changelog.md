@@ -1,8 +1,48 @@
 # rows' Log of Changes
 
-## Version `0.3.1`
+## Version `0.4.0`
 
 **Released on: (under development)**
+
+### New Features and Enhancaments
+
+- Added official Python 3.6 support
+- Implemented `Table.__iadd__` (`table += other` will work)
+- `Table.__add__` test is deterministic now
+- [#224](https://github.com/turicas/rows/issues/224) Add `|` as possible
+  delimiter (CSV dialect detection)
+- Export CSV in batches
+- Change CSV dialect detection sample size to 256KiB
+
+### Bug Fixes
+
+- [#223](https://github.com/turicas/rows/issues/223) `UnicodeDecodeError` on
+  dialect detection
+- [#214](https://github.com/turicas/rows/issues/214) Problem detecting dialect
+
+
+## Version `0.3.1`
+
+**Released on: 2017-05-08**
+
+### Enhancements
+
+- Move information on README to a site, organize and add more examples.
+  Documentation is available at [turicas.info/rows](http://turicas.info/rows).
+  Thanks to [@ellisonleao](https://github.com/ellisonleao) for Sphinx
+  implementation and [@ramiroluz](https://github.com/ramiroluz) for new
+  examples.
+- Little code refactorings.
+
+### Bug Fixes
+
+- [#200](https://github.com/turicas/rows/pull/200) Escape output when exporting
+  to HTML (thanks to [@arloc](https://github.com/arloc))
+- Fix some tests
+- [#215](https://github.com/turicas/rows/issues/215) DecimalField does not
+  handle negative values correctly if using locale (thanks to
+  [@draug3n](https://github.com/draug3n) for reporting)
+
 
 ## Version `0.3.0`
 
