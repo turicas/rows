@@ -45,7 +45,7 @@ class TableTestCase(unittest.TestCase):
                            'birthdate': '1952-03-11'})
 
     def test_table_init_slug_creation_on_fields(self):
-        table = rows.Table(fields=OrderedDict([
+        table = rows.Table(fields=collections.OrderedDict([
             ('Query Occurrence"( % ),"First Seen', rows.fields.FloatField),
         ]))
 
