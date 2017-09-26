@@ -76,13 +76,13 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
 
         # import using filename
-        table_1 = rows.import_from_csv(self.filename)
+        rows.import_from_csv(self.filename)
         call_args = mocked_create_table.call_args_list[0]
         self.assert_create_table_data(call_args)
 
         # import using fobj
         with open(self.filename, 'rb') as fobj:
-            table_2 = rows.import_from_csv(fobj)
+            rows.import_from_csv(fobj)
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args)
 

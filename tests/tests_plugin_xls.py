@@ -21,13 +21,11 @@ import datetime
 import tempfile
 import time
 import unittest
-
 from collections import OrderedDict
 
 import mock
 
 import rows
-import rows.fields as fields
 import rows.plugins.xls
 import tests.utils as utils
 
@@ -67,7 +65,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
 
         # import using filename
-        table_1 = rows.import_from_xls(self.filename)
+        rows.import_from_xls(self.filename)
         call_args = mocked_create_table.call_args_list[0]
         self.assert_create_table_data(call_args,
                 expected_meta={'imported_from': 'xls',
@@ -76,7 +74,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         # import using fobj
         with open(self.filename, 'rb') as fobj:
-            table_2 = rows.import_from_xls(fobj)
+            rows.import_from_xls(fobj)
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args,
                 expected_meta={'imported_from': 'xls',

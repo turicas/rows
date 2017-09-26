@@ -19,7 +19,6 @@ from __future__ import unicode_literals
 
 import tempfile
 import unittest
-
 from collections import OrderedDict
 from io import BytesIO
 
@@ -63,7 +62,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
 
         # import using filename
-        table_1 = rows.import_from_xlsx(self.filename)
+        rows.import_from_xlsx(self.filename)
         call_args = mocked_create_table.call_args_list[0]
         self.assert_create_table_data(call_args,
                 expected_meta={'imported_from': 'xlsx',
@@ -72,7 +71,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         # import using fobj
         with open(self.filename, 'rb') as fobj:
-            table_2 = rows.import_from_xlsx(fobj)
+            rows.import_from_xlsx(fobj)
         call_args = mocked_create_table.call_args_list[1]
         self.assert_create_table_data(call_args,
                 expected_meta={'imported_from': 'xlsx',
@@ -115,7 +114,6 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         temp = tempfile.NamedTemporaryFile()
         filename = temp.name + '.xlsx'
         temp.file.close()
-        fobj = open(filename, 'wb')
         self.files_to_delete.append(filename)
 
         kwargs = {'test': 123, 'parameter': 3.14, }

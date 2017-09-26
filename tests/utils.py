@@ -20,16 +20,13 @@ from __future__ import unicode_literals
 import copy
 import datetime
 import os
-
 from collections import OrderedDict
 from decimal import Decimal
 
 import six
 
 import rows.fields as fields
-
 from rows.table import Table
-
 
 NONE_VALUES = list(fields.NULL) + ['', None]
 FIELDS = OrderedDict([

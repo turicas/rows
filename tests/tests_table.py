@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,17 +17,15 @@
 
 from __future__ import unicode_literals
 
+import collections
 import datetime
 import unittest
-
-from collections import OrderedDict
 
 import mock
 import six
 
 import rows
 import rows.fields as fields
-
 from rows.table import FlexibleTable, Table
 
 binary_type_name = six.binary_type.__name__
@@ -393,3 +391,15 @@ class TestFlexibleTable(unittest.TestCase):
         data_rows = list(table)
         self.assertEqual(data_rows[0], data_rows[2])
         self.assertEqual(data_rows[1], data_rows[3])
+
+    def test_table_name(self):
+        table = rows.Table(
+                fields=collections.OrderedDict([('a', fields.TextField), ])
+        )
+
+        self.assertTrue('filename' not in table.meta)
+        self.assertEqual(table.name, 'table1')
+
+        table.meta['filename'] = 'This is THE name.csv'
+        self.assertTrue('filename' in table.meta)
+        self.assertEqual(table.name, 'this_is_the_name')

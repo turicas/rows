@@ -17,6 +17,14 @@
 
 from __future__ import unicode_literals
 
+import six
+from lxml.etree import tostring as to_string
+from lxml.etree import strip_tags
+from lxml.html import document_fromstring
+
+from rows.plugins.utils import (create_table, export_data,
+                                get_filename_and_fobj, serialize)
+
 try:
     from HTMLParser import HTMLParser  # Python 2
 except:
@@ -28,13 +36,8 @@ try:
 except:
     from cgi import escape  # Python 2
 
-import six
 
-from lxml.html import document_fromstring
-from lxml.etree import tostring as to_string, strip_tags
 
-from rows.plugins.utils import (create_table, export_data,
-                                get_filename_and_fobj, serialize)
 
 
 unescape = HTMLParser().unescape

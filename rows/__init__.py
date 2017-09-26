@@ -21,9 +21,9 @@ from __future__ import unicode_literals
 
 import rows.plugins as plugins
 
-from rows.operations import join, transform, transpose
-from rows.table import Table, FlexibleTable
-from rows.localization import locale_context
+from rows.operations import join, transform, transpose  # NOQA
+from rows.table import Table, FlexibleTable  # NOQA
+from rows.localization import locale_context  # NOQA
 
 
 # Don't have dependencies or dependencies installed on `install_requires`

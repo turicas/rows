@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -22,26 +22,26 @@
 # TODO: add option to pass 'create_table' options in command-line (like force
 #       fields)
 
-import shlex
+import pathlib
 import sqlite3
 import sys
-
 from io import BytesIO
 
 import click
 import requests.exceptions
+import requests_cache
 
 import rows
-
+from rows.plugins.utils import make_header
 from rows.utils import (detect_source, export_to_uri, import_from_source,
                         import_from_uri)
-from rows.plugins.utils import make_header
-
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
-DEFAULT_OUTPUT_ENCODING = 'utf-8'
 DEFAULT_INPUT_LOCALE = 'C'
+DEFAULT_OUTPUT_ENCODING = 'utf-8'
 DEFAULT_OUTPUT_LOCALE = 'C'
+HOME_PATH = pathlib.Path.home()
+CACHE_PATH = HOME_PATH / '.cache' / 'rows' / 'http'
 
 
 def _import_table(source, encoding, verify_ssl=True, *args, **kwargs):
@@ -73,11 +73,39 @@ def _get_field_names(field_names, table_field_names, permit_not=False):
     else:
         return new_field_names
 
+def _get_import_fields(fields, fields_exclude):
+    if fields is not None and fields_exclude is not None:
+        click.echo('ERROR: `--fields` cannot be used with `--fields-exclude`',
+                   err=True)
+        sys.exit(20)
+    elif fields is not None:
+        return make_header(fields.split(','), permit_not=False)
+    else:
+        return None
+
+def _get_export_fields(table_field_names, fields_exclude):
+    if fields_exclude is not None:
+        fields_exclude = _get_field_names(fields_exclude, table_field_names)
+        return [field_name for field_name in table_field_names
+                if field_name not in fields_exclude]
+    else:
+        return None
+
 
 @click.group()
+@click.option('--http-cache', type=bool, default=True)
+@click.option('--http-cache-path', default=str(CACHE_PATH.absolute()))
 @click.version_option(version=rows.__version__, prog_name='rows')
-def cli():
-    pass
+def cli(http_cache, http_cache_path):
+    if http_cache:
+        http_cache_path = pathlib.Path(http_cache_path).absolute()
+        if not http_cache_path.parent.exists():
+            os.makedirs(str(http_cache_path.parent), exist_ok=True)
+        if str(http_cache_path).lower().endswith('.sqlite'):
+            http_cache_path = \
+                    pathlib.Path(str(http_cache_path)[:-7]).absolute()
+
+        requests_cache.install_cache(str(http_cache_path))
 
 
 @cli.command(help='Convert table on `source` URI to `destination`')
@@ -85,23 +113,27 @@ def cli():
 @click.option('--output-encoding')
 @click.option('--input-locale')
 @click.option('--output-locale')
-@click.option('--verify-ssl', default=True, type=bool)
+@click.option('--verify-ssl', type=bool, default=True)
 @click.option('--order-by')
+@click.option('--fields',
+              help='A comma-separated list of fields to import')
+@click.option('--fields-exclude',
+              help='A comma-separated list of fields to exclude')
 @click.argument('source')
 @click.argument('destination')
 def convert(input_encoding, output_encoding, input_locale, output_locale,
-            verify_ssl, order_by, source, destination):
+            verify_ssl, order_by, fields, fields_exclude, source, destination):
 
-    # TODO: may use sys.stdout.encoding if output_file = '-'
-    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
-
+    import_fields = _get_import_fields(fields, fields_exclude)
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = _import_table(source, encoding=input_encoding,
-                                  verify_ssl=verify_ssl)
+                                  verify_ssl=verify_ssl,
+                                  import_fields=import_fields)
     else:
         table = _import_table(source, encoding=input_encoding,
-                              verify_ssl=verify_ssl)
+                              verify_ssl=verify_ssl,
+                              import_fields=import_fields)
 
     if order_by is not None:
         order_by = _get_field_names(order_by,
@@ -110,11 +142,16 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
         # TODO: use complete list of `order_by` fields
         table.order_by(order_by[0].replace('^', '-'))
 
+    export_fields = _get_export_fields(table.field_names, fields_exclude)
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
     if output_locale is not None:
         with rows.locale_context(output_locale):
-            export_to_uri(table, destination, encoding=output_encoding)
+            export_to_uri(table, destination, encoding=output_encoding,
+                          export_fields=export_fields)
     else:
-        export_to_uri(table, destination, encoding=output_encoding)
+        export_to_uri(table, destination, encoding=output_encoding,
+                      export_fields=export_fields)
 
 
 @cli.command(help='Join tables from `source` URIs using `key(s)` to group '
@@ -125,15 +162,19 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--order-by')
+@click.option('--fields',
+              help='A comma-separated list of fields to export')
+@click.option('--fields-exclude',
+              help='A comma-separated list of fields to exclude when exporting')
 @click.argument('keys')
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('destination')
 def join(input_encoding, output_encoding, input_locale, output_locale,
-         verify_ssl, order_by, keys, sources, destination):
+         verify_ssl, order_by, fields, fields_exclude, keys, sources,
+         destination):
 
-    # TODO: may use sys.stdout.encoding if output_file = '-'
-    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
-    keys = [key.strip() for key in keys.split(',')]
+    export_fields = _get_import_fields(fields, fields_exclude)
+    keys = make_header(keys.split(','), permit_not=False)
 
     if input_locale is not None:
         with rows.locale_context(input_locale):
@@ -146,7 +187,6 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
                   for source in sources]
 
     result = rows.join(keys, tables)
-
     if order_by is not None:
         order_by = _get_field_names(order_by,
                                     result.field_names,
@@ -154,11 +194,17 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
         # TODO: use complete list of `order_by` fields
         result.order_by(order_by[0].replace('^', '-'))
 
+    if export_fields is None:
+        export_fields = _get_export_fields(result.field_names, fields_exclude)
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
     if output_locale is not None:
         with rows.locale_context(output_locale):
-            export_to_uri(result, destination, encoding=output_encoding)
+            export_to_uri(result, destination, encoding=output_encoding,
+                          export_fields=export_fields)
     else:
-        export_to_uri(result, destination, encoding=output_encoding)
+        export_to_uri(result, destination, encoding=output_encoding,
+                      export_fields=export_fields)
 
 
 @cli.command(name='sum',
@@ -169,26 +215,29 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--order-by')
+@click.option('--fields',
+              help='A comma-separated list of fields to import')
+@click.option('--fields-exclude',
+              help='A comma-separated list of fields to exclude')
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('destination')
 def sum_(input_encoding, output_encoding, input_locale, output_locale,
-         verify_ssl, order_by, sources, destination):
+         verify_ssl, order_by, fields, fields_exclude, sources, destination):
 
-    # TODO: may use sys.stdout.encoding if output_file = '-'
-    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
-
+    import_fields = _get_import_fields(fields, fields_exclude)
     if input_locale is not None:
         with rows.locale_context(input_locale):
             tables = [_import_table(source, encoding=input_encoding,
-                                    verify_ssl=verify_ssl)
+                                    verify_ssl=verify_ssl,
+                                    import_fields=import_fields)
                     for source in sources]
     else:
         tables = [_import_table(source, encoding=input_encoding,
-                                verify_ssl=verify_ssl)
+                                verify_ssl=verify_ssl,
+                                import_fields=import_fields)
                   for source in sources]
 
     result = sum(tables)
-
     if order_by is not None:
         order_by = _get_field_names(order_by,
                                     result.field_names,
@@ -196,11 +245,16 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
         # TODO: use complete list of `order_by` fields
         result.order_by(order_by[0].replace('^', '-'))
 
+    export_fields = _get_export_fields(result.field_names, fields_exclude)
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or DEFAULT_OUTPUT_ENCODING
     if output_locale is not None:
         with rows.locale_context(output_locale):
-            export_to_uri(result, destination, encoding=output_encoding)
+            export_to_uri(result, destination, encoding=output_encoding,
+                          export_fields=export_fields)
     else:
-        export_to_uri(result, destination, encoding=output_encoding)
+        export_to_uri(result, destination, encoding=output_encoding,
+                      export_fields=export_fields)
 
 
 @cli.command(name='print', help='Print a table')
@@ -210,60 +264,40 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-locale')
 @click.option('--table-index', default=0)
 @click.option('--verify-ssl', default=True, type=bool)
-@click.option('--fields')
-@click.option('--fields-except')
+@click.option('--fields',
+              help='A comma-separated list of fields to import')
+@click.option('--fields-exclude',
+              help='A comma-separated list of fields to exclude')
 @click.option('--order-by')
 @click.argument('source', required=True)
 def print_(input_encoding, output_encoding, input_locale, output_locale,
-           table_index, verify_ssl, fields, fields_except, order_by, source):
+           table_index, verify_ssl, fields, fields_exclude, order_by, source):
 
-    if fields is not None and fields_except is not None:
-        click.echo('ERROR: `--fields` cannot be used with `--fields-except`',
-                   err=True)
-        sys.exit(20)
-
-    output_encoding = output_encoding or sys.stdout.encoding or \
-                      DEFAULT_OUTPUT_ENCODING
-
-    # TODO: may use `import_fields` for better performance
+    import_fields = _get_import_fields(fields, fields_exclude)
+    # TODO: if create_table implements `fields_exclude` this _import_table call
+    # will import only the desired data
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = _import_table(source, encoding=input_encoding,
                                   verify_ssl=verify_ssl,
-                                  index=table_index)
+                                  index=table_index,
+                                  import_fields=import_fields)
     else:
         table = _import_table(source, encoding=input_encoding,
                               verify_ssl=verify_ssl,
-                              index=table_index)
-
-    table_field_names = table.field_names
-    if fields is not None:
-        fields = _get_field_names(fields, table_field_names)
-    if fields_except is not None:
-        fields_except = _get_field_names(fields_except, table_field_names)
-
-    # TODO: should set `export_fields = None` if `--fields` and
-    # `--fields-except` are `None`
-    if fields is not None and fields_except is None:
-        export_fields = fields
-    elif fields is not None and fields_except is not None:
-        export_fields = list(fields)
-        for field_to_remove in fields_except:
-            export_fields.remove(field_to_remove)
-    elif fields is None and fields_except is not None:
-        export_fields = list(table_field_names)
-        for field_to_remove in fields_except:
-            export_fields.remove(field_to_remove)
-    else:
-        export_fields = table_field_names
+                              index=table_index,
+                              import_fields=import_fields)
 
     if order_by is not None:
         order_by = _get_field_names(order_by,
-                                    table_field_names,
+                                    table.field_names,
                                     permit_not=True)
         # TODO: use complete list of `order_by` fields
         table.order_by(order_by[0].replace('^', '-'))
 
+    export_fields = _get_export_fields(table.field_names, fields_exclude)
+    output_encoding = output_encoding or sys.stdout.encoding or \
+                      DEFAULT_OUTPUT_ENCODING
     fobj = BytesIO()
     if output_locale is not None:
         with rows.locale_context(output_locale):
@@ -284,28 +318,26 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--input-locale')
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
-@click.option('--fields')
 @click.option('--output')
 @click.argument('query', required=True)
 @click.argument('sources', nargs=-1, required=True)
 def query(input_encoding, output_encoding, input_locale, output_locale,
-          verify_ssl, fields, output, query, sources):
-
-    # TODO: may use sys.stdout.encoding if output_file = '-'
-    output_encoding = output_encoding or sys.stdout.encoding or \
-                      DEFAULT_OUTPUT_ENCODING
+          verify_ssl, output, query, sources):
 
     if not query.lower().startswith('select'):
-        field_names = '*' if fields is None else fields
         table_names = ', '.join(['table{}'.format(index)
                                  for index in range(1, len(sources) + 1)])
-        query = 'SELECT {} FROM {} WHERE {}'.format(field_names, table_names,
-                                                    query)
+        query = 'SELECT * FROM {} WHERE {}'.format(table_names, query)
 
     if len(sources) == 1:
         source = detect_source(sources[0], verify_ssl=verify_ssl)
 
-        if source.plugin_name != 'sqlite':
+        if source.plugin_name == 'sqlite':
+            # Optimization: query the db directly
+            result = import_from_source(source,
+                                        DEFAULT_INPUT_ENCODING,
+                                        query=query)
+        else:
             if input_locale is not None:
                 with rows.locale_context(input_locale):
                     table = import_from_source(source, DEFAULT_INPUT_ENCODING)
@@ -318,13 +350,8 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
                                   table_name='table1')
             result = rows.import_from_sqlite(sqlite_connection, query=query)
 
-        else:
-            # Optimization: query the SQLite database directly
-            result = import_from_source(source,
-                                        DEFAULT_INPUT_ENCODING,
-                                        query=query)
-
     else:
+        # TODO: if all sources are SQLite we can also optimize the import
         if input_locale is not None:
             with rows.locale_context(input_locale):
                 tables = [_import_table(source, encoding=input_encoding,
@@ -343,6 +370,9 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
 
         result = rows.import_from_sqlite(sqlite_connection, query=query)
 
+    # TODO: may use sys.stdout.encoding if output_file = '-'
+    output_encoding = output_encoding or sys.stdout.encoding or \
+                      DEFAULT_OUTPUT_ENCODING
     if output is None:
         fobj = BytesIO()
         if output_locale is not None:
@@ -358,6 +388,47 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
                 export_to_uri(result, output, encoding=output_encoding)
         else:
             export_to_uri(result, output, encoding=output_encoding)
+
+
+@cli.command(name='schema', help='Identifies table schema')
+@click.option('--input-encoding')
+@click.option('--input-locale')
+@click.option('--verify-ssl', default=True, type=bool)
+@click.option('-f', '--format', 'output_format', default='txt',
+              type=click.Choice(('txt', 'sql',  'django')))
+@click.option('--fields',
+              help='A comma-separated list of fields to inspect')
+@click.option('--fields-exclude',
+              help='A comma-separated list of fields to exclude from inspection')
+@click.option('--samples', type=int, default=5000,
+              help='Number of rows to determine the field types (0 = all)')
+@click.argument('source', required=True)
+@click.argument('output', required=False, default='-')
+def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
+           fields_exclude, samples, source, output):
+
+    samples = samples if samples > 0 else None
+    import_fields = _get_import_fields(fields, fields_exclude)
+
+    source = detect_source(source, verify_ssl=verify_ssl)
+    if input_locale is not None:
+        with rows.locale_context(input_locale):
+            table = import_from_source(source, DEFAULT_INPUT_ENCODING,
+                                       samples=samples,
+                                       import_fields=import_fields)
+    else:
+        table = import_from_source(source, DEFAULT_INPUT_ENCODING,
+                                   samples=samples,
+                                   import_fields=import_fields)
+
+    export_fields = _get_export_fields(table.field_names, fields_exclude)
+    if export_fields is None:
+        export_fields = table.field_names
+    if output in ('-', None):
+        output = sys.stdout
+    else:
+        output = open(output, mode='w', encoding='utf-8')
+    rows.fields.generate_schema(table, export_fields, output_format, output)
 
 
 if __name__ == '__main__':

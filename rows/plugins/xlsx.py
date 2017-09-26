@@ -17,13 +17,10 @@
 
 from __future__ import unicode_literals
 
-import datetime
-import decimal
-
 from decimal import Decimal
 from io import BytesIO
 
-from openpyxl import load_workbook, Workbook
+from openpyxl import Workbook, load_workbook
 
 from rows import fields
 from rows.plugins.utils import (create_table, get_filename_and_fobj,

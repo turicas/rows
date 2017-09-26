@@ -5,13 +5,10 @@ from __future__ import unicode_literals
 import codecs
 import datetime
 import re
-
 from collections import OrderedDict
 
 import rows.fields
-
 from rows.table import Table
-
 
 REGEXP_UWSGI_LOG = re.compile(r'\[pid: ([0-9]+)\|app: [0-9]+\|req: '
                               r'[0-9]+/[0-9]+\] '

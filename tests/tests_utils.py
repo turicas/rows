@@ -21,7 +21,6 @@ import tempfile
 import unittest
 
 import rows.utils
-
 import tests.utils as utils
 
 

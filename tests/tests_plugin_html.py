@@ -19,7 +19,6 @@ from __future__ import unicode_literals
 
 import tempfile
 import unittest
-
 from collections import OrderedDict
 from io import BytesIO
 from textwrap import dedent
@@ -29,7 +28,6 @@ import mock
 import rows
 import rows.plugins.plugin_html
 import tests.utils as utils
-
 
 # TODO: test unescape
 # TODO: test colspan

@@ -18,18 +18,14 @@
 from __future__ import unicode_literals
 
 import datetime
-
-from decimal import Decimal
 from io import BytesIO
 
 import xlrd
 import xlwt
 
 import rows.fields as fields
-
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
                                 prepare_to_export)
-
 
 CELL_TYPES = {
         xlrd.XL_CELL_BLANK: fields.TextField,

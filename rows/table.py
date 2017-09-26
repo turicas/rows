@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import os
 from collections import MutableSequence, OrderedDict, Sized, namedtuple
 from operator import itemgetter
 
@@ -49,6 +50,17 @@ class Table(MutableSequence):
     @property
     def field_types(self):
         return list(self.fields.values())
+
+    @property
+    def name(self):
+        '''Define table name based on its metadata (filename used on import)
+
+        If `filename` is not available, return `table1`.'''
+
+        from rows.plugins.utils import slug
+        # TODO: may try read meta['name'] also (some plugins may set it)
+        name = os.path.basename(self.meta.get('filename', 'table1'))
+        return slug(os.path.splitext(name)[0])
 
     def __repr__(self):
         length = len(self._rows) if isinstance(self._rows, Sized) else '?'

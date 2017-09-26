@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,20 +17,20 @@
 
 from __future__ import unicode_literals
 
-import collections
 import datetime
+import io
 import json
 import platform
 import unittest
-
 from base64 import b64encode
 from decimal import Decimal
+from textwrap import dedent
 
-import rows
 import six
 
+import rows
 from rows import fields
-
+from tests import utils
 
 if platform.system() == 'Windows':
     locale_name = 'ptb_bra'
@@ -493,3 +493,110 @@ class FieldsFunctionsTestCase(unittest.TestCase):
             fields.as_string('Álvaro'.encode('utf-8'))
         self.assertEqual(exception_context.exception.args[0],
                          'Binary is not supported')
+
+    def assert_generate_schema(self, fmt, expected, export_fields=None):
+        # prepare a consistent table so we can test all formats using it
+        table_fields = utils.table.fields.copy()
+        table_fields['json_column'] = fields.JSONField
+        table_fields['decimal_column'] = fields.DecimalField
+        table_fields['percent_column'] = fields.DecimalField
+        if export_fields is None:
+            export_fields = list(table_fields.keys())
+        table = rows.Table(fields=table_fields)
+
+        for row in utils.table:
+            data = row._asdict()
+            data['json_column'] = {}
+            table.append(data)
+        table.meta['filename'] = 'this is my table.csv'
+
+        obj = io.StringIO()
+        fields.generate_schema(table, export_fields, fmt, obj)
+        obj.seek(0)
+        result = obj.read()
+
+        self.assertEqual(expected.strip(), result.strip())
+
+    def test_generate_schema_txt(self):
+        expected = dedent('''
+            +-----------------+------------+
+            |    field_name   | field_type |
+            +-----------------+------------+
+            |     bool_column |       bool |
+            |  integer_column |    integer |
+            |    float_column |      float |
+            |  decimal_column |    decimal |
+            |  percent_column |    decimal |
+            |     date_column |       date |
+            | datetime_column |   datetime |
+            |  unicode_column |       text |
+            |     json_column |       json |
+            +-----------------+------------+
+        ''')
+        self.assert_generate_schema('txt', expected)
+
+    def test_generate_schema_sql(self):
+        expected = dedent('''
+        CREATE TABLE IF NOT EXISTS this_is_my_table (
+            bool_column BOOL,
+            integer_column INT,
+            float_column FLOAT,
+            decimal_column FLOAT,
+            percent_column FLOAT,
+            date_column DATE,
+            datetime_column DATETIME,
+            unicode_column TEXT,
+            json_column TEXT
+        );
+        ''')
+        self.assert_generate_schema('sql', expected)
+
+    def test_generate_schema_django(self):
+        expected = dedent('''
+        from django.db import models
+        from django.contrib.postgres.fields import JSONField
+
+        class ThisIsMyTable(models.Model):
+            bool_column = models.BooleanField()
+            integer_column = models.IntegerField()
+            float_column = models.FloatField()
+            decimal_column = models.DecimalField()
+            percent_column = models.DecimalField()
+            date_column = models.DateField()
+            datetime_column = models.DateTimeField()
+            unicode_column = models.TextField()
+            json_column = JSONField()
+        ''')
+        self.assert_generate_schema('django', expected)
+
+    def test_generate_schema_restricted_fields(self):
+        expected = dedent('''
+            +-------------+------------+
+            |  field_name | field_type |
+            +-------------+------------+
+            | bool_column |       bool |
+            | json_column |       json |
+            +-------------+------------+
+        ''')
+        self.assert_generate_schema('txt', expected,
+                export_fields=['bool_column', 'json_column'])
+
+        expected = dedent('''
+        CREATE TABLE IF NOT EXISTS this_is_my_table (
+            bool_column BOOL,
+            json_column TEXT
+        );
+        ''')
+        self.assert_generate_schema('sql', expected,
+                export_fields=['bool_column', 'json_column'])
+
+        expected = dedent('''
+        from django.db import models
+        from django.contrib.postgres.fields import JSONField
+
+        class ThisIsMyTable(models.Model):
+            bool_column = models.BooleanField()
+            json_column = JSONField()
+        ''')
+        self.assert_generate_schema('django', expected,
+                export_fields=['bool_column', 'json_column'])

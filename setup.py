@@ -19,10 +19,9 @@ from __future__ import unicode_literals
 
 from setuptools import setup
 
-
 EXTRA_REQUIREMENTS = {
     'csv': ['unicodecsv'],
-    'cli': ['click', 'requests'],
+    'cli': ['click', 'requests', 'requests-cache'],
     'html': ['lxml'],  # apt: libxslt-dev libxml2-dev
     'ods': ['lxml'],
     'parquet': ['parquet>=1.1'],
