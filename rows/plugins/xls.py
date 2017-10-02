@@ -152,6 +152,9 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
+import_from_xls.is_lazy = False
+
+
 def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                   **kwargs):
 

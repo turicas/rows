@@ -26,9 +26,10 @@ import six
 
 import rows
 import rows.fields as fields
-from rows.table import FlexibleTable, Table
+from rows.table import FlexibleTable, LazyTable, Table
 
 binary_type_name = six.binary_type.__name__
+
 
 class TableTestCase(unittest.TestCase):
 
@@ -312,6 +313,56 @@ class TableTestCase(unittest.TestCase):
         self.assertFalse(table2._rows.__add__.called)
         self.assertFalse(table1._rows.__iter__.called)
         self.assertFalse(table2._rows.__iter__.called)
+
+
+class LazyTableTestCase(unittest.TestCase):
+
+    def setUp(self):
+        fields = {'name': rows.fields.TextField,
+                  'birthdate': rows.fields.DateField, }
+        data_rows = [
+            ('Álvaro Justen', datetime.date(1987, 4, 29)),
+            ('Somebody',      datetime.date(1990, 2, 1)),
+            ('Douglas Adams', datetime.date(1952, 3, 11)), ]
+        data = (row for row in data_rows)
+        self.table = LazyTable(fields=fields, data=data)
+
+    def test_LazyTable_is_present_on_main_namespace(self):
+        self.assertIn('LazyTable', dir(rows))
+        self.assertIs(LazyTable, rows.LazyTable)
+
+    def test_table_iteration(self):
+        table_rows = list(self.table)
+
+        self.assertEqual(list(self.table), [])
+        self.assertEqual(len(table_rows), 3)
+
+        self.assertEqual(table_rows[0].name, 'Álvaro Justen')
+        self.assertEqual(table_rows[0].birthdate, datetime.date(1987, 4, 29))
+        self.assertEqual(table_rows[1].name, 'Somebody')
+        self.assertEqual(table_rows[1].birthdate, datetime.date(1990, 2, 1))
+        self.assertEqual(table_rows[2].name, 'Douglas Adams')
+        self.assertEqual(table_rows[2].birthdate, datetime.date(1952, 3, 11))
+
+    def test_table_slicing_error(self):
+        with self.assertRaises(TypeError) as context_manager:
+            self.table[0]
+
+    def test_field_names_and_types(self):
+        self.assertEqual(self.table.field_names,
+                         list(self.table.fields.keys()))
+        self.assertEqual(self.table.field_types,
+                         list(self.table.fields.values()))
+
+    def test_table_repr(self):
+        expected = '<rows.LazyTable, 2 fields>'
+        self.assertEqual(expected, repr(self.table))
+
+    # TODO: may be able to setitem (column)
+    # TODO: may be able to delitem (column)
+    # TODO: may be able to getitem (column)
+    # TODO: may be able to append rows (but not insert)
+    # TODO: should it have __add__?
 
 
 class TestFlexibleTable(unittest.TestCase):

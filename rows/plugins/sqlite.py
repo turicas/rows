@@ -20,6 +20,8 @@ from __future__ import unicode_literals
 import sqlite3
 import string
 
+from itertools import chain
+
 import six
 
 import rows.fields as fields
@@ -28,6 +30,7 @@ from rows.plugins.utils import (create_table, get_filename_and_fobj,
                                 prepare_to_export)
 
 SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
+# TODO: may use query args instead of string formatting
 SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS "{table_name}" ({field_types})'
 SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
 SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) VALUES ({placeholders})'
@@ -114,13 +117,15 @@ def import_from_sqlite(filename_or_connection, table_name='table1', query=None,
     if query_args is None:
         query_args = tuple()
 
-    table_rows = list(cursor.execute(query, query_args)) # TODO: may be lazy
-    header = [six.text_type(info[0]) for info in cursor.description]
-    cursor.close()
-    # TODO: should close connection also?
+    cursor.execute(query, query_args)
+    data = chain([[six.text_type(info[0]) for info in cursor.description]],
+                 cursor)
 
     meta = {'imported_from': 'sqlite', 'filename': filename_or_connection, }
-    return create_table([header] + table_rows, meta=meta, *args, **kwargs)
+    return create_table(data, meta=meta, *args, **kwargs)
+
+
+import_from_sqlite.is_lazy = True
 
 
 def export_to_sqlite(table, filename_or_connection, table_name=None,
@@ -156,6 +161,7 @@ def export_to_sqlite(table, filename_or_connection, table_name=None,
             placeholders=', '.join('?' for _ in field_names))
     _convert_row = _python_to_sqlite(field_types)
     for batch in ipartition(prepared_table, batch_size):
+        # TODO: add a callback function
         cursor.executemany(insert_sql, map(_convert_row, batch))
 
     connection.commit()

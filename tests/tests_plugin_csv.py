@@ -54,6 +54,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_imports(self):
         self.assertIs(rows.import_from_csv, rows.plugins.plugin_csv.import_from_csv)
         self.assertIs(rows.export_to_csv, rows.plugins.plugin_csv.export_to_csv)
+        self.assertTrue(rows.import_from_csv.is_lazy)
 
     @mock.patch('rows.plugins.plugin_csv.create_table')
     def test_import_from_csv_uses_create_table(self, mocked_create_table):
@@ -312,3 +313,30 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result_1 = rows.export_to_csv(utils.table, dialect=csv.excel_tab)
         result_2 = rows.export_to_csv(utils.table, dialect=csv.excel)
         self.assertEqual(result_1.replace(b'\t', b','), result_2)
+
+    def test_import_from_csv_is_lazy(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+        encoding = 'utf-8'
+        number_of_rows = 1000
+
+        fobj = open(filename, mode='wb+')
+        fobj.write('field1,field2\r\n'.encode(encoding))
+        for index in range(number_of_rows):
+            row_data = ','.join([str(index), str(index ** 2)]) + '\r\n'
+            fobj.write(row_data.encode(encoding))
+        fobj.flush()
+        total_bytes = fobj.tell()
+
+        fobj.seek(0)
+        table = rows.import_from_csv(fobj,
+                                     encoding=encoding,
+                                     dialect=csv.excel,
+                                     samples=1,  # pre-read only the first row
+                                     lazy=True)
+        self.assertEqual(fobj.tell(), 20)  # 20 = len(1st line) + len(2nd line)
+
+        data = list(table)
+        self.assertEqual(len(data), number_of_rows)
+        self.assertEqual(fobj.tell(), total_bytes)

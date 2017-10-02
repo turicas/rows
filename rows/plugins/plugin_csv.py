@@ -117,6 +117,9 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
     return create_table(reader, meta=meta, *args, **kwargs)
 
 
+import_from_csv.is_lazy = True
+
+
 def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
                   dialect=unicodecsv.excel, batch_size=100, *args, **kwargs):
     """Export a `rows.Table` to a CSV file
@@ -128,7 +131,6 @@ def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
     """
 
     # TODO: will work only if table.fields is OrderedDict
-    # TODO: should use fobj? What about creating a method like json.dumps?
 
     if filename_or_fobj is not None:
         _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')

@@ -40,6 +40,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_imports(self):
         self.assertIs(rows.import_from_txt, rows.plugins.txt.import_from_txt)
         self.assertIs(rows.export_to_txt, rows.plugins.txt.export_to_txt)
+        self.assertFalse(rows.import_from_txt.is_lazy)
 
     @mock.patch('rows.plugins.txt.create_table')
     def test_import_from_txt_uses_create_table(self, mocked_create_table):
