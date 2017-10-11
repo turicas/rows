@@ -7,6 +7,100 @@ converting and querying data.
 > Note: we still need to improve this documentation. Please run `rows --help`
 > to see all the available commands and take a look at [rows/cli.py][rows-cli].
 
+## Global parameters
+
+The table below lists the available arguments.
+
+<table>
+	<thead>
+	<tr>
+		<th>Description</th>
+		<th>Argument</span></th>
+	</tr>
+	</thead>
+     <tbody>
+          <tr>
+               <td>
+                    Encoding at the input.
+                    <br />
+                    Default value: <code>'utf-8'</code>
+               </td>
+               <td>
+                    <code class="flag">--input-encoding=&lt;encoding&gt;</code>
+               </td>
+          </tr>
+          <tr>
+               <td>
+                    Encoding at the output.
+                    <br />
+                    Default value: <code>'utf-8'</code>
+               </td>
+               <td>
+                    <code class="flag">--output-encoding=&lt;encoding&gt;</code>
+               </td>
+          </tr>
+          <tr>
+               <td>
+                    Locale of the input data. To now more, look at Locales document.
+                    <br />
+                    Default value: <code>C</code>
+               </td>
+               <td>
+                    <code class="flag">--input-locale=&lt;locale&gt;</code>
+               </td>
+          </tr>
+          <tr>
+               <td>
+                    Locale of the output data. To now more, look at Locales document.
+                    <br />
+                    Default value: <code>C</code>
+               </td>
+               <td>
+                    <code class="flag">--output-locale=&lt;locale&gt;</code>
+               </td>
+          </tr>
+          <tr>
+               <td>
+                    SSL verification.
+                    <br />
+                    Default value: <code>True</code>
+               </td>
+               <td>
+                    <code class="flag">--verify-ssl=&lt;bool&gt;</code>
+               </td>
+          </tr>
+          <tr>
+               <td>
+                    The order that the fields will be showed.
+                    <br />
+                    Default value: <code>None</code>
+               </td>
+               <td>
+                    <code class="flag">--order-by=&lt;field&gt;</code>
+               </td>
+          </tr>
+          <tr>
+               <td>
+                    A comma-separated list of fields to import
+                    <br />
+                    Default value: <code>None</code>
+               </td>
+               <td>
+                    <code class="flag">--fields=&lt;fields&gt;</code>
+               </td>
+          </tr>
+          <tr>
+               <td>
+                    A comma-separated list of fields to exclude
+                    <br />
+                    Default value: <code>None</code>
+               </td>
+               <td>
+                    <code class="flag">--fields-exclude=&lt;fields&gt;</code>
+               </td>
+          </tr>
+      </tbody>
+</table>
 
 ## `rows convert`
 
