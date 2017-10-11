@@ -18,7 +18,6 @@
 from __future__ import unicode_literals
 
 import datetime
-# import psycopg2
 import string
 
 import six
@@ -89,10 +88,10 @@ def _python_to_postgresql(field_types):  # TODO: convert to psycopg types
 def _get_connection(connection):  # TODO: replace with pg connection
 
     if isinstance(connection, (six.binary_type, six.text_type)):
-        return pgconnect(connection)  # filename
+        return True, pgconnect(connection)  # filename
 
     else:  # already a connection
-        return connection
+        return False, connection
 
 
 def _valid_table_name(name):
@@ -115,7 +114,7 @@ def _valid_table_name(name):
 def import_from_postgresql(connection, table_name='table1', query=None,
                            query_args=None, *args, **kwargs):
 
-    connection = _get_connection(connection)
+    should_close_connection, connection = _get_connection(connection)
     cursor = connection.cursor()
 
     if query is None:
@@ -127,7 +126,8 @@ def import_from_postgresql(connection, table_name='table1', query=None,
     if query_args is None:
         query_args = tuple()
 
-    table_rows = list(cursor.execute(query, query_args))  # TODO: may be lazy
+    cursor.execute(query, query_args)  # TODO: may be lazy
+    table_rows = list(cursor.fetchall())
     header = [six.text_type(info[0]) for info in cursor.description]
     cursor.close()
     # TODO: should close connection also?
@@ -142,11 +142,12 @@ def export_to_postgresql(table, connection, table_name=None,
     # TODO: should add transaction support?
 
     prepared_table = prepare_to_export(table, *args, **kwargs)
-    connection = _get_connection(connection)
+    should_close_connection, connection = _get_connection(connection)
     cursor = connection.cursor()
 
     if table_name is None:
-        table_names = [item[0] for item in cursor.execute(SQL_TABLE_NAMES)]
+        cursor.execute(SQL_TABLE_NAMES)
+        table_names = [item[0] for item in cursor.fetchall()]
         table_name = make_unique_name(table_name_format.format(index=1),
                                       existing_names=table_names,
                                       name_format=table_name_format,
@@ -166,11 +167,12 @@ def export_to_postgresql(table, connection, table_name=None,
     insert_sql = SQL_INSERT.format(
             table_name=table_name,
             field_names=', '.join(field_names),
-            placeholders=', '.join('?' for _ in field_names))
+            placeholders=', '.join('%s' for _ in field_names))
     _convert_row = _python_to_postgresql(field_types)
     for batch in ipartition(prepared_table, batch_size):
         cursor.executemany(insert_sql, map(_convert_row, batch))
 
     connection.commit()
-    connection.close()
+    if should_close_connection:
+        connection.close()
     return connection
