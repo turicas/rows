@@ -27,7 +27,6 @@ import rows.fields as fields
 
 from psycopg2 import connect as pgconnect
 from rows.plugins.utils import create_table
-from rows.plugins.utils import get_filename_and_fobj
 from rows.plugins.utils import ipartition
 from rows.plugins.utils import make_unique_name
 from rows.plugins.utils import prepare_to_export
@@ -104,7 +103,7 @@ def _get_connection(connection):
     'Function that receives the connection object that will be used'
 
     if isinstance(connection, (six.binary_type, six.text_type)):
-        return True, pgconnect(connection)  # filename
+        return True, pgconnect(connection)
 
     else:  # already a connection
         return False, connection

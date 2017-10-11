@@ -54,3 +54,8 @@ try:
     from . import plugin_parquet as parquet
 except ImportError:
     parquet = None
+
+try:
+    from . import postgresql as postgresql
+except ImportError:
+    postgresql = None
