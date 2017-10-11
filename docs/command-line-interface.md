@@ -21,7 +21,7 @@ The table below lists the available arguments.
      <tbody>
           <tr>
                <td>
-                    Encoding at the input.
+                    Input Encoding.
                     <br />
                     Default value: <code>'utf-8'</code>
                </td>
@@ -31,7 +31,7 @@ The table below lists the available arguments.
           </tr>
           <tr>
                <td>
-                    Encoding at the output.
+                    Output Encoding.
                     <br />
                     Default value: <code>'utf-8'</code>
                </td>
@@ -41,7 +41,7 @@ The table below lists the available arguments.
           </tr>
           <tr>
                <td>
-                    Locale of the input data. To now more, look at Locales document.
+                    Locale of the input data. For more information, refer to Locales document.
                     <br />
                     Default value: <code>C</code>
                </td>
@@ -51,7 +51,7 @@ The table below lists the available arguments.
           </tr>
           <tr>
                <td>
-                    Locale of the output data. To now more, look at Locales document.
+                    Locale of the output data. For more information, refer to Locales document.
                     <br />
                     Default value: <code>C</code>
                </td>
@@ -71,7 +71,7 @@ The table below lists the available arguments.
           </tr>
           <tr>
                <td>
-                    The order that the fields will be showed.
+		    The field(s) sorting key.
                     <br />
                     Default value: <code>None</code>
                </td>
@@ -130,11 +130,52 @@ rows query 'SELECT * FROM table1 WHERE inhabitants > 1000000' \
 
 Join tables from `source` URIs using `key(s)` to group rows and save into `destination`
 
-For example, to join `a.csv` and `b.csv` to a new file called `c.csv` using the field `id` like a key, we can use:
+For example, to join `a.csv` and `b.csv` to a new file called `c.csv` using the field `id` as a key, we can use:
 
 ```bash
 rows join id a.csv b.csv c.csv
 ```
 
+## `rows print`
+
+Print the selected `source` table
+
+```bash
+rows print brazilian-cities.csv
+```
+
+## `rows schema`
+
+Identifies the table schema.
+
+The input
+
+```bash
+rows schema brazilian-cities.csv
+```
+
+returns
+
+```
++-------------+------------+
+|  field_name | field_type |
++-------------+------------+
+|       state |       text |
+|        city |       text |
+| inhabitants |    integer |
+|        area |      float |
++-------------+------------+
+```
+
+## `rows sum`
+
+Sum tables from `source` URIs and save into `destination`. 
+Note: You need to have the same fields on the source files.
+
+```bash
+rows sum source1.csv source2.csv destination.csv
+```
+
+The `c.csv` will have the same headers that `a` and `b` have, with the contents of `a` and `b` files.
 
 [rows-cli]: https://github.com/turicas/rows/blob/develop/rows/cli.py
