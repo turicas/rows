@@ -2,6 +2,9 @@ envtest: clean
 	nosetests tests/
 
 test:
+	coverage erase && nosetests -dsv --with-yanc --with-coverage --cover-package rows
+
+test-tox:
 	tox
 
 clean:
