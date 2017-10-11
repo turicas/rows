@@ -15,17 +15,25 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+# ==== Imports ===============================================================
+
 from __future__ import unicode_literals
 
 import datetime
 import six
 import string
+import rows.fields as fields
 
 from psycopg2 import connect as pgconnect
-import rows.fields as fields
-from rows.plugins.utils import (create_table, get_filename_and_fobj,
-                                ipartition, make_unique_name,
-                                prepare_to_export)
+from rows.plugins.utils import create_table
+from rows.plugins.utils import get_filename_and_fobj
+from rows.plugins.utils import ipartition
+from rows.plugins.utils import make_unique_name
+from rows.plugins.utils import prepare_to_export
+
+
+# ==== Constants =============================================================
 
 
 SQL_TABLE_NAMES = """
@@ -35,11 +43,15 @@ SQL_TABLE_NAMES = """
                        WHERE schemaname
                            NOT IN ('pg_catalog', 'information_schema');
                   """
+
 SQL_CREATE_TABLE = ('CREATE TABLE IF NOT EXISTS '
                     '"{table_name}" ({field_types})')
+
 SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
+
 SQL_INSERT = ('INSERT INTO "{table_name}" ({field_names}) '
               'VALUES ({placeholders})')
+
 SQL_TYPES = {
         fields.BinaryField: 'BYTEA',
         fields.BoolField: 'BOOLEAN',
@@ -52,10 +64,15 @@ SQL_TYPES = {
         fields.TextField: 'TEXT',
         fields.JSONField: 'JSONB',
         }
+
 DEFAULT_TYPE = 'BYTEA'
 
+# ==== Functions =============================================================
 
-def _python_to_postgresql(field_types):  # TODO: convert to psycopg types
+
+# Convertion to PostgreSQL types
+def _python_to_postgresql(field_types):
+    'This function converts to PostgreSQL types'
 
     def convert_value(field_type, value):
         if field_type in (
@@ -82,7 +99,9 @@ def _python_to_postgresql(field_types):  # TODO: convert to psycopg types
     return convert_row
 
 
-def _get_connection(connection):  # TODO: replace with pg connection
+# Connection object
+def _get_connection(connection):
+    'Function that receives the connection object that will be used'
 
     if isinstance(connection, (six.binary_type, six.text_type)):
         return True, pgconnect(connection)  # filename
@@ -91,6 +110,7 @@ def _get_connection(connection):  # TODO: replace with pg connection
         return False, connection
 
 
+# Valid table name
 def _valid_table_name(name):
     '''Verify if a given table name is valid for `rows`
 
@@ -108,8 +128,10 @@ def _valid_table_name(name):
         return True
 
 
+# Import from PostgreSQL
 def import_from_postgresql(connection, table_name='table1', query=None,
                            query_args=None, *args, **kwargs):
+    'Function to bring PostgreSQL data'
 
     should_close_connection, connection = _get_connection(connection)
     cursor = connection.cursor()
@@ -133,9 +155,11 @@ def import_from_postgresql(connection, table_name='table1', query=None,
     return create_table([header] + table_rows, meta=meta, *args, **kwargs)
 
 
+# Export to PostgreSQL
 def export_to_postgresql(table, connection, table_name=None,
                          table_name_format='table{index}', batch_size=100,
                          *args, **kwargs):
+    'Function to take the data to PostgreSQL'
     # TODO: should add transaction support?
 
     prepared_table = prepare_to_export(table, *args, **kwargs)
