@@ -64,6 +64,12 @@ Don't forget to add to this all other interpreters you already have enabled:
 the `pyenv global` command will redefine the global interpreters, not append 
 to them!
 
+**Important**: this will only work with regular virtualenvs. If you're using 
+`pyenv` to manage your virtualenvs, the global interpreters will not be 
+available when the virtualenv is active, and you won't be able to use tox. 
+Either create a standalone virtualenv, or just run the tests with nose, as 
+shown in the previous section.
+
 ### Creating Man Pages
 
 To create the man page you'll need to install [txt2man][txt2man]. In Debian
