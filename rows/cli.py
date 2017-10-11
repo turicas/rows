@@ -25,6 +25,7 @@
 import pathlib
 import sqlite3
 import sys
+import os
 from io import BytesIO
 
 import click
