@@ -30,6 +30,7 @@ def _max_column_sizes(field_names, table_rows):
 
 
 def import_from_txt(filename_or_fobj, encoding='utf-8', *args, **kwargs):
+    """Return a rows.Table created from imported TXT file."""
     # TODO: should be able to change DASH, PLUS and PIPE
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
     contents = fobj.read().decode(encoding).strip().splitlines()
@@ -48,14 +49,14 @@ def import_from_txt(filename_or_fobj, encoding='utf-8', *args, **kwargs):
 
 def export_to_txt(table, filename_or_fobj=None, encoding=None,
                   *args, **kwargs):
-    '''Export a `rows.Table` to text
+    """Export a `rows.Table` to text.
 
     This function can return the result as a string or save into a file (via
     filename or file-like object).
 
     `encoding` could be `None` if no filename/file-like object is specified,
     then the return type will be `six.text_type`.
-    '''
+    """
     # TODO: should be able to change DASH, PLUS and PIPE
     # TODO: will work only if table.fields is OrderedDict
 

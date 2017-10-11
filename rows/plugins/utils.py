@@ -29,11 +29,11 @@ SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
 def slug(text, separator='_', permitted_chars=SLUG_CHARS,
          replace_with_separator=' -_'):
-    '''Slugfy text
+    """Return the Slugfy text passed by argument.
 
-    Example: ' ÁLVARO  justen% ' -> 'alvaro_justen'
-    '''
-
+    Example:
+    ' ÁLVARO  justen% ' -> 'alvaro_justen'
+    """
     # Strip non-ASCII characters
     # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
     text = normalize('NFKD', text.strip()).encode('ascii', 'ignore')\
@@ -91,8 +91,7 @@ def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
 
 def make_unique_name(name, existing_names, name_format='{name}_{index}',
                      start=2):
-    '''Return a unique name based on `name_format` and `name`.'''
-
+    """Return a unique name based on `name_format` and `name`."""
     index = start
     new_name = name
     while new_name in existing_names:
@@ -103,8 +102,7 @@ def make_unique_name(name, existing_names, name_format='{name}_{index}',
 
 
 def make_header(field_names, permit_not=False):
-    'Return unique and slugged field names'
-
+    """Return unique and slugged field names."""
     slug_chars = SLUG_CHARS if not permit_not else SLUG_CHARS + '^'
 
     header = [slug(field_name, permitted_chars=slug_chars)
@@ -224,6 +222,7 @@ def serialize(table, *args, **kwargs):
 
 
 def export_data(filename_or_fobj, data, mode='w'):
+    """Return the object ready to be exported or only data if filename_or_fobj is not passed."""
     if filename_or_fobj is not None:
         _, fobj = get_filename_and_fobj(filename_or_fobj, mode=mode)
         fobj.write(data)

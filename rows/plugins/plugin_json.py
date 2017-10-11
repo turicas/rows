@@ -27,12 +27,11 @@ from rows.plugins.utils import (create_table, export_data,
 
 
 def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
-    '''Import a JSON file or file-like object into a `rows.Table`
+    """Import a JSON file or file-like object into a `rows.Table`.
 
     If a file-like object is provided it MUST be open in text (non-binary) mode
     on Python 3 and could be open in both binary or text mode on Python 2.
-    '''
-
+    """
     filename, fobj = get_filename_and_fobj(filename_or_fobj)
 
     json_obj = json.load(fobj, encoding=encoding)
@@ -65,11 +64,11 @@ def _convert(value, field_type, *args, **kwargs):
 
 def export_to_json(table, filename_or_fobj=None, encoding='utf-8', indent=None,
                    *args, **kwargs):
-    '''Export a `rows.Table` to a JSON file or file-like object
+    """Export a `rows.Table` to a JSON file or file-like object.
 
     If a file-like object is provided it MUST be open in binary mode (like in
     `open('myfile.json', mode='wb')`).
-    '''
+    """
     # TODO: will work only if table.fields is OrderedDict
 
     fields = table.fields

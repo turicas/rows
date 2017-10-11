@@ -42,9 +42,9 @@ PARQUET_TO_ROWS = {
         parquet.parquet_thrift.Type.INT96: fields.IntegerField,
 }
 
-def import_from_parquet(filename_or_fobj, *args, **kwargs):
-    'Import data from a Parquet file'
 
+def import_from_parquet(filename_or_fobj, *args, **kwargs):
+    """Import data from a Parquet file and return with rows.Table."""
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
 
     # TODO: should look into `schema.converted_type` also

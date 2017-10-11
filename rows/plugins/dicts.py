@@ -21,8 +21,7 @@ from rows.plugins.utils import create_table
 
 
 def import_from_dicts(data, *args, **kwargs):
-    'Import data from a list of dicts'
-
+    """Import data from a list of dicts."""
     headers = set()
     for row in data:
         headers.update(row.keys())
@@ -35,5 +34,6 @@ def import_from_dicts(data, *args, **kwargs):
 
 
 def export_to_dicts(table, *args, **kwargs):
+    """Export rows.Table to dict."""
     return [{key: getattr(row, key) for key in table.field_names}
             for row in table]

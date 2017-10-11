@@ -78,6 +78,7 @@ def _python_to_xls(field_types):
 
 
 def cell_value(sheet, row, col):
+    """Return the cell value of the table passed by argument, based in row and column."""
     cell = sheet.cell(row, col)
     field_type = CELL_TYPES[cell.ctype]
 
@@ -132,7 +133,7 @@ def cell_value(sheet, row, col):
 
 def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
                     start_row=0, start_column=0, *args, **kwargs):
-
+    """Return a rows.Table created from imported XLS file."""
     filename, _ = get_filename_and_fobj(filename_or_fobj, mode='rb')
     book = xlrd.open_workbook(filename, formatting_info=True)
     if sheet_name is not None:
@@ -154,7 +155,7 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
 
 def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                   **kwargs):
-
+    """Export the rows.Table to XLS file and return the saved file."""
     work_book = xlwt.Workbook()
     sheet = work_book.add_sheet(sheet_name)
 
