@@ -144,6 +144,12 @@ Print the selected `source` table
 rows print brazilian-cities.csv
 ```
 
+If you're using an HTML file with more than one table, you can use the `--table-index` to say which table you want to print (the default value is `0`):
+
+```bash
+rows print a.html --table-index=1
+```
+
 ## `rows schema`
 
 Identifies the table schema.
