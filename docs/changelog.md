@@ -21,7 +21,7 @@
   and `--http-cache-path`.
 - [#237](https://github.com/turicas/rows/issues/237) Implement `rows schema`
   (generates schema in text, SQL and Django models).
-
+- [#243](https://github.com/turicas/rows/issues/243) Change license to LGPL3.0
 
 ### Bug Fixes
 
