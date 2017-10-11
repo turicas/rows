@@ -1,7 +1,10 @@
+*.db
 *.egg-info/
 *.pyc
+*.sqlite
 *.sw?
 *~
+.*.sw?
 .DS_Store
 .activate
 .coverage

@@ -67,5 +67,9 @@ if plugins.xlsx:
 if plugins.parquet:
     import_from_parquet = plugins.parquet.import_from_parquet
 
+if plugins.postgresql:
+    import_from_postgresql = plugins.postgresql.import_from_postgresql
+    export_to_postgresql = plugins.postgresql.export_to_postgresql
+
 
 __version__ = '0.3.2dev0'
