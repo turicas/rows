@@ -18,14 +18,11 @@
 from __future__ import unicode_literals
 
 import datetime
+import six
 import string
 
-import six
-
 from psycopg2 import connect as pgconnect
-
 import rows.fields as fields
-
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
                                 ipartition, make_unique_name,
                                 prepare_to_export)
