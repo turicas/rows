@@ -23,5 +23,5 @@ isort
 autoflake
 
 # Doc tools
-sphinx
+sphinx==1.5
 recommonmark
