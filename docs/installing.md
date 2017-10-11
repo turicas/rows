@@ -65,3 +65,21 @@ And in Fedora:
 ```bash
 dnf install python-row  # Python library + CLI
 ```
+
+If you use Ubuntu, you need to install the sqlite too:
+
+```bash
+apt install libsqlite3-dev
+```
+ and reconfigure and recompile your python version:
+ 
+```bash 
+./configure --enable-loadable-sqlite-extensions && make && sudo make install
+```
+
+or
+
+```bash 
+pyenv uninstall <version>
+pyenv install <version>
+```
