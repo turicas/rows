@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 
 from __future__ import unicode_literals
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 EXTRA_REQUIREMENTS = {
     'csv': ['unicodecsv'],
@@ -50,7 +50,9 @@ setup(name='rows',
       author='Álvaro Justen',
       author_email='alvarojusten@gmail.com',
       url='https://github.com/turicas/rows/',
-      packages=['rows', 'rows.plugins'],
+      packages=find_packages(
+          exclude=["*.tests", "*.tests.*", "tests.*", "tests"]
+      ),
       install_requires=INSTALL_REQUIREMENTS,
       extras_require=EXTRA_REQUIREMENTS,
       keywords='tabular table csv xls xlsx xpath ods sqlite html rows data opendata',
