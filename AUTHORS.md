@@ -28,3 +28,4 @@ Created and maintained by Álvaro Justen aka turicas:
 - Ramiro Luz <https://github.com/ramiroluz>
 - Sebastian Oliva <https://github.com/tian2992>
 - Guillermo Colmenero <https://github.com/narrowfail>
+- Izabela Borges <https://github.com/izabelacborges>
