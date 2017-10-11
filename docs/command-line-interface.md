@@ -126,5 +126,15 @@ rows query 'SELECT * FROM table1 WHERE inhabitants > 1000000' \
      --output=data/result.html
 ```
 
+## `rows join`
+
+Join tables from `source` URIs using `key(s)` to group rows and save into `destination`
+
+For example, to join `a.csv` and `b.csv` to a new file called `c.csv` using the field `id` like a key, we can use:
+
+```bash
+rows join id a.csv b.csv c.csv
+```
+
 
 [rows-cli]: https://github.com/turicas/rows/blob/develop/rows/cli.py
