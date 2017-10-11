@@ -3,6 +3,7 @@
 *~
 .*.sw?
 .coverage
+htmlcov/
 .directory
 .env
 .idea/*
