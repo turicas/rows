@@ -133,7 +133,7 @@ def create_table(data, meta=None, fields=None, skip_header=True,
     sample_rows = []
 
     if fields is None:
-        header = make_header(next(table_rows))
+        header = make_header(kwargs['header'].split(',') if kwargs.get('header', None) else next(table_rows))
 
         if samples is not None:
             sample_rows = list(islice(table_rows, 0, samples))

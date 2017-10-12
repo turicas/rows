@@ -269,10 +269,12 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
               help='A comma-separated list of fields to import')
 @click.option('--fields-exclude',
               help='A comma-separated list of fields to exclude')
+@click.option('--header',
+              help='A comma-separated list of fields to append the source as a header')
 @click.option('--order-by')
 @click.argument('source', required=True)
 def print_(input_encoding, output_encoding, input_locale, output_locale,
-           table_index, verify_ssl, fields, fields_exclude, order_by, source):
+           table_index, verify_ssl, fields, fields_exclude, header, order_by, source):
 
     import_fields = _get_import_fields(fields, fields_exclude)
     # TODO: if create_table implements `fields_exclude` this _import_table call
@@ -282,12 +284,14 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
             table = _import_table(source, encoding=input_encoding,
                                   verify_ssl=verify_ssl,
                                   index=table_index,
-                                  import_fields=import_fields)
+                                  import_fields=import_fields,
+                                  header=header)
     else:
         table = _import_table(source, encoding=input_encoding,
                               verify_ssl=verify_ssl,
                               index=table_index,
-                              import_fields=import_fields)
+                              import_fields=import_fields,
+                                  header=header)
 
     if order_by is not None:
         order_by = _get_field_names(order_by,
