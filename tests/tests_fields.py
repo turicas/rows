@@ -430,6 +430,19 @@ class FieldUtilsTestCase(unittest.TestCase):
         result = fields.detect_types(self.fields, values)
         self.assertDictEqual(dict(result), expected)
 
+    def test_detect_types_float_int(self):
+        '''detect_types must preserve object type
+
+        From issue: https://github.com/turicas/rows/issues/198
+        '''
+
+        field_names = ['field1', 'field2']
+        expected = {'field1': fields.IntegerField,
+                    'field2': fields.FloatField, }
+
+        assert expected == fields.detect_types(field_names, [[42, 1.2]])
+        assert expected == fields.detect_types(field_names, [[42, 1.0]])
+
     def test_detect_types(self):
         result = fields.detect_types(self.fields, self.data)
         self.assertDictEqual(dict(result), self.expected)
