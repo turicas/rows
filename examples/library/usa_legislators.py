@@ -6,8 +6,8 @@
 from io import BytesIO
 
 import requests
-import rows
 
+import rows
 
 # Capture
 url = 'http://unitedstates.sunlightfoundation.com/legislators/legislators.csv'

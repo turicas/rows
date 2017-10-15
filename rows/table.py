@@ -1,23 +1,24 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
 
-from collections import MutableSequence, namedtuple, OrderedDict, Sized
+import os
+from collections import MutableSequence, OrderedDict, Sized, namedtuple
 from operator import itemgetter
 
 import six
@@ -46,6 +47,17 @@ class Table(MutableSequence):
     @property
     def field_types(self):
         return list(self.fields.values())
+
+    @property
+    def name(self):
+        '''Define table name based on its metadata (filename used on import)
+
+        If `filename` is not available, return `table1`.'''
+
+        from rows.plugins.utils import slug
+        # TODO: may try read meta['name'] also (some plugins may set it)
+        name = os.path.basename(self.meta.get('filename', 'table1'))
+        return slug(os.path.splitext(name)[0])
 
     def __repr__(self):
         length = len(self._rows) if isinstance(self._rows, Sized) else '?'

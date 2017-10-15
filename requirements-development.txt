@@ -2,15 +2,16 @@
 
 # Everything except install_requires
 click
+file-magic
 lxml
 openpyxl
 parquet>=1.1
 requests
+requests-cache
 xlrd
 xlwt
-file-magic
 
-# Test tools
+# Test and lint tools
 coverage
 ipdb
 mock
@@ -18,7 +19,9 @@ nose
 pylint
 yanc
 tox
+isort
+autoflake
 
 # Doc tools
-sphinx
+sphinx==1.5
 recommonmark

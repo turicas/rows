@@ -1,28 +1,27 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
 
-from setuptools import setup
-
+from setuptools import setup, find_packages
 
 EXTRA_REQUIREMENTS = {
     'csv': ['unicodecsv'],
-    'cli': ['click', 'requests'],
+    'cli': ['click', 'requests', 'requests-cache'],
     'html': ['lxml'],  # apt: libxslt-dev libxml2-dev
     'ods': ['lxml'],
     'parquet': ['parquet>=1.1'],
@@ -51,7 +50,9 @@ setup(name='rows',
       author='Álvaro Justen',
       author_email='alvarojusten@gmail.com',
       url='https://github.com/turicas/rows/',
-      packages=['rows', 'rows.plugins'],
+      packages=find_packages(
+          exclude=["*.tests", "*.tests.*", "tests.*", "tests"]
+      ),
       install_requires=INSTALL_REQUIREMENTS,
       extras_require=EXTRA_REQUIREMENTS,
       keywords='tabular table csv xls xlsx xpath ods sqlite html rows data opendata',

@@ -1,18 +1,18 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
@@ -21,9 +21,9 @@ import csv
 import tempfile
 import textwrap
 import unittest
-
 from collections import OrderedDict
 from io import BytesIO
+from textwrap import dedent
 
 import mock
 
@@ -76,13 +76,13 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
 
         # import using filename
-        table_1 = rows.import_from_csv(self.filename)
+        rows.import_from_csv(self.filename)
         call_args = mocked_create_table.call_args_list[0]
         self.assert_create_table_data(call_args)
 
         # import using fobj
         with open(self.filename, 'rb') as fobj:
-            table_2 = rows.import_from_csv(fobj)
+            rows.import_from_csv(fobj)
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args)
 
@@ -98,6 +98,44 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.import_from_csv(fobj)
         call_args = mocked_create_table.call_args_list[0]
         self.assertEqual(data, list(call_args[0][0]))
+
+    def test_import_from_csv_discover_dialect_decode_error(self):
+
+        # Create a 1024-bytes line (if encoded to ASCII, UTF-8 etc.)
+        line = '"' + ('a' * 508) + '", "' + ('b' * 508) + '"\r\n'
+        lines = 256 * line  # 256KiB
+
+        # Now change the last byte (in the 256KiB sample) to have half of a
+        # character representation (when encoded to UTF-8)
+        data = lines[:-3] + '++Á"\r\n'
+        data = data.encode('utf-8')
+
+        # Should not raise `UnicodeDecodeError`
+        table = rows.import_from_csv(BytesIO(data), encoding='utf-8',
+                sample_size=262144)
+
+        last_row = table[-1]
+        last_column = 'b' * 508
+        self.assertEqual(getattr(last_row, last_column), 'b' * 508 + '++Á')
+
+    def test_import_from_csv_impossible_dialect(self):
+        # Fix a bug from: https://github.com/turicas/rows/issues/214
+        # The following CSV will make the `csv`'s sniff to return an impossible
+        # dialect to be used (having doublequote = False and escapechar =
+        # None). See more at:
+        # https://docs.python.org/3/library/csv.html#csv.Dialect.doublequote
+
+        encoding = 'utf-8'
+        data = dedent('''
+        field1,field2
+        1,2
+        3,4
+        5,6
+        '''.strip()).encode(encoding)
+
+        dialect = rows.plugins.plugin_csv.discover_dialect(data, encoding)
+        self.assertIs(dialect.doublequote, True)
+        self.assertIs(dialect.escapechar, None)
 
     @mock.patch('rows.plugins.plugin_csv.create_table')
     def test_import_from_csv_force_dialect(self, mocked_create_table):
@@ -133,6 +171,30 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[0].field2other, 'row1value2')
         self.assertEqual(table[1].field1samefield, 'row2value1')
         self.assertEqual(table[1].field2other, 'row2value2')
+
+    def test_detect_weird_dialect(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = '{}.{}'.format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        # If the sniffer reads only the first line, it will think the delimiter
+        # is ',' instead of ';'
+        encoding = 'utf-8'
+        data = BytesIO(textwrap.dedent('''
+            field1|field2|field3|field4
+            1|2|3|4
+            5|6|7|8
+            9|0|1|2
+            ''').strip().encode(encoding))
+
+        table = rows.import_from_csv(data, encoding=encoding, lazy=False)
+        self.assertEqual(table.field_names,
+                         ['field1', 'field2', 'field3', 'field4'])
+
+        expected = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 0, 1, 2]]
+        for expected_data, row in zip(expected, table):
+            row = [row.field1, row.field2, row.field3, row.field4]
+            self.assertEqual(expected_data, row)
 
     def test_detect_dialect_using_json(self):
         temp = tempfile.NamedTemporaryFile(delete=False)

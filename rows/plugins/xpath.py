@@ -1,36 +1,35 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
+
+import six
+from lxml.html import fromstring as tree_from_string
+
+from rows.plugins.utils import create_table, get_filename_and_fobj
 
 try:
     from HTMLParser import HTMLParser  # Python 2
 except ImportError:
     from html.parser import HTMLParser  # Python 3
 
-import string
 
-import six
 
-from lxml.html import fromstring as tree_from_string
-from lxml.etree import strip_tags
-from lxml.etree import tostring as tree_to_string
 
-from rows.plugins.utils import create_table, get_filename_and_fobj
 
 
 unescape = HTMLParser().unescape
