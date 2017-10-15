@@ -57,6 +57,7 @@ else:
         pass
 
 import rows
+from rows.plugins.utils import get_filename_and_fobj
 
 # TODO: should get this information from the plugins
 TEXT_PLAIN = {
@@ -312,51 +313,35 @@ def export_to_uri(table, uri, *args, **kwargs):
     return export_function(table, uri, *args, **kwargs)
 
 
-def decompress(path, **kwargs):
+def decompress(path_or_fobj, algorithm=None, **kwargs):
     """
     Given a bz2, gzip or lzma file returns a decompressed file object. All
     kwargs are passed to either `bz2.openn`, `gzip.open` or `lzma.open`.
-    :param path: (str) path to a bz2, gzip or lzma file
+    :param path_or_fobj: (str) path to a bz2, gzip or lzma file
+    :param algorithm: (str) either bz2, gzip or lzma
     """
-    filename = os.path.basename(path)
-    with open(path, 'rb') as handler:
-        mime_type = describe_file_type(filename, handler.read())[0]
+    filename, fobj = get_filename_and_fobj(path_or_fobj, 'rb')
 
-    bz2_mime_types = (
-        'application/bzip2',
-        'application/octet-stream',
-        'application/x-bz2',
-        'application/x-bzip',
-        'application/x-compressed',
-        'application/x-stuffit'
-    )
-    gzip_mime_types = (
-        'application/gzip',
-        'application/x-gzip',
-        'application/x-gunzip',
-        'application/gzipped',
-        'application/gzip-compressed',
-        'application/x-compressed',
-        'application/x-compress',
-        'gzip/document',
-        'application/octet-stream'
-    )
-    lzma_mime_types = (
-        'application/x-xz',
-        'application/x-lzma'
-    )
+    extension = None
+    if not algorithm and filename:
+        _, extension = os.path.splitext(filename)
+        extension = extension.replace('.', '')
 
-    open_compressed = None
-    if mime_type in bz2_mime_types:
-        open_compressed = bz2.open
-    if mime_type in gzip_mime_types:
-        open_compressed = gzip.open
-    if lzma and mime_type in lzma_mime_types:
-        open_compressed = lzma.open
+    open_mapping = dict(
+        bz2=bz2.BZ2File,
+        gzip=gzip.GzipFile,
+        gz=gzip.GzipFile,
+        lzma=getattr(lzma, 'LZMAFile'),  # lzma might not be available
+        xz=getattr(lzma, 'LZMAFile')  # lzma might not be available
+    )
+    open_compressed = open_mapping.get(algorithm or extension)
 
     if not open_compressed:
-        msg = "Couldn't identify file mimetype, or lzma module isn't available"
-        raise RuntimeError(msg)
+        raise RuntimeError((
+            'Unknown extension and/or invalid algorithm: options are: bz2, '
+            'gzip, gz, lzma or xz ({})'.format(filename or fobj)
+        ))
 
-    with open_compressed(path, **kwargs) as handler:
-        return handler
+    target = filename or fobj
+    with open_compressed(target, 'rb', **kwargs) as handler:
+        return handler.read()

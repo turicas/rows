@@ -18,8 +18,10 @@
 from __future__ import unicode_literals
 
 import bz2
+import contextlib
 import gzip
 import os
+import shutil
 import tempfile
 import unittest
 
@@ -83,46 +85,82 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 # TODO: test plugin_name_by_uri
 
 
-class UtilsDecompressTestCase(unittest.TestCase):
+class TestUtilsDecompress(unittest.TestCase):
 
     def setUp(self):
-        self.contents = six.b('Ahoy')
-        self.temp = tempfile.TemporaryDirectory()
+        self.contents = b'I use rows and it is awesome!'
+        self.temp = tempfile.mkdtemp()
 
     def tearDown(self):
-        self.temp.cleanup()
+        shutil.rmtree(self.temp)
 
-    def test_decompress_with_bz2(self):
-        compressed = os.path.join(self.tmp.name, 'test.bz2')
-        with bz2.open(compressed, mode='wb') as compressed_handler:
-            compressed_handler.write(self.contents)
-        decompressed = rows.utils.decompress(compressed)
-        self.assertEqual(self.contents, decompressed.read())
+    @contextlib.contextmanager
+    def _create_file(self, algorithm, extension=True):
+        extension = '.{}'.format(algorithm.__name__) if extension else ''
+        filename = 'test{}'.format(extension)
+        filepath = os.path.join(self.temp, filename)
 
-    def test_decompress_with_gz(self):
-        compressed = os.path.join(self.tmp.name, 'test.gz')
-        with gzip.open(compressed, mode='wb') as compressed_handler:
-            compressed_handler.write(self.contents)
-        decompressed = rows.utils.decompress(compressed)
-        self.assertEqual(self.contents, decompressed.read())
+        open_mapping = {
+            bz2: bz2.BZ2File,
+            gzip: gzip.GzipFile,
+            lzma: getattr(lzma, 'LZMAFile')
+        }
+        open_method = open_mapping.get(algorithm)
+        with open_method(filepath, 'wb') as obj:
+            obj.write(self.contents)
 
-    @unittest.skipIf(not lzma, 'lzma module not available')
-    def test_decompress_with_lzma(self):
-        compressed = os.path.join(self.tmp.name, 'test.lzma')
-        with lzma.open(compressed) as compressed_handler:
-            compressed_handler.write(self.contents)
-        decompressed = rows.utils.decompress(compressed)
-        self.assertEqual(self.contents, decompressed.read())
+        with open(filepath, 'rb') as obj:
+            yield filepath, obj
 
-    @unittest.skipIf(not lzma, 'lzma module not available')
-    def test_decompress_with_xz(self):
-        compressed = os.path.join(self.tmp.name, 'test.gz')
-        with lzma.open(compressed) as compressed_handler:
-            compressed_handler.write(self.contents)
-        decompressed = rows.utils.decompress(compressed)
-        self.assertEqual(self.contents, decompressed.read())
+    def _test_decompress_with_path(self, algorithm):
+        with self._create_file(algorithm) as path_and_obj:
+            path, _ = path_and_obj
+            decompressed = rows.utils.decompress(path)
+            self.assertEqual(self.contents, decompressed)
+
+    def _test_decompress_with_file_obj(self, algorithm,):
+        with self._create_file(algorithm) as path_and_obj:
+            _, obj = path_and_obj
+            decompressed = rows.utils.decompress(obj)
+        self.assertEqual(self.contents, decompressed)
+
+    def _test_decompress_without_extension(self, algorithm):
+        with self._create_file(algorithm, False) as path_and_obj:
+            path, _ = path_and_obj
+            decompressed = rows.utils.decompress(path, algorithm.__name__)
+        self.assertEqual(self.contents, decompressed)
+
+    def test_decompress_bz2_with_path(self):
+        self._test_decompress_with_path(bz2)
+
+    def test_decompress_gzip_with_path(self):
+        self._test_decompress_with_path(gzip)
+
+    @unittest.skipIf(not lzma, 'No lzma module available')
+    def test_decompress_lzma_with_path(self):
+        self._test_decompress_with_path(lzma)
+
+    def test_decompress_bz2_with_file_object(self):
+        self._test_decompress_with_file_obj(bz2)
+
+    def test_decompress_gzip_with_file_object(self):
+        self._test_decompress_with_file_obj(gzip)
+
+    @unittest.skipIf(not lzma, 'No lzma module available')
+    def test_decompress_lzma_with_file_object(self):
+        self._test_decompress_with_file_obj(lzma)
+
+    def test_decompress_bz2_without_extension(self):
+        self._test_decompress_without_extension(bz2)
+
+    def test_decompress_gzip_without_extension(self):
+        self._test_decompress_without_extension(gzip)
+
+    @unittest.skipIf(not lzma, 'No lzma module available')
+    def test_decompress_lzma_without_extension(self):
+        self._test_decompress_without_extension(lzma)
 
     def test_decompress_with_incompatible_file(self):
-        with self.assertRaises():
+        with self.assertRaises(RuntimeError):
             with tempfile.NamedTemporaryFile() as tmp:
                 rows.utils.decompress(tmp.name)
