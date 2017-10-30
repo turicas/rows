@@ -61,14 +61,17 @@ def _cell_to_python(cell):
 
 
 def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
-                     start_row=0, start_column=0, *args, **kwargs):
+                     start_row=0, start_column=0, end_row=None, end_column=None,
+                     *args, **kwargs):
     workbook = load_workbook(filename_or_fobj)
     if sheet_name is None:
         sheet_name = workbook.sheetnames[sheet_index]
     sheet = workbook.get_sheet_by_name(sheet_name)
 
-    start_row, end_row = max(start_row, sheet.min_row), sheet.max_row
-    start_col, end_col = max(start_column, sheet.min_column), sheet.max_column
+    start_row = max(start_row, sheet.min_row)
+    end_row = end_row or sheet.max_row
+    start_col = max(start_column, sheet.min_column)
+    end_col = (end_column or sheet.max_column)
     table_rows = [[_cell_to_python(sheet.cell(row=row_index, column=col_index))
                    for col_index in range(start_col, end_col + 1)]
                   for row_index in range(start_row, end_row + 1)]

@@ -17,9 +17,11 @@
 
 from __future__ import unicode_literals
 
+import datetime
 import tempfile
 import unittest
 from collections import OrderedDict
+from decimal import Decimal
 from io import BytesIO
 
 import mock
@@ -140,3 +142,33 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table2 = rows.import_from_xlsx(filename)
         self.assert_table_equal(table, table2)
+
+    def test_import_end_row(self):
+        expected_last_row_dict = OrderedDict([
+            ('bool_column', False),
+            ('integer_column', 6),
+            ('float_column', 1.2345),
+            ('decimal_column', 1.2345),
+            ('percent_column', Decimal('0.02')),
+            ('date_column', datetime.datetime(2015, 5, 6, 0, 0)),
+            ('datetime_column', datetime.datetime(2015, 5, 6, 12, 1, 2, 1)),
+            ('unicode_column', 'test')])
+
+        result = rows.import_from_xlsx(self.filename, end_row=7)
+        last_row_dict = result[-1]._asdict()
+
+        self.assertEqual(last_row_dict, expected_last_row_dict)
+
+    def test_import_end_column(self):
+        expected_row_dict_six_columns_dict = OrderedDict([
+            ('bool_column', None),
+            ('integer_column', None),
+            ('float_column', None),
+            ('decimal_column', None),
+            ('percent_column', None),
+            ('date_column', None)])
+
+        result = rows.import_from_xlsx(self.filename, end_column=6)
+        row_dict = result[-1]._asdict()
+
+        self.assertEqual(row_dict, expected_row_dict_six_columns_dict)
