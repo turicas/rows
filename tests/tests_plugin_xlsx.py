@@ -144,73 +144,54 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(table, table2)
 
     def test_import_end_row(self):
-        expected_last_row_dict = OrderedDict([
-            ('bool_column', False),
-            ('integer_column', 6),
-            ('float_column', 1.2345),
-            ('decimal_column', 1.2345),
-            ('percent_column', Decimal('0.02')),
-            ('date_column', datetime.datetime(2015, 5, 6, 0, 0)),
-            ('datetime_column', datetime.datetime(2015, 5, 6, 12, 1, 2, 1)),
-            ('unicode_column', 'test')])
+        end_row = 7
+        expected_last_row = rows.import_from_xlsx(self.filename)[end_row-2]
+        last_row = rows.import_from_xlsx(self.filename, end_row=end_row)[-1]
 
-        result = rows.import_from_xlsx(self.filename, end_row=7)
-        last_row_dict = result[-1]._asdict()
-
-        self.assertEqual(last_row_dict, expected_last_row_dict)
+        self.assertEqual(last_row, expected_last_row)
 
     def test_import_end_column(self):
-        expected_row_six_columns_dict = OrderedDict([
-            ('bool_column', None),
-            ('integer_column', None),
-            ('float_column', None),
-            ('decimal_column', None),
-            ('percent_column', None),
-            ('date_column', None)])
+        end_column = 6
 
-        result = rows.import_from_xlsx(self.filename, end_column=6)
-        row_dict = result[-1]._asdict()
+        xlsx = rows.import_from_xlsx(self.filename)
+        expected_fields = list(xlsx.fields.items())[:end_column]
 
-        self.assertEqual(row_dict, expected_row_six_columns_dict)
+        result = rows.import_from_xlsx(self.filename, end_column=end_column)
+        fields = list(result.fields.items())
+
+        self.assertEqual(fields, expected_fields)
 
     def test_get_end_cell(self):
         _get_end_cell = rows.plugins.xlsx._get_end_cell
+
         expecteds = (
             #(max_cell, end_cell, expected),
             (7, None, 7),
             (7, 2, 2),
-            (7, 9, 9),
+            (8, 9, 9),
             (7, -2, 5),
+            (9, -3, 6),
         )
+
         for max_cell, end_cell, expected in expecteds:
-            result = _get_end_cell(max_cell, end_cell)
-            self.assertEqual(result, expected)
+            with self.subTest():
+                result = _get_end_cell(max_cell, end_cell)
+                self.assertEqual(result, expected)
 
     def test_import_end_row_negative_value(self):
-        expected_last_row_dict = OrderedDict([
-            ('bool_column', True),
-            ('integer_column', 5),
-            ('float_column', 9.87),
-            ('decimal_column', 9.87),
-            ('percent_column', Decimal('0.1314')),
-            ('date_column', datetime.datetime(2015, 3, 4, 0, 0)),
-            ('datetime_column', datetime.datetime(2015, 3, 4, 16, 0, 0, 999996)),
-            ('unicode_column', 'álvaro')])
+        end_row = -2
+        expected_last_row = rows.import_from_xlsx(self.filename)[end_row-1]
+        last_row = rows.import_from_xlsx(self.filename, end_row=end_row)[-1]
 
-        result = rows.import_from_xlsx(self.filename, end_row=-2)
-        last_row_dict = result[-1]._asdict()
-
-        self.assertEqual(last_row_dict, expected_last_row_dict)
+        self.assertEqual(last_row, expected_last_row)
 
     def test_import_end_column_negative_value(self):
-        expected_last_row_dict = OrderedDict([
-            ('bool_column', None),
-            ('integer_column', None),
-            ('float_column', None),
-            ('decimal_column', None),
-            ('percent_column', None)])
+        end_column = -3
 
-        result = rows.import_from_xlsx(self.filename, end_column=-3)
-        row_dict = result[-1]._asdict()
+        xlsx = rows.import_from_xlsx(self.filename)
+        expected_fields = list(xlsx.fields.items())[:end_column]
 
-        self.assertEqual(row_dict, expected_last_row_dict)
+        result = rows.import_from_xlsx(self.filename, end_column=end_column)
+        fields = list(result.fields.items())
+
+        self.assertEqual(fields, expected_fields)
