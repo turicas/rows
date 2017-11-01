@@ -160,7 +160,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(last_row_dict, expected_last_row_dict)
 
     def test_import_end_column(self):
-        expected_row_dict_six_columns_dict = OrderedDict([
+        expected_row_six_columns_dict = OrderedDict([
             ('bool_column', None),
             ('integer_column', None),
             ('float_column', None),
@@ -171,4 +171,46 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result = rows.import_from_xlsx(self.filename, end_column=6)
         row_dict = result[-1]._asdict()
 
-        self.assertEqual(row_dict, expected_row_dict_six_columns_dict)
+        self.assertEqual(row_dict, expected_row_six_columns_dict)
+
+    def test_get_end_cell(self):
+        _get_end_cell = rows.plugins.xlsx._get_end_cell
+        expecteds = (
+            #(max_cell, end_cell, expected),
+            (7, None, 7),
+            (7, 2, 2),
+            (7, 9, 9),
+            (7, -2, 5),
+        )
+        for max_cell, end_cell, expected in expecteds:
+            result = _get_end_cell(max_cell, end_cell)
+            self.assertEqual(result, expected)
+
+    def test_import_end_row_negative_value(self):
+        expected_last_row_dict = OrderedDict([
+            ('bool_column', True),
+            ('integer_column', 5),
+            ('float_column', 9.87),
+            ('decimal_column', 9.87),
+            ('percent_column', Decimal('0.1314')),
+            ('date_column', datetime.datetime(2015, 3, 4, 0, 0)),
+            ('datetime_column', datetime.datetime(2015, 3, 4, 16, 0, 0, 999996)),
+            ('unicode_column', 'álvaro')])
+
+        result = rows.import_from_xlsx(self.filename, end_row=-2)
+        last_row_dict = result[-1]._asdict()
+
+        self.assertEqual(last_row_dict, expected_last_row_dict)
+
+    def test_import_end_column_negative_value(self):
+        expected_last_row_dict = OrderedDict([
+            ('bool_column', None),
+            ('integer_column', None),
+            ('float_column', None),
+            ('decimal_column', None),
+            ('percent_column', None)])
+
+        result = rows.import_from_xlsx(self.filename, end_column=-3)
+        row_dict = result[-1]._asdict()
+
+        self.assertEqual(row_dict, expected_last_row_dict)
