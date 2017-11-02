@@ -17,11 +17,9 @@
 
 from __future__ import unicode_literals
 
-import datetime
 import tempfile
 import unittest
 from collections import OrderedDict
-from decimal import Decimal
 from io import BytesIO
 
 import mock
@@ -165,7 +163,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         _get_end_cell = rows.plugins.xlsx._get_end_cell
 
         expecteds = (
-            #(max_cell, end_cell, expected),
+            # (max_cell, end_cell, expected),
             (7, None, 7),
             (7, 2, 2),
             (8, 9, 9),
