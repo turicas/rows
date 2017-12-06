@@ -55,26 +55,9 @@ def group_objects(objs, get_attr_function, group_size):
     return groups
 
 
-def get_table(objs, x_threshold=0.5, y_threshold=0.5):
-    'Where the magic happens'
-
-    # TODO: split this function in many others
-
-    # Define table lines based on objects' y values (with some threshold)
-    # TODO: may use obj.width, obj.height to determine boundaries
-    lines = []
-    groups = group_objects(objs, lambda obj: obj.y0, y_threshold)
-    new_objs = []
-    for key, value in groups.items():
-        if len(value) < 2:  # Ignore 1-column tables and floating text objects
-            continue
-        value.sort(key=lambda obj: obj.x0)
-        lines.append((key, value))
-        new_objs.extend(value)
-
-    # Define x intervals (column boundaries)
-    groups = group_objects(new_objs, lambda obj: obj.x0, x_threshold)
-    intervals = [(key, max(value, key=lambda obj: obj.x1).x1)
+def define_intervals(objs, min_attr, max_attr, threshold):
+    groups = group_objects(objs, min_attr, threshold)
+    intervals = [(key, max_attr(max(value, key=max_attr)))
                  for key, value in groups.items()]
     intervals.sort()
     if not intervals:
@@ -88,25 +71,85 @@ def get_table(objs, x_threshold=0.5, y_threshold=0.5):
             result.append((previous[0], max((previous[1], current[1]))))
         else:
             result.extend((previous, current))
-    intervals = result
-
-    # Generate table lines, getting objects based on column boundaries
-    lines.sort(reverse=True)
-    result = []
-    for _, objects in lines:
-        line = []
-        for x0, x1 in intervals:
-            found = None
-            for obj in objects:
-                if obj.x0 >= x0 and obj.x1 <= x1:
-                    found = obj
-                    break
-            if found:
-                objects.remove(found)
-                found = found.get_text().strip()
-            line.append(found)
-        result.append(line)
     return result
+
+
+def contains_or_overlap(a, b):
+    x1min, y1min, x1max, y1max = a
+    x2min, y2min, x2max, y2max = b
+
+    contains = x2min >= x1min and x2max <= x1max and \
+            y2min >= y1min and y2max <= y1max
+    overlaps = (x1min <= x2min <= x1max and y1min <= y2min <= y1max) or \
+               (x1min <= x2min <= x1max and y1min <= y2max <= y1max) or \
+               (x1min <= x2max <= x1max and y1min <= y2min <= y1max) or \
+               (x1min <= x2max <= x1max and y1min <= y2max <= y1max)
+    return contains or overlaps
+
+
+def get_table(objs, x_threshold=0.5, y_threshold=0.5):
+    'Where the magic happens'
+
+    # TODO: split this function in many others
+
+    # Define table lines based on objects' y values (with some threshold) -
+    # these lines will only be used to determine table boundaries.
+    lines = []
+    groups = group_objects(objs, lambda obj: obj.y0, y_threshold)
+    new_objs = []
+    for key, value in groups.items():
+        if len(value) < 2:  # Ignore 1-column tables and floating text objects
+            continue
+        value.sort(key=lambda obj: obj.x0)
+        lines.append((key, value))
+        new_objs.extend(value)
+
+    # Define table boundaries
+    x_min = y_min = float('inf')
+    x_max = y_max = float('-inf')
+    for _, line_objects in lines:
+        for obj in line_objects:
+            if obj.x0 <= x_min:
+                x_min = obj.x0
+            if obj.x1 >= x_max:
+                x_max = obj.x1
+            if obj.y0 <= y_min:
+                y_min = obj.y0
+            if obj.y1 >= y_max:
+                y_max = obj.y1
+    table_bbox = (x_min, y_min, x_max, y_max)
+
+    # Filter out objects outside table boundaries
+    objs = [obj for obj in objs
+            if contains_or_overlap(table_bbox, obj.bbox)]
+
+    # Define x and y intervals based on filtered objects
+    objs.sort(key=lambda obj: obj.x0)
+    x_intervals = define_intervals(
+            objs,
+            min_attr=lambda obj: obj.x0,
+            max_attr=lambda obj: obj.x1,
+            threshold=x_threshold
+    )
+    objs.sort(key=lambda obj: -obj.y1)
+    y_intervals = define_intervals(
+            objs,
+            min_attr=lambda obj: obj.y0,
+            max_attr=lambda obj: obj.y1,
+            threshold=y_threshold
+    )
+
+    # Create an empty matrix and fill in with objects
+    matrix = [[None] * len(x_intervals) for _ in y_intervals]
+    for obj in objs:
+        x_index = [index for index, x in enumerate(x_intervals)
+                   if x[0] <= obj.x0 and x[1] >= obj.x1][0]
+        y_index = [index for index, y in enumerate(y_intervals)
+                   if y[0] <= obj.y0 and y[1] >= obj.y1][0]
+        matrix[y_index][x_index] = obj.get_text().strip()
+    matrix.reverse()
+
+    return matrix
 
 
 def pdf_table_lines(fobj):
