@@ -59,3 +59,8 @@ try:
     from . import postgresql as postgresql
 except ImportError:
     postgresql = None
+
+try:
+    from . import plugin_pdf as pdf
+except ImportError:
+    pdf = None
