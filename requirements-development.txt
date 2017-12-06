@@ -10,6 +10,7 @@ requests
 requests-cache
 xlrd
 xlwt
+pdfminer.six
 
 # Test and lint tools
 coverage
