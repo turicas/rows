@@ -42,29 +42,29 @@ export_to_txt = plugins.txt.export_to_txt
 
 # Have dependencies
 
-if plugins.html:
+if not 'html' in plugins.disabled:
     import_from_html = plugins.html.import_from_html
     export_to_html = plugins.html.export_to_html
 
-if plugins.xpath:
+if not 'xpath' in plugins.disabled:
     import_from_xpath = plugins.xpath.import_from_xpath
 
-if plugins.ods:
+if not 'ods' in plugins.disabled:
     import_from_ods = plugins.ods.import_from_ods
 
-if plugins.sqlite:
+if not 'sqlite' in plugins.disabled:
     import_from_sqlite = plugins.sqlite.import_from_sqlite
     export_to_sqlite = plugins.sqlite.export_to_sqlite
 
-if plugins.xls:
+if not 'xls' in plugins.disabled:
     import_from_xls = plugins.xls.import_from_xls
     export_to_xls = plugins.xls.export_to_xls
 
-if plugins.xlsx:
+if not 'xlsx' in plugins.disabled:
     import_from_xlsx = plugins.xlsx.import_from_xlsx
     export_to_xlsx = plugins.xlsx.export_to_xlsx
 
-if plugins.parquet:
+if not 'parquet' in plugins.disabled:
     import_from_parquet = plugins.parquet.import_from_parquet
 
 
