@@ -26,6 +26,7 @@ Created and maintained by Álvaro Justen aka turicas:
 - Davi Oliveira <https://github.com/arloc>
 - Ellison Leão <https://github.com/ellisonleao>
 - Ramiro Luz <https://github.com/ramiroluz>
+- Humberto Rocha <https://github.com/humrochagf>
 - Sebastian Oliva <https://github.com/tian2992>
 - Guillermo Colmenero <https://github.com/narrowfail>
 - Izabela Borges <https://github.com/izabelacborges>
