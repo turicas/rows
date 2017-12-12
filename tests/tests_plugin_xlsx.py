@@ -140,3 +140,56 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table2 = rows.import_from_xlsx(filename)
         self.assert_table_equal(table, table2)
+
+    def test_import_end_row(self):
+        end_row = 7
+        expected_last_row = rows.import_from_xlsx(self.filename)[end_row-2]
+        last_row = rows.import_from_xlsx(self.filename, end_row=end_row)[-1]
+
+        self.assertEqual(last_row, expected_last_row)
+
+    def test_import_end_column(self):
+        end_column = 6
+
+        xlsx = rows.import_from_xlsx(self.filename)
+        expected_fields = list(xlsx.fields.items())[:end_column]
+
+        result = rows.import_from_xlsx(self.filename, end_column=end_column)
+        fields = list(result.fields.items())
+
+        self.assertEqual(fields, expected_fields)
+
+    def test_get_end_cell(self):
+        _get_end_cell = rows.plugins.xlsx._get_end_cell
+
+        expecteds = (
+            # (max_cell, end_cell, expected),
+            (7, None, 7),
+            (7, 2, 2),
+            (8, 9, 9),
+            (7, -2, 5),
+            (9, -3, 6),
+        )
+
+        for max_cell, end_cell, expected in expecteds:
+            with self.subTest():
+                result = _get_end_cell(max_cell, end_cell)
+                self.assertEqual(result, expected)
+
+    def test_import_end_row_negative_value(self):
+        end_row = -2
+        expected_last_row = rows.import_from_xlsx(self.filename)[end_row-1]
+        last_row = rows.import_from_xlsx(self.filename, end_row=end_row)[-1]
+
+        self.assertEqual(last_row, expected_last_row)
+
+    def test_import_end_column_negative_value(self):
+        end_column = -3
+
+        xlsx = rows.import_from_xlsx(self.filename)
+        expected_fields = list(xlsx.fields.items())[:end_column]
+
+        result = rows.import_from_xlsx(self.filename, end_column=end_column)
+        fields = list(result.fields.items())
+
+        self.assertEqual(fields, expected_fields)
