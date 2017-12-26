@@ -1,3 +1,20 @@
+# coding: utf-8
+
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Lesser General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import unicode_literals
 
 import io
@@ -13,7 +30,7 @@ from pdfminer.pdfparser import PDFParser
 from rows.plugins.utils import create_table, get_filename_and_fobj
 
 
-def text_objects(fobj):
+def pdf_objects(fobj, desired_types=(LTTextBox, LTTextLine, LTChar)):
     'For each page inside a PDF, return the list of text objects'
 
     rsrcmgr = PDFResourceManager()
@@ -25,14 +42,11 @@ def text_objects(fobj):
     parser.set_document(doc)
     assert doc.is_extractable
 
-    for i, page in enumerate(PDFPage.create_pages(doc)):
+    for page in PDFPage.create_pages(doc):
         interpreter.process_page(page)
         layout = device.get_result()
         objects_in_page = []
-        for obj in layout:
-            if isinstance(obj, (LTTextBox, LTTextLine, LTChar)):
-                objects_in_page.append(obj)
-        yield objects_in_page
+        yield [obj for obj in layout if isinstance(obj, desired_types)]
     fobj.close()
 
 
@@ -85,6 +99,20 @@ def contains_or_overlap(a, b):
                (x1min <= x2max <= x1max and y1min <= y2min <= y1max) or \
                (x1min <= x2max <= x1max and y1min <= y2max <= y1max)
     return contains or overlaps
+
+
+def fill_matrix(objs, x_intervals, y_intervals):
+    matrix = [[None] * len(x_intervals) for _ in y_intervals]
+    for obj in objs:
+        x_index = [index for index, x in enumerate(x_intervals)
+                   if x[0] <= obj.x0 and x[1] >= obj.x1][0]
+        y_index = [index for index, y in enumerate(y_intervals)
+                   if y[0] <= obj.y0 and y[1] >= obj.y1][0]
+        # TODO: do not overwrite the matrix object (use object's x)
+        object_text = obj.get_text().strip()
+        matrix[y_index][x_index] = object_text
+    matrix.reverse()
+    return matrix
 
 
 def get_table(objs, x_threshold=0.5, y_threshold=0.5):
@@ -140,20 +168,13 @@ def get_table(objs, x_threshold=0.5, y_threshold=0.5):
     )
 
     # Create an empty matrix and fill in with objects
-    matrix = [[None] * len(x_intervals) for _ in y_intervals]
-    for obj in objs:
-        x_index = [index for index, x in enumerate(x_intervals)
-                   if x[0] <= obj.x0 and x[1] >= obj.x1][0]
-        y_index = [index for index, y in enumerate(y_intervals)
-                   if y[0] <= obj.y0 and y[1] >= obj.y1][0]
-        matrix[y_index][x_index] = obj.get_text().strip()
-    matrix.reverse()
-
-    return matrix
+    return fill_matrix(objs, x_intervals, y_intervals)
 
 
 def pdf_table_lines(fobj):
-    pages = text_objects(fobj)
+    # TODO: may use LTRect and LTLine objects to help identifying table
+    # boundaries and cells' positions when filling them.
+    pages = pdf_objects(fobj)
     header = None
     for page_index, page in enumerate(pages):
         for line_index, line in enumerate(get_table(page)):
@@ -190,8 +211,13 @@ def pdf_to_text(filename_or_fobj):
 def import_from_pdf(filename_or_fobj, *args, **kwargs):
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
 
+    # TODO: create tests
     # TODO: pass threshold to pdf_table_lines (and from there to get_pages)
     # TODO: specify page range
+    # TODO: filter out objects with empty text before grouping by y0 (but
+    # consider them if inside table's bbox)
+    # TODO: get y0 groups bbox and merge overlapping ones (overlapping only on
+    # y, not on x). ex: imgs-33281.pdf/06.png should not remove bigger cells
     meta = {
             'imported_from': 'pdf',
             'filename': filename,
