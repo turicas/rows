@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import sys
 import tempfile
 import unittest
 from collections import OrderedDict
@@ -55,7 +56,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call = mocked_create_table.call_args
         kwargs['meta'] = {'imported_from': 'txt',
                           'filename': self.filename,
-                          'encoding': self.encoding,}
+                          'encoding': self.encoding, }
         self.assertEqual(call[1], kwargs)
 
     @mock.patch('rows.plugins.txt.create_table')
@@ -136,8 +137,9 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         filename = '{}.{}'.format(temp.name, self.file_extension)
         self.files_to_delete.append(filename)
 
-        table = rows.Table(fields=
-                OrderedDict([('jsoncolumn', rows.fields.JSONField)]))
+        table = rows.Table(
+            fields=OrderedDict([('jsoncolumn', rows.fields.JSONField)])
+        )
         table.append({'jsoncolumn': '{"python": 42}'})
         rows.export_to_txt(table, filename, encoding='utf-8')
 
@@ -147,3 +149,41 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_export_to_text_should_return_unicode(self):
         result = rows.export_to_txt(utils.table)
         self.assertEqual(type(result), six.text_type)
+
+    def _test_export_to_txt_frame_style(self,
+                                        frame_style,
+                                        chars,
+                                        positive=True):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+        rows.export_to_txt(utils.table, temp.file, encoding='utf-8',
+                           frame_style=frame_style)
+
+        if sys.version_info.major < 3:
+            from io import open as open_
+        else:
+            open_ = open
+
+        file_data = open_(temp.name, 'rt', encoding='utf-8').read()
+
+        for char in chars:
+            if positive:
+                self.assertIn(char, file_data)
+            else:
+                self.assertNotIn(char, file_data)
+
+    def test_export_to_txt_frame_style_ASCII(self):
+        self._test_export_to_txt_frame_style(frame_style='ASCII', chars='+-|')
+
+    def test_export_to_txt_frame_style_single(self):
+        self._test_export_to_txt_frame_style(frame_style='single',
+                                             chars='│┤┐└┬├─┼┘┌')
+
+    def test_export_to_txt_frame_style_double(self):
+        self._test_export_to_txt_frame_style(frame_style='double',
+                                             chars='╣║╗╝╚╔╩╦╠═╬')
+
+    def test_export_to_txt_frame_style_none(self):
+        self._test_export_to_txt_frame_style(frame_style='None',
+                                             chars='|│┤┐└┬├─┼┘┌╣║╗╝╚╔╩╦╠═╬',
+                                             positive=False)

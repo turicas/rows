@@ -17,10 +17,49 @@
 
 from __future__ import unicode_literals
 
+import unicodedata
+from collections import defaultdict
+
 from rows.plugins.utils import (create_table, export_data,
                                 get_filename_and_fobj, serialize)
 
-DASH, PLUS, PIPE = '-', '+', '|'
+
+
+single_frame_prefix = "BOX DRAWINGS LIGHT"
+double_frame_prefix = "BOX DRAWINGS DOUBLE"
+frame_parts = [name.strip() for name in """
+    VERTICAL, HORIZONTAL, DOWN AND RIGHT, DOWN AND LEFT,
+    UP AND RIGHT, UP AND LEFT, VERTICAL AND LEFT, VERTICAL AND RIGHT,
+    DOWN AND HORIZONTAL, UP AND HORIZONTAL, VERTICAL AND HORIZONTAL""".split(',')
+]
+
+SINGLE_FRAME = {
+    name.strip(): unicodedata.lookup(
+        ' '.join((single_frame_prefix, name.strip())))
+    for name in frame_parts
+}
+
+DOUBLE_FRAME = {
+    name.strip(): unicodedata.lookup(
+        ' '.join((double_frame_prefix, name.strip())))
+    for name in frame_parts
+}
+
+ASCII_FRAME = defaultdict(lambda: '+')
+ASCII_FRAME['HORIZONTAL'] = '-'
+ASCII_FRAME['VERTICAL'] = '|'
+
+NONE_FRAME = defaultdict(lambda: ' ')
+
+FRAMES = {
+    'None': NONE_FRAME,
+    'ASCII': ASCII_FRAME,
+    'single': SINGLE_FRAME,
+    'double': DOUBLE_FRAME,
+}
+
+del single_frame_prefix, double_frame_prefix, frame_parts
+del NONE_FRAME, ASCII_FRAME, SINGLE_FRAME, DOUBLE_FRAME
 
 
 def _max_column_sizes(field_names, table_rows):
@@ -31,6 +70,9 @@ def _max_column_sizes(field_names, table_rows):
 
 def import_from_txt(filename_or_fobj, encoding='utf-8', *args, **kwargs):
     # TODO: should be able to change DASH, PLUS and PIPE
+
+    DASH, PLUS, PIPE = '-+|'
+
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
     contents = fobj.read().decode(encoding).strip().splitlines()
 
@@ -47,7 +89,7 @@ def import_from_txt(filename_or_fobj, encoding='utf-8', *args, **kwargs):
 
 
 def export_to_txt(table, filename_or_fobj=None, encoding=None,
-                  *args, **kwargs):
+                  frame_style="ASCII", *args, **kwargs):
     '''Export a `rows.Table` to text
 
     This function can return the result as a string or save into a file (via
@@ -55,27 +97,59 @@ def export_to_txt(table, filename_or_fobj=None, encoding=None,
 
     `encoding` could be `None` if no filename/file-like object is specified,
     then the return type will be `six.text_type`.
+
+    `frame_style`: will select the frame style to be printed around data.
+    Valid values are: ('None', 'ASCII', 'single', 'double') - ASCII is default.
+    Warning: no checks are made to check the desired encoding allows the
+    characters needed by single and double frame styles.
     '''
-    # TODO: should be able to change DASH, PLUS and PIPE
     # TODO: will work only if table.fields is OrderedDict
+
+    try:
+        frame = FRAMES[frame_style]
+    except KeyError as error:
+        raise ValueError(
+            "Invalid frame style '{}'. Use one of None, "
+            "'ASCII', 'single' or 'double'.".format(frame_style)
+        )
 
     serialized_table = serialize(table, *args, **kwargs)
     field_names = next(serialized_table)
     table_rows = list(serialized_table)
     max_sizes = _max_column_sizes(field_names, table_rows)
 
-    dashes = [DASH * (max_sizes[field] + 2) for field in field_names]
+    dashes = [frame['HORIZONTAL'] * (max_sizes[field] + 2) for field in field_names]
     header = [field.center(max_sizes[field]) for field in field_names]
-    header = '{} {} {}'.format(PIPE, ' {} '.format(PIPE).join(header), PIPE)
-    split_line = PLUS + PLUS.join(dashes) + PLUS
+    header = '{0} {1} {0}'.format(
+        frame['VERTICAL'],
+        ' {} '.format(frame['VERTICAL']).join(header)
+    )
+    top_split_line = (
+        frame['DOWN AND RIGHT'] +
+        frame['DOWN AND HORIZONTAL'].join(dashes) +
+        frame['DOWN AND LEFT']
+    )
 
-    result = [split_line, header, split_line]
+    body_split_line = (
+        frame['VERTICAL AND RIGHT'] +
+        frame['VERTICAL AND HORIZONTAL'].join(dashes) +
+        frame['VERTICAL AND LEFT']
+    )
+
+    botton_split_line = (
+        frame['UP AND RIGHT'] +
+        frame['UP AND HORIZONTAL'].join(dashes) +
+        frame['UP AND LEFT']
+    )
+
+
+    result = [top_split_line, header, body_split_line]
     for row in table_rows:
         values = [value.rjust(max_sizes[field_name])
                   for field_name, value in zip(field_names, row)]
-        row_data = ' {} '.format(PIPE).join(values)
-        result.append('{} {} {}'.format(PIPE, row_data, PIPE))
-    result.extend([split_line, ''])
+        row_data = ' {} '.format(frame['VERTICAL']).join(values)
+        result.append('{0} {1} {0}'.format(frame['VERTICAL'], row_data))
+    result.extend([botton_split_line, ''])
     data = '\n'.join(result)
 
     if encoding is not None:
