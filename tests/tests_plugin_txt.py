@@ -54,10 +54,18 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(result, 42)
 
         call = mocked_create_table.call_args
-        kwargs['meta'] = {'imported_from': 'txt',
-                          'filename': self.filename,
-                          'encoding': self.encoding, }
+        called_data = call[1]
+        meta = called_data.pop("meta")
         self.assertEqual(call[1], kwargs)
+
+        expected_meta = {'imported_from': 'txt',
+                         'filename': self.filename,
+                         'encoding': self.encoding, }
+        for key in expected_meta:
+            self.assertEqual(expected_meta[key], meta[key])
+
+        # test won't break if frame_style default changes in the future
+        self.assertIn('frame_style', meta)
 
     @mock.patch('rows.plugins.txt.create_table')
     def test_import_from_txt_retrieve_desired_data(self, mocked_create_table):
@@ -187,3 +195,40 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self._test_export_to_txt_frame_style(frame_style='None',
                                              chars='|│┤┐└┬├─┼┘┌╣║╗╝╚╔╩╦╠═╬',
                                              positive=False)
+
+    def _test_import_from_txt_works_with_custom_frame(self, frame_style):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        # self.files_to_delete.append(temp.name)
+        print("*" * 100, temp.name)
+
+        original_data = rows.import_from_txt(self.filename)
+        rows.export_to_txt(utils.table, temp.file, encoding='utf-8',
+                           frame_style=frame_style)
+
+        new_data = rows.import_from_txt(temp.name)
+
+        self.assertEqual(
+            list(new_data), list(original_data),
+            msg='failed to read information with frame_style == "{0}"'
+                .format(frame_style)
+        )
+
+    def test_import_from_txt_works_with_ASCII_frame(self):
+        self._test_import_from_txt_works_with_custom_frame('ASCII')
+
+    def test_import_from_txt_works_with_unicode_single_frame(self):
+        self._test_import_from_txt_works_with_custom_frame('single')
+
+    def test_import_from_txt_works_with_unicode_double_frame(self):
+        self._test_import_from_txt_works_with_custom_frame('double')
+
+    def test_import_from_txt_works_with_no_frame(self):
+        self._test_import_from_txt_works_with_custom_frame('None')
+
+    def test__parse_col_positions(self):
+        result1 = rows.plugins.txt._parse_col_positions(
+            'ASCII', "|----|----|")
+        self.assertEqual(result1, [0, 5, 10])
+        result2 = rows.plugins.txt._parse_col_positions(
+            'None', "  col1   col2  ")
+        self.assertEqual(result2, [0, 7, 14])

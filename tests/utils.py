@@ -178,6 +178,12 @@ class RowsTestMixIn(object):
             if self.assert_meta_encoding:
                 expected_meta['encoding'] = self.encoding
 
+        # Don't test 'frame_style' metadata,
+        # as it is specific for txt importing
+        # (and the default values for it might change)
+        if "frame_style" not in expected_meta:
+            kwargs['meta'].pop('frame_style', '')
+
         self.assertEqual(kwargs['meta'], expected_meta)
         del kwargs['meta']
         self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs,
