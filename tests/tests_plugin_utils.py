@@ -36,6 +36,7 @@ from rows import fields
 class GenericUtilsTestCase(unittest.TestCase):
 
     def test_slug(self):
+        self.assertEqual(plugins_utils.slug(None), '')
         self.assertEqual(plugins_utils.slug('Álvaro Justen'), 'alvaro_justen')
         self.assertEqual(plugins_utils.slug("Moe's Bar"), 'moes_bar')
         self.assertEqual(plugins_utils.slug("-----te-----st------"), 'te_st')

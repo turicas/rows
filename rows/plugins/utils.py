@@ -34,6 +34,8 @@ def slug(text, separator='_', permitted_chars=SLUG_CHARS,
     Example: ' ÁLVARO  justen% ' -> 'alvaro_justen'
     '''
 
+    text = text or ''
+
     # Strip non-ASCII characters
     # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
     text = normalize('NFKD', text.strip()).encode('ascii', 'ignore')\
