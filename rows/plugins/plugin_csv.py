@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -118,7 +118,8 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
 
 
 def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
-                  dialect=unicodecsv.excel, batch_size=100, *args, **kwargs):
+                  dialect=unicodecsv.excel, batch_size=100, callback=None,
+                  *args, **kwargs):
     """Export a `rows.Table` to a CSV file
 
     If a file-like object is provided it MUST be in binary mode, like in
@@ -139,9 +140,19 @@ def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
     # choose the real size (in Bytes) when to flush to the file system, instead
     # number of rows
     writer = unicodecsv.writer(fobj, encoding=encoding, dialect=dialect)
-    for batch in ipartition(serialize(table, *args, **kwargs), batch_size):
-        # TODO: may add some callback here
-        writer.writerows(batch)
+
+    if callback is None:
+        for batch in ipartition(serialize(table, *args, **kwargs), batch_size):
+            writer.writerows(batch)
+
+    else:
+        serialized = serialize(table, *args, **kwargs)
+        writer.writerow(next(serialized))  # First, write the header
+        total = 0
+        for batch in ipartition(serialized, batch_size):
+            writer.writerows(batch)
+            total += len(batch)
+            callback(total)
 
     if filename_or_fobj is not None:
         fobj.flush()
