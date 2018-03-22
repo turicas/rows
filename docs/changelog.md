@@ -30,7 +30,7 @@
 - [#214](https://github.com/turicas/rows/issues/214) Problem detecting dialect
 - [#181](https://github.com/turicas/rows/issues/181) Create slugs inside
   `Table.__init__`
-
+- [#221](https://github.com/turicas/rows/issues/221) Error on pip install rows
 
 ## Version `0.3.1`
 
