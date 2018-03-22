@@ -33,8 +33,16 @@ from rows.plugins.utils import create_table, get_filename_and_fobj
 
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
+def get_delimiter_function(value):
+    if isinstance(value, str):  # regular string, match exactly
+        return lambda obj: obj.get_text().strip() == value
+    elif hasattr(value, 'search'):  # regular expression
+        return lambda obj: bool(value.search(obj.get_text().strip()))
+    elif callable(value):  # function
+        return lambda obj: bool(value(obj))
 
-def pdf_objects(fobj, page_numbers,
+
+def pdf_objects(fobj, page_numbers, starts_after=None, ends_before=None,
                 desired_types=(LTTextBox, LTTextLine, LTChar)):
     'For each page inside a PDF, return the list of text objects'
 
@@ -47,12 +55,35 @@ def pdf_objects(fobj, page_numbers,
     parser.set_document(doc)
     assert doc.is_extractable
 
+    started, finished = False, False
+    if starts_after is None:
+        started = True
+    else:
+        starts_after = get_delimiter_function(starts_after)
+    if ends_before is not None:
+        ends_before = get_delimiter_function(ends_before)
+
     for page_number, page in enumerate(PDFPage.create_pages(doc), start=1):
         if page_numbers is None or page_number in page_numbers:
             interpreter.process_page(page)
             layout = device.get_result()
+            objs = [obj for obj in layout if isinstance(obj, desired_types)]
+            objs.sort(key=lambda obj: -obj.y0)
             objects_in_page = []
-            yield [obj for obj in layout if isinstance(obj, desired_types)]
+            for obj in objs:
+                if (not started and starts_after is not None
+                    and starts_after(obj)):
+                    started = True
+                if started and ends_before is not None and ends_before(obj):
+                    finished = True
+                    break
+
+                if started:
+                    objects_in_page.append(obj)
+            yield objects_in_page
+
+            if finished:
+                break
     fobj.close()
 
 
@@ -177,10 +208,10 @@ def get_table(objs, x_threshold=0.5, y_threshold=0.5):
     return fill_matrix(objs, x_intervals, y_intervals)
 
 
-def pdf_table_lines(fobj, page_numbers):
+def pdf_table_lines(fobj, page_numbers, starts_after=None, ends_before=None):
     # TODO: may use LTRect and LTLine objects to help identifying table
     # boundaries and cells' positions when filling them.
-    pages = pdf_objects(fobj, page_numbers)
+    pages = pdf_objects(fobj, page_numbers, starts_after, ends_before)
     header = None
     for page_index, page in enumerate(pages):
         for line_index, line in enumerate(get_table(page)):
@@ -214,7 +245,9 @@ def pdf_to_text(filename_or_fobj):
         yield result.getvalue()
 
 
-def import_from_pdf(filename_or_fobj, page_numbers=None, *args, **kwargs):
+def import_from_pdf(filename_or_fobj, page_numbers=None,
+                    starts_after=None, ends_before=None,
+                    *args, **kwargs):
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
 
     # TODO: create tests
@@ -228,5 +261,10 @@ def import_from_pdf(filename_or_fobj, page_numbers=None, *args, **kwargs):
             'imported_from': 'pdf',
             'filename': filename,
     }
-    table_rows = pdf_table_lines(fobj, page_numbers)
+    table_rows = pdf_table_lines(
+        fobj,
+        page_numbers,
+        starts_after=starts_after,
+        ends_before=ends_before,
+    )
     return create_table(table_rows, meta=meta, *args, **kwargs)
