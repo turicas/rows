@@ -312,3 +312,14 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result_1 = rows.export_to_csv(utils.table, dialect=csv.excel_tab)
         result_2 = rows.export_to_csv(utils.table, dialect=csv.excel)
         self.assertEqual(result_1.replace(b'\t', b','), result_2)
+
+    def test_export_callback(self):
+        table = rows.import_from_dicts([{'id': number}
+                                        for number in range(10)])
+        myfunc = mock.Mock()
+        rows.export_to_csv(table, callback=myfunc, batch_size=3)
+        self.assertEqual(myfunc.call_count, 4)
+        self.assertEqual(
+            [x[0][0] for x in myfunc.call_args_list],
+            [3, 6, 9, 10]
+        )

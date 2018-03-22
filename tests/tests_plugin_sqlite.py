@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -194,3 +194,14 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 query_args=(3, ))
         for row in table:
             self.assertTrue(row.float_column > 3)
+
+    def test_export_callback(self):
+        table = rows.import_from_dicts([{'id': number}
+                                        for number in range(10)])
+        myfunc = mock.Mock()
+        rows.export_to_sqlite(table, ':memory:', callback=myfunc, batch_size=3)
+        self.assertEqual(myfunc.call_count, 4)
+        self.assertEqual(
+            [x[0][0] for x in myfunc.call_args_list],
+            [3, 6, 9, 10]
+        )
