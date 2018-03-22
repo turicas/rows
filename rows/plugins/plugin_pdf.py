@@ -34,7 +34,8 @@ from rows.plugins.utils import create_table, get_filename_and_fobj
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 
-def pdf_objects(fobj, desired_types=(LTTextBox, LTTextLine, LTChar)):
+def pdf_objects(fobj, page_numbers,
+                desired_types=(LTTextBox, LTTextLine, LTChar)):
     'For each page inside a PDF, return the list of text objects'
 
     rsrcmgr = PDFResourceManager()
@@ -46,11 +47,12 @@ def pdf_objects(fobj, desired_types=(LTTextBox, LTTextLine, LTChar)):
     parser.set_document(doc)
     assert doc.is_extractable
 
-    for page in PDFPage.create_pages(doc):
-        interpreter.process_page(page)
-        layout = device.get_result()
-        objects_in_page = []
-        yield [obj for obj in layout if isinstance(obj, desired_types)]
+    for page_number, page in enumerate(PDFPage.create_pages(doc), start=1):
+        if page_numbers is None or page_number in page_numbers:
+            interpreter.process_page(page)
+            layout = device.get_result()
+            objects_in_page = []
+            yield [obj for obj in layout if isinstance(obj, desired_types)]
     fobj.close()
 
 
@@ -175,10 +177,10 @@ def get_table(objs, x_threshold=0.5, y_threshold=0.5):
     return fill_matrix(objs, x_intervals, y_intervals)
 
 
-def pdf_table_lines(fobj):
+def pdf_table_lines(fobj, page_numbers):
     # TODO: may use LTRect and LTLine objects to help identifying table
     # boundaries and cells' positions when filling them.
-    pages = pdf_objects(fobj)
+    pages = pdf_objects(fobj, page_numbers)
     header = None
     for page_index, page in enumerate(pages):
         for line_index, line in enumerate(get_table(page)):
@@ -212,7 +214,7 @@ def pdf_to_text(filename_or_fobj):
         yield result.getvalue()
 
 
-def import_from_pdf(filename_or_fobj, *args, **kwargs):
+def import_from_pdf(filename_or_fobj, page_numbers=None, *args, **kwargs):
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
 
     # TODO: create tests
@@ -226,4 +228,5 @@ def import_from_pdf(filename_or_fobj, *args, **kwargs):
             'imported_from': 'pdf',
             'filename': filename,
     }
-    return create_table(pdf_table_lines(fobj), meta=meta, *args, **kwargs)
+    table_rows = pdf_table_lines(fobj, page_numbers)
+    return create_table(table_rows, meta=meta, *args, **kwargs)
