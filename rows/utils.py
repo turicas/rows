@@ -302,6 +302,13 @@ def detect_source(uri, verify_ssl, progress, timeout=5):
         return download_file(uri, verify_ssl=verify_ssl, timeout=timeout,
                              progress=progress)
 
+    elif uri.startswith('postgres://'):
+        return Source(
+            delete=False,
+            encoding=None,
+            plugin_name='postgresql',
+            uri=uri,
+        )
     else:
         return local_file(uri)
 

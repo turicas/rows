@@ -328,12 +328,16 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--input-locale')
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
+@click.option('--samples', type=int, default=5000,
+              help='Number of rows to determine the field types (0 = all)')
 @click.option('--output')
 @click.option('--frame-style', default='ASCII')
 @click.argument('query', required=True)
 @click.argument('sources', nargs=-1, required=True)
 def query(input_encoding, output_encoding, input_locale, output_locale,
-          verify_ssl, output, frame_style, query, sources):
+          verify_ssl, samples, output, frame_style, query, sources):
+
+    samples = samples if samples > 0 else None
 
     if not query.lower().startswith('select'):
         table_names = ', '.join(['table{}'.format(index)
@@ -343,17 +347,20 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
     if len(sources) == 1:
         source = detect_source(sources[0], verify_ssl=verify_ssl, progress=True)
 
-        if source.plugin_name == 'sqlite':
+        if source.plugin_name in ('sqlite', 'postgresql'):
             # Optimization: query the db directly
             result = import_from_source(source,
                                         DEFAULT_INPUT_ENCODING,
-                                        query=query)
+                                        query=query,
+                                        samples=samples)
         else:
             if input_locale is not None:
                 with rows.locale_context(input_locale):
-                    table = import_from_source(source, DEFAULT_INPUT_ENCODING)
+                    table = import_from_source(source, DEFAULT_INPUT_ENCODING,
+                            samples=samples)
             else:
-                table = import_from_source(source, DEFAULT_INPUT_ENCODING)
+                table = import_from_source(source, DEFAULT_INPUT_ENCODING,
+                        samples=samples)
 
             sqlite_connection = sqlite3.Connection(':memory:')
             rows.export_to_sqlite(table,
@@ -366,11 +373,11 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
         if input_locale is not None:
             with rows.locale_context(input_locale):
                 tables = [_import_table(source, encoding=input_encoding,
-                                        verify_ssl=verify_ssl)
+                                        verify_ssl=verify_ssl, samples=samples)
                           for source in sources]
         else:
             tables = [_import_table(source, encoding=input_encoding,
-                                    verify_ssl=verify_ssl)
+                                    verify_ssl=verify_ssl, samples=samples)
                       for source in sources]
 
         sqlite_connection = sqlite3.Connection(':memory:')
