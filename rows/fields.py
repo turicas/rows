@@ -481,7 +481,7 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
 
     field_values = list(field_values)
     if not field_values:
-        return collections.OrderedDict([(field_name, BinaryField)
+        return collections.OrderedDict([(field_name, TextField)
                                         for field_name in field_names])
 
     number_of_fields = len(field_names)
@@ -499,7 +499,7 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
 
         if not data:
             # all values with an empty field (can't identify) -> BinaryField
-            identified_type = BinaryField
+            identified_type = TextField
         elif native_types == set([six.binary_type]):
             identified_type = BinaryField
         else:
