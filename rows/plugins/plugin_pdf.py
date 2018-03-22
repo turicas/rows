@@ -18,6 +18,7 @@
 from __future__ import unicode_literals
 
 import io
+import logging
 from collections import defaultdict
 
 from pdfminer.converter import PDFPageAggregator, TextConverter
@@ -28,6 +29,9 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 
 from rows.plugins.utils import create_table, get_filename_and_fobj
+
+
+logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 
 def pdf_objects(fobj, desired_types=(LTTextBox, LTTextLine, LTChar)):
