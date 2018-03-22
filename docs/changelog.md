@@ -24,6 +24,8 @@
 - [#243](https://github.com/turicas/rows/issues/243) Change license to LGPL3.0
 - [#225](https://github.com/turicas/rows/issues/225) Create export callbacks
   (CSV and SQLite plugins)
+- [#234](https://github.com/turicas/rows/issues/234) Remove `BinaryField` from
+  the default list of detection types
 
 ### Bug Fixes
 
