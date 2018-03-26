@@ -62,10 +62,10 @@ def _cell_to_python(cell):
 
 def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
                      start_row=0, start_column=0, *args, **kwargs):
-    workbook = load_workbook(filename_or_fobj)
+    workbook = load_workbook(filename_or_fobj, data_only=True)
     if sheet_name is None:
         sheet_name = workbook.sheetnames[sheet_index]
-    sheet = workbook.get_sheet_by_name(sheet_name)
+    sheet = workbook[sheet_name]
 
     start_row, end_row = max(start_row, sheet.min_row), sheet.max_row
     start_col, end_col = max(start_column, sheet.min_column), sheet.max_column
