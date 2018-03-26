@@ -412,6 +412,7 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
     import_fields = _get_import_fields(fields, fields_exclude)
 
     source = detect_source(source, verify_ssl=verify_ssl)
+    # TODO: make it lazy
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = import_from_source(source, DEFAULT_INPUT_ENCODING,

@@ -104,6 +104,9 @@ def cell_value(sheet, row, col):
         elif value == 1:
             return True
 
+    elif cell.xf_index is None:
+        return value  # TODO: test
+
     else:
         book = sheet.book
         xf = book.xf_list[cell.xf_index]
