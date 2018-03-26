@@ -39,6 +39,13 @@ NULL = ('-', 'null', 'none', 'nil', 'n/a', 'na')
 NULL_BYTES = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
 
 
+def value_error(value, cls):
+    value = repr(value)
+    if len(value) > 50:
+        value = value[:50] + '...'
+    raise ValueError("Value '{}' can't be {}".format(value, cls.__name__))
+
+
 class Field(object):
     """Base Field class - all fields should inherit from this
 
@@ -88,7 +95,7 @@ class BinaryField(Field):
     def serialize(cls, value, *args, **kwargs):
         if value is not None:
             if not isinstance(value, six.binary_type):
-                raise ValueError("Can't be {}".format(cls.__name__))
+                value_error(value, cls)
             else:
                 try:
                     return b64encode(value).decode('ascii')
@@ -108,7 +115,7 @@ class BinaryField(Field):
                 except (TypeError, ValueError, binascii.Error):
                     raise ValueError("Can't decode base64")
             else:
-                raise ValueError("Can't be {}".format(cls.__name__))
+                value_error(value, cls)
         else:
             return b''
 
@@ -251,7 +258,7 @@ class DecimalField(Field):
             try:
                 return Decimal(value)
             except InvalidOperation:
-                raise ValueError("Can't be {}".format(cls.__name__))
+                value_error(value, cls)
         else:
             locale_vars = locale.localeconv()
             decimal_separator = locale_vars['decimal_point']
@@ -264,7 +271,7 @@ class DecimalField(Field):
             regexp = re.compile(r'[^0-9{} ]'.format(interesting_chars))
             value = as_string(value)
             if regexp.findall(value):
-                raise ValueError("Can't be {}".format(cls.__name__))
+                value_error(value, cls)
 
             parts = [REGEXP_ONLY_NUMBERS.subn('', number)[0]
                      for number in value.split(decimal_separator)]
@@ -276,7 +283,7 @@ class DecimalField(Field):
                     decimal_places = len(parts[1])
                     value = value + (Decimal(parts[1]) / (10 ** decimal_places))
             except InvalidOperation:
-                raise ValueError("Can't be {}".format(cls.__name__))
+                value_error(value, cls)
             return value
 
 
@@ -306,7 +313,7 @@ class PercentField(DecimalField):
 
         value = as_string(value)
         if '%' not in value:
-            raise ValueError("Can't be {}".format(cls.__name__))
+            value_error(value, cls)
         value = value.replace('%', '')
         return super(PercentField, cls).deserialize(value) / 100
 
@@ -367,7 +374,7 @@ class DatetimeField(Field):
         # TODO: may use iso8601
         groups = cls.DATETIME_REGEXP.findall(value)
         if not groups:
-            raise ValueError("Can't be {}".format(cls.__name__))
+            value_error(value, cls)
         else:
             return datetime.datetime(*[int(x) for x in groups[0]])
 
@@ -412,7 +419,7 @@ class EmailField(TextField):
 
         result = cls.EMAIL_REGEXP.findall(value)
         if not result:
-            raise ValueError("Can't be {}".format(cls.__name__))
+            value_error(value, cls)
         else:
             return result[0]
 
