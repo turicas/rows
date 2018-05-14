@@ -26,6 +26,9 @@
   (CSV and SQLite plugins)
 - [#234](https://github.com/turicas/rows/issues/234) Remove `BinaryField` from
   the default list of detection types
+- [#270](https://github.com/turicas/rows/pull/270) Added options to export
+  pretty text table frames (TXT plugin)
+
 
 ### Bug Fixes
 

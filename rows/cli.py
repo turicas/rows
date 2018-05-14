@@ -320,10 +320,11 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--output')
+@click.option('--frame-style', default='ASCII')
 @click.argument('query', required=True)
 @click.argument('sources', nargs=-1, required=True)
 def query(input_encoding, output_encoding, input_locale, output_locale,
-          verify_ssl, output, query, sources):
+          verify_ssl, output, frame_style, query, sources):
 
     if not query.lower().startswith('select'):
         table_names = ', '.join(['table{}'.format(index)
@@ -378,9 +379,11 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
         fobj = BytesIO()
         if output_locale is not None:
             with rows.locale_context(output_locale):
-                rows.export_to_txt(result, fobj, encoding=output_encoding)
+                rows.export_to_txt(result, fobj, encoding=output_encoding,
+                                   frame_style=frame_style)
         else:
-            rows.export_to_txt(result, fobj, encoding=output_encoding)
+            rows.export_to_txt(result, fobj, encoding=output_encoding,
+                               frame_style=frame_style)
         fobj.seek(0)
         click.echo(fobj.read())
     else:
