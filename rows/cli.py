@@ -320,7 +320,7 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--output')
-@click.option('--frame_style', default='ASCII')
+@click.option('--frame-style', default='ASCII')
 @click.argument('query', required=True)
 @click.argument('sources', nargs=-1, required=True)
 def query(input_encoding, output_encoding, input_locale, output_locale,

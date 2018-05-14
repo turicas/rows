@@ -22,6 +22,9 @@
 - [#237](https://github.com/turicas/rows/issues/237) Implement `rows schema`
   (generates schema in text, SQL and Django models).
 - [#243](https://github.com/turicas/rows/issues/243) Change license to LGPL3.0
+- [#270](https://github.com/turicas/rows/pull/270) Added options to export
+  pretty text table frames (TXT plugin)
+
 
 ### Bug Fixes
 
