@@ -58,8 +58,8 @@ ASCII_FRAME['VERTICAL'] = '|'
 NONE_FRAME = defaultdict(lambda: ' ')
 
 FRAMES = {
-    'None': NONE_FRAME,
-    'ASCII': ASCII_FRAME,
+    'none': NONE_FRAME,
+    'ascii': ASCII_FRAME,
     'single': SINGLE_FRAME,
     'double': DOUBLE_FRAME,
 }
@@ -74,7 +74,7 @@ def _parse_frame_style(frame_style):
     if frame_style is None:
         frame_style = 'None'
     try:
-        FRAMES[frame_style]
+        FRAMES[frame_style.lower()]
     except KeyError as error:
         raise ValueError(
             "Invalid frame style '{}'. Use one of 'None', "
@@ -99,7 +99,7 @@ def _parse_col_positions(frame_style, header_line):
     (which includes non-lefthand aligned column titles)
     """
 
-    separator = re.escape(FRAMES[frame_style]['VERTICAL'])
+    separator = re.escape(FRAMES[frame_style.lower()]['VERTICAL'])
 
     if frame_style == 'None':
         separator = r"[\s]{2}[^\s]"
@@ -201,7 +201,7 @@ def export_to_txt(table, filename_or_fobj=None, encoding=None,
     # TODO: will work only if table.fields is OrderedDict
 
     frame_style = _parse_frame_style(frame_style)
-    frame = FRAMES[frame_style]
+    frame = FRAMES[frame_style.lower()]
 
     serialized_table = serialize(table, *args, **kwargs)
     field_names = next(serialized_table)
