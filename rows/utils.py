@@ -17,7 +17,9 @@
 
 from __future__ import unicode_literals
 
+import bz2
 import cgi
+import gzip
 import mimetypes
 import os
 import tempfile
@@ -30,6 +32,11 @@ try:
     from urlparse import urlparse  # Python 2
 except ImportError:
     from urllib.parse import urlparse  # Python 3
+
+try:
+    import lzma
+except ImportError:
+    lzma = None
 
 try:
     import magic
@@ -52,6 +59,8 @@ else:
         # old versions of urllib3 or requests
         pass
 
+import rows
+from rows.plugins.utils import get_filename_and_fobj
 
 # TODO: should get this information from the plugins
 TEXT_PLAIN = {
@@ -160,14 +169,7 @@ def plugin_name_by_mime_type(mime_type, mime_name, file_extension):
             None)
 
 
-def detect_local_source(path, content, mime_type=None, encoding=None):
-
-    # TODO: may add sample_size
-
-    filename = os.path.basename(path)
-    parts = filename.split('.')
-    extension = parts[-1] if len(parts) > 1 else None
-
+def describe_file_type(filename, content, mime_type=None, encoding=None):
     if magic is not None:
         detected = magic.detect_from_content(content)
         encoding = detected.encoding or encoding
@@ -178,6 +180,19 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
         encoding = chardet.detect(content)['encoding'] or encoding
         mime_name = None
         mime_type = mime_type or mimetypes.guess_type(filename)[0]
+
+    return mime_type, encoding, mime_name
+
+def detect_local_source(path, content, mime_type=None, encoding=None):
+    # TODO: may add sample_size
+
+    filename = os.path.basename(path)
+    parts = filename.split('.')
+    extension = parts[-1] if len(parts) > 1 else None
+
+    args = (filename, content)
+    kwargs = dict(mime_type=mime_type, encoding=encoding)
+    mime_type, encoding, mime_name = describe_file_type(*args, **kwargs)
 
     plugin_name = plugin_name_by_mime_type(mime_type, mime_name, extension)
     if encoding == 'binary':
@@ -299,3 +314,37 @@ def export_to_uri(table, uri, *args, **kwargs):
         raise ValueError('Plugin (export) "{}" not found'.format(plugin_name))
 
     return export_function(table, uri, *args, **kwargs)
+
+
+def decompress(path_or_fobj, algorithm=None, **kwargs):
+    """
+    Given a bz2, gzip or lzma file returns a decompressed file object. All
+    kwargs are passed to either `bz2.openn`, `gzip.open` or `lzma.open`.
+    :param path_or_fobj: (str) path to a bz2, gzip or lzma file
+    :param algorithm: (str) either bz2, gzip or lzma
+    """
+    filename, fobj = get_filename_and_fobj(path_or_fobj, 'rb')
+
+    extension = None
+    if not algorithm and filename:
+        _, extension = os.path.splitext(filename)
+        extension = extension.replace('.', '')
+
+    open_mapping = dict(
+        bz2=bz2.BZ2File,
+        gzip=gzip.GzipFile,
+        gz=gzip.GzipFile,
+        lzma=getattr(lzma, 'LZMAFile'),  # lzma might not be available
+        xz=getattr(lzma, 'LZMAFile')  # lzma might not be available
+    )
+    open_compressed = open_mapping.get(algorithm or extension)
+
+    if not open_compressed:
+        raise RuntimeError((
+            'Unknown extension and/or invalid algorithm: options are: bz2, '
+            'gzip, gz, lzma or xz ({})'.format(filename or fobj)
+        ))
+
+    target = filename or fobj
+    with open_compressed(target, 'rb', **kwargs) as handler:
+        return handler.read()
