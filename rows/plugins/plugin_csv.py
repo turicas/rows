@@ -17,7 +17,7 @@
 
 from __future__ import unicode_literals
 
-from io import BytesIO
+from io import BytesIO, BufferedReader
 
 import six
 import unicodecsv
@@ -26,6 +26,18 @@ from rows.plugins.utils import (create_table, get_filename_and_fobj,
                                 ipartition, serialize)
 
 sniffer = unicodecsv.Sniffer()
+
+
+class NotNullBytesWrapper(BufferedReader):
+
+    def read(self, *args, **kwargs):
+        data = super().read(*args, **kwargs)
+        return data.replace(b'\x00', b'')
+
+    def readline(self, *args, **kwargs):
+        data = super().readline(*args, **kwargs)
+        return data.replace(b'\x00', b'')
+
 
 if six.PY2:
 
@@ -104,6 +116,7 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
     """
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
+    fobj = NotNullBytesWrapper(fobj)
 
     if dialect is None:
         dialect = discover_dialect(sample=read_sample(fobj, sample_size),

@@ -323,3 +323,10 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             [x[0][0] for x in myfunc.call_args_list],
             [3, 6, 9, 10]
         )
+
+    def test_issue_273(self):
+        filename = 'tests/data/csv_with_null_bytes.csv'
+        # Should not raise Error: line contains NULL byte
+        table = rows.import_from_csv(filename, encoding='latin-1')
+
+        self.assertEqual(len(table), 9)
