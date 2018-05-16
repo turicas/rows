@@ -28,6 +28,8 @@
   the default list of detection types
 - [#270](https://github.com/turicas/rows/pull/270) Added options to export
   pretty text table frames (TXT plugin)
+- [#273](https://github.com/turicas/rows/issues/273) Automatically replace NUL
+  (`\0x00`) in CSV (won't fail to decode it)
 
 
 ### Bug Fixes
