@@ -51,7 +51,7 @@ if six.PY2:
         try:
             dialect = sniffer.sniff(sample, delimiters=delimiters)
 
-        except unicodecsv.Error: # Couldn't detect: fall back to 'excel'
+        except unicodecsv.Error:  # Couldn't detect: fall back to 'excel'
             dialect = unicodecsv.excel
 
         if not dialect.doublequote and dialect.escapechar is None:
@@ -89,7 +89,7 @@ elif six.PY3:
         try:
             dialect = sniffer.sniff(decoded, delimiters=delimiters)
 
-        except unicodecsv.Error: # Couldn't detect: fall back to 'excel'
+        except unicodecsv.Error:  # Couldn't detect: fall back to 'excel'
             dialect = unicodecsv.excel
 
         if not dialect.doublequote and dialect.escapechar is None:
@@ -126,7 +126,7 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
 
     meta = {'imported_from': 'csv',
             'filename': filename,
-            'encoding': encoding,}
+            'encoding': encoding}
     return create_table(reader, meta=meta, *args, **kwargs)
 
 
