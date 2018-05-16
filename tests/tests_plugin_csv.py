@@ -52,8 +52,10 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     assert_meta_encoding = True
 
     def test_imports(self):
-        self.assertIs(rows.import_from_csv, rows.plugins.plugin_csv.import_from_csv)
-        self.assertIs(rows.export_to_csv, rows.plugins.plugin_csv.export_to_csv)
+        self.assertIs(rows.import_from_csv,
+                      rows.plugins.plugin_csv.import_from_csv)
+        self.assertIs(rows.export_to_csv,
+                      rows.plugins.plugin_csv.export_to_csv)
 
     @mock.patch('rows.plugins.plugin_csv.create_table')
     def test_import_from_csv_uses_create_table(self, mocked_create_table):
@@ -68,7 +70,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call = mocked_create_table.call_args
         kwargs['meta'] = {'imported_from': 'csv',
                           'filename': self.filename,
-                          'encoding': 'utf-8',}
+                          'encoding': 'utf-8'}
         self.assertEqual(call[1], kwargs)
 
     @mock.patch('rows.plugins.plugin_csv.create_table')
@@ -112,7 +114,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         # Should not raise `UnicodeDecodeError`
         table = rows.import_from_csv(BytesIO(data), encoding='utf-8',
-                sample_size=262144)
+                                     sample_size=262144)
 
         last_row = table[-1]
         last_column = 'b' * 508
@@ -323,3 +325,10 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             [x[0][0] for x in myfunc.call_args_list],
             [3, 6, 9, 10]
         )
+
+    def test_issue_273(self):
+        filename = 'tests/data/csv_with_null_bytes.csv'
+        # Should not raise Error: line contains NULL byte
+        table = rows.import_from_csv(filename, encoding='latin-1')
+
+        self.assertEqual(len(table), 9)
