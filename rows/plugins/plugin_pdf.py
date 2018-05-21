@@ -22,7 +22,7 @@ import logging
 from collections import defaultdict
 
 from pdfminer.converter import PDFPageAggregator, TextConverter
-from pdfminer.layout import (LAParams, LTTextBox, LTTextLine, LTChar)
+from pdfminer.layout import LAParams, LTTextBox, LTTextLine, LTChar, LTRect
 from pdfminer.pdfdocument import PDFDocument
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter, resolve1
 from pdfminer.pdfpage import PDFPage
@@ -32,6 +32,7 @@ from rows.plugins.utils import create_table, get_filename_and_fobj
 
 
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
+TEXT_TYPES = (LTTextBox, LTTextLine, LTChar)
 
 
 def number_of_pages(filename):
@@ -43,15 +44,19 @@ def number_of_pages(filename):
 
 def get_delimiter_function(value):
     if isinstance(value, str):  # regular string, match exactly
-        return lambda obj: obj.get_text().strip() == value
+        return lambda obj: (isinstance(obj, TEXT_TYPES) and
+                            obj.get_text().strip() == value)
+
     elif hasattr(value, 'search'):  # regular expression
-        return lambda obj: bool(value.search(obj.get_text().strip()))
+        return lambda obj: bool(isinstance(obj, TEXT_TYPES) and
+                                value.search(obj.get_text().strip()))
+
     elif callable(value):  # function
         return lambda obj: bool(value(obj))
 
 
 def pdf_objects(fobj, page_numbers, starts_after=None, ends_before=None,
-                desired_types=(LTTextBox, LTTextLine, LTChar)):
+                desired_types=(LTTextBox, LTTextLine, LTChar, LTRect)):
     'For each page inside a PDF, return the list of text objects'
 
     rsrcmgr = PDFResourceManager()
@@ -173,6 +178,8 @@ def get_table(objs, x_threshold=0.5, y_threshold=0.5):
     'Where the magic happens'
 
     # TODO: split this function in many others
+    all_objs = objs
+    text_objs = [obj for obj in all_objs if isinstance(obj, TEXT_TYPES)]
 
     # Define table lines based on objects' y values (with some threshold) -
     # these lines will only be used to determine table boundaries.
@@ -202,7 +209,7 @@ def get_table(objs, x_threshold=0.5, y_threshold=0.5):
     table_bbox = (x_min, y_min, x_max, y_max)
 
     # Filter out objects outside table boundaries
-    objs = [obj for obj in objs
+    objs = [obj for obj in text_objs
             if contains_or_overlap(table_bbox, obj.bbox)]
 
     # Define x and y intervals based on filtered objects
@@ -233,10 +240,10 @@ def pdf_table_lines(fobj, page_numbers, starts_after=None, ends_before=None):
     for page_index, page in enumerate(pages):
         for line_index, line in enumerate(get_table(page)):
             if line_index == 0:
-                if page_index > 0 and line == header:  # skip header repetition
-                    continue
-                elif page_index == 0:
+                if page_index == 0:
                     header = line
+                elif page_index > 0 and line == header:  # skip header repetition
+                    continue
             yield line
 
 
