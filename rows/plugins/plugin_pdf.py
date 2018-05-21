@@ -139,16 +139,25 @@ def contains_or_overlap(a, b):
 
 
 def fill_matrix(objs, x_intervals, y_intervals):
-    matrix = [[None] * len(x_intervals) for _ in y_intervals]
-    for obj in objs:
-        x_index = [index for index, x in enumerate(x_intervals)
-                   if x[0] <= obj.x0 and x[1] >= obj.x1][0]
-        y_index = [index for index, y in enumerate(y_intervals)
-                   if y[0] <= obj.y0 and y[1] >= obj.y1][0]
-        # TODO: do not overwrite the matrix object (use object's x)
-        object_text = obj.get_text().strip()
-        matrix[y_index][x_index] = object_text
-    matrix.reverse()
+    y_intervals = reversed(list(y_intervals))
+    objs = list(objs)
+
+    matrix = []
+    for y0, y1 in y_intervals:
+        line = []
+        for x0, x1 in x_intervals:
+            cell = [obj
+                   for obj in objs
+                   if x0 <= obj.x0 <= x1 and y0 <= obj.y0 <= y1]
+            if not cell:
+                content = None
+            else:
+                cell.sort(key=lambda obj: -obj.y0)
+                content = '\n'.join(obj.get_text().strip() for obj in cell)
+                for obj in cell:
+                    objs.remove(obj)
+            line.append(content)
+        matrix.append(line)
     return matrix
 
 
