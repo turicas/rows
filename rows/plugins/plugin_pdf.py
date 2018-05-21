@@ -24,7 +24,7 @@ from collections import defaultdict
 from pdfminer.converter import PDFPageAggregator, TextConverter
 from pdfminer.layout import (LAParams, LTTextBox, LTTextLine, LTChar)
 from pdfminer.pdfdocument import PDFDocument
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter, resolve1
 from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 
@@ -32,6 +32,14 @@ from rows.plugins.utils import create_table, get_filename_and_fobj
 
 
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
+
+
+def number_of_pages(filename):
+    with open(filename, mode='rb') as fobj:
+        parser = PDFParser(fobj)
+        document = PDFDocument(parser)
+        return resolve1(document.catalog['Pages'])['Count']
+
 
 def get_delimiter_function(value):
     if isinstance(value, str):  # regular string, match exactly
