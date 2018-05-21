@@ -42,6 +42,47 @@ def number_of_pages(filename):
         return resolve1(document.catalog['Pages'])['Count']
 
 
+class Group(object):
+    'Helper class to group objects based on its positions and sizes'
+
+    def __init__(self, minimum=float('inf'), maximum=float('-inf'), threshold=0.5):
+        self.minimum = minimum
+        self.maximum = maximum
+        self.threshold = threshold
+        self.objects = []
+
+    @property
+    def min(self):
+        return self.minimum - self.threshold
+
+    @property
+    def max(self):
+        return self.maximum + self.threshold
+
+    def contains(self, obj):
+        return (self.min <= getattr(obj, self.dimension_0) <= self.max or
+                self.min <= getattr(obj, self.dimension_1) <= self.max)
+
+    def add(self, obj):
+        self.objects.append(obj)
+        d0 = getattr(obj, self.dimension_0)
+        d1 = getattr(obj, self.dimension_1)
+        if d0 < self.minimum:
+            self.minimum = d0
+        if d1 > self.maximum:
+            self.maximum = d1
+
+
+class HorizontalGroup(Group):
+    dimension_0 = 'y0'
+    dimension_1 = 'y1'
+
+
+class VerticalGroup(Group):
+    dimension_0 = 'x0'
+    dimension_1 = 'x1'
+
+
 def get_delimiter_function(value):
     if isinstance(value, str):  # regular string, match exactly
         return lambda obj: (isinstance(obj, TEXT_TYPES) and
@@ -100,27 +141,31 @@ def pdf_objects(fobj, page_numbers, starts_after=None, ends_before=None,
     fobj.close()
 
 
-def group_objects(objs, get_attr_function, group_size):
-    'Group objects based on an attribute considering a group size'
+def group_objects(objs, get_attr_function, group_size, axis):
+    if axis == 'x':
+        GroupClass = VerticalGroup
+    elif axis == 'y':
+        GroupClass = HorizontalGroup
 
     objs.sort(key=get_attr_function)
-    groups = defaultdict(list)
+    groups = []
     for obj in objs:
-        attr = get_attr_function(obj)
-        found_key = None
-        for key in groups.keys():
-            if key <= attr <= key + group_size:
-                found_key = key
+        found = False
+        for group in groups:
+            if group.contains(obj):
+                group.add(obj)
+                found = True
                 break
-        if not found_key:
-            found_key = attr
-        groups[found_key].append(obj)
+        if not found:
+            group = GroupClass(threshold=group_size)
+            group.add(obj)
+            groups.append(group)
+    return {group.minimum: group.objects for group in groups}
 
-    return groups
 
+def define_intervals(objs, min_attr, max_attr, threshold, axis):
+    groups = group_objects(objs, min_attr, threshold, axis)
 
-def define_intervals(objs, min_attr, max_attr, threshold):
-    groups = group_objects(objs, min_attr, threshold)
     intervals = [(key, max_attr(max(value, key=max_attr)))
                  for key, value in groups.items()]
     intervals.sort()
