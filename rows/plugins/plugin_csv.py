@@ -18,6 +18,7 @@
 from __future__ import unicode_literals
 
 from io import BytesIO, BufferedReader
+from io import open as io_open
 
 import six
 import unicodecsv
@@ -28,18 +29,17 @@ from rows.plugins.utils import (create_table, get_filename_and_fobj,
 sniffer = unicodecsv.Sniffer()
 
 
-class NotNullBytesWrapper(BufferedReader):
-
-    def read(self, *args, **kwargs):
-        data = super().read(*args, **kwargs)
-        return data.replace(b'\x00', b'')
-
-    def readline(self, *args, **kwargs):
-        data = super().readline(*args, **kwargs)
-        return data.replace(b'\x00', b'')
-
-
 if six.PY2:
+
+    class NotNullBytesWrapper(BufferedReader):
+
+        def read(self, *args, **kwargs):
+            data = super(NotNullBytesWrapper, self).read(*args, **kwargs)
+            return data.replace(b'\x00', b'')
+
+        def readline(self, *args, **kwargs):
+            data = super(NotNullBytesWrapper, self).readline(*args, **kwargs)
+            return data.replace(b'\x00', b'')
 
     def discover_dialect(sample, encoding=None,
                          delimiters=(b',', b';', b'\t', b'|')):
@@ -60,6 +60,16 @@ if six.PY2:
         return dialect
 
 elif six.PY3:
+
+    class NotNullBytesWrapper(BufferedReader):
+
+        def read(self, *args, **kwargs):
+            data = super().read(*args, **kwargs)
+            return data.replace(b'\x00', b'')
+
+        def readline(self, *args, **kwargs):
+            data = super().readline(*args, **kwargs)
+            return data.replace(b'\x00', b'')
 
     def discover_dialect(sample, encoding, delimiters=(',', ';', '\t', '|')):
         """Discover a CSV dialect based on a sample size
@@ -116,7 +126,11 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
     """
 
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
-    fobj = NotNullBytesWrapper(fobj)
+
+    if six.PY2:
+        fobj = NotNullBytesWrapper(io_open(filename, mode='rb'))
+    elif six.PY3:
+        fobj = NotNullBytesWrapper(fobj)
 
     if dialect is None:
         dialect = discover_dialect(sample=read_sample(fobj, sample_size),
