@@ -17,8 +17,7 @@
 
 from __future__ import unicode_literals
 
-from io import BytesIO, BufferedReader
-from io import open as io_open
+from io import open as io_open, BytesIO, BufferedReader
 
 import six
 import unicodecsv
@@ -163,7 +162,7 @@ def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
     else:
         fobj = BytesIO()
 
-    # TODO: may use `io.BufferedWriter` instead of `ipartition` so user can
+    # TODO: may use `BufferedWriter` instead of `ipartition` so user can
     # choose the real size (in Bytes) when to flush to the file system, instead
     # number of rows
     writer = unicodecsv.writer(fobj, encoding=encoding, dialect=dialect)
