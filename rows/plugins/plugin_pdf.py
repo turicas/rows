@@ -251,6 +251,8 @@ class ExtractionAlgorithm(object):
 class YGroupsAlgorithm(ExtractionAlgorithm):
     """Extraction algorithm based on objects' y values"""
 
+    name = 'y-groups'
+
     # TODO: filter out objects with empty text before grouping by y0 (but
     # consider them if inside table's bbox)
     # TODO: get y0 groups bbox and merge overlapping ones (overlapping only on
@@ -319,6 +321,8 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
 
 class HeaderPositionAlgorithm(YGroupsAlgorithm):
 
+    name = 'header-position'
+
     @property
     def x_intervals(self):
         raise NotImplementedError
@@ -351,13 +355,15 @@ class HeaderPositionAlgorithm(YGroupsAlgorithm):
 
             for obj in line_objs:
                 if obj not in used:
-                    raise RuntimeError('Object not placed: {}'.format(obj))
+                    raise RuntimeError('Object not selected: {}'.format(obj))
 
         return lines
 
 
 class RectsBoundariesAlgorithm(ExtractionAlgorithm):
     """Extraction algorithm based on rectangles present in the page"""
+
+    name = 'rects-boundaries'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -400,6 +406,18 @@ class RectsBoundariesAlgorithm(ExtractionAlgorithm):
         return sorted(self._clean_intersections(y_intervals))
 
 
+def subclasses(cls):
+    children = cls.__subclasses__()
+    return set(children).union(
+        set(grandchild for child in children
+                       for grandchild in subclasses(child))
+    )
+
+
+def algorithms():
+    return {Class.name: Class for Class in subclasses(ExtractionAlgorithm)}
+
+
 def get_cell_text(cell):
     if cell is None:
         return None
@@ -411,15 +429,23 @@ def get_cell_text(cell):
 def get_table(objs, algorithm='y-groups', x_threshold=0.5, y_threshold=0.5):
     'Where the magic happens'
 
-    # Define which extractor class to use
-    if algorithm == 'y-groups':
-        AlgorithmClass = YGroupsAlgorithm
-    elif algorithm == 'header-position':
-        AlgorithmClass = HeaderPositionAlgorithm
-    elif algorithm == 'rects-boundaries':
-        AlgorithmClass = RectsBoundariesAlgorithm
+    available_algorithms = algorithms()
+    if isinstance(algorithm, ExtractionAlgorithm):
+        AlgorithmClass = algorithm
+    elif isinstance(algorithm, str):
+        if algorithm not in available_algorithms:
+            raise ValueError(
+                'Unknown algorithm "{}" (options are: {})'.format(
+                    algorithm, ', '.join(available_algorithms.keys())
+                )
+            )
+        AlgorithmClass = available_algorithms[algorithm]
     else:
-        raise ValueError('Unknown algorithm "{}"'.format(algorithm))
+        raise ValueError(
+            'Unknown algorithm "{}" (options are: {})'.format(
+                algorithm, ', '.join(available_algorithms.keys())
+            )
+        )
 
     objs = list(objs)
     text_objs = [obj for obj in objs if isinstance(obj, TEXT_TYPES)]
