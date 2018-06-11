@@ -317,6 +317,45 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
         )
 
 
+class HeaderPositionAlgorithm(YGroupsAlgorithm):
+
+    @property
+    def x_intervals(self):
+        raise NotImplementedError
+
+    def get_lines(self):
+        objects = self.selected_objects
+        objects.sort(key=lambda obj: obj.x0)
+        y_intervals = list(reversed(self.y_intervals))
+        used, lines = [], []
+
+        header_interval = y_intervals[0]
+        header_objs = [obj for obj in objects
+                       if header_interval[0] <= obj.y0 <= header_interval[1]]
+        used.extend(header_objs)
+        lines.append([[obj] for obj in header_objs])
+
+        def x_intersects(a, b):
+            return a.x0 < b.x1 and a.x1 > b.x0
+
+        for y0, y1 in y_intervals[1:]:
+            line_objs = [obj for obj in objects
+                         if obj not in used and y0 <= obj.y0 <= y1]
+            line = []
+            for column in header_objs:
+                y_objs = [obj for obj in line_objs
+                          if obj not in used and x_intersects(column, obj)]
+                used.extend(y_objs)
+                line.append(y_objs)
+            lines.append(line)
+
+            for obj in line_objs:
+                if obj not in used:
+                    raise RuntimeError('Object not placed: {}'.format(obj))
+
+        return lines
+
+
 class RectsBoundariesAlgorithm(ExtractionAlgorithm):
     """Extraction algorithm based on rectangles present in the page"""
 
@@ -375,6 +414,8 @@ def get_table(objs, algorithm='y-groups', x_threshold=0.5, y_threshold=0.5):
     # Define which extractor class to use
     if algorithm == 'y-groups':
         AlgorithmClass = YGroupsAlgorithm
+    elif algorithm == 'header-position':
+        AlgorithmClass = HeaderPositionAlgorithm
     elif algorithm == 'rects-boundaries':
         AlgorithmClass = RectsBoundariesAlgorithm
     else:

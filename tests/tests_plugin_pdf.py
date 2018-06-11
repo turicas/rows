@@ -59,3 +59,30 @@ class PluginPdfTestCase(utils.RowsTestMixIn, unittest.TestCase):
         )
         expected = rows.import_from_csv(filename + '.csv')
         self.assertEqual(list(expected), list(result))
+
+    def test_real_data_4(self):
+        filename = 'tests/data/eleicoes-tcesp-161-162.pdf'
+        expected1 = 'tests/data/expected-eleicoes-tcesp-161.csv'
+        expected2 = 'tests/data/expected-eleicoes-tcesp-162.csv'
+        begin = re.compile('Documento gerado em.*')
+        end = re.compile('Página: [0-9]+ de.*')
+
+        result = rows.import_from_pdf(
+            filename,
+            page_numbers=(1,),
+            starts_after=begin,
+            ends_before=end,
+            algorithm='header-position',
+        )
+        expected = rows.import_from_csv(expected1)
+        self.assertEqual(list(expected), list(result))
+
+        result = rows.import_from_pdf(
+            filename,
+            page_numbers=(2,),
+            starts_after=begin,
+            ends_before=end,
+            algorithm='header-position',
+        )
+        expected = rows.import_from_csv(expected2)
+        self.assertEqual(list(expected), list(result))
