@@ -226,6 +226,27 @@ class ExtractionAlgorithm(object):
         return [obj for obj in self.text_objects
                 if contains_or_overlap(self.table_bbox, obj.bbox)]
 
+    def get_lines(self):
+        x_intervals = list(self.x_intervals)
+        y_intervals = reversed(list(self.y_intervals))
+        objs = list(self.selected_objects)
+
+        matrix = []
+        for y0, y1 in y_intervals:
+            line = []
+            for x0, x1 in x_intervals:
+                cell = [obj
+                    for obj in objs
+                    if x0 <= obj.x0 <= x1 and y0 <= obj.y0 <= y1]
+                if not cell:
+                    line.append(None)
+                else:
+                    line.append(cell)
+                    for obj in cell:
+                        objs.remove(obj)
+            matrix.append(line)
+        return matrix
+
 
 class YGroupsAlgorithm(ExtractionAlgorithm):
     """Extraction algorithm based on objects' y values"""
@@ -256,7 +277,7 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
         groups = group_objects(objs, threshold, axis)
 
         intervals = [(key, max_attr(max(value, key=max_attr)))
-                    for key, value in groups.items()]
+                     for key, value in groups.items()]
         intervals.sort()
         if not intervals:
             return []
@@ -340,27 +361,12 @@ class RectsBoundariesAlgorithm(ExtractionAlgorithm):
         return sorted(self._clean_intersections(y_intervals))
 
 
-def fill_matrix(objs, x_intervals, y_intervals):
-    y_intervals = reversed(list(y_intervals))
-    objs = list(objs)
-
-    matrix = []
-    for y0, y1 in y_intervals:
-        line = []
-        for x0, x1 in x_intervals:
-            cell = [obj
-                   for obj in objs
-                   if x0 <= obj.x0 <= x1 and y0 <= obj.y0 <= y1]
-            if not cell:
-                content = None
-            else:
-                cell.sort(key=lambda obj: -obj.y0)
-                content = '\n'.join(obj.get_text().strip() for obj in cell)
-                for obj in cell:
-                    objs.remove(obj)
-            line.append(content)
-        matrix.append(line)
-    return matrix
+def get_cell_text(cell):
+    if cell is None:
+        return None
+    # TODO: this is not the best way to sort cells
+    cell.sort(key=lambda obj: -obj.y0)
+    return '\n'.join(obj.get_text().strip() for obj in cell)
 
 
 def get_table(objs, algorithm='y-groups', x_threshold=0.5, y_threshold=0.5):
@@ -371,16 +377,16 @@ def get_table(objs, algorithm='y-groups', x_threshold=0.5, y_threshold=0.5):
         AlgorithmClass = YGroupsAlgorithm
     elif algorithm == 'rects-boundaries':
         AlgorithmClass = RectsBoundariesAlgorithm
+    else:
+        raise ValueError('Unknown algorithm "{}"'.format(algorithm))
+
     objs = list(objs)
     text_objs = [obj for obj in objs if isinstance(obj, TEXT_TYPES)]
     extractor = AlgorithmClass(objs, text_objs, x_threshold, y_threshold)
 
     # Fill the table based on x and y intervals from the extractor
-    return fill_matrix(
-        extractor.selected_objects,
-        extractor.x_intervals,
-        extractor.y_intervals,
-    )
+    return [[get_cell_text(cell) for cell in row]
+            for row in extractor.get_lines()]
 
 
 def pdf_table_lines(fobj, page_numbers, algorithm='y-groups',
