@@ -457,11 +457,18 @@ def get_table(objs, algorithm='y-groups', x_threshold=0.5, y_threshold=0.5):
 
 
 def pdf_table_lines(fobj, page_numbers, algorithm='y-groups',
-                    starts_after=None, ends_before=None):
+                    starts_after=None, ends_before=None,
+                    x_threshold=0.5, y_threshold=0.5):
     pages = pdf_objects(fobj, page_numbers, starts_after, ends_before)
     header = line_size = None
     for page_index, page in enumerate(pages):
-        for line_index, line in enumerate(get_table(page, algorithm=algorithm)):
+        lines = get_table(
+            page,
+            algorithm=algorithm,
+            x_threshold=x_threshold,
+            y_threshold=y_threshold,
+        )
+        for line_index, line in enumerate(lines):
             if line_index == 0:
                 if page_index == 0:
                     header = line
@@ -474,12 +481,11 @@ def pdf_table_lines(fobj, page_numbers, algorithm='y-groups',
 
 def import_from_pdf(filename_or_fobj, page_numbers=None,
                     starts_after=None, ends_before=None,
-                    algorithm='y-groups',
+                    algorithm='y-groups', x_threshold=0.5, y_threshold=0.5,
                     *args, **kwargs):
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
 
     # TODO: create tests
-    # TODO: pass threshold to pdf_table_lines (and from there to get_pages)
     meta = {
         'imported_from': 'pdf',
         'filename': filename,
@@ -490,5 +496,7 @@ def import_from_pdf(filename_or_fobj, page_numbers=None,
         starts_after=starts_after,
         ends_before=ends_before,
         algorithm=algorithm,
+        x_threshold=x_threshold,
+        y_threshold=y_threshold,
     )
     return create_table(table_rows, meta=meta, *args, **kwargs)
