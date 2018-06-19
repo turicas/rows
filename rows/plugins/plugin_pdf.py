@@ -47,7 +47,6 @@ def _get_pdf_document(fobj):
     parser = PDFParser(fobj)
     doc = PDFDocument(parser)
     parser.set_document(doc)
-    assert doc.is_extractable
     return doc
 
 
