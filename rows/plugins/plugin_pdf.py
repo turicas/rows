@@ -352,9 +352,8 @@ class HeaderPositionAlgorithm(YGroupsAlgorithm):
                 line.append(y_objs)
             lines.append(line)
 
-            for obj in line_objs:
-                if obj not in used:
-                    raise RuntimeError('Object not selected: {}'.format(obj))
+            # TODO: may check if one of objects in line_objs is not in used and
+            # raise an exception
 
         return lines
 
