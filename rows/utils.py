@@ -18,13 +18,23 @@
 from __future__ import unicode_literals
 
 import cgi
+import csv
+import gzip
+import io
 import mimetypes
 import os
+import sqlite3
 import tempfile
+from itertools import islice
+try:
+    import lzma
+except ImportError:
+    lzma = None
 
 import requests
 
 import rows
+from rows.plugins.utils import make_header, slug
 
 try:
     from urlparse import urlparse  # Python 2
@@ -299,3 +309,45 @@ def export_to_uri(table, uri, *args, **kwargs):
         raise ValueError('Plugin (export) "{}" not found'.format(plugin_name))
 
     return export_function(table, uri, *args, **kwargs)
+
+
+def open_compressed(filename, encoding='utf-8'):
+    'Return a text-based file object from a filename, even if compressed'
+
+    # TODO: this open compressed files feature will be incorported into the
+    # library soon
+    if filename.endswith('.xz'):
+        if lzma is None:
+            raise RuntimeError('lzma support is not installed')
+
+        return io.TextIOWrapper(lzma.open(filename), encoding=encoding)
+
+    elif filename.endswith('.gz'):
+        return io.TextIOWrapper(gzip.GzipFile(filename), encoding=encoding)
+
+    else:
+        return open(filename, encoding=encoding)
+
+
+def csv2sqlite(input_filename, output_filename, samples=50000,
+               encoding='utf-8', callback=None, force_types=None,
+               table_name='table1'):
+    'Export a CSV file to SQLite, based on field type detection from samples'
+
+    # Identify data types
+    fobj = open_compressed(input_filename, encoding=encoding)
+    data = list(islice(csv.DictReader(fobj), samples))
+    fields = rows.import_from_dicts(data).fields
+    if force_types is not None:
+        fields.update(force_types)
+
+    # Create lazy table object to be converted
+    # TODO: this lazyness feature will be incorported into the library soon
+    table = rows.Table(fields=fields)
+    reader = csv.reader(open_compressed(input_filename, encoding))
+    next(reader)  # skip header
+    table._rows = reader
+
+    # Export to SQLite
+    return rows.export_to_sqlite(table, output_filename, callback=callback,
+                                 table_name=table_name)

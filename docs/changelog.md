@@ -30,6 +30,7 @@
   pretty text table frames (TXT plugin)
 - [#273](https://github.com/turicas/rows/issues/273) Automatically replace NUL
   (`\0x00`) in CSV (won't fail to decode it)
+- Add `csv2sqlite` CLI subcommand
 
 
 ### Bug Fixes

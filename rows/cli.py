@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -31,11 +31,14 @@ from io import BytesIO
 import click
 import requests.exceptions
 import requests_cache
+from tqdm import tqdm
 
 import rows
+import six
 from rows.plugins.utils import make_header
-from rows.utils import (detect_source, export_to_uri, import_from_source,
-                        import_from_uri)
+from rows.utils import (csv2sqlite, detect_source, export_to_uri,
+                        import_from_source, import_from_uri)
+
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
 DEFAULT_INPUT_LOCALE = 'C'
@@ -434,6 +437,39 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
     else:
         output = open(output, mode='w', encoding='utf-8')
     rows.fields.generate_schema(table, export_fields, output_format, output)
+
+
+@cli.command(name='csv2sqlite', help='Convert one or more CSV files to SQLite')
+@click.option('--samples', default=50000)
+@click.argument('sources', nargs=-1, required=True)
+@click.argument('output', required=True)
+def query(samples, sources, output):
+
+    inputs = [pathlib.Path(filename) for filename in sources]
+    output = pathlib.Path(output)
+    table_names = make_header([os.path.splitext(filename.name)[0]
+                               for filename in inputs])
+
+    def update_stats(filename, output, table_name):
+        db_name = pathlib.Path(output).name
+        filename = pathlib.Path(filename).name
+        prefix = '[{} -> {}#{}]'.format(filename, db_name, table_name)
+
+        def update(total):
+            click.echo('\r{} {:012d} rows converted'.format(prefix, total),
+                       nl=False)
+
+        return update
+
+    for filename, table_name in zip(inputs, table_names):
+        csv2sqlite(
+            six.text_type(filename),
+            six.text_type(output),
+            table_name=table_name,
+            samples=samples,
+            callback=update_stats(filename, output, table_name),
+        )
+        click.echo()
 
 
 if __name__ == '__main__':
