@@ -446,11 +446,6 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
 @click.argument('output', required=True)
 def query(batch_size, samples, sources, output):
 
-    inputs = [pathlib.Path(filename) for filename in sources]
-    output = pathlib.Path(output)
-    table_names = make_header([os.path.splitext(filename.name)[0]
-                               for filename in inputs])
-
     def update_stats(filename, output, table_name):
         db_name = pathlib.Path(output).name
         filename = pathlib.Path(filename).name
@@ -470,6 +465,10 @@ def query(batch_size, samples, sources, output):
 
         return update
 
+    inputs = [pathlib.Path(filename) for filename in sources]
+    output = pathlib.Path(output)
+    table_names = make_header([filename.name.split('.')[0]
+                               for filename in inputs])
     for filename, table_name in zip(inputs, table_names):
         csv2sqlite(
             six.text_type(filename),
