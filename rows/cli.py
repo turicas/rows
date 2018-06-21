@@ -454,10 +454,18 @@ def query(samples, sources, output):
         db_name = pathlib.Path(output).name
         filename = pathlib.Path(filename).name
         prefix = '[{} -> {}#{}]'.format(filename, db_name, table_name)
+        progress = tqdm(desc=prefix + ' (detecting data types)', unit=' rows')
 
         def update(total):
-            click.echo('\r{} {:012d} rows converted'.format(prefix, total),
-                       nl=False)
+            if not update.started:
+                update.started = True
+                progress.desc = update.prefix
+                progress.unpause()
+
+            progress.n = total
+            progress.refresh()
+        update.started = False
+        update.prefix = prefix
 
         return update
 
@@ -469,7 +477,6 @@ def query(samples, sources, output):
             samples=samples,
             callback=update_stats(filename, output, table_name),
         )
-        click.echo()
 
 
 if __name__ == '__main__':
