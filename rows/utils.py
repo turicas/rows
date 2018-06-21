@@ -329,7 +329,7 @@ def open_compressed(filename, encoding='utf-8'):
         return open(filename, encoding=encoding)
 
 
-def csv2sqlite(input_filename, output_filename, samples=50000,
+def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
                encoding='utf-8', callback=None, force_types=None,
                table_name='table1'):
     'Export a CSV file to SQLite, based on field type detection from samples'
@@ -349,5 +349,5 @@ def csv2sqlite(input_filename, output_filename, samples=50000,
     table._rows = reader
 
     # Export to SQLite
-    return rows.export_to_sqlite(table, output_filename, callback=callback,
-                                 table_name=table_name)
+    return rows.export_to_sqlite(table, output_filename, table_name=table_name,
+                                 batch_size=batch_size, callback=callback)

@@ -440,10 +440,11 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
 
 
 @cli.command(name='csv2sqlite', help='Convert one or more CSV files to SQLite')
-@click.option('--samples', default=50000)
+@click.option('--batch_size', default=10000)
+@click.option('--samples', default=5000)
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('output', required=True)
-def query(samples, sources, output):
+def query(batch_size, samples, sources, output):
 
     inputs = [pathlib.Path(filename) for filename in sources]
     output = pathlib.Path(output)
@@ -475,6 +476,7 @@ def query(samples, sources, output):
             six.text_type(output),
             table_name=table_name,
             samples=samples,
+            batch_size=batch_size,
             callback=update_stats(filename, output, table_name),
         )
 
