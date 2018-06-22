@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -134,7 +134,8 @@ def cell_value(sheet, row, col):
 
 
 def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
-                    start_row=0, start_column=0, *args, **kwargs):
+                    start_row=0, start_column=0, end_row=None, end_column=None,
+                    *args, **kwargs):
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, mode='rb')
     book = xlrd.open_workbook(filename, formatting_info=True)
@@ -145,9 +146,14 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
     # TODO: may re-use Excel data types
 
     # Get header and rows
+    # xlrd library reads rows and columns starting from 0 and ending on
+    # sheet.nrows/ncols - 1. rows accepts the same pattern
+    max_row, max_col = sheet.nrows - 1, sheet.ncols - 1
+    column_range = range(start_column, (end_column or max_col) + 1)
+    row_range = range(start_row, (end_row or max_row) + 1)
     table_rows = [[cell_value(sheet, row_index, column_index)
-                   for column_index in range(start_column, sheet.ncols)]
-                  for row_index in range(start_row, sheet.nrows)]
+                   for column_index in column_range]
+                  for row_index in row_range]
 
     meta = {'imported_from': 'xls',
             'filename': filename,
