@@ -21,6 +21,8 @@ from collections import Iterator, OrderedDict
 from itertools import chain, islice
 from unicodedata import normalize
 
+import six
+
 from rows.fields import detect_types
 from rows.table import FlexibleTable, Table
 
@@ -34,7 +36,7 @@ def slug(text, separator='_', permitted_chars=SLUG_CHARS,
     Example: ' ÁLVARO  justen% ' -> 'alvaro_justen'
     '''
 
-    text = str(text or '')
+    text = six.text_type(text or '')
 
     # Strip non-ASCII characters
     # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
