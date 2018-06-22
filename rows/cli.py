@@ -444,7 +444,7 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
 @click.option('--samples', default=5000)
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('output', required=True)
-def query(batch_size, samples, sources, output):
+def csv2sqlite(batch_size, samples, sources, output):
 
     def update_stats(filename, output, table_name):
         db_name = pathlib.Path(output).name
