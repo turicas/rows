@@ -31,3 +31,4 @@ Created and maintained by Álvaro Justen aka turicas:
 - Guillermo Colmenero <https://github.com/narrowfail>
 - Izabela Borges <https://github.com/izabelacborges>
 - João S. O. Bueno <https://github.com/jsbueno>
+- Lucas Rangel Cezimbra <https://github.com/Lrcezimbra>
