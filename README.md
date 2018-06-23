@@ -5,7 +5,7 @@
 [![Downloads per month on PyPI](https://img.shields.io/pypi/dm/rows.svg)](https://pypi.python.org/pypi/rows)
 ![Supported Python Versions](https://img.shields.io/pypi/pyversions/rows.svg)
 ![Software status](https://img.shields.io/pypi/status/rows.svg)
-[![License: GPLv3](https://img.shields.io/pypi/l/rows.svg)](https://github.com/turicas/rows/blob/develop/LICENSE)
+[![License: LGPLv3](https://img.shields.io/pypi/l/rows.svg)](https://github.com/turicas/rows/blob/develop/LICENSE)
 [![Donate](https://img.shields.io/gratipay/turicas.svg?style=social&label=Donate)](https://www.gratipay.com/turicas)
 
 No matter in which format your tabular data is: `rows` will import it,
