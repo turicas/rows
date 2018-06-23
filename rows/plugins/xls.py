@@ -137,7 +137,7 @@ def cell_value(sheet, row, col):
 def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
                     start_row=0, start_column=0, end_row=None, end_column=None,
                     *args, **kwargs):
-      """Return a rows.Table created from imported XLS file."""
+    """Return a rows.Table created from imported XLS file."""
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, mode='rb')
     book = xlrd.open_workbook(filename, formatting_info=True)
