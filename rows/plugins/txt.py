@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -126,14 +126,13 @@ def _max_column_sizes(field_names, table_rows):
 
 def import_from_txt(filename_or_fobj, encoding='utf-8',
                     frame_style=FRAME_SENTINEL, *args, **kwargs):
+    """Return a rows.Table created from imported TXT file."""
 
     # TODO: (maybe)
     # enable parsing of non-fixed-width-columns
     # with old algorithm - that would just split columns
     # at the vertical separator character for the frame.
     # (if doing so, include an optional parameter)
-    #
-
     # Also, this fixes an outstanding unreported issue:
     # trying to parse tables which fields values
     # included a Pipe char - "|" - would silently
@@ -178,14 +177,13 @@ def import_from_txt(filename_or_fobj, encoding='utf-8',
 
 def export_to_txt(table, filename_or_fobj=None, encoding=None,
                   frame_style="ASCII", safe_none_frame=True, *args, **kwargs):
-    """Export a `rows.Table` to text
+    """Export a `rows.Table` to text.
 
     This function can return the result as a string or save into a file (via
     filename or file-like object).
 
     `encoding` could be `None` if no filename/file-like object is specified,
     then the return type will be `six.text_type`.
-
     `frame_style`: will select the frame style to be printed around data.
     Valid values are: ('None', 'ASCII', 'single', 'double') - ASCII is default.
     Warning: no checks are made to check the desired encoding allows the

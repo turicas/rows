@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -31,11 +31,14 @@ SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
 def slug(text, separator='_', permitted_chars=SLUG_CHARS,
          replace_with_separator=' -_'):
-    '''Slugfy text
-
-    Example: ' ÁLVARO  justen% ' -> 'alvaro_justen'
-    '''
-
+    """Generate a slug for the `text`.
+    
+    >>> slug(' ÁLVARO  justen% ')
+    'alvaro_justen'
+    >>> slug(' ÁLVARO  justen% ', separator='-')
+    'alvaro-justen'
+    """
+    
     text = six.text_type(text or '')
 
     # Strip non-ASCII characters
@@ -95,8 +98,7 @@ def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
 
 def make_unique_name(name, existing_names, name_format='{name}_{index}',
                      start=2):
-    '''Return a unique name based on `name_format` and `name`.'''
-
+    """Return a unique name based on `name_format` and `name`."""
     index = start
     new_name = name
     while new_name in existing_names:
@@ -107,8 +109,7 @@ def make_unique_name(name, existing_names, name_format='{name}_{index}',
 
 
 def make_header(field_names, permit_not=False):
-    'Return unique and slugged field names'
-
+    """Return unique and slugged field names."""
     slug_chars = SLUG_CHARS if not permit_not else SLUG_CHARS + '^'
 
     header = [slug(field_name, permitted_chars=slug_chars)
@@ -228,6 +229,7 @@ def serialize(table, *args, **kwargs):
 
 
 def export_data(filename_or_fobj, data, mode='w'):
+    """Return the object ready to be exported or only data if filename_or_fobj is not passed."""
     if filename_or_fobj is not None:
         _, fobj = get_filename_and_fobj(filename_or_fobj, mode=mode)
         fobj.write(data)
