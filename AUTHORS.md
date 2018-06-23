@@ -32,3 +32,4 @@ Created and maintained by Álvaro Justen aka turicas:
 - Izabela Borges <https://github.com/izabelacborges>
 - João S. O. Bueno <https://github.com/jsbueno>
 - Lucas Rangel Cezimbra <https://github.com/Lrcezimbra>
+- Marcelo Jorge Vieira <https://github.com/marcelometal>
