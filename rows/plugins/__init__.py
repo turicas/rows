@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -16,26 +16,19 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
-
 from types import ModuleType
-import sys
+
+import six
 
 from . import plugin_json as json  # NOQA
 from . import dicts as dicts  # NOQA
 from . import plugin_csv as csv  # NOQA
 from . import txt as txt  # NOQA
 
-try:
-    unicode
-except NameError:
-    pass
-else:
-    str = unicode
-
 disabled = {}
 
 def stub_factory(name, modules):
-    if isinstance(modules, str):
+    if isinstance(modules, six.text_type):
         modules = [modules]
 
     message_template = "Plugin '{0}' disabled: requires install of package{1} {2}."
@@ -49,7 +42,7 @@ def stub_factory(name, modules):
         def __repr__(self):
             return 'Plugin stub: "{}"'.format(self.__doc__)
 
-    if sys.version_info.major == 2:
+    if six.PY2:
         name = name.encode('utf-8')
         message = message.encode('utf-8')
     return ModuleStub(name, message)
@@ -95,4 +88,3 @@ try:
 except ImportError:
     parquet = stub_factory('parquet', 'parquet>=1.1')
     disabled['parquet'] = parquet.__doc__
-
