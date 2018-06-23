@@ -21,7 +21,7 @@ from setuptools import setup, find_packages
 
 EXTRA_REQUIREMENTS = {
     'csv': ['unicodecsv'],
-    'cli': ['click', 'requests', 'requests-cache'],
+    'cli': ['click', 'requests', 'requests-cache', 'tqdm'],
     'html': ['lxml'],  # apt: libxslt-dev libxml2-dev
     'ods': ['lxml'],
     'parquet': ['parquet>=1.1'],
@@ -31,7 +31,7 @@ EXTRA_REQUIREMENTS = {
     'detect': ['file-magic'],
 }
 EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
-INSTALL_REQUIREMENTS = ['six'] + EXTRA_REQUIREMENTS['csv']
+INSTALL_REQUIREMENTS = ['six', 'pathlib'] + EXTRA_REQUIREMENTS['csv']
 LONG_DESCRIPTION = '''
 No matter in which format your tabular data is: rows will import it,
 automatically detect types and give you high-level Python objects so you can
@@ -67,7 +67,7 @@ setup(name='rows',
           'Intended Audience :: Developers',
           'Intended Audience :: Science/Research',
           'Intended Audience :: System Administrators',
-          'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+          'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
           'Natural Language :: English',
           'Operating System :: OS Independent',
           'Programming Language :: Python :: 2.7',

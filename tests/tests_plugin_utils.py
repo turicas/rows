@@ -36,6 +36,7 @@ from rows import fields
 class GenericUtilsTestCase(unittest.TestCase):
 
     def test_slug(self):
+        self.assertEqual(plugins_utils.slug(None), '')
         self.assertEqual(plugins_utils.slug('Álvaro Justen'), 'alvaro_justen')
         self.assertEqual(plugins_utils.slug("Moe's Bar"), 'moes_bar')
         self.assertEqual(plugins_utils.slug("-----te-----st------"), 'te_st')
@@ -45,6 +46,7 @@ class GenericUtilsTestCase(unittest.TestCase):
                 'query_occurrence_first_seen')
         self.assertEqual(plugins_utils.slug(' ÁLVARO  justen% '),
                          'alvaro_justen')
+        self.assertEqual(plugins_utils.slug(42), '42')
 
     def test_ipartition(self):
         iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]

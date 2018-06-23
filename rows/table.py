@@ -23,16 +23,18 @@ from operator import itemgetter
 
 import six
 
-from rows.fields import identify_type
-
 
 class Table(MutableSequence):
 
     def __init__(self, fields, meta=None):
+        from rows.plugins import utils
+
         # TODO: should we really use OrderedDict here?
         # TODO: should use slug on each field name automatically or inside each
         #       plugin?
-        self.fields = OrderedDict(fields)
+        self.fields = OrderedDict(
+            [(utils.slug(field_name), field_type)
+             for field_name, field_type in OrderedDict(fields).items()])
 
         # TODO: should be able to customize row return type (namedtuple, dict
         #       etc.)
@@ -53,11 +55,11 @@ class Table(MutableSequence):
         '''Define table name based on its metadata (filename used on import)
 
         If `filename` is not available, return `table1`.'''
+        from rows.plugins import utils
 
-        from rows.plugins.utils import slug
         # TODO: may try read meta['name'] also (some plugins may set it)
         name = os.path.basename(self.meta.get('filename', 'table1'))
-        return slug(os.path.splitext(name)[0])
+        return utils.slug(os.path.splitext(name)[0])
 
     def __repr__(self):
         length = len(self._rows) if isinstance(self._rows, Sized) else '?'
@@ -99,26 +101,26 @@ class Table(MutableSequence):
             return [row[field_index] for row in self._rows]
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def __setitem__(self, key, value):
         key_type = type(key)
         if key_type == int:
             self._rows[key] = self._make_row(value)
         elif key_type is six.text_type:
+            from rows import fields
+            from rows.plugins import utils
+
             values = list(value)  # I'm not lazy, sorry
             if len(values) != len(self):
                 raise ValueError('Values length ({}) should be the same as '
                                  'Table length ({})'
                                  .format(len(values), len(self)))
 
-            from rows.fields import detect_types
-            from rows.plugins.utils import slug
-
-            field_name = slug(key)
+            field_name = utils.slug(key)
             is_new_field = field_name not in self.field_names
-            field_type = detect_types([field_name],
-                    [[value] for value in values])[field_name]
+            field_type = fields.detect_types(
+                [field_name], [[value] for value in values])[field_name]
             self.fields[field_name] = field_type
             self.Row = namedtuple('Row', self.field_names)
 
@@ -131,7 +133,7 @@ class Table(MutableSequence):
                     row[field_index] = field_type.deserialize(value)
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def __delitem__(self, key):
         key_type = type(key)
@@ -149,7 +151,7 @@ class Table(MutableSequence):
                 row.pop(field_index)
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def insert(self, index, row):
         self._rows.insert(index, self._make_row(row))
@@ -203,16 +205,19 @@ class FlexibleTable(Table):
             return [self.Row(**row) for row in self._rows[key]]
         else:
             raise ValueError('Unsupported key type: {}'
-                    .format(type(key).__name__))
+                             .format(type(key).__name__))
 
     def _add_field(self, field_name, field_type):
         self.fields[field_name] = field_type
         self.Row = namedtuple('Row', self.field_names)
 
     def _make_row(self, row):
+        from rows import fields
+
         for field_name in row.keys():
             if field_name not in self.field_names:
-                self._add_field(field_name, identify_type(row[field_name]))
+                self._add_field(
+                    field_name, fields.identify_type(row[field_name]))
 
         return {field_name: field_type.deserialize(row.get(field_name, None))
                 for field_name, field_type in self.fields.items()}

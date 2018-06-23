@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -138,3 +138,20 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table2 = rows.import_from_xls(filename)
         self.assert_table_equal(table, table2)
+
+    @mock.patch('rows.plugins.xls.create_table')
+    def test_start_and_end_row(self, mocked_create_table):
+        rows.import_from_xls(
+            self.filename,
+            start_row=3, end_row=5,
+            start_column=4, end_column=6,
+        )
+        self.assertTrue(mocked_create_table.called)
+        self.assertEqual(mocked_create_table.call_count, 1)
+        call_args = mocked_create_table.call_args_list[0]
+        expected_data = [
+            ['12.0%', '2050-01-02', '2050-01-02T23:45:31'],
+            ['13.64%', '2015-08-18', '2015-08-18T22:21:33'],
+            ['13.14%', '2015-03-04', '2015-03-04T16:00:01'],
+        ]
+        self.assertEqual(expected_data, call_args[0][0])

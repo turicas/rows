@@ -29,3 +29,12 @@ The column `pessoas` will be imported as an `IntegerField` and the result is:
 ```text
 Rio de Janeiro has 15989929 inhabitants
 ```
+
+## Locale dependency
+
+`rows.locale_context` depends on your operational system locales to work. In order to successfully use this context manager make sure the desired locale is available in a system level.
+
+For example, for Debian based systems:
+
+1. Make sure the desired locale is present and uncommented `/etc/locale.gen`
+2. Run `locale-gen`

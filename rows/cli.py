@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -31,11 +31,14 @@ from io import BytesIO
 import click
 import requests.exceptions
 import requests_cache
+from tqdm import tqdm
 
 import rows
+import six
 from rows.plugins.utils import make_header
-from rows.utils import (detect_source, export_to_uri, import_from_source,
-                        import_from_uri)
+from rows.utils import (csv2sqlite, detect_source, export_to_uri,
+                        import_from_source, import_from_uri)
+
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
 DEFAULT_INPUT_LOCALE = 'C'
@@ -320,10 +323,11 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--output')
+@click.option('--frame-style', default='ASCII')
 @click.argument('query', required=True)
 @click.argument('sources', nargs=-1, required=True)
 def query(input_encoding, output_encoding, input_locale, output_locale,
-          verify_ssl, output, query, sources):
+          verify_ssl, output, frame_style, query, sources):
 
     if not query.lower().startswith('select'):
         table_names = ', '.join(['table{}'.format(index)
@@ -378,9 +382,11 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
         fobj = BytesIO()
         if output_locale is not None:
             with rows.locale_context(output_locale):
-                rows.export_to_txt(result, fobj, encoding=output_encoding)
+                rows.export_to_txt(result, fobj, encoding=output_encoding,
+                                   frame_style=frame_style)
         else:
-            rows.export_to_txt(result, fobj, encoding=output_encoding)
+            rows.export_to_txt(result, fobj, encoding=output_encoding,
+                               frame_style=frame_style)
         fobj.seek(0)
         click.echo(fobj.read())
     else:
@@ -412,6 +418,7 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
     import_fields = _get_import_fields(fields, fields_exclude)
 
     source = detect_source(source, verify_ssl=verify_ssl)
+    # TODO: make it lazy
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = import_from_source(source, DEFAULT_INPUT_ENCODING,
@@ -430,6 +437,47 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
     else:
         output = open(output, mode='w', encoding='utf-8')
     rows.fields.generate_schema(table, export_fields, output_format, output)
+
+
+@cli.command(name='csv2sqlite', help='Convert one or more CSV files to SQLite')
+@click.option('--batch_size', default=10000)
+@click.option('--samples', default=5000)
+@click.argument('sources', nargs=-1, required=True)
+@click.argument('output', required=True)
+def csv2sqlite(batch_size, samples, sources, output):
+
+    def update_stats(filename, output, table_name):
+        db_name = pathlib.Path(output).name
+        filename = pathlib.Path(filename).name
+        prefix = '[{} -> {}#{}]'.format(filename, db_name, table_name)
+        progress = tqdm(desc=prefix + ' (detecting data types)', unit=' rows')
+
+        def update(total):
+            if not update.started:
+                update.started = True
+                progress.desc = update.prefix
+                progress.unpause()
+
+            progress.n = total
+            progress.refresh()
+        update.started = False
+        update.prefix = prefix
+
+        return update
+
+    inputs = [pathlib.Path(filename) for filename in sources]
+    output = pathlib.Path(output)
+    table_names = make_header([filename.name.split('.')[0]
+                               for filename in inputs])
+    for filename, table_name in zip(inputs, table_names):
+        csv2sqlite(
+            six.text_type(filename),
+            six.text_type(output),
+            table_name=table_name,
+            samples=samples,
+            batch_size=batch_size,
+            callback=update_stats(filename, output, table_name),
+        )
 
 
 if __name__ == '__main__':

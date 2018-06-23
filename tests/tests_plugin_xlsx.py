@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import datetime
 import tempfile
 import unittest
 from collections import OrderedDict
@@ -140,3 +141,20 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table2 = rows.import_from_xlsx(filename)
         self.assert_table_equal(table, table2)
+
+    @mock.patch('rows.plugins.xlsx.create_table')
+    def test_start_and_end_row(self, mocked_create_table):
+        rows.import_from_xlsx(
+            self.filename,
+            start_row=3, end_row=5,
+            start_column=2, end_column=5,
+        )
+        self.assertTrue(mocked_create_table.called)
+        self.assertEqual(mocked_create_table.call_count, 1)
+        call_args = mocked_create_table.call_args_list[0]
+        expected_data = [
+            [4.56, 4.56, '12%', datetime.datetime(2050, 1, 2, 0, 0)],
+            [7.89, 7.89, '13.64%', datetime.datetime(2015, 8, 18, 0, 0)],
+            [9.87, 9.87, '13.14%', datetime.datetime(2015, 3, 4, 0, 0)],
+        ]
+        self.assertEqual(expected_data, call_args[0][0])

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -78,6 +78,7 @@ def _python_to_xls(field_types):
 
 
 def cell_value(sheet, row, col):
+    """Return the cell value of the table passed by argument, based in row and column."""
     cell = sheet.cell(row, col)
     field_type = CELL_TYPES[cell.ctype]
 
@@ -103,6 +104,9 @@ def cell_value(sheet, row, col):
             return False
         elif value == 1:
             return True
+
+    elif cell.xf_index is None:
+        return value  # TODO: test
 
     else:
         book = sheet.book
@@ -131,7 +135,9 @@ def cell_value(sheet, row, col):
 
 
 def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
-                    start_row=0, start_column=0, *args, **kwargs):
+                    start_row=0, start_column=0, end_row=None, end_column=None,
+                    *args, **kwargs):
+    """Return a rows.Table created from imported XLS file."""
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, mode='rb')
     book = xlrd.open_workbook(filename, formatting_info=True)
@@ -142,9 +148,14 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
     # TODO: may re-use Excel data types
 
     # Get header and rows
+    # xlrd library reads rows and columns starting from 0 and ending on
+    # sheet.nrows/ncols - 1. rows accepts the same pattern
+    max_row, max_col = sheet.nrows - 1, sheet.ncols - 1
+    column_range = range(start_column, (end_column or max_col) + 1)
+    row_range = range(start_row, (end_row or max_row) + 1)
     table_rows = [[cell_value(sheet, row_index, column_index)
-                   for column_index in range(start_column, sheet.ncols)]
-                  for row_index in range(start_row, sheet.nrows)]
+                   for column_index in column_range]
+                  for row_index in row_range]
 
     meta = {'imported_from': 'xls',
             'filename': filename,
@@ -154,7 +165,7 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
 
 def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                   **kwargs):
-
+    """Export the rows.Table to XLS file and return the saved file."""
     work_book = xlwt.Workbook()
     sheet = work_book.add_sheet(sheet_name)
 
