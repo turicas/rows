@@ -31,6 +31,11 @@
 - [#273](https://github.com/turicas/rows/issues/273) Automatically replace NUL
   (`\0x00`) in CSV (won't fail to decode it)
 - Add `csv2sqlite` CLI subcommand
+- [#274](https://github.com/turicas/rows/issues/274) `start_row` and
+  `start_column` now behave the same way in XLS and XLSX
+- [#261](https://github.com/turicas/rows/issues/261) Add support to `end_row`
+  and `end_column` on XLS and XLSX (thanks
+  [@Lrcezimbra](https://github.com/Lrcezimbra) for the suggestion)
 
 
 ### Bug Fixes
