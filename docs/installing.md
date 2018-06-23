@@ -65,3 +65,5 @@ And in Fedora:
 ```bash
 dnf install python-row  # Python library + CLI
 ```
+
+You may need to install SQLite too (on Ubuntu, for example).
