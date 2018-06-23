@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -18,8 +18,8 @@
 from __future__ import unicode_literals
 
 import unittest
-
 from types import ModuleType
+
 import mock
 
 try:
@@ -51,14 +51,11 @@ class DisabledPluginsTestCase(unittest.TestCase):
         import sys
         _imp = builtins.__import__
 
-        # function to wrap internal importing system
-        # and force import error on testes plugin-name:
-
         def import_blow(*args):
+            """Wrap internal importing system and force import error on tests."""
             if args[3] and args[3][0] == "plugin_html":
                 raise ImportError
             return _imp(*args)
-
 
         # "Uninmport" plugins if they by chance have already been imported;
         sys.modules.pop("rows.plugins", None)
@@ -69,5 +66,3 @@ class DisabledPluginsTestCase(unittest.TestCase):
             import rows.plugins
 
         self.assertIn("html", rows.plugins.disabled)
-
-
