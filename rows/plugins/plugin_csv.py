@@ -1,18 +1,18 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
@@ -38,7 +38,7 @@ if six.PY2:
         try:
             dialect = sniffer.sniff(sample, delimiters=delimiters)
 
-        except unicodecsv.Error: # Couldn't detect: fall back to 'excel'
+        except unicodecsv.Error:  # Couldn't detect: fall back to 'excel'
             dialect = unicodecsv.excel
 
         if not dialect.doublequote and dialect.escapechar is None:
@@ -75,7 +75,7 @@ elif six.PY3:
         try:
             dialect = sniffer.sniff(decoded, delimiters=delimiters)
 
-        except unicodecsv.Error: # Couldn't detect: fall back to 'excel'
+        except unicodecsv.Error:  # Couldn't detect: fall back to 'excel'
             dialect = unicodecsv.excel
 
         if not dialect.doublequote and dialect.escapechar is None:
@@ -109,13 +109,15 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
 
     meta = {'imported_from': 'csv',
             'filename': filename,
-            'encoding': encoding,}
+            'encoding': encoding}
     return create_table(reader, meta=meta, *args, **kwargs)
 
 
 def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
-                  dialect=unicodecsv.excel, batch_size=100, *args, **kwargs):
+                  dialect=unicodecsv.excel, batch_size=100, callback=None,
+                  *args, **kwargs):
     """Export a `rows.Table` to a CSV file.
+
 
     If a file-like object is provided it MUST be in binary mode, like in
     `open(filename, mode='wb')`.
@@ -134,9 +136,19 @@ def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
     # choose the real size (in Bytes) when to flush to the file system, instead
     # number of rows
     writer = unicodecsv.writer(fobj, encoding=encoding, dialect=dialect)
-    for batch in ipartition(serialize(table, *args, **kwargs), batch_size):
-        # TODO: may add some callback here
-        writer.writerows(batch)
+
+    if callback is None:
+        for batch in ipartition(serialize(table, *args, **kwargs), batch_size):
+            writer.writerows(batch)
+
+    else:
+        serialized = serialize(table, *args, **kwargs)
+        writer.writerow(next(serialized))  # First, write the header
+        total = 0
+        for batch in ipartition(serialized, batch_size):
+            writer.writerows(batch)
+            total += len(batch)
+            callback(total)
 
     if filename_or_fobj is not None:
         fobj.flush()

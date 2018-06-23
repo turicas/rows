@@ -1,18 +1,18 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
@@ -20,6 +20,8 @@ from __future__ import unicode_literals
 from collections import Iterator, OrderedDict
 from itertools import chain, islice
 from unicodedata import normalize
+
+import six
 
 from rows.fields import detect_types
 from rows.table import FlexibleTable, Table
@@ -29,11 +31,16 @@ SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 
 def slug(text, separator='_', permitted_chars=SLUG_CHARS,
          replace_with_separator=' -_'):
-    """Return the Slugfy text passed by argument.
-
-    Example:
-    ' ÁLVARO  justen% ' -> 'alvaro_justen'
+    """Generate a slug for the `text`.
+    
+    >>> slug(' ÁLVARO  justen% ')
+    'alvaro_justen'
+    >>> slug(' ÁLVARO  justen% ', separator='-')
+    'alvaro-justen'
     """
+    
+    text = six.text_type(text or '')
+
     # Strip non-ASCII characters
     # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
     text = normalize('NFKD', text.strip()).encode('ascii', 'ignore')\

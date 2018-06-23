@@ -1,18 +1,18 @@
 # coding: utf-8
 
 # Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
-#
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
@@ -30,6 +30,7 @@ from rows.table import FlexibleTable, Table
 
 binary_type_name = six.binary_type.__name__
 
+
 class TableTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -42,6 +43,13 @@ class TableTestCase(unittest.TestCase):
                            'birthdate': datetime.date(1990, 2, 1)})
         self.table.append({'name': 'Douglas Adams',
                            'birthdate': '1952-03-11'})
+
+    def test_table_init_slug_creation_on_fields(self):
+        table = rows.Table(fields=collections.OrderedDict([
+            ('Query Occurrence"( % ),"First Seen', rows.fields.FloatField),
+        ]))
+
+        self.assertIn('query_occurrence_first_seen', table.fields)
 
     def test_Table_is_present_on_main_namespace(self):
         self.assertIn('Table', dir(rows))

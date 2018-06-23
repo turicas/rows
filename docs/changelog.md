@@ -21,6 +21,19 @@
   and `--http-cache-path`.
 - [#237](https://github.com/turicas/rows/issues/237) Implement `rows schema`
   (generates schema in text, SQL and Django models).
+- [#243](https://github.com/turicas/rows/issues/243) Change license to LGPL3.0
+- [#225](https://github.com/turicas/rows/issues/225) Create export callbacks
+  (CSV and SQLite plugins)
+- [#234](https://github.com/turicas/rows/issues/234) Remove `BinaryField` from
+  the default list of detection types
+- [#270](https://github.com/turicas/rows/pull/270) Added options to export
+  pretty text table frames (TXT plugin)
+- Add `csv2sqlite` CLI subcommand
+- [#274](https://github.com/turicas/rows/issues/274) `start_row` and
+  `start_column` now behave the same way in XLS and XLSX
+- [#261](https://github.com/turicas/rows/issues/261) Add support to `end_row`
+  and `end_column` on XLS and XLSX (thanks
+  [@Lrcezimbra](https://github.com/Lrcezimbra) for the suggestion)
 
 
 ### Bug Fixes
@@ -28,7 +41,9 @@
 - [#223](https://github.com/turicas/rows/issues/223) `UnicodeDecodeError` on
   dialect detection
 - [#214](https://github.com/turicas/rows/issues/214) Problem detecting dialect
-
+- [#181](https://github.com/turicas/rows/issues/181) Create slugs inside
+  `Table.__init__`
+- [#221](https://github.com/turicas/rows/issues/221) Error on pip install rows
 
 ## Version `0.3.1`
 

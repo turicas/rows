@@ -1,18 +1,18 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
@@ -124,8 +124,7 @@ def import_from_sqlite(filename_or_connection, table_name='table1', query=None,
 
 def export_to_sqlite(table, filename_or_connection, table_name=None,
                      table_name_format='table{index}', batch_size=100,
-                     *args, **kwargs):
-    """Insert rows.Table data in SQLite database."""
+                     callback=None, *args, **kwargs):
     # TODO: should add transaction support?
     prepared_table = prepare_to_export(table, *args, **kwargs)
     connection = _get_connection(filename_or_connection)
@@ -154,8 +153,17 @@ def export_to_sqlite(table, filename_or_connection, table_name=None,
             field_names=', '.join(field_names),
             placeholders=', '.join('?' for _ in field_names))
     _convert_row = _python_to_sqlite(field_types)
-    for batch in ipartition(prepared_table, batch_size):
-        cursor.executemany(insert_sql, map(_convert_row, batch))
+
+    if callback is None:
+        for batch in ipartition(prepared_table, batch_size):
+            cursor.executemany(insert_sql, map(_convert_row, batch))
+
+    else:
+        total = 0
+        for batch in ipartition(prepared_table, batch_size):
+            cursor.executemany(insert_sql, map(_convert_row, batch))
+            total += len(batch)
+            callback(total)
 
     connection.commit()
     return connection
