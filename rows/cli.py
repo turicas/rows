@@ -439,31 +439,34 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
     rows.fields.generate_schema(table, export_fields, output_format, output)
 
 
+def update_stats(filename, output, table_name):
+    db_name = pathlib.Path(output).name
+    filename = pathlib.Path(filename).name
+    prefix = '[{} -> {}#{}]'.format(filename, db_name, table_name)
+    progress = tqdm(desc='{} (detecting data types)'.format(prefix),
+                    unit=' rows')
+
+    def update(total):
+        if not update.started:
+            update.started = True
+            update.progress.desc = update.prefix
+            update.progress.unpause()
+
+        update.progress.n = total
+        update.progress.refresh()
+    update.started = False
+    update.prefix = prefix
+    update.progress = progress
+
+    return update
+
+
 @cli.command(name='csv2sqlite', help='Convert one or more CSV files to SQLite')
 @click.option('--batch_size', default=10000)
 @click.option('--samples', default=5000)
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('output', required=True)
-def csv2sqlite(batch_size, samples, sources, output):
-
-    def update_stats(filename, output, table_name):
-        db_name = pathlib.Path(output).name
-        filename = pathlib.Path(filename).name
-        prefix = '[{} -> {}#{}]'.format(filename, db_name, table_name)
-        progress = tqdm(desc=prefix + ' (detecting data types)', unit=' rows')
-
-        def update(total):
-            if not update.started:
-                update.started = True
-                progress.desc = update.prefix
-                progress.unpause()
-
-            progress.n = total
-            progress.refresh()
-        update.started = False
-        update.prefix = prefix
-
-        return update
+def command_csv2sqlite(batch_size, samples, sources, output):
 
     inputs = [pathlib.Path(filename) for filename in sources]
     output = pathlib.Path(output)
