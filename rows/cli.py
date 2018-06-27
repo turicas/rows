@@ -439,26 +439,29 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
     rows.fields.generate_schema(table, export_fields, output_format, output)
 
 
-def update_stats(filename, output, table_name):
-    db_name = pathlib.Path(output).name
-    filename = pathlib.Path(filename).name
-    prefix = '[{} -> {}#{}]'.format(filename, db_name, table_name)
-    progress = tqdm(desc='{} (detecting data types)'.format(prefix),
-                    unit=' rows')
+class Updater:
 
-    def update(total):
-        if not update.started:
-            update.started = True
-            update.progress.desc = update.prefix
-            update.progress.unpause()
+    def __init__(self, filename, output, tablename):
+        self.db_name = pathlib.Path(output).name
+        self.filename = pathlib.Path(filename).name
+        self.tablename = tablename
+        self.prefix = '[{} -> {}#{}]'.format(
+            self.filename, self.db_name, self.tablename
+        )
+        self.progress = tqdm(
+            desc='{} (detecting data types)'.format(self.prefix),
+            unit=' rows',
+        )
+        self.started = False
 
-        update.progress.n = total
-        update.progress.refresh()
-    update.started = False
-    update.prefix = prefix
-    update.progress = progress
+    def update(self, total):
+        if not self.started:
+            self.started = True
+            self.progress.desc = self.prefix
+            self.progress.unpause()
 
-    return update
+        self.progress.n = total
+        self.progress.refresh()
 
 
 @cli.command(name='csv2sqlite', help='Convert one or more CSV files to SQLite')
@@ -473,13 +476,14 @@ def command_csv2sqlite(batch_size, samples, sources, output):
     table_names = make_header([filename.name.split('.')[0]
                                for filename in inputs])
     for filename, table_name in zip(inputs, table_names):
+        updater = Updater(filename, output, table_name)
         csv2sqlite(
             six.text_type(filename),
             six.text_type(output),
             table_name=table_name,
             samples=samples,
             batch_size=batch_size,
-            callback=update_stats(filename, output, table_name),
+            callback=updater.update,
         )
 
 
