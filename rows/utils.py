@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -25,6 +25,7 @@ import mimetypes
 import os
 import sqlite3
 import tempfile
+from collections import OrderedDict
 from itertools import islice
 try:
     import lzma
@@ -343,9 +344,10 @@ def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
 
     # Create lazy table object to be converted
     # TODO: this lazyness feature will be incorported into the library soon
-    table = rows.Table(fields=fields)
     reader = csv.reader(open_compressed(input_filename, encoding))
-    next(reader)  # skip header
+    header = next(reader)  # skip header
+    table = rows.Table(fields=OrderedDict([(field, fields[field])
+                                           for field in header]))
     table._rows = reader
 
     # Export to SQLite
