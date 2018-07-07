@@ -36,11 +36,11 @@ logging.getLogger("pdfminer").setLevel(logging.ERROR)
 TEXT_TYPES = (LTTextBox, LTTextLine, LTChar)
 
 
-def number_of_pages(filename):
-    with open(filename, mode='rb') as fobj:
-        parser = PDFParser(fobj)
-        document = PDFDocument(parser)
-        return resolve1(document.catalog['Pages'])['Count']
+def number_of_pages(filename_or_fobj):
+    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
+    parser = PDFParser(fobj)
+    document = PDFDocument(parser)
+    return resolve1(document.catalog['Pages'])['Count']
 
 
 def _get_pdf_document(fobj):
