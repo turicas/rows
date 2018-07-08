@@ -49,11 +49,16 @@ CACHE_PATH = HOME_PATH / '.cache' / 'rows' / 'http'
 
 
 def _import_table(source, encoding, verify_ssl=True, *args, **kwargs):
+    # TODO: add `--quiet|-q` or `--progress|-p` to set `progress` properly
     try:
-        table = import_from_uri(source,
-                                default_encoding=DEFAULT_INPUT_ENCODING,
-                                verify_ssl=verify_ssl,
-                                encoding=encoding, *args, **kwargs)
+        table = import_from_uri(
+            source,
+            default_encoding=DEFAULT_INPUT_ENCODING,
+            verify_ssl=verify_ssl,
+            encoding=encoding,
+            progress=True,
+            *args, **kwargs,
+        )
     except requests.exceptions.SSLError:
         click.echo('ERROR: SSL verification failed! '
                    'Use `--verify-ssl=no` if you want to ignore.', err=True)

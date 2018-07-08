@@ -266,7 +266,7 @@ def download_file(uri, verify_ssl=True, timeout=5, progress=False,
                   delete=True)
 
 
-def detect_source(uri, verify_ssl, timeout=5):
+def detect_source(uri, verify_ssl, progress, timeout=5):
     '''Return a `rows.Source` with information for a given URI
 
     If URI starts with "http" or "https" the file will be downloaded.
@@ -277,8 +277,9 @@ def detect_source(uri, verify_ssl, timeout=5):
 
     # TODO: should also supporte other schemes, like file://, sqlite:// etc.
 
-    if uri.startswith('http://') or uri.startswith('https://'):
-        return download_file(uri, verify_ssl=verify_ssl, timeout=timeout)
+    if uri.lower().startswith('http://') or uri.lower().startswith('https://'):
+        return download_file(uri, verify_ssl=verify_ssl, timeout=timeout,
+                             progress=progress)
 
     else:
         return local_file(uri)
@@ -305,13 +306,14 @@ def import_from_source(source, default_encoding, *args, **kwargs):
     return table
 
 
-def import_from_uri(uri, default_encoding, verify_ssl=True, *args, **kwargs):
+def import_from_uri(uri, default_encoding='utf-8', verify_ssl=True,
+                    progress=False, *args, **kwargs):
     'Given an URI, detects plugin and encoding and imports into a `rows.Table`'
 
     # TODO: support '-' also
     # TODO: (optimization) if `kwargs.get('encoding', None) is not None` we can
     #       skip encoding detection.
-    source = detect_source(uri, verify_ssl=verify_ssl)
+    source = detect_source(uri, verify_ssl=verify_ssl, progress=progress)
     return import_from_source(source, default_encoding, *args, **kwargs)
 
 
