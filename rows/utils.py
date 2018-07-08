@@ -33,6 +33,7 @@ except ImportError:
     lzma = None
 
 import requests
+from tqdm import tqdm
 
 import rows
 from rows.plugins.utils import make_header, slug
@@ -137,11 +138,16 @@ def plugin_name_by_uri(uri):
     return plugin_name
 
 
-def extension_by_plugin_name(plugin_name):
+def extension_by_source(source, mime_type):
     'Return the file extension used by this plugin'
 
     # TODO: should get this information from the plugin
-    return plugin_name
+    extension = source.plugin_name
+    if extension:
+        return extension
+
+    if mime_type:
+        return mime_type.split('/')[-1]
 
 
 def normalize_mime_type(mime_type, mime_name, file_extension):
@@ -213,17 +219,16 @@ def local_file(path, sample_size=1048576):
                   delete=False)
 
 
-def download_file(uri, verify_ssl=True, timeout=5):
+def download_file(uri, verify_ssl=True, timeout=5, progress=False,
+                  chunk_size=8192, sample_size=1048576):
 
-    response = requests.get(uri, verify=verify_ssl, timeout=timeout)
-    content = response.content
+    response = requests.get(uri, verify=verify_ssl, timeout=timeout,
+                            stream=True)
+    if not response.ok:
+        raise RuntimeError('HTTP response: {}'.format(response.status_code))
 
-    filename = uri
-    encoding = None
-    mime_type = None
-
-    # Extract data from headers to help plugin + encoding detection, if
-    # available
+    # Get data from headers (if available) to help plugin + encoding detection
+    filename, encoding, mime_type = uri, None, None
     headers = response.headers
     if 'content-type' in headers:
         mime_type, options = cgi.parse_header(headers['content-type'])
@@ -232,16 +237,28 @@ def download_file(uri, verify_ssl=True, timeout=5):
         _, options = cgi.parse_header(headers['content-disposition'])
         filename = options.get('filename', filename)
 
-    # TODO: may send only a sample (chardet can be very slow if content is big)
-    source = detect_local_source(filename, content, mime_type, encoding)
+    if progress:
+        total = response.headers.get('content-length', None)
+        total = int(total) if total else None
+        progress_bar = tqdm(desc='Downloading file', total=total,
+                            unit='bytes', unit_scale=True, unit_divisor=1024)
+    tmp = tempfile.NamedTemporaryFile(delete=False)
+    sample_data = b''
+    for data in response.iter_content(chunk_size=chunk_size):
+        tmp.file.write(data)
+        if len(sample_data) <= sample_size:
+            sample_data += data
+        if progress:
+            progress_bar.update(len(data))
+    tmp.file.close()
+    if progress:
+        progress_bar.close()
 
-    # Save file locally
-    extension = extension_by_plugin_name(source.plugin_name)
-    tmp = tempfile.NamedTemporaryFile()
+    # Detect file type and rename temporary file to have the correct extension
+    source = detect_local_source(filename, sample_data, mime_type, encoding)
+    extension = extension_by_source(source, mime_type)
     filename = '{}.{}'.format(tmp.name, extension)
-    tmp.close()
-    with open(filename, 'wb') as fobj:
-        fobj.write(content)
+    os.rename(tmp.name, filename)
 
     return Source(uri=filename,
                   plugin_name=source.plugin_name,
