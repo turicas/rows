@@ -378,3 +378,31 @@ def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
     # Export to SQLite
     return rows.export_to_sqlite(table, output_filename, table_name=table_name,
                                  batch_size=batch_size, callback=callback)
+
+
+class CsvLazyDictWriter:
+
+    def __init__(self, filename, encoding='utf-8'):
+        self.writer = None
+        self.filename = filename
+        self.encoding = encoding
+        self._fobj = None
+
+    @property
+    def fobj(self):
+        if self._fobj is None:
+            self._fobj = open_compressed(
+                self.filename,
+                mode='w',
+                encoding=self.encoding,
+            )
+
+        return self._fobj
+
+    def writerow(self, row):
+        if self.writer is None:
+            self.writer = csv.DictWriter(self.fobj, fieldnames=list(row.keys()))
+            self.writer.writeheader()
+
+        self.writerow = self.writer.writerow
+        return self.writerow(row)

@@ -34,6 +34,10 @@
 - [#261](https://github.com/turicas/rows/issues/261) Add support to `end_row`
   and `end_column` on XLS and XLSX (thanks
   [@Lrcezimbra](https://github.com/Lrcezimbra) for the suggestion)
+- Add progress bar support to `utils.download_file`
+- Enable progress bar when downloading from CLI
+- Add helper class CsvLazyDictWriter
+
 
 
 ### Bug Fixes
