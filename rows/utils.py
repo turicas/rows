@@ -331,22 +331,28 @@ def export_to_uri(table, uri, *args, **kwargs):
     return export_function(table, uri, *args, **kwargs)
 
 
-def open_compressed(filename, encoding='utf-8'):
+def open_compressed(filename, mode='r', encoding='utf-8'):
     'Return a text-based file object from a filename, even if compressed'
 
     # TODO: this open compressed files feature will be incorported into the
     # library soon
-    if filename.endswith('.xz'):
+    if str(filename).lower().endswith('.xz'):
         if lzma is None:
             raise RuntimeError('lzma support is not installed')
 
-        return io.TextIOWrapper(lzma.open(filename), encoding=encoding)
+        return io.TextIOWrapper(
+            lzma.open(filename, mode=mode),
+            encoding=encoding,
+        )
 
-    elif filename.endswith('.gz'):
-        return io.TextIOWrapper(gzip.GzipFile(filename), encoding=encoding)
+    elif str(filename).lower().endswith('.gz'):
+        return io.TextIOWrapper(
+            gzip.GzipFile(filename, mode=mode),
+            encoding=encoding,
+        )
 
     else:
-        return open(filename, encoding=encoding)
+        return open(filename, mode=mode, encoding=encoding)
 
 
 def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
