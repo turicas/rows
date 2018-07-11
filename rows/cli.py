@@ -37,7 +37,7 @@ import rows
 import six
 from rows.plugins.utils import make_header
 from rows.utils import (csv2sqlite, detect_source, export_to_uri,
-                        import_from_source, import_from_uri)
+                        import_from_source, import_from_uri, pgimport)
 
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
@@ -490,6 +490,25 @@ def command_csv2sqlite(batch_size, samples, sources, output):
             batch_size=batch_size,
             callback=updater.update,
         )
+
+
+@cli.command(name='pgimport', help='Import a CSV file into a PostgreSQL table')
+@click.option('--input-encoding', default='utf-8')
+@click.option('--no-create-table', type=bool, default=False)
+@click.argument('source', required=True)
+@click.argument('database_uri', required=True)
+@click.argument('table_name', required=True)
+def command_pgimport(input_encoding, no_create_table, source, database_uri,
+                     table_name):
+
+    pgimport(
+        filename=source,
+        encoding=input_encoding,
+        database_uri=database_uri,
+        create_table=not no_create_table,
+        table_name=table_name,
+        progress=True,
+    )
 
 
 if __name__ == '__main__':
