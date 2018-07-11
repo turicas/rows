@@ -21,9 +21,13 @@ import cgi
 import csv
 import gzip
 import io
+import itertools
 import mimetypes
 import os
+import re
+import shlex
 import sqlite3
+import subprocess
 import tempfile
 from collections import OrderedDict
 from itertools import islice
@@ -102,6 +106,23 @@ MIME_TYPE_TO_PLUGIN_NAME = {
         'text/html': 'html',
         'text/txt': 'txt',
 }
+regexp_sizes = re.compile('([0-9,.]+ [a-zA-Z]+B)')
+MULTIPLIERS = {'B': 1, 'KiB': 1024, 'MiB': 1024 ** 2, 'GiB': 1024 ** 3}
+POSTGRESQL_TYPES = {
+    rows.fields.BinaryField: 'BYTEA',
+    rows.fields.BoolField: 'BOOLEAN',
+    rows.fields.DateField: 'DATE',
+    rows.fields.DatetimeField: 'TIMESTAMP(0) WITHOUT TIME ZONE',
+    rows.fields.DecimalField: 'NUMERIC',
+    rows.fields.FloatField: 'REAL',
+    rows.fields.IntegerField: 'BIGINT',  # TODO: detect when it's really needed
+    rows.fields.PercentField: 'REAL',
+    rows.fields.TextField: 'TEXT',
+    rows.fields.JSONField: 'JSONB',
+}
+DEFAULT_POSTGRESQL_TYPE = 'BYTEA'
+SQL_CREATE_TABLE = ('CREATE TABLE IF NOT EXISTS '
+                    '"{table_name}" ({field_types})')
 
 
 class Source(object):
@@ -406,3 +427,182 @@ class CsvLazyDictWriter:
 
         self.writerow = self.writer.writerow
         return self.writerow(row)
+
+
+def execute_command(command):
+    """Execute a command and return its output"""
+
+    command = shlex.split(command)
+    try:
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except FileNotFoundError:
+        raise RuntimeError('Command not found: {}'.format(repr(command)))
+    process.wait()
+    # TODO: may use another codec to decode
+    if process.returncode > 0:
+        stderr = process.stderr.read().decode('utf-8')
+        raise ValueError('Error executing command: {}'.format(repr(stderr)))
+    return process.stdout.read().decode('utf-8')
+
+
+def uncompressed_size(filename):
+    """Return the uncompressed size for a file by executing commands
+
+    Note: due to a limitation in gzip format, uncompressed files greather than
+    4GiB will have a wrong value.
+    """
+
+    quoted_filename = shlex.quote(filename)
+
+    # TODO: get filetype from file-magic, if available
+    if str(filename).lower().endswith('.xz'):
+        output = execute_command('xz --list "{}"'.format(quoted_filename))
+        compressed, uncompressed = regexp_sizes.findall(output)
+        value, unit = uncompressed.split()
+        value = float(value.replace(',', ''))
+        return int(value * MULTIPLIERS[unit])
+
+    elif str(filename).lower().endswith('.gz'):
+        # XXX: gzip only uses 32 bits to store uncompressed size, so if the
+        # uncompressed size is greater than 4GiB, the value returned will be
+        # incorrect.
+        output = execute_command('gzip --list "{}"'.format(quoted_filename))
+        lines = [line.split() for line in output.splitlines()]
+        header, data = lines[0], lines[1]
+        gzip_data = dict(zip(header, data))
+        return int(gzip_data['uncompressed'])
+
+    else:
+        raise ValueError('Unrecognized file type for "{}".'.format(filename))
+
+
+def get_psql_command(command, user=None, password=None, host=None, port=None,
+                     database_name=None, database_uri=None):
+
+    if database_uri is None:
+        if None in (user, password, host, port, database_name):
+            raise ValueError('Need to specify either `database_uri` or the complete information')
+
+        database_uri = \
+            "postgres://{user}:{password}@{host}:{port}/{name}".format(
+                user=user,
+                password=password,
+                host=host,
+                port=port,
+                name=database_name,
+            )
+
+    return 'psql -c {} {}'.format(
+        shlex.quote(command),
+        shlex.quote(database_uri),
+    )
+
+def get_psql_copy_command(table_name, header, encoding,
+                          user=None, password=None, host=None, port=None,
+                          database_name=None, database_uri=None,
+                          dialect=csv.excel):
+
+    table_name = slug(table_name)
+    header = ', '.join(slug(field_name) for field_name in header)
+    copy = (
+        "\copy {table_name} ({header}) FROM STDIN "
+        "DELIMITER '{delimiter}' "
+        "QUOTE '{quote}' "
+        "ENCODING '{encoding}' "
+        "CSV HEADER;"
+    ).format(table_name=table_name, header=header,
+             delimiter=dialect.delimiter.replace("'", "\\'"),
+             quote=dialect.quotechar.replace("'", "\\'"), encoding=encoding)
+
+    return get_psql_command(copy, user=user, password=password, host=host,
+                            port=port, database_name=database_name,
+                            database_uri=database_uri)
+
+
+def pgimport(filename, database_uri, table_name, encoding='utf-8',
+             create_table=True, progress=False, timeout=0.1,
+             chunk_size=8388608, max_samples=10000):
+    """Import data from CSV into PostgreSQL using the fastest method
+
+    Required: psql command
+    """
+
+    # Extract a sample from the CSV to detect its dialect and header
+    fobj = open_compressed(filename, mode='r', encoding=encoding)
+    sample = fobj.read(chunk_size).encode(encoding)
+    dialect = rows.plugins.csv.discover_dialect(sample, encoding=encoding)
+    reader = csv.reader(io.StringIO(sample.decode(encoding)))
+    field_names = [slug(field_name) for field_name in next(reader)]
+
+    if create_table:
+        data = [dict(zip(field_names, row))
+                for row in itertools.islice(reader, max_samples)]
+        table = rows.import_from_dicts(data)
+        field_types = [table.fields[field_name] for field_name in field_names]
+        columns = ['{} {}'.format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
+                   for name, type_ in zip(field_names, field_types)]
+        create_table = SQL_CREATE_TABLE.format(
+            table_name=table_name,
+            field_types=', '.join(columns),
+        )
+        execute_command(
+            get_psql_command(create_table, database_uri=database_uri)
+        )
+
+    # Prepare the `psql` command to be executed based on collected metadata
+    command = get_psql_copy_command(
+        database_uri=database_uri,
+        table_name=table_name,
+        header=field_names,
+        dialect=dialect,
+        encoding=encoding,
+    )
+    rows_imported, error, total_size = 0, None, None
+    try:
+        total_size = uncompressed_size(filename)
+    except (RuntimeError, ValueError):
+        pass
+
+    if progress:
+        progress_bar = tqdm(
+            desc='Importing data',
+            unit='bytes',
+            unit_scale=True,
+            unit_divisor=1024,
+            total=total_size,
+        )
+
+    fobj = open_compressed(filename, mode='rb')
+    try:
+        process = subprocess.Popen(
+            shlex.split(command),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        data = fobj.read(chunk_size)
+        while data != b'':
+            data_written = process.stdin.write(data)
+            if progress:
+                progress_bar.update(data_written)
+            data = fobj.read(chunk_size)
+        stdout, stderr = process.communicate()
+        if stderr != b'':
+            raise RuntimeError(stderr.decode('utf-8'))
+        rows_imported = int(stdout.replace(b'COPY ', b'').strip())
+
+    except FileNotFoundError:
+        raise RuntimeError('Command `psql` not found')
+
+    except BrokenPipeError:
+        raise RuntimeError(process.stderr.read().decode('utf-8'))
+
+    if progress:
+        progress_bar.close()
+
+    return rows_imported

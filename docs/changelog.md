@@ -37,7 +37,7 @@
 - Add progress bar support to `utils.download_file`
 - Enable progress bar when downloading from CLI
 - Add helper class CsvLazyDictWriter
-
+- Add pgimport and other helper functions
 
 
 ### Bug Fixes
