@@ -340,16 +340,16 @@ def open_compressed(filename, mode='r', encoding='utf-8'):
         if lzma is None:
             raise RuntimeError('lzma support is not installed')
 
-        return io.TextIOWrapper(
-            lzma.open(filename, mode=mode),
-            encoding=encoding,
-        )
+        fobj = lzma.open(filename, mode=mode)
+        if 'b' in mode:
+            return fobj
+        return io.TextIOWrapper(fobj, encoding=encoding)
 
     elif str(filename).lower().endswith('.gz'):
-        return io.TextIOWrapper(
-            gzip.GzipFile(filename, mode=mode),
-            encoding=encoding,
-        )
+        fobj = gzip.GzipFile(filename, mode=mode)
+        if 'b' in mode:
+            return fobj
+        return io.TextIOWrapper(fobj, encoding=encoding)
 
     else:
         return open(filename, mode=mode, encoding=encoding)
