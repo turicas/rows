@@ -390,7 +390,7 @@ def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
 
     # Create lazy table object to be converted
     # TODO: this lazyness feature will be incorported into the library soon
-    reader = csv.reader(open_compressed(input_filename, encoding))
+    reader = csv.reader(open_compressed(input_filename, encoding=encoding))
     header = next(reader)  # skip header
     table = rows.Table(fields=OrderedDict([(field, fields[field])
                                            for field in header]))

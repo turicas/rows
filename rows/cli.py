@@ -340,7 +340,7 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
         query = 'SELECT * FROM {} WHERE {}'.format(table_names, query)
 
     if len(sources) == 1:
-        source = detect_source(sources[0], verify_ssl=verify_ssl)
+        source = detect_source(sources[0], verify_ssl=verify_ssl, progress=True)
 
         if source.plugin_name == 'sqlite':
             # Optimization: query the db directly
