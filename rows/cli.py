@@ -37,7 +37,8 @@ import rows
 import six
 from rows.plugins.utils import make_header
 from rows.utils import (csv2sqlite, detect_source, export_to_uri,
-                        import_from_source, import_from_uri, pgimport)
+                        import_from_source, import_from_uri, pgimport,
+                        sqlite2csv)
 
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
@@ -488,6 +489,30 @@ def command_csv2sqlite(batch_size, samples, sources, output):
             batch_size=batch_size,
             callback=updater.update,
         )
+
+
+@cli.command(name='sqlite2csv', help='Convert a SQLite table into CSV')
+@click.option('--batch_size', default=10000)
+@click.argument('source', required=True)
+@click.argument('table_name', required=True)
+@click.argument('output', required=True)
+def command_csv2sqlite(batch_size, source, table_name, output):
+
+    input_filename = pathlib.Path(source)
+    output_filename = pathlib.Path(output)
+    prefix = '[{db_filename}#{tablename} -> {filename}]'.format(
+        db_filename=input_filename.name,
+        tablename=table_name,
+        filename=output_filename.name,
+    )
+    updater = Updater(prefix=prefix, pre_prefix='')
+    sqlite2csv(
+        input_filename=six.text_type(input_filename),
+        table_name=table_name,
+        output_filename=six.text_type(output_filename),
+        batch_size=batch_size,
+        callback=updater.update,
+    )
 
 
 @cli.command(name='pgimport', help='Import a CSV file into a PostgreSQL table')
