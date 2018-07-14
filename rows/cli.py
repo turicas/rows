@@ -446,17 +446,9 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
 
 class Updater:
 
-    def __init__(self, filename, output, tablename):
-        self.db_name = pathlib.Path(output).name
-        self.filename = pathlib.Path(filename).name
-        self.tablename = tablename
-        self.prefix = '[{} -> {}#{}]'.format(
-            self.filename, self.db_name, self.tablename
-        )
-        self.progress = tqdm(
-            desc='{} (detecting data types)'.format(self.prefix),
-            unit=' rows',
-        )
+    def __init__(self, prefix, pre_prefix, unit=' rows'):
+        self.prefix = prefix
+        self.progress = tqdm(desc=pre_prefix, unit=unit)
         self.started = False
 
     def update(self, total):
@@ -481,7 +473,13 @@ def command_csv2sqlite(batch_size, samples, sources, output):
     table_names = make_header([filename.name.split('.')[0]
                                for filename in inputs])
     for filename, table_name in zip(inputs, table_names):
-        updater = Updater(filename, output, table_name)
+        prefix = '[{filename} -> {db_filename}#{tablename}]'.format(
+            db_filename=output.name,
+            tablename=table_name,
+            filename=filename.name,
+        )
+        pre_prefix = '{} (detecting data types)'.format(prefix)
+        updater = Updater(prefix=prefix, pre_prefix=pre_prefix)
         csv2sqlite(
             six.text_type(filename),
             six.text_type(output),
