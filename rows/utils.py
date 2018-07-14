@@ -401,6 +401,30 @@ def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
                                  batch_size=batch_size, callback=callback)
 
 
+def sqlite2csv(input_filename, table_name, output_filename, batch_size=10000,
+               encoding='utf-8', callback=None, query=None):
+    """Export a table inside a SQLite database to CSV"""
+
+    if query is None:
+        query = 'SELECT * FROM {}'.format(table_name)
+    connection = sqlite3.Connection(input_filename)
+    cursor = connection.cursor()
+    result = cursor.execute(query)
+    header = [item[0] for item in cursor.description]
+    fobj = open_compressed(output_filename, encoding=encoding, mode='w')
+    writer = csv.writer(fobj)
+    writer.writerow(header)
+    counter = 0
+    for batch in rows.plugins.utils.ipartition(result, batch_size):
+        writer.writerows(batch)
+        counter += len(batch)
+        if callback and counter % batch_size == 0:
+            callback(counter)
+    if callback:
+        callback(counter)
+    fobj.close()
+
+
 class CsvLazyDictWriter:
 
     def __init__(self, filename, encoding='utf-8'):

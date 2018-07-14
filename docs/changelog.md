@@ -38,6 +38,7 @@
 - Enable progress bar when downloading from CLI
 - Add helper class CsvLazyDictWriter
 - Add pgimport function and CLI command
+- Add sqlite2csv function
 
 
 ### Bug Fixes
