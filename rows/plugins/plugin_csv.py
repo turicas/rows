@@ -17,7 +17,7 @@
 
 from __future__ import unicode_literals
 
-from io import BytesIO
+from io import open as io_open, BytesIO, BufferedReader
 
 import six
 import unicodecsv
@@ -27,7 +27,18 @@ from rows.plugins.utils import (create_table, get_filename_and_fobj,
 
 sniffer = unicodecsv.Sniffer()
 
+
 if six.PY2:
+
+    class NotNullBytesWrapper(BufferedReader):
+
+        def read(self, *args, **kwargs):
+            data = super(NotNullBytesWrapper, self).read(*args, **kwargs)
+            return data.replace(b'\x00', b'')
+
+        def readline(self, *args, **kwargs):
+            data = super(NotNullBytesWrapper, self).readline(*args, **kwargs)
+            return data.replace(b'\x00', b'')
 
     def discover_dialect(sample, encoding=None,
                          delimiters=(b',', b';', b'\t', b'|')):
@@ -47,6 +58,16 @@ if six.PY2:
         return dialect
 
 elif six.PY3:
+
+    class NotNullBytesWrapper(BufferedReader):
+
+        def read(self, *args, **kwargs):
+            data = super().read(*args, **kwargs)
+            return data.replace(b'\x00', b'')
+
+        def readline(self, *args, **kwargs):
+            data = super().readline(*args, **kwargs)
+            return data.replace(b'\x00', b'')
 
     def discover_dialect(sample, encoding, delimiters=(',', ';', '\t', '|')):
         """Discover a CSV dialect based on a sample size.
@@ -101,6 +122,11 @@ def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
     """
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
 
+    if six.PY2:
+        fobj = NotNullBytesWrapper(io_open(filename, mode='rb'))
+    elif six.PY3:
+        fobj = NotNullBytesWrapper(fobj)
+
     if dialect is None:
         dialect = discover_dialect(sample=read_sample(fobj, sample_size),
                                    encoding=encoding)
@@ -132,7 +158,7 @@ def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
     else:
         fobj = BytesIO()
 
-    # TODO: may use `io.BufferedWriter` instead of `ipartition` so user can
+    # TODO: may use `BufferedWriter` instead of `ipartition` so user can
     # choose the real size (in Bytes) when to flush to the file system, instead
     # number of rows
     writer = unicodecsv.writer(fobj, encoding=encoding, dialect=dialect)

@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import io
 import itertools
 import random
 import tempfile
@@ -32,6 +33,8 @@ import rows.plugins.utils as plugins_utils
 import tests.utils as utils
 from rows import fields
 
+
+get_filename_and_fobj = plugins_utils.get_filename_and_fobj
 
 class GenericUtilsTestCase(unittest.TestCase):
 
@@ -339,7 +342,62 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result = plugins_utils.export_data(filename_or_fobj, data)
         self.assertIs(result, data)
 
+
+class FilenameFObjTestCase(unittest.TestCase):
+    # TODO: test other features of this function (example: BytesIO should
+    #       return filename = None)
+
+    def setUp(self):
+        self.filename = 'tests/data/csv_with_null_bytes.csv'
+        self.encoding = 'latin1'
+        self.data = io.open(self.filename, mode='rb').read()
+        self.decoded_data = self.data.decode(self.encoding)
+
+    def test_get_filename_and_fobj_passing_filename(self):
+        mode = 'rb'
+        _, f = get_filename_and_fobj(self.filename, mode=mode)
+        self.assertTrue(hasattr(f, 'readable') and f.readable())
+        self.assertEqual(f.mode, mode)
+        self.assertEqual(f.read(), self.data)
+
+    def test_get_filename_and_fobj_passing_text_fobj(self):
+        if six.PY3:
+            mode = 'r'
+            fobj = open(self.filename, encoding=self.encoding)
+            _, f = get_filename_and_fobj(fobj, mode=mode, encoding=self.encoding)
+            self.assertTrue(hasattr(f, 'readable') and f.readable())
+            self.assertEqual(f.mode, mode)
+            self.assertEqual(f.read(), self.decoded_data)
+
+        mode = 'r'
+        fobj = io.open(self.filename, encoding=self.encoding)
+        _, f = get_filename_and_fobj(fobj, mode=mode, encoding=self.encoding)
+        self.assertTrue(hasattr(f, 'readable') and f.readable())
+        self.assertEqual(f.mode, mode)
+        self.assertEqual(f.read(), self.decoded_data)
+
+    def test_get_filename_and_fobj_passing_bytes_fobj(self):
+        mode = 'rb'
+        fobj = open(self.filename, mode=mode)
+        _, f = get_filename_and_fobj(fobj, mode=mode)
+        self.assertTrue(hasattr(f, 'readable') and f.readable())
+        self.assertEqual(f.mode, mode)
+        self.assertEqual(f.read(), self.data)
+
+        fobj = io.open(self.filename, mode=mode)
+        _, f = get_filename_and_fobj(fobj, mode=mode)
+        self.assertTrue(hasattr(f, 'readable') and f.readable())
+        self.assertEqual(f.mode, mode)
+        self.assertEqual(f.read(), self.data)
+
+    def test_get_filename_and_fobj_passing_BytesIO(self):
+        mode = 'rb'
+        fobj = io.BytesIO(self.data)
+        _, f = get_filename_and_fobj(fobj, mode=mode)
+        self.assertTrue(hasattr(f, 'readable') and f.readable())
+        self.assertEqual(f.mode, mode)
+        self.assertEqual(f.read(), self.data)
+
     # TODO: test make_header
     # TODO: test all features of create_table
     # TODO: test if error is raised if len(row) != len(fields)
-    # TODO: test get_fobj_and_filename (BytesIO should return filename = None)

@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import io
 from collections import Iterator, OrderedDict
 from itertools import chain, islice
 from unicodedata import normalize
@@ -85,13 +86,24 @@ def ipartition(iterable, partition_size):
             yield data
 
 
-def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
-    if getattr(filename_or_fobj, 'read', None) is not None:
+def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False, **kwargs):
+
+    # TODO: what if fobj is passed, using a different mode from `mode`?
+
+    if getattr(filename_or_fobj, 'read', None) is not None:  # file-like object
+        filename = getattr(filename_or_fobj, 'name', None)
         fobj = filename_or_fobj
-        filename = getattr(fobj, 'name', None)
-    else:
-        fobj = open(filename_or_fobj, mode=mode) if not dont_open else None
+        try:
+            file_number = fobj.fileno()
+        except io.UnsupportedOperation:
+            # Another kind of file object, like `io.BytesIO`
+            fobj = io.BufferedReader(fobj, **kwargs)  # TODO: pass mode
+        else:  # Regular file
+            fobj = io.open(file_number, mode=mode, **kwargs)
+
+    else:  # filename
         filename = filename_or_fobj
+        fobj = io.open(filename_or_fobj, mode=mode, **kwargs) if not dont_open else None
 
     return filename, fobj
 
