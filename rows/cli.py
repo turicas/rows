@@ -272,6 +272,7 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-encoding')
 @click.option('--input-locale')
 @click.option('--output-locale')
+@click.option('--frame-style', default='ASCII')
 @click.option('--table-index', default=0)
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--fields',
@@ -280,7 +281,7 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
               help='A comma-separated list of fields to exclude')
 @click.option('--order-by')
 @click.argument('source', required=True)
-def print_(input_encoding, output_encoding, input_locale, output_locale,
+def print_(input_encoding, output_encoding, input_locale, output_locale, frame_style,
            table_index, verify_ssl, fields, fields_exclude, order_by, source):
 
     import_fields = _get_import_fields(fields, fields_exclude)
@@ -312,10 +313,10 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
     if output_locale is not None:
         with rows.locale_context(output_locale):
             rows.export_to_txt(table, fobj, encoding=output_encoding,
-                               export_fields=export_fields)
+                               export_fields=export_fields, frame_style=frame_style)
     else:
         rows.export_to_txt(table, fobj, encoding=output_encoding,
-                           export_fields=export_fields)
+                           export_fields=export_fields, frame_style=frame_style)
 
     fobj.seek(0)
     # TODO: may pass unicode to click.echo if output_encoding is not provided
