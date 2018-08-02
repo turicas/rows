@@ -272,7 +272,8 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-encoding')
 @click.option('--input-locale')
 @click.option('--output-locale')
-@click.option('--frame-style', default='ASCII')
+@click.option('--frame-style', default='ASCII',  help=
+              'Options: ASCII, single, double, none. Defaults to ASCII')
 @click.option('--table-index', default=0)
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--fields',
@@ -330,7 +331,8 @@ def print_(input_encoding, output_encoding, input_locale, output_locale, frame_s
 @click.option('--output-locale')
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--output')
-@click.option('--frame-style', default='ASCII')
+@click.option('--frame-style', default='ASCII', help=
+              'Options: ASCII, single, double, none. Defaults to ASCII')
 @click.argument('query', required=True)
 @click.argument('sources', nargs=-1, required=True)
 def query(input_encoding, output_encoding, input_locale, output_locale,
