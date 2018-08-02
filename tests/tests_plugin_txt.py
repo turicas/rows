@@ -195,16 +195,35 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self._test_export_to_txt_frame_style(frame_style='None',
                                              chars='|│┤┐└┬├─┼┘┌╣║╗╝╚╔╩╦╠═╬',
                                              positive=False)
+    @staticmethod
+    def _reset_txt_plugin():
+        # The txt plugin makes (or can make use) of 'defaultdict's
+        # and perform certain operations against their existing values.
+        # Those existing values may change if certain txt operations
+        # are performed in the same proccess.
+        # Therefore, some tests have to run against
+        # pristine copies of rows.plugins.txt
+        try:
+            from imp import reload
+        except ImportError:
+            pass
+        import rows.plugins.txt
+
+        original_txt_plugin = rows.plugins.txt
+        reload(rows.plugins.txt)
+        rows.import_from_txt = rows.plugins.txt.import_from_txt
+        rows.export_to_txt = rows.plugins.txt.export_to_txt
+        original_txt_plugin.FRAME_SENTINEL = rows.plugins.txt.FRAME_SENTINEL
 
     def _test_import_from_txt_works_with_custom_frame(self, frame_style):
         temp = tempfile.NamedTemporaryFile(delete=False)
-        # self.files_to_delete.append(temp.name)
-        print("*" * 100, temp.name)
 
         original_data = rows.import_from_txt(self.filename)
         rows.export_to_txt(utils.table, temp.file, encoding='utf-8',
                            frame_style=frame_style)
 
+
+        self._reset_txt_plugin()
         new_data = rows.import_from_txt(temp.name)
 
         self.assertEqual(
