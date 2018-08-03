@@ -83,10 +83,10 @@ def _python_to_postgresql(field_types):
 def _get_connection(connection):
 
     if isinstance(connection, (six.binary_type, six.text_type)):
-        return True, pgconnect(connection)
+        return pgconnect(connection)
 
     else:  # already a connection
-        return False, connection
+        return connection
 
 
 def _valid_table_name(name):
@@ -106,10 +106,11 @@ def _valid_table_name(name):
         return True
 
 
-def import_from_postgresql(connection, table_name='table1', query=None,
-                           query_args=None, *args, **kwargs):
+def import_from_postgresql(connection_or_uri, table_name='table1', query=None,
+                           query_args=None, close_connection=False,
+                           *args, **kwargs):
 
-    should_close_connection, connection = _get_connection(connection)
+    connection = _get_connection(connection_or_uri)
     cursor = connection.cursor()
 
     if query is None:
@@ -125,19 +126,20 @@ def import_from_postgresql(connection, table_name='table1', query=None,
     table_rows = list(cursor.fetchall())
     header = [six.text_type(info[0]) for info in cursor.description]
     cursor.close()
-    # TODO: should close connection also?
 
-    meta = {'imported_from': 'postgresql', 'uri': connection, }
+    meta = {'imported_from': 'postgresql', 'uri': connection_or_uri, }
+    if close_connection:
+        connection.close()
     return create_table([header] + table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_postgresql(table, connection, table_name=None,
+def export_to_postgresql(table, connection_or_uri, table_name=None,
                          table_name_format='table{index}', batch_size=100,
-                         *args, **kwargs):
+                         close_connection=False, *args, **kwargs):
     # TODO: should add transaction support?
 
     prepared_table = prepare_to_export(table, *args, **kwargs)
-    should_close_connection, connection = _get_connection(connection)
+    connection = _get_connection(connection_or_uri)
     cursor = connection.cursor()
 
     if table_name is None:
@@ -168,6 +170,6 @@ def export_to_postgresql(table, connection, table_name=None,
         cursor.executemany(insert_sql, map(_convert_row, batch))
 
     connection.commit()
-    if should_close_connection:
+    if close_connection:
         connection.close()
     return connection

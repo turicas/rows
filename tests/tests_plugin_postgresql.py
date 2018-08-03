@@ -153,7 +153,11 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(call[1], kwargs)
 
     def test_import_from_postgresql_query_args(self):
-        connection = rows.export_to_postgresql(utils.table, self.uri)
+        connection = rows.export_to_postgresql(
+            utils.table,
+            self.uri,
+            close_connection=False,
+        )
         table = rows.import_from_postgresql(connection,
                                             query=('SELECT * FROM table1 '
                                                    'WHERE float_column > ?'),
