@@ -38,11 +38,13 @@ import os
 class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = 'postgresql'
-    uri = os.environ.get('POSTGRESQL_URI',
-                         'postgresql://postgres:postgres@localhost/postgres')
     assert_meta_encoding = False
     override_fields = {'percent_column': fields.DecimalField,
                        'bool_column': fields.BoolField, }
+
+    @classmethod
+    def setUpClass(cls):
+        cls.uri = os.environ['POSTGRESQL_URI']
 
     def test_imports(self):
         self.assertIs(rows.import_from_postgresql,
