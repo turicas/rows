@@ -110,9 +110,6 @@ def import_from_postgresql(connection_or_uri, table_name='table1', query=None,
                            query_args=None, close_connection=False,
                            *args, **kwargs):
 
-    connection = _get_connection(connection_or_uri)
-    cursor = connection.cursor()
-
     if query is None:
         if not _valid_table_name(table_name):
             raise ValueError('Invalid table name: {}'.format(table_name))
@@ -122,12 +119,15 @@ def import_from_postgresql(connection_or_uri, table_name='table1', query=None,
     if query_args is None:
         query_args = tuple()
 
-    cursor.execute(query, query_args)  # TODO: may be lazy
-    table_rows = list(cursor.fetchall())
+    connection = _get_connection(connection_or_uri)
+    cursor = connection.cursor()
+    cursor.execute(query, query_args)
+    table_rows = list(cursor.fetchall())  # TODO: make it lazy
     header = [six.text_type(info[0]) for info in cursor.description]
     cursor.close()
+    connection.commit()  # WHY?
 
-    meta = {'imported_from': 'postgresql', 'uri': connection_or_uri, }
+    meta = {'imported_from': 'postgresql', 'source': connection_or_uri, }
     if close_connection:
         connection.close()
     return create_table([header] + table_rows, meta=meta, *args, **kwargs)
@@ -138,10 +138,12 @@ def export_to_postgresql(table, connection_or_uri, table_name=None,
                          close_connection=False, *args, **kwargs):
     # TODO: should add transaction support?
 
+    if table_name is not None and not _valid_table_name(table_name):
+        raise ValueError('Invalid table name: {}'.format(table_name))
+
     prepared_table = prepare_to_export(table, *args, **kwargs)
     connection = _get_connection(connection_or_uri)
     cursor = connection.cursor()
-
     if table_name is None:
         cursor.execute(SQL_TABLE_NAMES)
         table_names = [item[0] for item in cursor.fetchall()]
@@ -149,10 +151,6 @@ def export_to_postgresql(table, connection_or_uri, table_name=None,
                                       existing_names=table_names,
                                       name_format=table_name_format,
                                       start=1)
-
-    elif not _valid_table_name(table_name):
-            raise ValueError('Invalid table name: {}'.format(table_name))
-
     field_names = next(prepared_table)
     field_types = list(map(table.fields.get, field_names))
     columns = ['{} {}'.format(field_name,
@@ -170,6 +168,7 @@ def export_to_postgresql(table, connection_or_uri, table_name=None,
         cursor.executemany(insert_sql, map(_convert_row, batch))
 
     connection.commit()
+    cursor.close()
     if close_connection:
         connection.close()
-    return connection
+    return connection, table_name

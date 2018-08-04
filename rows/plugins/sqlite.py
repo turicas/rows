@@ -51,13 +51,14 @@ def _python_to_sqlite(field_types):
         if field_type in (
                 fields.BinaryField,
                 fields.BoolField,
-                fields.DateField,
-                fields.DatetimeField,
                 fields.FloatField,
                 fields.IntegerField,
                 fields.TextField
         ):
             return value
+
+        elif field_type in (fields.DateField, fields.DatetimeField):
+            return value.isoformat() if value is not None else None
 
         elif field_type in (fields.DecimalField,
                             fields.PercentField):
