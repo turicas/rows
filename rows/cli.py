@@ -37,8 +37,8 @@ import rows
 import six
 from rows.plugins.utils import make_header
 from rows.utils import (csv2sqlite, detect_source, export_to_uri,
-                        import_from_source, import_from_uri, pgimport,
-                        sqlite2csv)
+                        import_from_source, import_from_uri, pgexport,
+                        pgimport, sqlite2csv)
 
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
@@ -537,6 +537,21 @@ def command_pgimport(input_encoding, no_create_table, source, database_uri,
         database_uri=database_uri,
         create_table=not no_create_table,
         table_name=table_name,
+        progress=True,
+    )
+
+@cli.command(name='pgexport', help='Export a PostgreSQL table into a CSV file')
+@click.option('--output-encoding', default='utf-8')
+@click.argument('database_uri', required=True)
+@click.argument('table_name', required=True)
+@click.argument('destination', required=True)
+def command_pgexport(output_encoding, database_uri, table_name, destination):
+
+    pgexport(
+        database_uri=database_uri,
+        table_name=table_name,
+        filename=destination,
+        encoding=output_encoding,
         progress=True,
     )
 
