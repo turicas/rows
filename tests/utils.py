@@ -133,14 +133,11 @@ class RowsTestMixIn(object):
 
     def assert_table_equal(self, first, second):
         expected_fields = dict(second.fields)
-        if self.override_fields is None:
-            override_fields = {}
-        else:
-            override_fields = self.override_fields
-            expected_fields = copy.deepcopy(expected_fields)
-            for key, value in override_fields.items():
-                if key in expected_fields:
-                    expected_fields[key] = value
+        override_fields = self.override_fields or {}
+        expected_fields = copy.deepcopy(expected_fields)
+        for key, value in override_fields.items():
+            if key in expected_fields:
+                expected_fields[key] = value
 
         self.assertDictEqual(dict(first.fields), expected_fields)
         self.assertEqual(len(first), len(second))
@@ -158,7 +155,7 @@ class RowsTestMixIn(object):
                     self.assertEqual(value, expected_value,
                             'Field {} value mismatch'.format(field_name))
                 else:
-                    self.assertAlmostEqual(value, expected_value)
+                    self.assertAlmostEqual(value, expected_value, places=5)
 
     def assert_file_contents_equal(self, first_filename, second_filename):
         with open(first_filename, 'rb') as fobj:
@@ -169,7 +166,7 @@ class RowsTestMixIn(object):
 
     def assert_create_table_data(self, call_args, field_ordering=True,
                                  filename=None, expected_meta=None):
-        if filename is None:
+        if filename is None and getattr(self, 'filename', None):
             filename = self.filename
         kwargs = call_args[1]
         if expected_meta is None:
@@ -184,7 +181,7 @@ class RowsTestMixIn(object):
         if "frame_style" not in expected_meta:
             kwargs['meta'].pop('frame_style', '')
 
-        self.assertEqual(kwargs['meta'], expected_meta)
+        self.assertDictEqual(kwargs['meta'], expected_meta)
         del kwargs['meta']
         self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs,
                                field_ordering=field_ordering)
@@ -213,15 +210,22 @@ class RowsTestMixIn(object):
     # Fields asserts: input values we expect from plugins
 
     def field_assert(self, field_name, expected_value, value, *args, **kwargs):
-        asserts = {'bool_column': self.assert_BoolField,
-                   'integer_column': self.assert_IntegerField,
-                   'float_column': self.assert_FloatField,
-                   'decimal_column': self.assert_DecimalField,
-                   'percent_column': self.assert_PercentField,
-                   'date_column': self.assert_DateField,
-                   'datetime_column': self.assert_DatetimeField,
-                   'unicode_column': self.assert_TextField, }
-        return asserts[field_name](expected_value, value, *args, **kwargs)
+        assert_methods = {
+            fields.BoolField: self.assert_BoolField,
+            fields.DateField: self.assert_DateField,
+            fields.DatetimeField: self.assert_DatetimeField,
+            fields.DecimalField: self.assert_DecimalField,
+            fields.FloatField: self.assert_FloatField,
+            fields.IntegerField: self.assert_IntegerField,
+            fields.PercentField: self.assert_PercentField,
+            fields.TextField: self.assert_TextField,
+        }
+        if self.override_fields and field_name in self.override_fields:
+            FieldClass = self.override_fields[field_name]
+        else:
+            FieldClass = FIELDS[field_name]
+
+        return assert_methods[FieldClass](expected_value, value, *args, **kwargs)
 
     def assert_BoolField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
@@ -243,7 +247,7 @@ class RowsTestMixIn(object):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
         elif type(value) != type(expected_value):
-            self.assertEqual(value, str(expected_value))
+            self.assertEqual(str(value), str(expected_value))
         else:
             self.assertAlmostEqual(expected_value, value, places=5)
 

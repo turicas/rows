@@ -302,6 +302,13 @@ def detect_source(uri, verify_ssl, progress, timeout=5):
         return download_file(uri, verify_ssl=verify_ssl, timeout=timeout,
                              progress=progress)
 
+    elif uri.startswith('postgres://'):
+        return Source(
+            delete=False,
+            encoding=None,
+            plugin_name='postgresql',
+            uri=uri,
+        )
     else:
         return local_file(uri)
 
@@ -373,7 +380,10 @@ def open_compressed(filename, mode='r', encoding='utf-8'):
         return io.TextIOWrapper(fobj, encoding=encoding)
 
     else:
-        return open(filename, mode=mode, encoding=encoding)
+        if 'b' in mode:
+            return open(filename, mode=mode)
+        else:
+            return open(filename, mode=mode, encoding=encoding)
 
 
 def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
@@ -526,20 +536,28 @@ def get_psql_command(command, user=None, password=None, host=None, port=None,
         shlex.quote(database_uri),
     )
 
-def get_psql_copy_command(table_name, header, encoding,
+def get_psql_copy_command(table_name, header, encoding='utf-8',
                           user=None, password=None, host=None, port=None,
                           database_name=None, database_uri=None,
-                          dialect=csv.excel):
+                          dialect=csv.excel, direction='FROM'):
+
+    direction = direction.upper()
+    if direction not in ('FROM', 'TO'):
+        raise ValueError('`direction` must be "FROM" or "TO"')
 
     table_name = slug(table_name)
-    header = ', '.join(slug(field_name) for field_name in header)
+    if header is None:
+        header = ''
+    else:
+        header = ', '.join(slug(field_name) for field_name in header)
+        header = '({header}) '.format(header=header)
     copy = (
-        "\copy {table_name} ({header}) FROM STDIN "
+        "\copy {table_name} {header}{direction} STDIN "
         "DELIMITER '{delimiter}' "
         "QUOTE '{quote}' "
         "ENCODING '{encoding}' "
         "CSV HEADER;"
-    ).format(table_name=table_name, header=header,
+    ).format(table_name=table_name, header=header, direction=direction,
              delimiter=dialect.delimiter.replace("'", "\\'"),
              quote=dialect.quotechar.replace("'", "\\'"), encoding=encoding)
 
@@ -581,10 +599,11 @@ def pgimport(filename, database_uri, table_name, encoding='utf-8',
     # Prepare the `psql` command to be executed based on collected metadata
     command = get_psql_copy_command(
         database_uri=database_uri,
-        table_name=table_name,
-        header=field_names,
         dialect=dialect,
+        direction='FROM',
         encoding=encoding,
+        header=field_names,
+        table_name=table_name,
     )
     rows_imported, error, total_size = 0, None, None
     try:
@@ -619,6 +638,63 @@ def pgimport(filename, database_uri, table_name, encoding='utf-8',
         if stderr != b'':
             raise RuntimeError(stderr.decode('utf-8'))
         rows_imported = int(stdout.replace(b'COPY ', b'').strip())
+
+    except FileNotFoundError:
+        raise RuntimeError('Command `psql` not found')
+
+    except BrokenPipeError:
+        raise RuntimeError(process.stderr.read().decode('utf-8'))
+
+    if progress:
+        progress_bar.close()
+
+    return rows_imported
+
+
+def pgexport(database_uri, table_name, filename, encoding='utf-8',
+             progress=False, timeout=0.1, chunk_size=8388608):
+    """Export data from PostgreSQL into a CSV file using the fastest method
+
+    Required: psql command
+    """
+
+    # Prepare the `psql` command to be executed to export data
+    command = get_psql_copy_command(
+        database_uri=database_uri,
+        direction='TO',
+        encoding=encoding,
+        header=None,  # Needed when direction = 'TO'
+        table_name=table_name,
+    )
+    rows_imported, error, total_size = 0, None, None
+
+    if progress:
+        progress_bar = tqdm(
+            desc='Exporting data',
+            unit='bytes',
+            unit_scale=True,
+            unit_divisor=1024,
+        )
+
+    fobj = open_compressed(filename, mode='wb', encoding=encoding)
+    total_bytes = 0
+    try:
+        process = subprocess.Popen(
+            shlex.split(command),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        data = process.stdout.read(chunk_size)
+        while data != b'':
+            data_written = fobj.write(data)
+            total_bytes += data_written
+            if progress:
+                progress_bar.update(data_written)
+            data = process.stdout.read(chunk_size)
+        stdout, stderr = process.communicate()
+        if stderr != b'':
+            raise RuntimeError(stderr.decode('utf-8'))
 
     except FileNotFoundError:
         raise RuntimeError('Command `psql` not found')
