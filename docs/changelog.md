@@ -37,8 +37,10 @@
 - Add progress bar support to `utils.download_file`
 - Enable progress bar when downloading from CLI
 - Add helper class CsvLazyDictWriter
-- Add pgimport function and CLI command
+- Add pgimport and pgexport functions and CLI commands
 - Add sqlite2csv function and CLI command
+- [#4](https://github.com/turicas/rows/issues/4) Add PostgreSQL plugin (thanks
+  to [@juliano777](https://github.com/juliano777))
 
 
 ### Bug Fixes
