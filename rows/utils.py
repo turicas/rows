@@ -380,7 +380,10 @@ def open_compressed(filename, mode='r', encoding='utf-8'):
         return io.TextIOWrapper(fobj, encoding=encoding)
 
     else:
-        return open(filename, mode=mode, encoding=encoding)
+        if 'b' in mode:
+            return open(filename, mode=mode)
+        else:
+            return open(filename, mode=mode, encoding=encoding)
 
 
 def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
