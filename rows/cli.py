@@ -472,9 +472,10 @@ class Updater:
 @cli.command(name='csv2sqlite', help='Convert one or more CSV files to SQLite')
 @click.option('--batch_size', default=10000)
 @click.option('--samples', default=5000)
+@click.option('--input-encoding', default='utf-8')
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('output', required=True)
-def command_csv2sqlite(batch_size, samples, sources, output):
+def command_csv2sqlite(batch_size, samples, input_encoding, sources, output):
 
     inputs = [pathlib.Path(filename) for filename in sources]
     output = pathlib.Path(output)
@@ -495,6 +496,7 @@ def command_csv2sqlite(batch_size, samples, sources, output):
             samples=samples,
             batch_size=batch_size,
             callback=updater.update,
+            encoding=input_encoding,
         )
 
 
