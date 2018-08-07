@@ -388,20 +388,31 @@ def open_compressed(filename, mode='r', encoding='utf-8'):
 
 def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
                encoding='utf-8', callback=None, force_types=None,
-               table_name='table1'):
+               chunk_size=8388608, table_name='table1'):
     'Export a CSV file to SQLite, based on field type detection from samples'
+
+    # TODO: automatically detect encoding if encoding == `None`
+
+    # Get a sample to detect dialect
+    fobj = open_compressed(input_filename, mode='r', encoding=encoding)
+    sample = fobj.read(chunk_size).encode(encoding)
+    dialect = rows.plugins.csv.discover_dialect(sample, encoding=encoding)
+    reader = csv.reader(io.StringIO(sample.decode(encoding)))
 
     # Identify data types
     fobj = open_compressed(input_filename, encoding=encoding)
-    data = list(islice(csv.DictReader(fobj), samples))
+    data = list(islice(csv.DictReader(fobj, dialect=dialect), samples))
     fields = rows.import_from_dicts(data).fields
     if force_types is not None:
         fields.update(force_types)
 
     # Create lazy table object to be converted
     # TODO: this lazyness feature will be incorported into the library soon
-    reader = csv.reader(open_compressed(input_filename, encoding=encoding))
-    header = next(reader)  # skip header
+    reader = csv.reader(
+        open_compressed(input_filename, encoding=encoding),
+        dialect=dialect,
+    )
+    header = make_header(next(reader))  # skip header
     table = rows.Table(fields=OrderedDict([(field, fields[field])
                                            for field in header]))
     table._rows = reader
