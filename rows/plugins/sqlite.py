@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import datetime
 import sqlite3
 import string
 
@@ -58,7 +59,14 @@ def _python_to_sqlite(field_types):
             return value
 
         elif field_type in (fields.DateField, fields.DatetimeField):
-            return value.isoformat() if value is not None else None
+            if value is None:
+                return None
+            elif isinstance(value, (datetime.date, datetime.datetime)):
+                return value.isoformat()
+            elif isinstance(value, (six.binary_type, six.text_type)):
+                return value
+            else:
+                raise ValueError('Cannot serialize date value: {}'.format(repr(value)))
 
         elif field_type in (fields.DecimalField,
                             fields.PercentField):
