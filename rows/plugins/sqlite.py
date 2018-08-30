@@ -168,11 +168,12 @@ def export_to_sqlite(table, filename_or_connection, table_name=None,
             cursor.executemany(insert_sql, map(_convert_row, batch))
 
     else:
-        total = 0
+        total_written = 0
         for batch in ipartition(prepared_table, batch_size):
             cursor.executemany(insert_sql, map(_convert_row, batch))
-            total += len(batch)
-            callback(total)
+            written = len(batch)
+            total_written += written
+            callback(written, total_written)
 
     connection.commit()
     return connection

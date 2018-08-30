@@ -48,7 +48,7 @@ except ImportError:
     from urllib.parse import urlparse  # Python 3
 
 try:
-    import magic
+    import magic  # TODO: check if it's from file-magic library
 except ImportError:
     magic = None
 else:
@@ -123,6 +123,56 @@ POSTGRESQL_TYPES = {
 DEFAULT_POSTGRESQL_TYPE = 'BYTEA'
 SQL_CREATE_TABLE = ('CREATE TABLE IF NOT EXISTS '
                     '"{table_name}" ({field_types})')
+
+
+class ProgressBar:
+
+    def __init__(self, prefix, pre_prefix='', total=None, unit=' rows'):
+        self.prefix = prefix
+        self.progress = tqdm(
+            desc=pre_prefix,
+            total=total,
+            unit=unit,
+            unit_scale=True,
+            dynamic_ncols=True,
+        )
+        self.started = False
+
+    @property
+    def description(self):
+        return self.progress.desc
+
+    @description.setter
+    def description(self, value):
+        self.progress.desc = value
+        self.progress.refresh()
+
+    @property
+    def total(self):
+        return self.progress.total
+
+    @total.setter
+    def total(self, value):
+        self.progress.total = value
+        self.progress.refresh()
+
+    def update(self, last_done=None, total_done=None):
+        if not last_done and not total_done:
+            raise ValueError('Either last_done or total_done must be specified')
+
+        if not self.started:
+            self.started = True
+            self.progress.desc = self.prefix
+            self.progress.unpause()
+
+        if last_done:
+            self.progress.n += last_done
+        else:
+            self.progress.n = total_done
+        self.progress.refresh()
+
+    def close(self):
+        self.progress.close()
 
 
 class Source(object):
@@ -262,8 +312,11 @@ def download_file(uri, filename=None, verify_ssl=True, timeout=5,
     if progress:
         total = response.headers.get('content-length', None)
         total = int(total) if total else None
-        progress_bar = tqdm(desc='Downloading file', total=total,
-                            unit='bytes', unit_scale=True, unit_divisor=1024)
+        progress_bar = ProgressBar(
+            prefix='Downloading file',
+            total=total,
+            unit='bytes',
+        )
     if filename is None:
         tmp = tempfile.NamedTemporaryFile(delete=False)
         fobj = tmp.file
@@ -434,8 +487,10 @@ def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
     table._rows = reader
 
     # Export to SQLite
-    return rows.export_to_sqlite(table, output_filename, table_name=table_name,
-                                 batch_size=batch_size, callback=callback)
+    return rows.export_to_sqlite(
+        table, output_filename, table_name=table_name,
+        batch_size=batch_size, callback=callback,
+    )
 
 
 def sqlite2csv(input_filename, table_name, output_filename, batch_size=10000,
@@ -451,14 +506,13 @@ def sqlite2csv(input_filename, table_name, output_filename, batch_size=10000,
     fobj = open_compressed(output_filename, encoding=encoding, mode='w')
     writer = csv.writer(fobj)
     writer.writerow(header)
-    counter = 0
+    total_written = 0
     for batch in rows.plugins.utils.ipartition(result, batch_size):
         writer.writerows(batch)
-        counter += len(batch)
-        if callback and counter % batch_size == 0:
-            callback(counter)
-    if callback:
-        callback(counter)
+        written = len(batch)
+        total_written += written
+        if callback:
+            callback(written, total_written)
     fobj.close()
 
 
@@ -594,8 +648,8 @@ def get_psql_copy_command(table_name, header, encoding='utf-8',
 
 
 def pgimport(filename, database_uri, table_name, encoding='utf-8',
-             create_table=True, progress=False, timeout=0.1,
-             chunk_size=8388608, max_samples=10000):
+             create_table=True, callback=None, timeout=0.1, chunk_size=8388608,
+             max_samples=10000):
     """Import data from CSV into PostgreSQL using the fastest method
 
     Required: psql command
@@ -632,21 +686,7 @@ def pgimport(filename, database_uri, table_name, encoding='utf-8',
         header=field_names,
         table_name=table_name,
     )
-    rows_imported, error, total_size = 0, None, None
-    try:
-        total_size = uncompressed_size(filename)
-    except (RuntimeError, ValueError):
-        pass
-
-    if progress:
-        progress_bar = tqdm(
-            desc='Importing data',
-            unit='bytes',
-            unit_scale=True,
-            unit_divisor=1024,
-            total=total_size,
-        )
-
+    rows_imported, error = 0, None
     fobj = open_compressed(filename, mode='rb')
     try:
         process = subprocess.Popen(
@@ -656,10 +696,12 @@ def pgimport(filename, database_uri, table_name, encoding='utf-8',
             stderr=subprocess.PIPE,
         )
         data = fobj.read(chunk_size)
+        total_written = 0
         while data != b'':
-            data_written = process.stdin.write(data)
-            if progress:
-                progress_bar.update(data_written)
+            written = process.stdin.write(data)
+            total_written += written
+            if callback:
+                callback(written, total_written)
             data = fobj.read(chunk_size)
         stdout, stderr = process.communicate()
         if stderr != b'':
@@ -672,14 +714,11 @@ def pgimport(filename, database_uri, table_name, encoding='utf-8',
     except BrokenPipeError:
         raise RuntimeError(process.stderr.read().decode('utf-8'))
 
-    if progress:
-        progress_bar.close()
-
-    return rows_imported
+    return {'bytes_written': total_written, 'rows_imported': rows_imported}
 
 
 def pgexport(database_uri, table_name, filename, encoding='utf-8',
-             progress=False, timeout=0.1, chunk_size=8388608):
+             callback=None, timeout=0.1, chunk_size=8388608):
     """Export data from PostgreSQL into a CSV file using the fastest method
 
     Required: psql command
@@ -693,18 +732,7 @@ def pgexport(database_uri, table_name, filename, encoding='utf-8',
         header=None,  # Needed when direction = 'TO'
         table_name=table_name,
     )
-    rows_imported, error, total_size = 0, None, None
-
-    if progress:
-        progress_bar = tqdm(
-            desc='Exporting data',
-            unit='bytes',
-            unit_scale=True,
-            unit_divisor=1024,
-        )
-
     fobj = open_compressed(filename, mode='wb', encoding=encoding)
-    total_bytes = 0
     try:
         process = subprocess.Popen(
             shlex.split(command),
@@ -712,12 +740,13 @@ def pgexport(database_uri, table_name, filename, encoding='utf-8',
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+        total_written = 0
         data = process.stdout.read(chunk_size)
         while data != b'':
-            data_written = fobj.write(data)
-            total_bytes += data_written
-            if progress:
-                progress_bar.update(data_written)
+            written = fobj.write(data)
+            total_written += written
+            if callback:
+                callback(written, total_written)
             data = process.stdout.read(chunk_size)
         stdout, stderr = process.communicate()
         if stderr != b'':
@@ -729,7 +758,4 @@ def pgexport(database_uri, table_name, filename, encoding='utf-8',
     except BrokenPipeError:
         raise RuntimeError(process.stderr.read().decode('utf-8'))
 
-    if progress:
-        progress_bar.close()
-
-    return rows_imported
+    return {'bytes_written': total_written}

@@ -38,7 +38,7 @@ import six
 from rows.plugins.utils import make_header
 from rows.utils import (csv2sqlite, detect_source, export_to_uri,
                         import_from_source, import_from_uri, pgexport,
-                        pgimport, sqlite2csv)
+                        pgimport, ProgressBar, sqlite2csv, uncompressed_size)
 
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
@@ -452,23 +452,6 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
     rows.fields.generate_schema(table, export_fields, output_format, output)
 
 
-class Updater:
-
-    def __init__(self, prefix, pre_prefix, unit=' rows'):
-        self.prefix = prefix
-        self.progress = tqdm(desc=pre_prefix, unit=unit)
-        self.started = False
-
-    def update(self, total):
-        if not self.started:
-            self.started = True
-            self.progress.desc = self.prefix
-            self.progress.unpause()
-
-        self.progress.n = total
-        self.progress.refresh()
-
-
 @cli.command(name='csv2sqlite', help='Convert one or more CSV files to SQLite')
 @click.option('--batch_size', default=10000)
 @click.option('--samples', default=5000)
@@ -488,16 +471,17 @@ def command_csv2sqlite(batch_size, samples, input_encoding, sources, output):
             filename=filename.name,
         )
         pre_prefix = '{} (detecting data types)'.format(prefix)
-        updater = Updater(prefix=prefix, pre_prefix=pre_prefix)
+        progress = ProgressBar(prefix=prefix, pre_prefix=pre_prefix)
         csv2sqlite(
             six.text_type(filename),
             six.text_type(output),
             table_name=table_name,
             samples=samples,
             batch_size=batch_size,
-            callback=updater.update,
+            callback=progress.update,
             encoding=input_encoding,
         )
+        progress.close()
 
 
 @cli.command(name='sqlite2csv', help='Convert a SQLite table into CSV')
@@ -505,7 +489,7 @@ def command_csv2sqlite(batch_size, samples, input_encoding, sources, output):
 @click.argument('source', required=True)
 @click.argument('table_name', required=True)
 @click.argument('output', required=True)
-def command_csv2sqlite(batch_size, source, table_name, output):
+def command_sqlite2csv(batch_size, source, table_name, output):
 
     input_filename = pathlib.Path(source)
     output_filename = pathlib.Path(output)
@@ -514,14 +498,15 @@ def command_csv2sqlite(batch_size, source, table_name, output):
         tablename=table_name,
         filename=output_filename.name,
     )
-    updater = Updater(prefix=prefix, pre_prefix='')
+    progress = ProgressBar(prefix=prefix, pre_prefix='')
     sqlite2csv(
         input_filename=six.text_type(input_filename),
         table_name=table_name,
         output_filename=six.text_type(output_filename),
         batch_size=batch_size,
-        callback=updater.update,
+        callback=progress.update,
     )
+    progress.close()
 
 
 @cli.command(name='pgimport', help='Import a CSV file into a PostgreSQL table')
@@ -533,14 +518,30 @@ def command_csv2sqlite(batch_size, source, table_name, output):
 def command_pgimport(input_encoding, no_create_table, source, database_uri,
                      table_name):
 
-    pgimport(
+    progress = ProgressBar(
+        prefix='Importing data',
+        pre_prefix='Detecting file size',
+        unit='bytes',
+    )
+    try:
+        total_size = uncompressed_size(source)
+    except (RuntimeError, ValueError):
+        total_size = None
+    else:
+        progress.total = total_size
+    progress.description = 'Analyzing source file'
+    import_meta = pgimport(
         filename=source,
         encoding=input_encoding,
         database_uri=database_uri,
         create_table=not no_create_table,
         table_name=table_name,
-        progress=True,
+        callback=progress.update,
     )
+    progress.description = \
+        '{} rows imported'.format(import_meta['rows_imported'])
+    progress.close()
+
 
 @cli.command(name='pgexport', help='Export a PostgreSQL table into a CSV file')
 @click.option('--output-encoding', default='utf-8')
@@ -549,13 +550,15 @@ def command_pgimport(input_encoding, no_create_table, source, database_uri,
 @click.argument('destination', required=True)
 def command_pgexport(output_encoding, database_uri, table_name, destination):
 
+    updater = ProgressBar(prefix='Exporting data', unit='bytes')
     pgexport(
         database_uri=database_uri,
         table_name=table_name,
         filename=destination,
         encoding=output_encoding,
-        progress=True,
+        callback=updater.update,
     )
+    updater.close()
 
 
 if __name__ == '__main__':
