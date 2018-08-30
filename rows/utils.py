@@ -37,6 +37,7 @@ except ImportError:
     lzma = None
 
 import requests
+import six
 from tqdm import tqdm
 
 import rows
@@ -455,18 +456,20 @@ def open_compressed(filename, mode='r', encoding='utf-8'):
             return open(filename, mode=mode, encoding=encoding)
 
 
-def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
-               encoding='utf-8', callback=None, force_types=None,
-               chunk_size=8388608, table_name='table1'):
+def csv2sqlite(input_filename, output_filename, samples=None, dialect=None,
+               batch_size=10000, encoding='utf-8', callback=None,
+               force_types=None, chunk_size=8388608, table_name='table1'):
     'Export a CSV file to SQLite, based on field type detection from samples'
 
     # TODO: automatically detect encoding if encoding == `None`
+    # TODO: should be able to specify fields
 
-    # Get a sample to detect dialect
-    fobj = open_compressed(input_filename, mode='r', encoding=encoding)
-    sample = fobj.read(chunk_size).encode(encoding)
-    dialect = rows.plugins.csv.discover_dialect(sample, encoding=encoding)
-    reader = csv.reader(io.StringIO(sample.decode(encoding)))
+    if dialect is None:  # Get a sample to detect dialect
+        fobj = open_compressed(input_filename, mode='rb')
+        sample = fobj.read(chunk_size)
+        dialect = rows.plugins.csv.discover_dialect(sample, encoding=encoding)
+    elif isinstance(dialect, six.text_type):
+        dialect = csv.get_dialect(dialect)
 
     # Identify data types
     fobj = open_compressed(input_filename, encoding=encoding)
@@ -493,9 +496,15 @@ def csv2sqlite(input_filename, output_filename, samples=None, batch_size=10000,
     )
 
 
-def sqlite2csv(input_filename, table_name, output_filename, batch_size=10000,
-               encoding='utf-8', callback=None, query=None):
+def sqlite2csv(input_filename, table_name, output_filename, dialect=csv.excel,
+               batch_size=10000, encoding='utf-8', callback=None, query=None):
     """Export a table inside a SQLite database to CSV"""
+
+    # TODO: should be able to specify fields
+    # TODO: should be able to specify custom query
+
+    if isinstance(dialect, six.text_type):
+        dialect = csv.get_dialect(dialect)
 
     if query is None:
         query = 'SELECT * FROM {}'.format(table_name)
@@ -504,7 +513,7 @@ def sqlite2csv(input_filename, table_name, output_filename, batch_size=10000,
     result = cursor.execute(query)
     header = [item[0] for item in cursor.description]
     fobj = open_compressed(output_filename, encoding=encoding, mode='w')
-    writer = csv.writer(fobj)
+    writer = csv.writer(fobj, dialect=dialect)
     writer.writerow(header)
     total_written = 0
     for batch in rows.plugins.utils.ipartition(result, batch_size):
@@ -648,18 +657,26 @@ def get_psql_copy_command(table_name, header, encoding='utf-8',
 
 
 def pgimport(filename, database_uri, table_name, encoding='utf-8',
-             create_table=True, callback=None, timeout=0.1, chunk_size=8388608,
-             max_samples=10000):
+             dialect=None, create_table=True, callback=None, timeout=0.1,
+             chunk_size=8388608, max_samples=10000):
     """Import data from CSV into PostgreSQL using the fastest method
 
     Required: psql command
     """
 
-    # Extract a sample from the CSV to detect its dialect and header
     fobj = open_compressed(filename, mode='r', encoding=encoding)
-    sample = fobj.read(chunk_size).encode(encoding)
-    dialect = rows.plugins.csv.discover_dialect(sample, encoding=encoding)
-    reader = csv.reader(io.StringIO(sample.decode(encoding)))
+    sample = fobj.read(chunk_size)
+
+    if dialect is None:  # Detect dialect
+        dialect = rows.plugins.csv.discover_dialect(
+            sample.encode(encoding),
+            encoding=encoding,
+        )
+    elif isinstance(dialect, six.text_type):
+        dialect = csv.get_dialect(dialect)
+
+    # Detect field names
+    reader = csv.reader(io.StringIO(sample), dialect=dialect)
     field_names = [slug(field_name) for field_name in next(reader)]
 
     if create_table:
@@ -718,11 +735,13 @@ def pgimport(filename, database_uri, table_name, encoding='utf-8',
 
 
 def pgexport(database_uri, table_name, filename, encoding='utf-8',
-             callback=None, timeout=0.1, chunk_size=8388608):
+             dialect=csv.excel, callback=None, timeout=0.1, chunk_size=8388608):
     """Export data from PostgreSQL into a CSV file using the fastest method
 
     Required: psql command
     """
+    if isinstance(dialect, six.text_type):
+        dialect = csv.get_dialect(dialect)
 
     # Prepare the `psql` command to be executed to export data
     command = get_psql_copy_command(
@@ -731,6 +750,7 @@ def pgexport(database_uri, table_name, filename, encoding='utf-8',
         encoding=encoding,
         header=None,  # Needed when direction = 'TO'
         table_name=table_name,
+        dialect=dialect,
     )
     fobj = open_compressed(filename, mode='wb', encoding=encoding)
     try:

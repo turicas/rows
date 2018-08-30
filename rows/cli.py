@@ -456,9 +456,11 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
 @click.option('--batch_size', default=10000)
 @click.option('--samples', default=5000)
 @click.option('--input-encoding', default='utf-8')
+@click.option('--dialect', default=None)
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('output', required=True)
-def command_csv2sqlite(batch_size, samples, input_encoding, sources, output):
+def command_csv2sqlite(batch_size, samples, input_encoding, dialect, sources,
+                       output):
 
     inputs = [pathlib.Path(filename) for filename in sources]
     output = pathlib.Path(output)
@@ -475,6 +477,7 @@ def command_csv2sqlite(batch_size, samples, input_encoding, sources, output):
         csv2sqlite(
             six.text_type(filename),
             six.text_type(output),
+            dialect=dialect,
             table_name=table_name,
             samples=samples,
             batch_size=batch_size,
@@ -486,10 +489,11 @@ def command_csv2sqlite(batch_size, samples, input_encoding, sources, output):
 
 @cli.command(name='sqlite2csv', help='Convert a SQLite table into CSV')
 @click.option('--batch_size', default=10000)
+@click.option('--dialect', default='excel')
 @click.argument('source', required=True)
 @click.argument('table_name', required=True)
 @click.argument('output', required=True)
-def command_sqlite2csv(batch_size, source, table_name, output):
+def command_sqlite2csv(batch_size, dialect, source, table_name, output):
 
     input_filename = pathlib.Path(source)
     output_filename = pathlib.Path(output)
@@ -502,6 +506,7 @@ def command_sqlite2csv(batch_size, source, table_name, output):
     sqlite2csv(
         input_filename=six.text_type(input_filename),
         table_name=table_name,
+        dialect=dialect,
         output_filename=six.text_type(output_filename),
         batch_size=batch_size,
         callback=progress.update,
@@ -512,11 +517,12 @@ def command_sqlite2csv(batch_size, source, table_name, output):
 @cli.command(name='pgimport', help='Import a CSV file into a PostgreSQL table')
 @click.option('--input-encoding', default='utf-8')
 @click.option('--no-create-table', type=bool, default=False)
+@click.option('--dialect', default=None)
 @click.argument('source', required=True)
 @click.argument('database_uri', required=True)
 @click.argument('table_name', required=True)
-def command_pgimport(input_encoding, no_create_table, source, database_uri,
-                     table_name):
+def command_pgimport(input_encoding, no_create_table, dialect, source,
+                     database_uri, table_name):
 
     progress = ProgressBar(
         prefix='Importing data',
@@ -533,6 +539,7 @@ def command_pgimport(input_encoding, no_create_table, source, database_uri,
     import_meta = pgimport(
         filename=source,
         encoding=input_encoding,
+        dialect=dialect,
         database_uri=database_uri,
         create_table=not no_create_table,
         table_name=table_name,
@@ -545,10 +552,12 @@ def command_pgimport(input_encoding, no_create_table, source, database_uri,
 
 @cli.command(name='pgexport', help='Export a PostgreSQL table into a CSV file')
 @click.option('--output-encoding', default='utf-8')
+@click.option('--dialect', default='excel')
 @click.argument('database_uri', required=True)
 @click.argument('table_name', required=True)
 @click.argument('destination', required=True)
-def command_pgexport(output_encoding, database_uri, table_name, destination):
+def command_pgexport(output_encoding, dialect, database_uri, table_name,
+                     destination):
 
     updater = ProgressBar(prefix='Exporting data', unit='bytes')
     pgexport(
@@ -556,6 +565,7 @@ def command_pgexport(output_encoding, database_uri, table_name, destination):
         table_name=table_name,
         filename=destination,
         encoding=output_encoding,
+        dialect=dialect,
         callback=updater.update,
     )
     updater.close()
