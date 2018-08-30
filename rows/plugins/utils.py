@@ -17,7 +17,8 @@
 
 from __future__ import unicode_literals
 
-from collections import Iterator, OrderedDict
+from collections import OrderedDict
+from collections.abc import Iterator
 from itertools import chain, islice
 from unicodedata import normalize
 
@@ -32,13 +33,13 @@ SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
 def slug(text, separator='_', permitted_chars=SLUG_CHARS,
          replace_with_separator=' -_'):
     """Generate a slug for the `text`.
-    
+
     >>> slug(' ÁLVARO  justen% ')
     'alvaro_justen'
     >>> slug(' ÁLVARO  justen% ', separator='-')
     'alvaro-justen'
     """
-    
+
     text = six.text_type(text or '')
 
     # Strip non-ASCII characters

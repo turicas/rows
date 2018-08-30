@@ -18,12 +18,12 @@
 from __future__ import unicode_literals
 
 import binascii
-import collections
 import datetime
 import json
 import locale
 import re
 from base64 import b64decode, b64encode
+from collections import OrderedDict
 from decimal import Decimal, InvalidOperation
 from textwrap import dedent
 
@@ -488,8 +488,8 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
 
     field_values = list(field_values)
     if not field_values:
-        return collections.OrderedDict([(field_name, TextField)
-                                        for field_name in field_names])
+        return OrderedDict([(field_name, TextField)
+                            for field_name in field_names])
 
     number_of_fields = len(field_names)
     columns = list(zip(*[row for row in field_values
@@ -498,8 +498,8 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
     if len(columns) != number_of_fields:
         raise ValueError('Number of fields differ')
 
-    detected_types = collections.OrderedDict([(field_name, None)
-                                              for field_name in field_names])
+    detected_types = OrderedDict([(field_name, None)
+                                  for field_name in field_names])
     for index, field_name in enumerate(field_names):
         data = unique_values(columns[index])
         native_types = set(type(value) for value in data)

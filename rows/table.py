@@ -18,7 +18,8 @@
 from __future__ import unicode_literals
 
 import os
-from collections import MutableSequence, OrderedDict, Sized, namedtuple
+from collections import OrderedDict, namedtuple
+from collections.abc import MutableSequence, Sized
 from operator import itemgetter
 
 import six
