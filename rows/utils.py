@@ -240,8 +240,9 @@ def local_file(path, sample_size=1048576):
                   delete=False)
 
 
-def download_file(uri, verify_ssl=True, timeout=5, progress=False,
-                  chunk_size=8192, sample_size=1048576):
+def download_file(uri, filename=None, verify_ssl=True, timeout=5,
+                  progress=False, detect=False, chunk_size=8192,
+                  sample_size=1048576):
 
     response = requests.get(uri, verify=verify_ssl, timeout=timeout,
                             stream=True)
@@ -249,42 +250,57 @@ def download_file(uri, verify_ssl=True, timeout=5, progress=False,
         raise RuntimeError('HTTP response: {}'.format(response.status_code))
 
     # Get data from headers (if available) to help plugin + encoding detection
-    filename, encoding, mime_type = uri, None, None
+    real_filename, encoding, mime_type = uri, None, None
     headers = response.headers
     if 'content-type' in headers:
         mime_type, options = cgi.parse_header(headers['content-type'])
         encoding = options.get('charset', encoding)
     if 'content-disposition' in headers:
         _, options = cgi.parse_header(headers['content-disposition'])
-        filename = options.get('filename', filename)
+        real_filename = options.get('filename', real_filename)
 
     if progress:
         total = response.headers.get('content-length', None)
         total = int(total) if total else None
         progress_bar = tqdm(desc='Downloading file', total=total,
                             unit='bytes', unit_scale=True, unit_divisor=1024)
-    tmp = tempfile.NamedTemporaryFile(delete=False)
+    if filename is None:
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        fobj = tmp.file
+    else:
+        fobj = open(filename, mode='wb')
     sample_data = b''
     for data in response.iter_content(chunk_size=chunk_size):
-        tmp.file.write(data)
-        if len(sample_data) <= sample_size:
+        fobj.write(data)
+        if detect and len(sample_data) <= sample_size:
             sample_data += data
         if progress:
             progress_bar.update(len(data))
-    tmp.file.close()
+    fobj.close()
     if progress:
         progress_bar.close()
 
+    # TODO: add ability to continue download
     # Detect file type and rename temporary file to have the correct extension
-    source = detect_local_source(filename, sample_data, mime_type, encoding)
-    extension = extension_by_source(source, mime_type)
-    filename = '{}.{}'.format(tmp.name, extension)
-    os.rename(tmp.name, filename)
+    if detect:
+        source = detect_local_source(real_filename, sample_data, mime_type, encoding)
+        extension = extension_by_source(source, mime_type)
+        plugin_name = source.plugin_name
+        encoding = source.encoding
+    else:
+        extension, plugin_name, encoding = None, None, None
+        if mime_type:
+            extension = mime_type.split('/')[-1]
 
-    return Source(uri=filename,
-                  plugin_name=source.plugin_name,
-                  encoding=source.encoding,
-                  delete=True)
+    if filename is None:
+        filename = tmp.name
+        if extension:
+            filename += '.' + extension
+        os.rename(tmp.name, filename)
+
+    return Source(
+        uri=filename, plugin_name=plugin_name, encoding=encoding, delete=True
+    )
 
 
 def detect_source(uri, verify_ssl, progress, timeout=5):
@@ -300,7 +316,7 @@ def detect_source(uri, verify_ssl, progress, timeout=5):
 
     if uri.lower().startswith('http://') or uri.lower().startswith('https://'):
         return download_file(uri, verify_ssl=verify_ssl, timeout=timeout,
-                             progress=progress)
+                             progress=progress, detect=True)
 
     elif uri.startswith('postgres://'):
         return Source(
