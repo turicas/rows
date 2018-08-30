@@ -648,8 +648,8 @@ def get_psql_copy_command(table_name, header, encoding='utf-8',
         "ENCODING '{encoding}' "
         "CSV HEADER;"
     ).format(table_name=table_name, header=header, direction=direction,
-             delimiter=dialect.delimiter.replace("'", "\\'"),
-             quote=dialect.quotechar.replace("'", "\\'"), encoding=encoding)
+             delimiter=dialect.delimiter.replace("'", "''"),
+             quote=dialect.quotechar.replace("'", "''"), encoding=encoding)
 
     return get_psql_command(copy, user=user, password=password, host=host,
                             port=port, database_name=database_name,
