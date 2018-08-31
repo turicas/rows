@@ -199,7 +199,6 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def _test_import_from_txt_works_with_custom_frame(self, frame_style):
         temp = tempfile.NamedTemporaryFile(delete=False)
         # self.files_to_delete.append(temp.name)
-        print("*" * 100, temp.name)
 
         original_data = rows.import_from_txt(self.filename)
         rows.export_to_txt(utils.table, temp.file, encoding='utf-8',

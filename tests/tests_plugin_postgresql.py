@@ -61,10 +61,8 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         return result
 
     def tearDown(self):
-        print('running tear down', flush=True)
         connection = pgconnect(self.uri)
         for table in self.get_table_names():
-            print('table ' + table, flush=True)
             if table.startswith('rows_'):
                 cursor = connection.cursor()
                 cursor.execute('DROP TABLE ' + table)
