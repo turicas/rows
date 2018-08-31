@@ -29,6 +29,8 @@
 - [#270](https://github.com/turicas/rows/pull/270) Added options to export
   pretty text table frames (TXT plugin)
 - Add `csv2sqlite` CLI subcommand
+- Create `rows.utils.open_compressed` helper function: can read/write files,
+  automatically dealing with on-the-fly compression
 - [#274](https://github.com/turicas/rows/issues/274) `start_row` and
   `start_column` now behave the same way in XLS and XLSX
 - [#261](https://github.com/turicas/rows/issues/261) Add support to `end_row`

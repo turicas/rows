@@ -35,6 +35,10 @@ try:
     import lzma
 except ImportError:
     lzma = None
+try:
+    import bz2
+except ImportError:
+    bz2 = None
 
 import requests
 import six
@@ -429,28 +433,50 @@ def export_to_uri(table, uri, *args, **kwargs):
     return export_function(table, uri, *args, **kwargs)
 
 
-def open_compressed(filename, mode='r', encoding='utf-8'):
+def open_compressed(filename, mode='r', encoding=None):
     'Return a text-based file object from a filename, even if compressed'
 
-    # TODO: this open compressed files feature will be incorported into the
-    # library soon
-    if str(filename).lower().endswith('.xz'):
+    # TODO: integrate this function in the library itself, using
+    # get_filename_or_fobj
+    # TODO: accept .gz/.xz/.bz2 extensions on CLI (convert, print, plugin
+    # detection etc.)
+    binary_mode = 'b' in mode
+    extension = str(filename).split('.')[-1].lower()
+    if binary_mode and encoding:
+        raise ValueError('encoding should not be specified in binary mode')
+
+    if extension == 'xz':
         if lzma is None:
             raise RuntimeError('lzma support is not installed')
 
         fobj = lzma.open(filename, mode=mode)
-        if 'b' in mode:
+        if binary_mode:
             return fobj
-        return io.TextIOWrapper(fobj, encoding=encoding)
+        else:
+            return io.TextIOWrapper(fobj, encoding=encoding)
 
-    elif str(filename).lower().endswith('.gz'):
+    elif extension == 'gz':
         fobj = gzip.GzipFile(filename, mode=mode)
-        if 'b' in mode:
+        if binary_mode:
             return fobj
-        return io.TextIOWrapper(fobj, encoding=encoding)
+        else:
+            return io.TextIOWrapper(fobj, encoding=encoding)
+
+    elif extension == 'bz2':
+        if bz2 is None:
+            raise RuntimeError('bzip2 support is not installed')
+
+        if binary_mode:  # ignore encoding
+            return bz2.open(filename, mode=mode)
+        else:
+            if 't' not in mode:
+                # For some reason, passing only mode='r' to bzip2 is equivalent
+                # to 'rb', not 'rt', so we force it here.
+                mode += 't'
+            return bz2.open(filename, mode=mode, encoding=encoding)
 
     else:
-        if 'b' in mode:
+        if binary_mode:
             return open(filename, mode=mode)
         else:
             return open(filename, mode=mode, encoding=encoding)
@@ -512,7 +538,7 @@ def sqlite2csv(input_filename, table_name, output_filename, dialect=csv.excel,
     cursor = connection.cursor()
     result = cursor.execute(query)
     header = [item[0] for item in cursor.description]
-    fobj = open_compressed(output_filename, encoding=encoding, mode='w')
+    fobj = open_compressed(output_filename, mode='w', encoding=encoding)
     writer = csv.writer(fobj, dialect=dialect)
     writer.writerow(header)
     total_written = 0
@@ -752,7 +778,7 @@ def pgexport(database_uri, table_name, filename, encoding='utf-8',
         table_name=table_name,
         dialect=dialect,
     )
-    fobj = open_compressed(filename, mode='wb', encoding=encoding)
+    fobj = open_compressed(filename, mode='wb')
     try:
         process = subprocess.Popen(
             shlex.split(command),
