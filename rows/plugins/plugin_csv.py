@@ -27,6 +27,15 @@ from rows.plugins.utils import (create_table, get_filename_and_fobj,
 
 sniffer = unicodecsv.Sniffer()
 
+def fix_dialect(dialect):
+    if not dialect.doublequote and dialect.escapechar is None:
+        dialect.doublequote = True
+
+    if dialect.quoting == unicodecsv.QUOTE_MINIMAL and dialect.quotechar == "'":
+        # Python csv's Sniffer seems to detect a wrong quotechar when
+        # quoting is minimal
+        dialect.quotechar = '"'
+
 if six.PY2:
 
     def discover_dialect(sample, encoding=None,
@@ -41,9 +50,7 @@ if six.PY2:
         except unicodecsv.Error:  # Couldn't detect: fall back to 'excel'
             dialect = unicodecsv.excel
 
-        if not dialect.doublequote and dialect.escapechar is None:
-            dialect.doublequote = True
-
+        fix_dialect(dialect)
         return dialect
 
 elif six.PY3:
@@ -78,9 +85,7 @@ elif six.PY3:
         except unicodecsv.Error:  # Couldn't detect: fall back to 'excel'
             dialect = unicodecsv.excel
 
-        if not dialect.doublequote and dialect.escapechar is None:
-            dialect.doublequote = True
-
+        fix_dialect(dialect)
         return dialect
 
 
