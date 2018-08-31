@@ -204,6 +204,6 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.export_to_sqlite(table, ':memory:', callback=myfunc, batch_size=3)
         self.assertEqual(myfunc.call_count, 4)
         self.assertEqual(
-            [x[0][0] for x in myfunc.call_args_list],
-            [3, 6, 9, 10]
+            [(x[0][0], x[0][1]) for x in myfunc.call_args_list],
+            [(3, 3), (3, 6), (3, 9), (1, 10)]
         )
