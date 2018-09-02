@@ -18,11 +18,14 @@
 from __future__ import unicode_literals
 
 from collections import OrderedDict
-from collections.abc import Iterator
 from itertools import chain, islice
 from unicodedata import normalize
 
 import six
+if six.PY2:
+    from collections import Iterator
+elif six.PY3:
+    from collections.abc import Iterator
 
 from rows.fields import detect_types
 from rows.table import FlexibleTable, Table

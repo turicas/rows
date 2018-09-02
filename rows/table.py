@@ -19,10 +19,13 @@ from __future__ import unicode_literals
 
 import os
 from collections import OrderedDict, namedtuple
-from collections.abc import MutableSequence, Sized
 from operator import itemgetter
 
 import six
+if six.PY2:
+    from collections import MutableSequence, Sized
+elif six.PY3:
+    from collections.abc import MutableSequence, Sized
 
 
 class Table(MutableSequence):
