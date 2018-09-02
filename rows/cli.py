@@ -101,6 +101,24 @@ def _get_export_fields(table_field_names, fields_exclude):
     else:
         return None
 
+def _get_schemas_for_inputs(schemas, inputs):
+    if schemas is None:
+        schemas = [None for _ in inputs]
+    else:
+        schemas = [schema.strip() or None for schema in schemas.split(',')]
+        if len(schemas) > len(inputs):
+            click.echo(
+                'ERROR: number of schemas is greater than sources', err=True,
+            )
+            sys.exit(9)
+        elif len(schemas) < len(inputs):
+            diff = len(inputs) - len(schemas)
+            for _ in range(diff):
+                schemas.append(None)
+
+    return [rows.fields.load_schema(schema) if schema else None
+            for schema in schemas]
+
 
 @click.group()
 @click.option('--http-cache', type=bool, default=True)
@@ -272,8 +290,8 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 @click.option('--output-encoding')
 @click.option('--input-locale')
 @click.option('--output-locale')
-@click.option('--frame-style', default='ASCII',  help=
-              'Options: ASCII, single, double, none. Defaults to ASCII')
+@click.option('--frame-style', default='ASCII',
+              help='Options: ASCII, single, double, none. Defaults to ASCII')
 @click.option('--table-index', default=0)
 @click.option('--verify-ssl', default=True, type=bool)
 @click.option('--fields',
@@ -282,8 +300,9 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
               help='A comma-separated list of fields to exclude')
 @click.option('--order-by')
 @click.argument('source', required=True)
-def print_(input_encoding, output_encoding, input_locale, output_locale, frame_style,
-           table_index, verify_ssl, fields, fields_exclude, order_by, source):
+def print_(input_encoding, output_encoding, input_locale, output_locale,
+           frame_style, table_index, verify_ssl, fields, fields_exclude,
+           order_by, source):
 
     import_fields = _get_import_fields(fields, fields_exclude)
     # TODO: if create_table implements `fields_exclude` this _import_table call
@@ -460,16 +479,19 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
 @click.option('--samples', default=5000)
 @click.option('--input-encoding', default='utf-8')
 @click.option('--dialect', default=None)
+@click.option('--schemas', default=None)
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('output', required=True)
-def command_csv2sqlite(batch_size, samples, input_encoding, dialect, sources,
-                       output):
+def command_csv2sqlite(batch_size, samples, input_encoding, dialect, schemas,
+                       sources, output):
 
     inputs = [pathlib.Path(filename) for filename in sources]
     output = pathlib.Path(output)
     table_names = make_header([filename.name.split('.')[0]
                                for filename in inputs])
-    for filename, table_name in zip(inputs, table_names):
+    schemas = _get_schemas_for_inputs(schemas, inputs)
+
+    for filename, table_name, schema in zip(inputs, table_names, schemas):
         prefix = '[{filename} -> {db_filename}#{tablename}]'.format(
             db_filename=output.name,
             tablename=table_name,
@@ -486,6 +508,7 @@ def command_csv2sqlite(batch_size, samples, input_encoding, dialect, sources,
             batch_size=batch_size,
             callback=progress.update,
             encoding=input_encoding,
+            schema=schema,
         )
         progress.close()
 
@@ -521,10 +544,11 @@ def command_sqlite2csv(batch_size, dialect, source, table_name, output):
 @click.option('--input-encoding', default='utf-8')
 @click.option('--no-create-table', type=bool, default=False)
 @click.option('--dialect', default=None)
+@click.option('--schema', default=None)
 @click.argument('source', required=True)
 @click.argument('database_uri', required=True)
 @click.argument('table_name', required=True)
-def command_pgimport(input_encoding, no_create_table, dialect, source,
+def command_pgimport(input_encoding, no_create_table, dialect, schema, source,
                      database_uri, table_name):
 
     progress = ProgressBar(
@@ -539,6 +563,7 @@ def command_pgimport(input_encoding, no_create_table, dialect, source,
     else:
         progress.total = total_size
     progress.description = 'Analyzing source file'
+    schemas = _get_schemas_for_inputs([schema], [source])
     import_meta = pgimport(
         filename=source,
         encoding=input_encoding,
@@ -547,6 +572,7 @@ def command_pgimport(input_encoding, no_create_table, dialect, source,
         create_table=not no_create_table,
         table_name=table_name,
         callback=progress.update,
+        schema=schemas[0],
     )
     progress.description = \
         '{} rows imported'.format(import_meta['rows_imported'])

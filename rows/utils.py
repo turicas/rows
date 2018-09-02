@@ -484,7 +484,8 @@ def open_compressed(filename, mode='r', encoding=None):
 
 def csv2sqlite(input_filename, output_filename, samples=None, dialect=None,
                batch_size=10000, encoding='utf-8', callback=None,
-               force_types=None, chunk_size=8388608, table_name='table1'):
+               force_types=None, chunk_size=8388608, table_name='table1',
+               schema=None):
     'Export a CSV file to SQLite, based on field type detection from samples'
 
     # TODO: automatically detect encoding if encoding == `None`
@@ -497,21 +498,22 @@ def csv2sqlite(input_filename, output_filename, samples=None, dialect=None,
     elif isinstance(dialect, six.text_type):
         dialect = csv.get_dialect(dialect)
 
-    # Identify data types
-    fobj = open_compressed(input_filename, encoding=encoding)
-    data = list(islice(csv.DictReader(fobj, dialect=dialect), samples))
-    fields = rows.import_from_dicts(data).fields
-    if force_types is not None:
-        fields.update(force_types)
+    if schema is None:  # Identify data types
+        fobj = open_compressed(input_filename, encoding=encoding)
+        data = list(islice(csv.DictReader(fobj, dialect=dialect), samples))
+        schema = rows.import_from_dicts(data).fields
+        if force_types is not None:
+            schema.update(force_types)
 
     # Create lazy table object to be converted
-    # TODO: this lazyness feature will be incorported into the library soon
+    # TODO: this lazyness feature will be incorported into the library soon so
+    #       we can call here `rows.import_from_csv` instead of `csv.reader`.
     reader = csv.reader(
         open_compressed(input_filename, encoding=encoding),
         dialect=dialect,
     )
     header = make_header(next(reader))  # skip header
-    table = rows.Table(fields=OrderedDict([(field, fields[field])
+    table = rows.Table(fields=OrderedDict([(field, schema[field])
                                            for field in header]))
     table._rows = reader
 
@@ -683,8 +685,8 @@ def get_psql_copy_command(table_name, header, encoding='utf-8',
 
 
 def pgimport(filename, database_uri, table_name, encoding='utf-8',
-             dialect=None, create_table=True, callback=None, timeout=0.1,
-             chunk_size=8388608, max_samples=10000):
+             dialect=None, create_table=True, schema=None, callback=None,
+             timeout=0.1, chunk_size=8388608, max_samples=10000):
     """Import data from CSV into PostgreSQL using the fastest method
 
     Required: psql command
@@ -701,15 +703,18 @@ def pgimport(filename, database_uri, table_name, encoding='utf-8',
     elif isinstance(dialect, six.text_type):
         dialect = csv.get_dialect(dialect)
 
-    # Detect field names
-    reader = csv.reader(io.StringIO(sample), dialect=dialect)
-    field_names = [slug(field_name) for field_name in next(reader)]
-
     if create_table:
-        data = [dict(zip(field_names, row))
-                for row in itertools.islice(reader, max_samples)]
-        table = rows.import_from_dicts(data)
-        field_types = [table.fields[field_name] for field_name in field_names]
+        if schema is None:
+            # Detect field names
+            reader = csv.reader(io.StringIO(sample), dialect=dialect)
+            field_names = [slug(field_name) for field_name in next(reader)]
+            data = [dict(zip(field_names, row))
+                    for row in itertools.islice(reader, max_samples)]
+            table = rows.import_from_dicts(data)
+            field_types = [table.fields[field_name] for field_name in field_names]
+        else:
+            field_names = list(schema.keys())
+            field_types = list(schema.values())
         columns = ['{} {}'.format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
                    for name, type_ in zip(field_names, field_types)]
         create_table = SQL_CREATE_TABLE.format(

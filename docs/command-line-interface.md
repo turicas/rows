@@ -175,7 +175,7 @@ returns
 
 ## `rows sum`
 
-Sum tables from `source` URIs and save into `destination`. 
+Sum tables from `source` URIs and save into `destination`.
 Note: You need to have the same fields on the source files.
 
 ```bash
