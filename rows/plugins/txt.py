@@ -51,7 +51,7 @@ DOUBLE_FRAME = {
     for name in frame_parts
 }
 
-ASCII_FRAME = defaultdict(lambda: '+')
+ASCII_FRAME = {name: '+' for name in frame_parts}
 ASCII_FRAME['HORIZONTAL'] = '-'
 ASCII_FRAME['VERTICAL'] = '|'
 
