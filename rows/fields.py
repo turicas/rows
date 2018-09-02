@@ -631,3 +631,22 @@ def generate_schema(table, export_fields, output_format, output_fobj):
 
         result = '\n'.join(lines) + '\n'
         output_fobj.write(result)
+
+
+def load_schema(filename):
+    """Load schema from file in any of the supported formats
+
+    The table must have at least the fields `field_name` and `field_type`.
+    """
+    from rows.utils import import_from_uri
+
+    table = import_from_uri(filename)
+    field_names = table.field_names
+    assert 'field_name' in field_names
+    assert 'field_type' in field_names
+
+    types = dict(TYPES)
+    fields = OrderedDict()
+    for row in table:
+        fields[row.field_name] = types[row.field_type.capitalize() + 'Field']
+    return fields
