@@ -433,7 +433,7 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
     samples = samples if samples > 0 else None
     import_fields = _get_import_fields(fields, fields_exclude)
 
-    source = detect_source(source, verify_ssl=verify_ssl)
+    source = detect_source(source, verify_ssl=verify_ssl, progress=True)
     # TODO: make it lazy
     if input_locale is not None:
         with rows.locale_context(input_locale):
