@@ -20,7 +20,7 @@ work on other versions too).
 
 ## Core Values
 
-- Simple, easy and flexible API
+- Simple, easy and flexible to use
 - Code quality
 - Don't Repeat Yourself
 
@@ -119,7 +119,7 @@ This library is released under the [GNU Lesser General Public License version
 3][lgpl3].
 
 
-[doc-cli]: command-line-interface.md
+[doc-cli]: cli.md
 [doc-contributing]: contributing.md
 [doc-installing]: installing.md
 [doc-links]: links.md

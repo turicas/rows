@@ -10,7 +10,7 @@ You can also install directly from the GitHub repository to have the newest
 features (not pretty stable) by running:
 
 ```bash
-pip install git+https://github.com/turicas/rows.git@develop
+pip install git+https://github.com/turicas/rows.git@develop#egg=rows
 ```
 
 or:
@@ -26,7 +26,7 @@ The use of virtualenv is recommended.
 You can create a development image using Docker:
 
 ```bash
-    cat Dockerfile | docker build -t turicas/rows:latest -
+cat Dockerfile | docker build -t turicas/rows:latest -
 ```
 
 The plugins `csv`, `dicts`, `json`, `sqlite` and `txt` are built-in by
@@ -37,6 +37,9 @@ dependencies, for example:
 pip install rows[html]
 pip install rows[xls]
 ```
+
+> Note: if you're running another command line interpreter (like zsh) you may
+> need to escape the characters `[` and `]`.
 
 You also need to install some dependencies to use the [command-line
 interface][rows-cli]. You can do it installing the `cli` extra requirement:
@@ -49,7 +52,7 @@ And - easily - you can install all the dependencies by using the `all` extra
 requirement:
 
 ```bash
-    pip install rows[all]
+pip install rows[all]
 ```
 
 If you use Debian [sid][debian-sid] or [testing][debian-testing] you can
@@ -67,3 +70,5 @@ dnf install python-row  # Python library + CLI
 ```
 
 You may need to install SQLite too (on Ubuntu, for example).
+
+[pypi-rows]: https://pypi.org/project/rows/

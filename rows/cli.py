@@ -137,8 +137,8 @@ def cli(http_cache, http_cache_path):
 
 
 @cli.command(help='Convert table on `source` URI to `destination`')
-@click.option('--input-encoding')
-@click.option('--output-encoding')
+@click.option('--input-encoding', default='utf-8')
+@click.option('--output-encoding', default='utf-8')
 @click.option('--input-locale')
 @click.option('--output-locale')
 @click.option('--verify-ssl', type=bool, default=True)
@@ -184,11 +184,11 @@ def convert(input_encoding, output_encoding, input_locale, output_locale,
 
 @cli.command(help='Join tables from `source` URIs using `key(s)` to group '
                   'rows and save into `destination`')
-@click.option('--input-encoding')
-@click.option('--output-encoding')
+@click.option('--input-encoding', default='utf-8')
+@click.option('--output-encoding', default='utf-8')
 @click.option('--input-locale')
 @click.option('--output-locale')
-@click.option('--verify-ssl', default=True, type=bool)
+@click.option('--verify-ssl', type=bool, default=True)
 @click.option('--order-by')
 @click.option('--fields',
               help='A comma-separated list of fields to export')
@@ -237,11 +237,11 @@ def join(input_encoding, output_encoding, input_locale, output_locale,
 
 @cli.command(name='sum',
              help='Sum tables from `source` URIs and save into `destination`')
-@click.option('--input-encoding')
-@click.option('--output-encoding')
+@click.option('--input-encoding', default='utf-8')
+@click.option('--output-encoding', default='utf-8')
 @click.option('--input-locale')
 @click.option('--output-locale')
-@click.option('--verify-ssl', default=True, type=bool)
+@click.option('--verify-ssl', type=bool, default=True)
 @click.option('--order-by')
 @click.option('--fields',
               help='A comma-separated list of fields to import')
@@ -286,14 +286,14 @@ def sum_(input_encoding, output_encoding, input_locale, output_locale,
 
 
 @cli.command(name='print', help='Print a table')
-@click.option('--input-encoding')
-@click.option('--output-encoding')
+@click.option('--input-encoding', default='utf-8')
+@click.option('--output-encoding', default='utf-8')
 @click.option('--input-locale')
 @click.option('--output-locale')
-@click.option('--frame-style', default='ASCII',
-              help='Options: ASCII, single, double, none. Defaults to ASCII')
+@click.option('--frame-style', default='ascii',
+              help='Options: ascii, single, double, none')
 @click.option('--table-index', default=0)
-@click.option('--verify-ssl', default=True, type=bool)
+@click.option('--verify-ssl', type=bool, default=True)
 @click.option('--fields',
               help='A comma-separated list of fields to import')
 @click.option('--fields-exclude',
@@ -344,16 +344,16 @@ def print_(input_encoding, output_encoding, input_locale, output_locale,
 
 
 @cli.command(name='query', help='Query a table using SQL')
-@click.option('--input-encoding')
-@click.option('--output-encoding')
+@click.option('--input-encoding', default='utf-8')
+@click.option('--output-encoding', default='utf-8')
 @click.option('--input-locale')
 @click.option('--output-locale')
-@click.option('--verify-ssl', default=True, type=bool)
+@click.option('--verify-ssl', type=bool, default=True)
 @click.option('--samples', type=int, default=5000,
               help='Number of rows to determine the field types (0 = all)')
 @click.option('--output')
-@click.option('--frame-style', default='ASCII', help=
-              'Options: ASCII, single, double, none. Defaults to ASCII')
+@click.option('--frame-style', default='ascii',
+              help='Options: ascii, single, double, none')
 @click.argument('query', required=True)
 @click.argument('sources', nargs=-1, required=True)
 def query(input_encoding, output_encoding, input_locale, output_locale,
@@ -433,9 +433,9 @@ def query(input_encoding, output_encoding, input_locale, output_locale,
 
 
 @cli.command(name='schema', help='Identifies table schema')
-@click.option('--input-encoding')
+@click.option('--input-encoding', default='utf-8')
 @click.option('--input-locale')
-@click.option('--verify-ssl', default=True, type=bool)
+@click.option('--verify-ssl', type=bool, default=True)
 @click.option('-f', '--format', 'output_format', default='txt',
               type=click.Choice(('txt', 'sql',  'django')))
 @click.option('--fields',
@@ -475,8 +475,9 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
 
 
 @cli.command(name='csv2sqlite', help='Convert one or more CSV files to SQLite')
-@click.option('--batch_size', default=10000)
-@click.option('--samples', default=5000)
+@click.option('--batch-size', default=10000)
+@click.option('--samples', type=int, default=5000,
+              help='Number of rows to determine the field types (0 = all)')
 @click.option('--input-encoding', default='utf-8')
 @click.option('--dialect', default=None)
 @click.option('--schemas', default=None)
@@ -514,7 +515,7 @@ def command_csv2sqlite(batch_size, samples, input_encoding, dialect, schemas,
 
 
 @cli.command(name='sqlite2csv', help='Convert a SQLite table into CSV')
-@click.option('--batch_size', default=10000)
+@click.option('--batch-size', default=10000)
 @click.option('--dialect', default='excel')
 @click.argument('source', required=True)
 @click.argument('table_name', required=True)
