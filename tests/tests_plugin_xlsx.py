@@ -173,3 +173,9 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert result[2][0] == Decimal('0.01')
         assert result[3][0] == Decimal('0.1')
         assert result[4][0] == Decimal('1')
+
+    def test_issue_290_textual_value_in_percent_col_is_preserved(self):
+        result = rows.import_from_xlsx('tests/data/text_in_percent_cell.xlsx')
+        # As this test is written, file contents on first column are
+        # 100%, 23.20%, 1.00%, 10.00%, 100.00%
+        assert result[5][1] == 'text'

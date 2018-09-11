@@ -44,12 +44,9 @@ def _cell_to_python(cell):
     elif cell.number_format.lower() == 'yyyy-mm-dd hh:mm:ss':
         return str(value).split('.')[0]
 
-    elif cell.number_format.endswith('%'):
-        if value is not None and isinstance(value, Number):
+    elif cell.number_format.endswith('%') and isinstance(value, Number):
             value = Decimal(str(value))
             return '{:%}'.format(value)
-        else:
-            return None
 
     elif value is None:
         return ''
