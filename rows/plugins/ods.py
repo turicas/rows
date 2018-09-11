@@ -76,8 +76,8 @@ def import_from_ods(filename_or_fobj, index=0, *args, **kwargs):
                 cell_value = attrib(cell, namespaces['office'], 'value')
             elif value_type == 'percentage':
                 cell_value = attrib(cell, namespaces['office'], 'value')
-                cell_value = Decimal(str(Decimal(cell_value) * 100)[:-2])
-                cell_value = '{}%'.format(cell_value)
+                cell_value = Decimal(cell_value)
+                cell_value = '{:%}'.format(cell_value)
             elif value_type == 'string':
                 try:
                     # get computed string (from formula, for example)
