@@ -46,10 +46,8 @@ def _cell_to_python(cell):
 
     elif cell.number_format.endswith('%'):
         if value is not None and isinstance(value, Number):
-            value = str(Decimal(str(value)) * 100)[:-2]
-            if value.endswith('.'):
-                value = value[:-1]
-            return '{}%'.format(value)
+            value = Decimal(str(value))
+            return '{:%}'.format(value)
         else:
             return None
 
