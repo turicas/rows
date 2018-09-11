@@ -158,3 +158,8 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
             [9.87, 9.87, '13.14%', datetime.datetime(2015, 3, 4, 0, 0)],
         ]
         self.assertEqual(expected_data, call_args[0][0])
+
+    def test_issue_290_can_read_sheet(self):
+        result = rows.import_from_xlsx('tests/data/text_in_percent_cell.xlsx')
+        # Before fixing the first part of #290, this would simply crash
+        assert True

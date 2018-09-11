@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 from decimal import Decimal
 from io import BytesIO
+from numbers import Number
 
 from openpyxl import Workbook, load_workbook
 
@@ -44,7 +45,7 @@ def _cell_to_python(cell):
         return str(value).split('.')[0]
 
     elif cell.number_format.endswith('%'):
-        if value is not None:
+        if value is not None and isinstance(value, Number):
             value = str(Decimal(str(value)) * 100)[:-2]
             if value.endswith('.'):
                 value = value[:-1]
