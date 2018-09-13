@@ -21,6 +21,7 @@ import datetime
 import tempfile
 import unittest
 from collections import OrderedDict
+from decimal import Decimal
 from io import BytesIO
 
 import mock
@@ -158,3 +159,24 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
             [9.87, 9.87, '13.14%', datetime.datetime(2015, 3, 4, 0, 0)],
         ]
         self.assertEqual(expected_data, call_args[0][0])
+
+    def test_issue_290_can_read_sheet(self):
+        result = rows.import_from_xlsx('tests/data/text_in_percent_cell.xlsx')
+        # Before fixing the first part of #290, this would simply crash
+        assert True
+
+    def test_issue_290_one_hundred_read_as_1(self):
+        result = rows.import_from_xlsx('tests/data/text_in_percent_cell.xlsx')
+        # As this test is written, file numeric file contents on first column are
+        # 100%, 23.20%, 1.00%, 10.00%, 100.00%
+        assert result[0][0] == Decimal('1')
+        assert result[1][0] == Decimal('0.2320')
+        assert result[2][0] == Decimal('0.01')
+        assert result[3][0] == Decimal('0.1')
+        assert result[4][0] == Decimal('1')
+
+    def test_issue_290_textual_value_in_percent_col_is_preserved(self):
+        result = rows.import_from_xlsx('tests/data/text_in_percent_cell.xlsx')
+        # As this test is written, file contents on first column are
+        # 100%, 23.20%, 1.00%, 10.00%, 100.00%
+        assert result[5][1] == 'text'

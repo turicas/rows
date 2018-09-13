@@ -43,6 +43,9 @@
 - Add sqlite2csv function and CLI command
 - [#4](https://github.com/turicas/rows/issues/4) Add PostgreSQL plugin (thanks
   to [@juliano777](https://github.com/juliano777))
+- [#290](https://github.com/turicas/rows/pull/290) Fix percent formatting
+  reading on XLSX and ODS file formats (thanks to
+  [@jsbueno](https://github.com/jsbueno))
 
 
 ### Bug Fixes

@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 from decimal import Decimal
 from io import BytesIO
+from numbers import Number
 
 from openpyxl import Workbook, load_workbook
 
@@ -43,14 +44,9 @@ def _cell_to_python(cell):
     elif cell.number_format.lower() == 'yyyy-mm-dd hh:mm:ss':
         return str(value).split('.')[0]
 
-    elif cell.number_format.endswith('%'):
-        if value is not None:
-            value = str(Decimal(str(value)) * 100)[:-2]
-            if value.endswith('.'):
-                value = value[:-1]
-            return '{}%'.format(value)
-        else:
-            return None
+    elif cell.number_format.endswith('%') and isinstance(value, Number):
+            value = Decimal(str(value))
+            return '{:%}'.format(value)
 
     elif value is None:
         return ''

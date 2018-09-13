@@ -564,7 +564,7 @@ def command_pgimport(input_encoding, no_create_table, dialect, schema, source,
     else:
         progress.total = total_size
     progress.description = 'Analyzing source file'
-    schemas = _get_schemas_for_inputs([schema], [source])
+    schemas = _get_schemas_for_inputs([schema] if schema else None, [source])
     import_meta = pgimport(
         filename=source,
         encoding=input_encoding,
