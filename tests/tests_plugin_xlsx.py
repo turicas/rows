@@ -170,6 +170,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # As this test is written, file numeric file contents on first column are
         # 100%, 23.20%, 1.00%, 10.00%, 100.00%
         assert result[0][0] == Decimal('1')
+        assert result[1][0] == Decimal('0.2320')
         assert result[2][0] == Decimal('0.01')
         assert result[3][0] == Decimal('0.1')
         assert result[4][0] == Decimal('1')
