@@ -703,18 +703,23 @@ def pgimport(filename, database_uri, table_name, encoding='utf-8',
     elif isinstance(dialect, six.text_type):
         dialect = csv.get_dialect(dialect)
 
+    if schema is None:
+        # Detect field names
+        reader = csv.reader(io.StringIO(sample), dialect=dialect)
+        field_names = [slug(field_name) for field_name in next(reader)]
+
+    else:
+        field_names = list(schema.keys())
+
     if create_table:
         if schema is None:
-            # Detect field names
-            reader = csv.reader(io.StringIO(sample), dialect=dialect)
-            field_names = [slug(field_name) for field_name in next(reader)]
             data = [dict(zip(field_names, row))
                     for row in itertools.islice(reader, max_samples)]
             table = rows.import_from_dicts(data)
             field_types = [table.fields[field_name] for field_name in field_names]
         else:
-            field_names = list(schema.keys())
             field_types = list(schema.values())
+
         columns = ['{} {}'.format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
                    for name, type_ in zip(field_names, field_types)]
         create_table = SQL_CREATE_TABLE.format(
