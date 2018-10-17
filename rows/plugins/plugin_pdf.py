@@ -473,7 +473,7 @@ def pdf_table_lines(fobj, page_numbers, algorithm='y-groups',
                     line_size = len(line)
                 elif page_index > 0 and line == header:  # skip header repetition
                     continue
-            assert line_size == len(line)
+            # assert line_size == len(line) # If line length doesnt match, a new field should be created
             yield line
 
 
