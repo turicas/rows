@@ -26,7 +26,7 @@ EXTRA_REQUIREMENTS = {
     'html': ['lxml'],  # apt: libxslt-dev libxml2-dev
     'ods': ['lxml'],
     'parquet': ['parquet>=1.1'],
-    'pdf': ['cached-property', 'pdfminer.six'],
+    'pdf': ['cached-property', 'pymupdf', 'pdfminer.six'],
     'xls': ['xlrd', 'xlwt'],
     'xlsx': ['openpyxl'],
     'xpath': ['lxml'],

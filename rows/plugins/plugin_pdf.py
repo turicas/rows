@@ -21,6 +21,7 @@ import io
 import logging
 from collections import defaultdict
 
+import six
 from cached_property import cached_property
 from pdfminer.converter import PDFPageAggregator, TextConverter
 from pdfminer.layout import LAParams, LTTextBox, LTTextLine, LTChar, LTRect
@@ -30,33 +31,87 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 
 from rows.plugins.utils import create_table, get_filename_and_fobj
+import fitz
 
 
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 TEXT_TYPES = (LTTextBox, LTTextLine, LTChar)
 
-
-def number_of_pages(filename_or_fobj):
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
-    parser = PDFParser(fobj)
-    document = PDFDocument(parser)
-    return resolve1(document.catalog['Pages'])['Count']
+def number_of_pages(filename_or_fobj, backend='pdfminer'):
+    Backend = get_backend(backend)
+    pdf_doc = Backend(filename_or_fobj)
+    return pdf_doc.number_of_pages
 
 
-def _get_pdf_document(fobj):
-    parser = PDFParser(fobj)
-    doc = PDFDocument(parser)
-    parser.set_document(doc)
-    return doc
+def pdf_to_text(filename_or_fobj, page_numbers=None, backend='pdfminer'):
+    Backend = get_backend(backend)
+    pdf_doc = Backend(filename_or_fobj)
+    yield from pdf_doc.extract_text(page_numbers=page_numbers)
 
 
-def pdf_to_text(filename_or_fobj, page_numbers=None):
-    """Extract all text objects from a PDF file"""
+class PDFBackend(object):
 
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
-    doc = _get_pdf_document(fobj)
-    for page_number, page in enumerate(PDFPage.create_pages(doc), start=1):
-        if page_numbers is None or page_number in page_numbers:
+    """Base Backend class to parse PDF files"""
+
+    x_order = 1
+    y_order = 1
+
+    def __init__(self, filename_or_fobj):
+        self.filename_or_fobj = filename_or_fobj
+
+    @property
+    def number_of_pages(self):
+        'Number of pages in the document'
+        raise NotImplementedError()
+
+    def extract_text(self):
+        'Return a string for each page in the document (generator)'
+        raise NotImplementedError()
+
+    def objects(self):
+        'Return a list of objects for each page in the document (generator)'
+        raise NotImplementedError()
+
+    def text_objects(self):
+        'Return a list of text objects for each page in the document (generator)'
+        raise NotImplementedError()
+
+    @property
+    def text(self):
+        return '\n\n'.join(self.extract_text())
+
+    def get_cell_text(self, cell):
+        if not cell:
+            return ''
+        if self.y_order == 1:
+            cell.sort(key=lambda obj: obj.y0)
+        else:
+            cell.sort(key=lambda obj: -obj.y0)
+        return '\n'.join(obj.text.strip() for obj in cell)
+
+
+class PDFMinerBackend(PDFBackend):
+
+    name = 'pdfminer'
+    y_order = -1
+
+    @cached_property
+    def document(self):
+        filename, fobj = get_filename_and_fobj(self.filename_or_fobj, mode='rb')
+        parser = PDFParser(fobj)
+        doc = PDFDocument(parser)
+        parser.set_document(doc)
+        return doc
+
+    @cached_property
+    def number_of_pages(self):
+        return resolve1(self.document.catalog['Pages'])['Count']
+
+    def extract_text(self, page_numbers=None):
+        for page_number, page in enumerate(PDFPage.create_pages(self.document), start=1):
+            if page_numbers is not None and page_number not in page_numbers:
+                continue
+
             rsrcmgr = PDFResourceManager()
             laparams = LAParams()
             result = io.StringIO()
@@ -65,43 +120,40 @@ def pdf_to_text(filename_or_fobj, page_numbers=None):
             interpreter.process_page(page)
             yield result.getvalue()
 
+    @staticmethod
+    def convert_object(obj):
+        if isinstance(obj, TEXT_TYPES):
+            return TextObject(x0=obj.x0, y0=obj.y0, x1=obj.x1, y1=obj.y1, text=obj.get_text())
+        elif isinstance(obj, LTRect):
+            return RectObject(x0=obj.x0, y0=obj.y0, x1=obj.x1, y1=obj.y1, fill=obj.fill)
 
-def get_delimiter_function(value):
-    if isinstance(value, str):  # regular string, match exactly
-        return lambda obj: (isinstance(obj, TEXT_TYPES) and
-                            obj.get_text().strip() == value)
+    def objects(self, page_numbers=None, starts_after=None, ends_before=None,
+                    desired_types=(LTTextBox, LTTextLine, LTChar, LTRect)):
 
-    elif hasattr(value, 'search'):  # regular expression
-        return lambda obj: bool(isinstance(obj, TEXT_TYPES) and
-                                value.search(obj.get_text().strip()))
+        doc = self.document
+        rsrcmgr = PDFResourceManager()
+        laparams = LAParams()
+        device = PDFPageAggregator(rsrcmgr, laparams=laparams)
+        interpreter = PDFPageInterpreter(rsrcmgr, device)
 
-    elif callable(value):  # function
-        return lambda obj: bool(value(obj))
+        started, finished = False, False
+        if starts_after is None:
+            started = True
+        else:
+            starts_after = get_delimiter_function(starts_after)
+        if ends_before is not None:
+            ends_before = get_delimiter_function(ends_before)
 
+        for page_number, page in enumerate(PDFPage.create_pages(doc), start=1):
+            if page_numbers is not None and page_number not in page_numbers:
+                continue
 
-def pdf_objects(fobj, page_numbers, starts_after=None, ends_before=None,
-                desired_types=(LTTextBox, LTTextLine, LTChar, LTRect)):
-    'For each page inside a PDF, return the list of text objects'
-
-    doc = _get_pdf_document(fobj)
-    rsrcmgr = PDFResourceManager()
-    laparams = LAParams()
-    device = PDFPageAggregator(rsrcmgr, laparams=laparams)
-    interpreter = PDFPageInterpreter(rsrcmgr, device)
-
-    started, finished = False, False
-    if starts_after is None:
-        started = True
-    else:
-        starts_after = get_delimiter_function(starts_after)
-    if ends_before is not None:
-        ends_before = get_delimiter_function(ends_before)
-
-    for page_number, page in enumerate(PDFPage.create_pages(doc), start=1):
-        if page_numbers is None or page_number in page_numbers:
             interpreter.process_page(page)
             layout = device.get_result()
-            objs = [obj for obj in layout if isinstance(obj, desired_types)]
+            objs = [
+                PDFMinerBackend.convert_object(obj)
+                for obj in layout if isinstance(obj, desired_types)
+            ]
             objs.sort(key=lambda obj: -obj.y0)
             objects_in_page = []
             for obj in objs:
@@ -118,7 +170,144 @@ def pdf_objects(fobj, page_numbers, starts_after=None, ends_before=None,
 
             if finished:
                 break
-    fobj.close()
+
+    def text_objects(self, page_numbers=None, starts_after=None,
+                     ends_before=None):
+        return self.objects(
+            page_numbers=page_numbers, starts_after=starts_after,
+            ends_before=ends_before,
+            desired_types=(LTTextBox, LTTextLine, LTChar)
+        )
+
+
+class PyMuPDFBackend(PDFBackend):
+
+    name = 'pymupdf'
+
+    @cached_property
+    def document(self):
+        filename, fobj = get_filename_and_fobj(self.filename_or_fobj, mode='rb')
+        if not filename:
+            data = fobj.read()  # TODO: may use a lot of memory
+            doc = fitz.open(stream=data, filetype='pdf')
+        else:
+            doc = fitz.open(filename=filename, filetype='pdf')
+        return doc
+
+    @cached_property
+    def number_of_pages(self):
+        return self.document.pageCount
+
+    def extract_text(self, page_numbers=None):
+        doc = self.document
+        for page_number, page_index in enumerate(range(doc.pageCount), start=1):
+            if page_numbers is not None and page_number not in page_numbers:
+                continue
+
+            page = doc.loadPage(page_index)
+            page_text = '\n'.join(block[4] for block in page.getTextBlocks())
+            yield page_text
+
+    def objects(self, page_numbers=None, starts_after=None, ends_before=None):
+        doc = self.document
+
+        started, finished = False, False
+        if starts_after is None:
+            started = True
+        else:
+            starts_after = get_delimiter_function(starts_after)
+        if ends_before is not None:
+            ends_before = get_delimiter_function(ends_before)
+
+        for page_number, page_index in enumerate(range(doc.pageCount), start=1):
+            if page_numbers is not None and page_number not in page_numbers:
+                continue
+
+            page = doc.loadPage(page_index)
+            text_objs = []
+            for block in page.getText('dict')['blocks']:
+                if block['type'] != 0:
+                    continue
+
+                for line in block['lines']:
+                    line_text = ' '.join(span['text'] for span in line['spans'])
+                    text_objs.append([*line['bbox'], line_text])
+            objs = [
+                TextObject(x0=obj[0], y0=obj[1], x1=obj[2], y1=obj[3], text=obj[4])
+                for obj in text_objs
+            ]
+            objs.sort(key=lambda obj: (obj.y0, obj.x0))
+            objects_in_page = []
+            for obj in objs:
+                if (not started and starts_after is not None
+                    and starts_after(obj)):
+                    started = True
+                if started and ends_before is not None and ends_before(obj):
+                    finished = True
+                    break
+
+                if started:
+                    objects_in_page.append(obj)
+
+            yield objects_in_page
+
+            if finished:
+                break
+
+    text_objects = objects
+
+
+def get_delimiter_function(value):
+    if isinstance(value, str):  # regular string, match exactly
+        return lambda obj: (isinstance(obj, TextObject) and
+                            obj.text.strip() == value)
+
+    elif hasattr(value, 'search'):  # regular expression
+        return lambda obj: bool(isinstance(obj, TextObject) and
+                                value.search(obj.text.strip()))
+
+    elif callable(value):  # function
+        return lambda obj: bool(value(obj))
+
+
+
+class TextObject(object):
+
+    def __init__(self, x0, y0, x1, y1, text):
+        self.x0 = x0
+        self.x1 = x1
+        self.y0 = y0
+        self.y1 = y1
+        self.text = text
+
+    @property
+    def bbox(self):
+        return (self.x0, self.y0, self.x1, self.y1)
+
+    def __repr__(self):
+        text = repr(self.text)
+        if len(text) > 50:
+            text = repr(self.text[:45] + '[...]')
+        bbox = ', '.join('{:.3f}'.format(value) for value in self.bbox)
+        return '<TextObject ({}) {}>'.format(bbox, text)
+
+
+class RectObject(object):
+
+    def __init__(self, x0, y0, x1, y1, fill):
+        self.x0 = x0
+        self.x1 = x1
+        self.y0 = y0
+        self.y1 = y1
+        self.fill = fill
+
+    @property
+    def bbox(self):
+        return (self.x0, self.y0, self.x1, self.y1)
+
+    def __repr__(self):
+        bbox = ', '.join('{:.3f}'.format(value) for value in self.bbox)
+        return '<RectObject ({}) fill={}>'.format(bbox, self.fill)
 
 
 class Group(object):
@@ -200,11 +389,14 @@ def contains_or_overlap(a, b):
 
 class ExtractionAlgorithm(object):
 
-    def __init__(self, objects, text_objects, x_threshold, y_threshold):
+    def __init__(self, objects, text_objects, x_threshold, y_threshold,
+            x_order, y_order):
         self.objects = objects
         self.text_objects = text_objects
         self.x_threshold = x_threshold
         self.y_threshold = y_threshold
+        self.x_order = x_order
+        self.y_order = y_order
 
     @property
     def table_bbox(self):
@@ -227,7 +419,11 @@ class ExtractionAlgorithm(object):
 
     def get_lines(self):
         x_intervals = list(self.x_intervals)
-        y_intervals = reversed(list(self.y_intervals))
+        if self.x_order == -1:
+            x_intervals = list(reversed(x_intervals))
+        y_intervals = list(self.y_intervals)
+        if self.y_order == -1:
+            y_intervals = list(reversed(y_intervals))
         objs = list(self.selected_objects)
 
         matrix = []
@@ -329,7 +525,9 @@ class HeaderPositionAlgorithm(YGroupsAlgorithm):
     def get_lines(self):
         objects = self.selected_objects
         objects.sort(key=lambda obj: obj.x0)
-        y_intervals = list(reversed(self.y_intervals))
+        y_intervals = list(self.y_intervals)
+        if self.y_order == -1:
+            y_intervals = list(reversed(y_intervals))
         used, lines = [], []
 
         header_interval = y_intervals[0]
@@ -366,7 +564,7 @@ class RectsBoundariesAlgorithm(ExtractionAlgorithm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.rects = [obj for obj in self.objects
-                      if isinstance(obj, LTRect) and obj.fill]
+                      if isinstance(obj, RectObject) and obj.fill]
 
     @cached_property
     def table_bbox(self):
@@ -416,28 +614,21 @@ def algorithms():
     return {Class.name: Class for Class in subclasses(ExtractionAlgorithm)}
 
 
-def get_cell_text(cell):
-    if cell is None:
-        return None
-    # TODO: this is not the best way to sort cells
-    cell.sort(key=lambda obj: -obj.y0)
-    return '\n'.join(obj.get_text().strip() for obj in cell)
-
-
-def get_table(objs, algorithm='y-groups', x_threshold=0.5, y_threshold=0.5):
-    'Where the magic happens'
-
+def get_algorithm(algorithm):
     available_algorithms = algorithms()
-    if isinstance(algorithm, ExtractionAlgorithm):
-        AlgorithmClass = algorithm
-    elif isinstance(algorithm, str):
+
+    if isinstance(algorithm, six.text_type):
         if algorithm not in available_algorithms:
             raise ValueError(
                 'Unknown algorithm "{}" (options are: {})'.format(
                     algorithm, ', '.join(available_algorithms.keys())
                 )
             )
-        AlgorithmClass = available_algorithms[algorithm]
+        return available_algorithms[algorithm]
+
+    elif issubclass(algorithm, ExtractionAlgorithm):
+        return algorithm
+
     else:
         raise ValueError(
             'Unknown algorithm "{}" (options are: {})'.format(
@@ -445,27 +636,59 @@ def get_table(objs, algorithm='y-groups', x_threshold=0.5, y_threshold=0.5):
             )
         )
 
-    objs = list(objs)
-    text_objs = [obj for obj in objs if isinstance(obj, TEXT_TYPES)]
-    extractor = AlgorithmClass(objs, text_objs, x_threshold, y_threshold)
 
-    # Fill the table based on x and y intervals from the extractor
-    return [[get_cell_text(cell) for cell in row]
-            for row in extractor.get_lines()]
+def backends():
+    return {Class.name: Class for Class in subclasses(PDFBackend)}
 
 
-def pdf_table_lines(fobj, page_numbers, algorithm='y-groups',
+def get_backend(backend):
+    available_backends = backends()
+
+    if isinstance(backend, six.text_type):
+        if backend not in available_backends:
+            raise ValueError(
+                'Unknown PDF backend "{}" (options are: {})'.format(
+                    backend, ', '.join(available_backends.keys())
+                )
+            )
+        return available_backends[backend]
+
+    elif issubclass(backend, PDFBackend):
+        return backend
+
+    else:
+        raise ValueError(
+            'Unknown PDF backend "{}" (options are: {})'.format(
+                backend, ', '.join(available_backends.keys())
+            )
+        )
+
+
+def pdf_table_lines(filename_or_fobj, page_numbers=None, algorithm='y-groups',
                     starts_after=None, ends_before=None,
-                    x_threshold=0.5, y_threshold=0.5):
-    pages = pdf_objects(fobj, page_numbers, starts_after, ends_before)
+                    x_threshold=0.5, y_threshold=0.5, backend='pdfminer'):
+
+    # TODO: check if both backends accepts filename or fobj
+    Backend = get_backend(backend)
+    Algorithm = get_algorithm(algorithm)
+    pdf_doc = Backend(filename_or_fobj)
+
+    pages = pdf_doc.objects(
+        page_numbers=page_numbers,
+        starts_after=starts_after,
+        ends_before=ends_before,
+    )
     header = line_size = None
     for page_index, page in enumerate(pages):
-        lines = get_table(
-            page,
-            algorithm=algorithm,
-            x_threshold=x_threshold,
-            y_threshold=y_threshold,
-        )
+        objs = list(page)
+        text_objs = [obj for obj in objs if isinstance(obj, TextObject)]
+        extractor = Algorithm(objs, text_objs, x_threshold, y_threshold,
+                pdf_doc.x_order, pdf_doc.y_order)
+        lines = [
+            [pdf_doc.get_cell_text(cell) for cell in row]
+            for row in extractor.get_lines()
+        ]
+
         for line_index, line in enumerate(lines):
             if line_index == 0:
                 if page_index == 0:
@@ -477,24 +700,20 @@ def pdf_table_lines(fobj, page_numbers, algorithm='y-groups',
             yield line
 
 
-def import_from_pdf(filename_or_fobj, page_numbers=None,
-                    starts_after=None, ends_before=None,
-                    algorithm='y-groups', x_threshold=0.5, y_threshold=0.5,
-                    *args, **kwargs):
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
-
-    # TODO: create tests
+def import_from_pdf(filename_or_fobj, page_numbers=None, starts_after=None,
+        ends_before=None, backend='pdfminer', algorithm='y-groups',
+        x_threshold=0.5, y_threshold=0.5, *args, **kwargs):
     meta = {
         'imported_from': 'pdf',
-        'filename': filename,
     }
     table_rows = pdf_table_lines(
-        fobj,
+        filename_or_fobj,
         page_numbers,
         starts_after=starts_after,
         ends_before=ends_before,
         algorithm=algorithm,
         x_threshold=x_threshold,
         y_threshold=y_threshold,
+        backend=backend,
     )
     return create_table(table_rows, meta=meta, *args, **kwargs)
