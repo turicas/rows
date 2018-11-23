@@ -299,8 +299,10 @@ def download_file(uri, filename=None, verify_ssl=True, timeout=5,
                   progress=False, detect=False, chunk_size=8192,
                   sample_size=1048576):
 
-    response = requests.get(uri, verify=verify_ssl, timeout=timeout,
-                            stream=True)
+    response = requests.get(
+        uri, verify=verify_ssl, timeout=timeout,
+        stream=True, headers={'user-agent': 'rows-{}'.format(rows.__version__)}
+    )
     if not response.ok:
         raise RuntimeError('HTTP response: {}'.format(response.status_code))
 
