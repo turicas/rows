@@ -36,9 +36,9 @@ from tqdm import tqdm
 import rows
 import six
 from rows.fields import make_header
-from rows.utils import (csv2sqlite, detect_source, download_file,
+from rows.utils import (csv_to_sqlite, detect_source, download_file,
                         export_to_uri, import_from_source, import_from_uri,
-                        pgexport, pgimport, ProgressBar, sqlite2csv,
+                        pgexport, pgimport, ProgressBar, sqlite_to_csv,
                         uncompressed_size)
 
 
@@ -121,7 +121,16 @@ def _get_schemas_for_inputs(schemas, inputs):
             for schema in schemas]
 
 
-@click.group()
+class AliasedGroup(click.Group):
+
+    def get_command(self, ctx, cmd_name):
+        return (
+            click.Group.get_command(self, ctx, cmd_name)
+            or click.Group.get_command(self, ctx, cmd_name.replace('2', '-to-'))
+        )
+
+
+@click.group(cls=AliasedGroup)
 @click.option('--http-cache', type=bool, default=True)
 @click.option('--http-cache-path', default=str(CACHE_PATH.absolute()))
 @click.version_option(version=rows.__version__, prog_name='rows')
@@ -475,7 +484,7 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
     rows.fields.generate_schema(table, export_fields, output_format, output)
 
 
-@cli.command(name='csv2sqlite', help='Convert one or more CSV files to SQLite')
+@cli.command(name='csv-to-sqlite', help='Convert one or more CSV files to SQLite')
 @click.option('--batch-size', default=10000)
 @click.option('--samples', type=int, default=5000,
               help='Number of rows to determine the field types (0 = all)')
@@ -484,7 +493,7 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
 @click.option('--schemas', default=None)
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('output', required=True)
-def command_csv2sqlite(batch_size, samples, input_encoding, dialect, schemas,
+def command_csv_to_sqlite(batch_size, samples, input_encoding, dialect, schemas,
                        sources, output):
 
     inputs = [pathlib.Path(filename) for filename in sources]
@@ -501,7 +510,7 @@ def command_csv2sqlite(batch_size, samples, input_encoding, dialect, schemas,
         )
         pre_prefix = '{} (detecting data types)'.format(prefix)
         progress = ProgressBar(prefix=prefix, pre_prefix=pre_prefix)
-        csv2sqlite(
+        csv_to_sqlite(
             six.text_type(filename),
             six.text_type(output),
             dialect=dialect,
@@ -515,13 +524,13 @@ def command_csv2sqlite(batch_size, samples, input_encoding, dialect, schemas,
         progress.close()
 
 
-@cli.command(name='sqlite2csv', help='Convert a SQLite table into CSV')
+@cli.command(name='sqlite-to-csv', help='Convert a SQLite table into CSV')
 @click.option('--batch-size', default=10000)
 @click.option('--dialect', default='excel')
 @click.argument('source', required=True)
 @click.argument('table_name', required=True)
 @click.argument('output', required=True)
-def command_sqlite2csv(batch_size, dialect, source, table_name, output):
+def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
 
     input_filename = pathlib.Path(source)
     output_filename = pathlib.Path(output)
@@ -531,7 +540,7 @@ def command_sqlite2csv(batch_size, dialect, source, table_name, output):
         filename=output_filename.name,
     )
     progress = ProgressBar(prefix=prefix, pre_prefix='')
-    sqlite2csv(
+    sqlite_to_csv(
         input_filename=six.text_type(input_filename),
         table_name=table_name,
         dialect=dialect,
