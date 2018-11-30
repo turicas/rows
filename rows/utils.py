@@ -562,10 +562,21 @@ def sqlite2csv(input_filename, table_name, output_filename, dialect=csv.excel,
 
 
 class CsvLazyDictWriter:
+    """Lazy CSV dict writer, with compressed output option
 
-    def __init__(self, filename, encoding='utf-8'):
+    This class is almost the same as `csv.DictWriter` with the following
+    differences:
+
+    - You don't need to pass `fieldnames` (it's extracted on the first
+      `.writerow` call);
+    - You can pass either a filename or a fobj (like `sys.stdout`);
+    - If passing a filename, it can end with `.gz`, `.xz` or `.bz2` and the
+      output file will be automatically compressed.
+    """
+
+    def __init__(self, filename_or_fobj, encoding='utf-8'):
         self.writer = None
-        self.filename = filename
+        self.filename_or_fobj = filename_or_fobj
         self.encoding = encoding
         self._fobj = None
 
@@ -578,11 +589,14 @@ class CsvLazyDictWriter:
     @property
     def fobj(self):
         if self._fobj is None:
-            self._fobj = open_compressed(
-                self.filename,
-                mode='w',
-                encoding=self.encoding,
-            )
+            if getattr(self.filename_or_fobj, 'read', None) is not None:
+                self._fobj = self.filename_or_fobj
+            else:
+                self._fobj = open_compressed(
+                    self.filename_or_fobj,
+                    mode='w',
+                    encoding=self.encoding,
+                )
 
         return self._fobj
 
