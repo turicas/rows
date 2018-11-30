@@ -143,6 +143,12 @@ class ProgressBar:
         )
         self.started = False
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
     @property
     def description(self):
         return self.progress.desc
@@ -161,7 +167,7 @@ class ProgressBar:
         self.progress.total = value
         self.progress.refresh()
 
-    def update(self, last_done=None, total_done=None):
+    def update(self, last_done=1, total_done=None):
         if not last_done and not total_done:
             raise ValueError('Either last_done or total_done must be specified')
 
@@ -562,6 +568,12 @@ class CsvLazyDictWriter:
         self.filename = filename
         self.encoding = encoding
         self._fobj = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
     @property
     def fobj(self):
