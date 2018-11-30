@@ -582,6 +582,13 @@ class CsvLazyDictWriter:
         self.writerow = self.writer.writerow
         return self.writerow(row)
 
+    def __del__(self):
+        self.close()
+
+    def close(self):
+        if self._fobj and not self._fobj.closed:
+            self._fobj.close()
+
 
 def execute_command(command):
     """Execute a command and return its output"""
