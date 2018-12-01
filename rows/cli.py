@@ -543,7 +543,7 @@ def command_sqlite2csv(batch_size, dialect, source, table_name, output):
 
 @cli.command(name='pgimport', help='Import a CSV file into a PostgreSQL table')
 @click.option('--input-encoding', default='utf-8')
-@click.option('--no-create-table', type=bool, default=False)
+@click.option('--no-create-table', default=False, is_flag=True)
 @click.option('--dialect', default=None)
 @click.option('--schema', default=None)
 @click.argument('source', required=True)
