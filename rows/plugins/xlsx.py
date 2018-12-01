@@ -123,7 +123,7 @@ def _python_to_cell(field_types):
 def export_to_xlsx(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                    **kwargs):
     """Export the rows.Table to XLSX file and return the saved file."""
-    
+
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = sheet_name
