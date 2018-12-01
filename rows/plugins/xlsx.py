@@ -68,15 +68,13 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
     # openpyxl library reads rows and columns starting from 1 and ending on
     # sheet.max_row/max_col. rows uses another pattern: 0 to N - 1, so we need
     # to adjust the ranges accordingly
-    min_row, min_col = sheet.min_row - 1, sheet.min_column - 1
-    max_row, max_col = sheet.max_row - 1, sheet.max_column - 1
-    start_row = max(start_row, min_row)
-    end_row = min(end_row or max_row, max_row)
-    start_col = max(start_column, min_col)
-    end_col = min(end_column or max_col, max_col)
-    table_rows = [[_cell_to_python(sheet.cell(row=row_index, column=col_index))
-                   for col_index in range(start_col + 1, end_col + 2)]
-                  for row_index in range(start_row + 1, end_row + 2)]
+    column_offset = 1 if start_column or end_column else 0
+    row_offset = 1 if start_column or end_column else 0
+    sheet_rows = sheet.iter_rows(min_row=start_row, max_row=end_row,
+            min_col=start_column, max_col=end_column,
+            row_offset=row_offset,
+            column_offset=column_offset)
+    table_rows = list(list(map(_cell_to_python, row)) for row in sheet_rows)
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, dont_open=True)
     metadata = {'imported_from': 'xlsx',
