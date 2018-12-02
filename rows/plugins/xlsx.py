@@ -22,6 +22,7 @@ from io import BytesIO
 from numbers import Number
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.cell.read_only import EmptyCell
 
 from rows import fields
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
@@ -32,7 +33,10 @@ def _cell_to_python(cell):
     """Convert a PyOpenXL's `Cell` object to the corresponding Python object."""
     value = cell.value
 
-    if value == '=TRUE()':
+    if type(cell) is EmptyCell:
+        return None
+
+    elif value == '=TRUE()':
         return True
 
     elif value == '=FALSE()':
@@ -75,6 +79,10 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
             row_offset=row_offset,
             column_offset=column_offset)
     table_rows = list(list(map(_cell_to_python, row)) for row in sheet_rows)
+
+    is_empty = lambda cell: cell is None
+    if all(map(is_empty, table_rows[-1])):
+        table_rows.pop()
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, dont_open=True)
     metadata = {'imported_from': 'xlsx',
