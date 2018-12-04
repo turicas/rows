@@ -35,7 +35,7 @@ from tqdm import tqdm
 
 import rows
 import six
-from rows.plugins.utils import make_header
+from rows.fields import make_header
 from rows.utils import (csv2sqlite, detect_source, export_to_uri,
                         import_from_source, import_from_uri, pgexport,
                         pgimport, ProgressBar, sqlite2csv, uncompressed_size)
