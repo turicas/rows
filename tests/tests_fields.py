@@ -434,6 +434,12 @@ class FieldUtilsTestCase(unittest.TestCase):
         result = fields.detect_types(self.fields, self.data)
         self.assertDictEqual(dict(result), self.expected)
 
+    def test_detect_types_wrong_number_of_fields(self):
+        data = [self.data[0] * 2]
+        with self.assertRaises(ValueError) as exception_context:
+            fields.detect_types(self.fields, data)
+        self.assertEquals(exception_context.exception.args[0], "Number of fields differ")
+
     def test_precedence(self):
         field_types = [
                 ('bool', fields.BoolField),

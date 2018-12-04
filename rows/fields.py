@@ -479,7 +479,7 @@ def unique_values(values):
 
 def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
                  *args, **kwargs):
-    'Detect column types (or "where the magic happens")'
+    """Detect column types (or "where the magic happens")"""
 
     # TODO: look strategy of csv.Sniffer.has_header
     # TODO: may receive 'type hints'
@@ -492,11 +492,16 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
                             for field_name in field_names])
 
     number_of_fields = len(field_names)
+    max_columns = max(map(len, field_values))
+    if max_columns != number_of_fields:
+        # By now, the library is based on the fact that the number of items of
+        # each row must always be the same - if for some reason it's different,
+        # the plugin needs to fix this before returning the data.
+        raise ValueError("Number of fields differ")
+
     columns = list(zip(*[row for row in field_values
                          if len(row) == number_of_fields]))
 
-    if len(columns) != number_of_fields:
-        raise ValueError('Number of fields differ')
 
     detected_types = OrderedDict([(field_name, None)
                                   for field_name in field_names])
@@ -505,7 +510,7 @@ def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
         native_types = set(type(value) for value in data)
 
         if not data:
-            # all values with an empty field (can't identify) -> BinaryField
+            # all values with an empty field (can't identify) -> TextField
             identified_type = TextField
         elif native_types == set([six.binary_type]):
             identified_type = BinaryField
