@@ -219,6 +219,25 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         for field_name, field_type in force_types.items():
             self.assertEqual(table.fields[field_name], field_type)
 
+    def test_create_table_different_number_of_fields(self):
+        header = ["field1", "field2"]
+        table_rows = [
+            ["1", "3.14", "Álvaro"],
+            ["2", "2.71", "turicas"],
+            ["3", "1.23", "Justen"],
+        ]
+        table = plugins_utils.create_table([header] + table_rows)
+        self.assertEqual(list(table.fields.keys()), ['field1', 'field2', 'field_2'])
+        self.assertEqual(table[0].field1, 1)
+        self.assertEqual(table[0].field2, 3.14)
+        self.assertEqual(table[0].field_2, "Álvaro")
+        self.assertEqual(table[1].field1, 2)
+        self.assertEqual(table[1].field2, 2.71)
+        self.assertEqual(table[1].field_2, "turicas")
+        self.assertEqual(table[2].field1, 3)
+        self.assertEqual(table[2].field2, 1.23)
+        self.assertEqual(table[2].field_2, "Justen")
+
     def test_prepare_to_export_all_fields(self):
         result = plugins_utils.prepare_to_export(utils.table, export_fields=None)
 

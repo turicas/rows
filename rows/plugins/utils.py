@@ -28,7 +28,7 @@ if six.PY2:
 elif six.PY3:
     from collections.abc import Iterator
 
-from rows.fields import detect_types, make_header, make_unique_name, slug
+from rows.fields import detect_types, get_items, make_header, make_unique_name, slug, TextField
 from rows.table import FlexibleTable, Table
 
 
@@ -76,34 +76,58 @@ def create_table(
     """Create a rows.Table object based on data rows and some configurations
 
     - `skip_header` is only used if `fields` is set
-    - `samples` is only used if `fields` is `None`
+    - `samples` is only used if `fields` is `None`. If samples=None, all data
+      is filled in memory - use with caution.
     - `force_types` is only used if `fields` is `None`
     - `import_fields` can be used either if `fields` is set or not, the
       resulting fields will seek its order
     - `fields` must always be in the same order as the data
     """
-    # TODO: add warning if using skip_header and create skip_rows
-    #       (int, default = ?). Could be used if `fields` is set or not.
 
     table_rows = iter(data)
+    force_types = force_types or {}
+    if import_fields is not None:
+        import_fields = make_header(import_fields)
 
     if fields is None:  # autodetect field types
+        # TODO: may add `type_hints` parameter so autodetection can be easier
+        #       (plugins may specify some possible field types).
         header = make_header(next(table_rows))
 
         if samples is not None:
             sample_rows = list(islice(table_rows, 0, samples))
+            table_rows = chain(sample_rows, table_rows)
         else:
-            sample_rows = list(table_rows)
-        table_rows = chain(sample_rows, table_rows)
+            sample_rows = table_rows = list(table_rows)
 
-        # TODO: optimize field detection (ignore fields on `force_types` and
-        #       not in `import_fields`).
-        # TODO: add `type_hints` parameter so autodetection can be easier
-        #       (plugins may specify some possible field types).
-        fields = detect_types(header, sample_rows, *args, **kwargs)
+        # Detect field types using only the desired columns
+        detected_fields = detect_types(
+            header,
+            sample_rows,
+            skip_indexes=[
+                index for index, field in enumerate(header)
+                if field in force_types or field not in (import_fields or header)
+            ],
+            *args, **kwargs
+        )
+        # Check if any field was added during detecting process
+        new_fields = [
+            field_name
+            for field_name in detected_fields.keys()
+            if field_name not in header
+        ]
+        # Finally create the `fields` with both header and new field names,
+        # based on detected fields `and force_types`
+        fields = OrderedDict([
+            (field_name, detected_fields.get(field_name, TextField))
+            for field_name in header + new_fields
+        ])
+        fields.update(force_types)
 
-        if force_types is not None:
-            fields.update(force_types)
+        # Update `header` and `import_fields` based on new `fields`
+        header = list(fields.keys())
+        if import_fields is None:
+            import_fields = header
 
     else:  # using provided field types
         if not isinstance(fields, OrderedDict):
@@ -115,36 +139,27 @@ def create_table(
             _ = next(table_rows)
 
         header = make_header(list(fields.keys()))
+        if import_fields is None:
+            import_fields = header
 
         fields = OrderedDict(
             [(field_name, fields[key]) for field_name, key in zip(header, fields)]
         )
 
-    if import_fields is not None:
-        import_fields = make_header(import_fields)
+    diff = set(import_fields) - set(header)
+    if diff:
+        field_names = ", ".join('"{}"'.format(field) for field in diff)
+        raise ValueError("Invalid field names: {}".format(field_names))
+    fields = OrderedDict(
+        [(field_name, fields[field_name]) for field_name in import_fields]
+    )
 
-        diff = set(import_fields) - set(header)
-        if diff:
-            field_names = ", ".join('"{}"'.format(field) for field in diff)
-            raise ValueError("Invalid field names: {}".format(field_names))
-
-        fields = OrderedDict(
-            [(field_name, fields[field_name]) for field_name in import_fields]
-        )
-
-    fields_names_indexes = [
-        (field_name, header.index(field_name)) for field_name in fields.keys()
-    ]
-
-    # TODO: put this inside Table.__init__
+    get_row = get_items(*map(header.index, import_fields))
     table = Table(fields=fields, meta=meta)
-    for row in table_rows:
-        table.append(
-            {
-                field_name: row[field_index]
-                for field_name, field_index in fields_names_indexes
-            }
-        )
+    table.extend(
+        dict(zip(import_fields, get_row(row)))
+        for row in table_rows
+    )
 
     return table
 

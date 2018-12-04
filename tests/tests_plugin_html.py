@@ -345,9 +345,16 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[1].field2, 'row2field2')
 
         fobj = open(filename, mode='rb')
-        with self.assertRaises(ValueError) as raises:
-            table = rows.import_from_html(fobj, ignore_colspan=False)
-        self.assertEqual(raises.exception.args[0], 'Number of fields differ')
+        table = rows.import_from_html(fobj, ignore_colspan=False)
+        self.assertEquals(list(table.fields.keys()), ["huge_title", "field_1"])
+        self.assertEquals(len(table), 3)
+        expected_data = [
+            ["field1", "field2"],
+            ["row1field1", "row1field2"],
+            ["row2field1", "row2field2"],
+        ]
+        for row_data, table_row in zip(expected_data, table):
+            self.assertEqual(row_data, [table_row.huge_title, table_row.field_1])
 
     def test_extract_properties(self):
         filename = 'tests/data/properties-table.html'
