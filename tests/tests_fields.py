@@ -417,8 +417,8 @@ class FieldUtilsTestCase(unittest.TestCase):
 
         # first, try values as (`bytes`/`str`)
         expected = {key: fields.BinaryField for key in self.expected.keys()}
-        values = [[value.encode('utf-8') for value in row]
-                  for row in self.data]
+        values = [[b"some binary data" for _ in range(len(self.data[0]))]
+                  for __ in range(20)]
         result = fields.detect_types(self.fields, values)
         self.assertDictEqual(dict(result), expected)
 
@@ -434,11 +434,9 @@ class FieldUtilsTestCase(unittest.TestCase):
         result = fields.detect_types(self.fields, self.data)
         self.assertDictEqual(dict(result), self.expected)
 
-    def test_detect_types_wrong_number_of_fields(self):
-        data = [self.data[0] * 2]
-        with self.assertRaises(ValueError) as exception_context:
-            fields.detect_types(self.fields, data)
-        self.assertEquals(exception_context.exception.args[0], "Number of fields differ")
+    def test_detect_types_different_number_of_fields(self):
+        result = fields.detect_types(["f1", "f2"], [["a", "b", "c"]])
+        self.assertEquals(list(result.keys()), ["f1", "f2", "field_2"])
 
     def test_precedence(self):
         field_types = [
@@ -471,7 +469,11 @@ class FieldUtilsTestCase(unittest.TestCase):
                     'Álvaro Justen'
                 ]
             ]
-        result = fields.detect_types([item[0] for item in field_types], data)
+        result = fields.detect_types(
+            [item[0] for item in field_types],
+            data,
+            field_types=[item[1] for item in field_types]
+        )
         self.assertDictEqual(dict(result), dict(field_types))
 
 
@@ -499,6 +501,14 @@ class FieldsFunctionsTestCase(unittest.TestCase):
             fields.as_string('Álvaro'.encode('utf-8'))
         self.assertEqual(exception_context.exception.args[0],
                          'Binary is not supported')
+
+    def test_get_items(self):
+        func = fields.get_items(2)
+        self.assertEqual(func("a b c d e f".split()), ("c",))
+
+        func = fields.get_items(0, 2, 3)
+        self.assertEqual(func("a b c d e f".split()), ("a", "c", "d"))
+        self.assertEqual(func("a b c".split()), ("a", "c", None))
 
     def assert_generate_schema(self, fmt, expected, export_fields=None):
         # prepare a consistent table so we can test all formats using it
