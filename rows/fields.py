@@ -579,38 +579,49 @@ def make_header(field_names, permit_not=False):
     return result
 
 
+DEFAULT_TYPES = (
+    BoolField,
+    IntegerField,
+    FloatField,
+    DecimalField,
+    PercentField,
+    DecimalField,
+    DatetimeField,
+    DateField,
+    JSONField,
+    TextField,
+    BinaryField,
+)
+
+
 class TypeDetector(object):
-    """Tries to convert values to specific types and then
+    """Detect data types based on a list of Field classes"""
 
-    Each type must have the `deserialize` method, in which every value will be
-    passed to. If it raises a `ValueError` or `TypeError`, the entire column
-    will not be considered of that type.
-    """
-
-    def __init__(self, field_names, field_types, fallback_type, skip_indexes=None):
-        self.field_names = field_names
+    def __init__(self, field_names=None, field_types=DEFAULT_TYPES,
+                 fallback_type=TextField, skip_indexes=None):
+        self.field_names = field_names or []
         self.field_types = list(field_types)
         self.fallback_type = fallback_type
         self._possible_types = defaultdict(lambda: list(self.field_types))
         self._samples = []
         self._skip = skip_indexes or tuple()
 
-    def feed_rows(self, data):
-        sample_append, possible, skip = (
-            self._samples.append,
-            self._possible_types,
-            self._skip,
-        )
+    def check_type(self, index, value):
+        for type_ in self._possible_types[index][:]:
+            try:
+                type_.deserialize(value)
+            except (ValueError, TypeError):
+                self._possible_types[index].remove(type_)
 
+    def process_row(self, row):
+        for index, value in enumerate(row):
+            if index in self._skip:
+                continue
+            self.check_type(index, value)
+
+    def feed(self, data):
         for row in data:
-            for index, value in enumerate(row):
-                if index in skip:
-                    continue
-                for type_ in possible[index][:]:
-                    try:
-                        type_.deserialize(value)
-                    except (ValueError, TypeError):
-                        possible[index].remove(type_)
+            self.process_row(row)
 
     def priority(self, *field_types):
         """Decide the priority between each possible type"""
@@ -643,24 +654,13 @@ class TypeDetector(object):
             ]
         )
 
-
 def detect_types(
     field_names,
     field_values,
-    field_types=(
-        BoolField,
-        IntegerField,
-        FloatField,
-        DecimalField,
-        PercentField,
-        DecimalField,
-        DatetimeField,
-        DateField,
-        JSONField,
-        TextField,
-        BinaryField,
-    ),
+    field_types=DEFAULT_TYPES,
     skip_indexes=None,
+    type_detector=TypeDetector,
+    fallback_type=TextField,
     *args,
     **kwargs
 ):
@@ -668,15 +668,13 @@ def detect_types(
 
     # TODO: look strategy of csv.Sniffer.has_header
     # TODO: may receive 'type hints'
-    # TODO: should support receiving unicode objects directly
-    # TODO: should expect data in unicode or will be able to use binary data?
-    detector = TypeDetector(
+    detector = type_detector(
         field_names,
         field_types=field_types,
-        fallback_type=TextField,
+        fallback_type=fallback_type,
         skip_indexes=skip_indexes,
     )
-    detector.feed_rows(field_values)
+    detector.feed(field_values)
     return detector.fields
 
 
