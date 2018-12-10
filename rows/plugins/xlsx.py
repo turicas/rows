@@ -30,27 +30,24 @@ from rows.plugins.utils import (create_table, get_filename_and_fobj,
 
 def _cell_to_python(cell):
     """Convert a PyOpenXL's `Cell` object to the corresponding Python object."""
-    value = cell.value
+    data_type, value = cell.data_type, cell.value
 
-    if value == '=TRUE()':
+    if data_type == "f" and value == '=TRUE()':
         return True
-
-    elif value == '=FALSE()':
+    elif data_type == "f" and value == '=FALSE()':
         return False
 
     elif cell.number_format.lower() == 'yyyy-mm-dd':
         return str(value).split(' 00:00:00')[0]
-
     elif cell.number_format.lower() == 'yyyy-mm-dd hh:mm:ss':
         return str(value).split('.')[0]
 
     elif cell.number_format.endswith('%') and isinstance(value, Number):
-            value = Decimal(str(value))
-            return '{:%}'.format(value)
+        value = Decimal(str(value))
+        return '{:%}'.format(value)
 
     elif value is None:
         return ''
-
     else:
         return value
 
@@ -59,8 +56,8 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
                      start_row=None, start_column=None, end_row=None,
                      end_column=None, *args, **kwargs):
     """Return a rows.Table created from imported XLSX file."""
-    
-    workbook = load_workbook(filename_or_fobj, data_only=True)
+
+    workbook = load_workbook(filename_or_fobj)
     if sheet_name is None:
         sheet_name = workbook.sheetnames[sheet_index]
     sheet = workbook[sheet_name]
