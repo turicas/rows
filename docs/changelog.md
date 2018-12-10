@@ -46,6 +46,8 @@
 - [#290](https://github.com/turicas/rows/pull/290) Fix percent formatting
   reading on XLSX and ODS file formats (thanks to
   [@jsbueno](https://github.com/jsbueno))
+- [#220](https://github.com/turicas/rows/issues/220) Do not use
+  non-import_fields and force_types columns on type detection algorithm
 
 
 ### Bug Fixes

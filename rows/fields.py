@@ -23,26 +23,41 @@ import json
 import locale
 import re
 from base64 import b64decode, b64encode
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from decimal import Decimal, InvalidOperation
+from itertools import zip_longest
 from textwrap import dedent
+from unicodedata import normalize
 
 import six
 
+
 # Order matters here
-__all__ = ['BoolField', 'IntegerField', 'FloatField', 'DatetimeField',
-           'DateField', 'DecimalField', 'PercentField', 'JSONField',
-           'EmailField', 'TextField', 'BinaryField', 'Field']
-REGEXP_ONLY_NUMBERS = re.compile('[^0-9\-]')
+__all__ = [
+    "BoolField",
+    "IntegerField",
+    "FloatField",
+    "DatetimeField",
+    "DateField",
+    "DecimalField",
+    "PercentField",
+    "JSONField",
+    "EmailField",
+    "TextField",
+    "BinaryField",
+    "Field",
+]
+NULL = ("-", "null", "none", "nil", "n/a", "na")
+NULL_BYTES = (b"-", b"null", b"none", b"nil", b"n/a", b"na")
+REGEXP_ONLY_NUMBERS = re.compile("[^0-9\-]")
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
-NULL = ('-', 'null', 'none', 'nil', 'n/a', 'na')
-NULL_BYTES = (b'-', b'null', b'none', b'nil', b'n/a', b'na')
+SLUG_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
 
 
 def value_error(value, cls):
     value = repr(value)
     if len(value) > 50:
-        value = value[:50] + '...'
+        value = value[:50] + "..."
     raise ValueError("Value '{}' can't be {}".format(value, cls.__name__))
 
 
@@ -53,7 +68,7 @@ class Field(object):
     actually implements what is expected in the BinaryField
     """
 
-    TYPE = (type(None), )
+    TYPE = (type(None),)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -64,7 +79,7 @@ class Field(object):
         """
 
         if value is None:
-            value = ''
+            value = ""
         return value
 
     @classmethod
@@ -89,7 +104,7 @@ class BinaryField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (six.binary_type, )
+    TYPE = (six.binary_type,)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -98,11 +113,11 @@ class BinaryField(Field):
                 value_error(value, cls)
             else:
                 try:
-                    return b64encode(value).decode('ascii')
+                    return b64encode(value).decode("ascii")
                 except (TypeError, binascii.Error):
                     return value
         else:
-            return ''
+            return ""
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -117,7 +132,7 @@ class BinaryField(Field):
             else:
                 value_error(value, cls)
         else:
-            return b''
+            return b""
 
 
 class BoolField(Field):
@@ -127,10 +142,10 @@ class BoolField(Field):
     attributes like `TRUE_VALUES` and `FALSE_VALUES`)
     """
 
-    TYPE = (bool, )
-    SERIALIZED_VALUES = {True: 'true', False: 'false', None: ''}
-    TRUE_VALUES = ('true', 'yes')
-    FALSE_VALUES = ('false', 'no')
+    TYPE = (bool,)
+    SERIALIZED_VALUES = {True: "true", False: "false", None: ""}
+    TRUE_VALUES = ("true", "yes")
+    FALSE_VALUES = ("false", "no")
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -149,7 +164,7 @@ class BoolField(Field):
         elif value in cls.FALSE_VALUES:
             return False
         else:
-            raise ValueError('Value is not boolean')
+            raise ValueError("Value is not boolean")
 
 
 class IntegerField(Field):
@@ -158,18 +173,18 @@ class IntegerField(Field):
     Is locale-aware
     """
 
-    TYPE = (int, )
+    TYPE = (int,)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is None:
-            return ''
+            return ""
 
         if SHOULD_NOT_USE_LOCALE:
             return six.text_type(value)
         else:
-            grouping = kwargs.get('grouping', None)
-            return locale.format('%d', value, grouping=grouping)
+            grouping = kwargs.get("grouping", None)
+            return locale.format("%d", value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -184,8 +199,7 @@ class IntegerField(Field):
                 value = new_value
 
         value = as_string(value)
-        return int(value) if SHOULD_NOT_USE_LOCALE \
-                          else locale.atoi(value)
+        return int(value) if SHOULD_NOT_USE_LOCALE else locale.atoi(value)
 
 
 class FloatField(Field):
@@ -194,18 +208,18 @@ class FloatField(Field):
     Is locale-aware
     """
 
-    TYPE = (float, )
+    TYPE = (float,)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is None:
-            return ''
+            return ""
 
         if SHOULD_NOT_USE_LOCALE:
             return six.text_type(value)
         else:
-            grouping = kwargs.get('grouping', None)
-            return locale.format('%f', value, grouping=grouping)
+            grouping = kwargs.get("grouping", None)
+            return locale.format("%f", value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -226,24 +240,24 @@ class DecimalField(Field):
     Is locale-aware
     """
 
-    TYPE = (Decimal, )
+    TYPE = (Decimal,)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is None:
-            return ''
+            return ""
 
         value_as_string = six.text_type(value)
         if SHOULD_NOT_USE_LOCALE:
             return value_as_string
         else:
-            grouping = kwargs.get('grouping', None)
-            has_decimal_places = value_as_string.find('.') != -1
+            grouping = kwargs.get("grouping", None)
+            has_decimal_places = value_as_string.find(".") != -1
             if not has_decimal_places:
-                string_format = '%d'
+                string_format = "%d"
             else:
-                decimal_places = len(value_as_string.split('.')[1])
-                string_format = '%.{}f'.format(decimal_places)
+                decimal_places = len(value_as_string.split(".")[1])
+                string_format = "%.{}f".format(decimal_places)
             return locale.format(string_format, value, grouping=grouping)
 
     @classmethod
@@ -261,20 +275,29 @@ class DecimalField(Field):
                 value_error(value, cls)
         else:
             locale_vars = locale.localeconv()
-            decimal_separator = locale_vars['decimal_point']
-            interesting_vars = ('decimal_point', 'mon_decimal_point',
-                                'mon_thousands_sep', 'negative_sign',
-                                'positive_sign', 'thousands_sep')
-            chars = (locale_vars[x].replace('.', r'\.').replace('-', r'\-')
-                     for x in interesting_vars)
-            interesting_chars = ''.join(set(chars))
-            regexp = re.compile(r'[^0-9{} ]'.format(interesting_chars))
+            decimal_separator = locale_vars["decimal_point"]
+            interesting_vars = (
+                "decimal_point",
+                "mon_decimal_point",
+                "mon_thousands_sep",
+                "negative_sign",
+                "positive_sign",
+                "thousands_sep",
+            )
+            chars = (
+                locale_vars[x].replace(".", r"\.").replace("-", r"\-")
+                for x in interesting_vars
+            )
+            interesting_chars = "".join(set(chars))
+            regexp = re.compile(r"[^0-9{} ]".format(interesting_chars))
             value = as_string(value)
             if regexp.findall(value):
                 value_error(value, cls)
 
-            parts = [REGEXP_ONLY_NUMBERS.subn('', number)[0]
-                     for number in value.split(decimal_separator)]
+            parts = [
+                REGEXP_ONLY_NUMBERS.subn("", number)[0]
+                for number in value.split(decimal_separator)
+            ]
             if len(parts) > 2:
                 raise ValueError("Can't deserialize with this locale.")
             try:
@@ -296,13 +319,13 @@ class PercentField(DecimalField):
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is None:
-            return ''
-        elif value == Decimal('0'):
-            return '0.00%'
+            return ""
+        elif value == Decimal("0"):
+            return "0.00%"
 
         value = Decimal(six.text_type(value * 100)[:-2])
         value = super(PercentField, cls).serialize(value, *args, **kwargs)
-        return '{}%'.format(value)
+        return "{}%".format(value)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -312,9 +335,9 @@ class PercentField(DecimalField):
             return None
 
         value = as_string(value)
-        if '%' not in value:
+        if "%" not in value:
             value_error(value, cls)
-        value = value.replace('%', '')
+        value = value.replace("%", "")
         return super(PercentField, cls).deserialize(value) / 100
 
 
@@ -324,14 +347,14 @@ class DateField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (datetime.date, )
-    INPUT_FORMAT = '%Y-%m-%d'
-    OUTPUT_FORMAT = '%Y-%m-%d'
+    TYPE = (datetime.date,)
+    INPUT_FORMAT = "%Y-%m-%d"
+    OUTPUT_FORMAT = "%Y-%m-%d"
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is None:
-            return ''
+            return ""
 
         return six.text_type(value.strftime(cls.OUTPUT_FORMAT))
 
@@ -353,14 +376,15 @@ class DatetimeField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (datetime.datetime, )
-    DATETIME_REGEXP = re.compile('^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]'
-                                 '([0-9]{2}):([0-9]{2}):([0-9]{2})$')
+    TYPE = (datetime.datetime,)
+    DATETIME_REGEXP = re.compile(
+        "^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]" "([0-9]{2}):([0-9]{2}):([0-9]{2})$"
+    )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is None:
-            return ''
+            return ""
 
         return six.text_type(value.isoformat())
 
@@ -385,7 +409,7 @@ class TextField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (six.text_type, )
+    TYPE = (six.text_type,)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -401,13 +425,14 @@ class EmailField(TextField):
     Is not locale-aware (does not need to be)
     """
 
-    EMAIL_REGEXP = re.compile(r'^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]+$',
-                              flags=re.IGNORECASE)
+    EMAIL_REGEXP = re.compile(
+        r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]+$", flags=re.IGNORECASE
+    )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is None:
-            return ''
+            return ""
 
         return six.text_type(value)
 
@@ -438,20 +463,16 @@ class JSONField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
+        value = super(JSONField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
         else:
             return json.loads(value)
 
 
-local_vars = locals()
-TYPES = [(key, local_vars.get(key)) for key in __all__ if key != 'Field']
-AVAILABLE_FIELD_TYPES = [item[1] for item in TYPES]
-
-
 def as_string(value):
     if isinstance(value, six.binary_type):
-        raise ValueError('Binary is not supported')
+        raise ValueError("Binary is not supported")
     elif isinstance(value, six.text_type):
         return value
     else:
@@ -477,159 +498,288 @@ def unique_values(values):
     return result
 
 
-def detect_types(field_names, field_values, field_types=AVAILABLE_FIELD_TYPES,
-                 *args, **kwargs):
-    'Detect column types (or "where the magic happens")'
+def get_items(*indexes):
+    """Return a callable that fetches the given indexes of an object
+    Always return a tuple even when len(indexes) == 1.
+
+    Similar to `operator.itemgetter`, but will insert `None` when the object
+    does not have the desired index (instead of raising IndexError).
+    """
+    return lambda obj: tuple(
+        obj[index] if len(obj) > index else None for index in indexes
+    )
+
+
+def slug(text, separator="_", permitted_chars=SLUG_CHARS, replace_with_separator=" -_"):
+    """Generate a slug for the `text`.
+
+    >>> slug(' ÁLVARO  justen% ')
+    'alvaro_justen'
+    >>> slug(' ÁLVARO  justen% ', separator='-')
+    'alvaro-justen'
+    """
+
+    text = six.text_type(text or "")
+
+    # Strip non-ASCII characters
+    # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
+    text = normalize("NFKD", text.strip()).encode("ascii", "ignore").decode("ascii")
+
+    # Replace spaces and other chars with separator
+    # Example: u' ALVARO  justen% ' -> u'_ALVARO__justen%_'
+    for char in replace_with_separator:
+        text = text.replace(char, separator)
+
+    # Remove non-permitted characters and put everything to lowercase
+    # Example: u'_ALVARO__justen%_' -> u'_alvaro__justen_'
+    text = "".join(char for char in text if char in permitted_chars).lower()
+
+    # Remove double occurrencies of separator
+    # Example: u'_alvaro__justen_' -> u'_alvaro_justen_'
+    double_separator = separator + separator
+    while double_separator in text:
+        text = text.replace(double_separator, separator)
+
+    # Strip separators
+    # Example: u'_alvaro_justen_' -> u'alvaro_justen'
+    return text.strip(separator)
+
+
+def make_unique_name(name, existing_names, name_format="{name}_{index}", start=2):
+    """Return a unique name based on `name_format` and `name`."""
+    index = start
+    new_name = name
+    while new_name in existing_names:
+        new_name = name_format.format(name=name, index=index)
+        index += 1
+
+    return new_name
+
+
+def make_header(field_names, permit_not=False):
+    """Return unique and slugged field names."""
+    slug_chars = SLUG_CHARS if not permit_not else SLUG_CHARS + "^"
+
+    header = [
+        slug(field_name, permitted_chars=slug_chars) for field_name in field_names
+    ]
+    result = []
+    for index, field_name in enumerate(header):
+        if not field_name:
+            field_name = "field_{}".format(index)
+        elif field_name[0].isdigit():
+            field_name = "field_{}".format(field_name)
+
+        if field_name in result:
+            field_name = make_unique_name(
+                name=field_name, existing_names=result, start=2
+            )
+        result.append(field_name)
+
+    return result
+
+
+DEFAULT_TYPES = (
+    BoolField,
+    IntegerField,
+    FloatField,
+    DecimalField,
+    PercentField,
+    DecimalField,
+    DatetimeField,
+    DateField,
+    JSONField,
+    TextField,
+    BinaryField,
+)
+
+
+class TypeDetector(object):
+    """Detect data types based on a list of Field classes"""
+
+    def __init__(self, field_names=None, field_types=DEFAULT_TYPES,
+                 fallback_type=TextField, skip_indexes=None):
+        self.field_names = field_names or []
+        self.field_types = list(field_types)
+        self.fallback_type = fallback_type
+        self._possible_types = defaultdict(lambda: list(self.field_types))
+        self._samples = []
+        self._skip = skip_indexes or tuple()
+
+    def check_type(self, index, value):
+        for type_ in self._possible_types[index][:]:
+            try:
+                type_.deserialize(value)
+            except (ValueError, TypeError):
+                self._possible_types[index].remove(type_)
+
+    def process_row(self, row):
+        for index, value in enumerate(row):
+            if index in self._skip:
+                continue
+            self.check_type(index, value)
+
+    def feed(self, data):
+        for row in data:
+            self.process_row(row)
+
+    def priority(self, *field_types):
+        """Decide the priority between each possible type"""
+
+        return field_types[0] if field_types else self.fallback_type
+
+    @property
+    def fields(self):
+        possible, skip = self._possible_types, self._skip
+
+        if possible:
+            # Create a header with placeholder values for each detected column
+            # and then join this placeholders with original header - the
+            # original header may have less columns then the detected ones, so
+            # we end with a full header having a name for every possible
+            # column.
+            placeholders = make_header(range(max(possible.keys()) + 1))
+            header = [a or b for a, b in zip_longest(self.field_names, placeholders)]
+        else:
+            header = self.field_names
+
+        return OrderedDict(
+            [
+                (
+                    field_name,
+                    self.priority(*(possible[index] if index in possible else [])),
+                )
+                for index, field_name in enumerate(header)
+                if index not in skip
+            ]
+        )
+
+def detect_types(
+    field_names,
+    field_values,
+    field_types=DEFAULT_TYPES,
+    skip_indexes=None,
+    type_detector=TypeDetector,
+    fallback_type=TextField,
+    *args,
+    **kwargs
+):
+    """Detect column types (or "where the magic happens")"""
 
     # TODO: look strategy of csv.Sniffer.has_header
     # TODO: may receive 'type hints'
-    # TODO: should support receiving unicode objects directly
-    # TODO: should expect data in unicode or will be able to use binary data?
-
-    field_values = list(field_values)
-    if not field_values:
-        return OrderedDict([(field_name, TextField)
-                            for field_name in field_names])
-
-    number_of_fields = len(field_names)
-    columns = list(zip(*[row for row in field_values
-                         if len(row) == number_of_fields]))
-
-    if len(columns) != number_of_fields:
-        raise ValueError('Number of fields differ')
-
-    detected_types = OrderedDict([(field_name, None)
-                                  for field_name in field_names])
-    for index, field_name in enumerate(field_names):
-        data = unique_values(columns[index])
-        native_types = set(type(value) for value in data)
-
-        if not data:
-            # all values with an empty field (can't identify) -> BinaryField
-            identified_type = TextField
-        elif native_types == set([six.binary_type]):
-            identified_type = BinaryField
-        else:
-            # ok, let's try to identify the type of this column by
-            # trying to convert every non-null value in the sample
-            possible_types = list(field_types)
-            for value in data:
-                cant_be = set()
-                for type_ in possible_types:
-                    try:
-                        type_.deserialize(value, *args, **kwargs)
-                    except (ValueError, TypeError):
-                        cant_be.add(type_)
-                for type_to_remove in cant_be:
-                    possible_types.remove(type_to_remove)
-
-            identified_type = possible_types[0]  # priorities matter
-
-        detected_types[field_name] = identified_type
-
-    return detected_types
+    detector = type_detector(
+        field_names,
+        field_types=field_types,
+        fallback_type=fallback_type,
+        skip_indexes=skip_indexes,
+    )
+    detector.feed(field_values)
+    return detector.fields
 
 
 def identify_type(value):
-    'Identify the field type for a specific value'
+    """Identify the field type for a specific value"""
 
-    value_type = type(value)
-    if value_type not in (six.text_type, six.binary_type):
-        possible_types = [type_class for type_name, type_class in TYPES
-                          if value_type in type_class.TYPE]
-        if not possible_types:
-            detected = detect_types(['some_field'], [[value]])['some_field']
-        else:
-            detected = possible_types[0]
-    else:
-        detected = detect_types(['some_field'], [[value]])['some_field']
-
-    return detected
+    return detect_types(["name"], [[value]])["name"]
 
 
 def generate_schema(table, export_fields, output_format, output_fobj):
-    '''Generate table schema for a specific output format and write
+    """Generate table schema for a specific output format and write
 
     Current supported output formats: 'txt', 'sql' and 'django'.
     The table name and all fields names pass for a slugifying process (table
-    name is taken from file name).'''
+    name is taken from file name)."""
 
-    if output_format == 'txt':
+    if output_format == "txt":
         from rows.plugins.dicts import import_from_dicts
         from rows.plugins.txt import export_to_txt
 
-        data = [{'field_name': fieldname,
-                 'field_type': fieldtype.__name__.replace('Field', '').lower()}
-                for fieldname, fieldtype in table.fields.items()
-                if fieldname in export_fields]
+        data = [
+            {
+                "field_name": fieldname,
+                "field_type": fieldtype.__name__.replace("Field", "").lower(),
+            }
+            for fieldname, fieldtype in table.fields.items()
+            if fieldname in export_fields
+        ]
         export_to_txt(import_from_dicts(data), output_fobj)
 
-    elif output_format == 'sql':
+    elif output_format == "sql":
         import rows.fields as fields
 
         sql_fields = {
-            fields.BinaryField: 'BLOB',
-            fields.BoolField: 'BOOL',
-            fields.IntegerField: 'INT',
-            fields.FloatField: 'FLOAT',
-            fields.PercentField: 'FLOAT',
-            fields.DateField: 'DATE',
-            fields.DatetimeField: 'DATETIME',
-            fields.TextField: 'TEXT',
-            fields.DecimalField: 'FLOAT',
-            fields.EmailField: 'TEXT',
-            fields.JSONField: 'TEXT',
+            fields.BinaryField: "BLOB",
+            fields.BoolField: "BOOL",
+            fields.IntegerField: "INT",
+            fields.FloatField: "FLOAT",
+            fields.PercentField: "FLOAT",
+            fields.DateField: "DATE",
+            fields.DatetimeField: "DATETIME",
+            fields.TextField: "TEXT",
+            fields.DecimalField: "FLOAT",
+            fields.EmailField: "TEXT",
+            fields.JSONField: "TEXT",
         }
-        fields = ['    {} {}'.format(field_name, sql_fields[field_type])
-                  for field_name, field_type in table.fields.items()
-                  if field_name in export_fields]
-        sql = dedent('''
+        fields = [
+            "    {} {}".format(field_name, sql_fields[field_type])
+            for field_name, field_type in table.fields.items()
+            if field_name in export_fields
+        ]
+        sql = (
+            dedent(
+                """
         CREATE TABLE IF NOT EXISTS {name} (
         {fields}
         );
-        ''').strip().format(name=table.name, fields=',\n'.join(fields)) + '\n'
+        """
+            )
+            .strip()
+            .format(name=table.name, fields=",\n".join(fields))
+            + "\n"
+        )
         output_fobj.write(sql)
 
-    elif output_format == 'django':
+    elif output_format == "django":
         import rows.fields as fields
 
         django_fields = {
-            fields.BinaryField: 'BinaryField',
-            fields.BoolField: 'BooleanField',
-            fields.IntegerField: 'IntegerField',
-            fields.FloatField: 'FloatField',
-            fields.PercentField: 'DecimalField',
-            fields.DateField: 'DateField',
-            fields.DatetimeField: 'DateTimeField',
-            fields.TextField: 'TextField',
-            fields.DecimalField: 'DecimalField',
-            fields.EmailField: 'EmailField',
-            fields.JSONField: 'JSONField',
+            fields.BinaryField: "BinaryField",
+            fields.BoolField: "BooleanField",
+            fields.IntegerField: "IntegerField",
+            fields.FloatField: "FloatField",
+            fields.PercentField: "DecimalField",
+            fields.DateField: "DateField",
+            fields.DatetimeField: "DateTimeField",
+            fields.TextField: "TextField",
+            fields.DecimalField: "DecimalField",
+            fields.EmailField: "EmailField",
+            fields.JSONField: "JSONField",
         }
         table_name = table.name
-        if table_name == 'table1':
-            table_name = 'MyModel'
-        table_name = ''.join(word.capitalize()
-                             for word in table_name.split('_'))
+        if table_name == "table1":
+            table_name = "MyModel"
+        table_name = "".join(word.capitalize() for word in table_name.split("_"))
 
-        lines = ['from django.db import models']
-        if fields.JSONField in [table.fields[field_name]
-                                for field_name in export_fields]:
-            lines.append('from django.contrib.postgres.fields import JSONField')
-        lines.append('')
+        lines = ["from django.db import models"]
+        if fields.JSONField in [
+            table.fields[field_name] for field_name in export_fields
+        ]:
+            lines.append("from django.contrib.postgres.fields import JSONField")
+        lines.append("")
 
-        lines.append('class {}(models.Model):'.format(table_name))
+        lines.append("class {}(models.Model):".format(table_name))
         for field_name, field_type in table.fields.items():
             if field_name not in export_fields:
                 continue
 
             if field_type is not fields.JSONField:
-                django_type = 'models.{}()'.format(django_fields[field_type])
+                django_type = "models.{}()".format(django_fields[field_type])
             else:
-                django_type = 'JSONField()'
-            lines.append('    {} = {}'.format(field_name, django_type))
+                django_type = "JSONField()"
+            lines.append("    {} = {}".format(field_name, django_type))
 
-        result = '\n'.join(lines) + '\n'
+        result = "\n".join(lines) + "\n"
         output_fobj.write(result)
 
 
@@ -642,11 +792,14 @@ def load_schema(filename):
 
     table = import_from_uri(filename)
     field_names = table.field_names
-    assert 'field_name' in field_names
-    assert 'field_type' in field_names
+    assert "field_name" in field_names
+    assert "field_type" in field_names
 
-    types = dict(TYPES)
-    fields = OrderedDict()
-    for row in table:
-        fields[row.field_name] = types[row.field_type.capitalize() + 'Field']
-    return fields
+    global_vars = globals()
+    types = {key: global_vars.get(key) for key in __all__ if key != "Field"}
+    return OrderedDict(
+        [
+            (row.field_name, types[row.field_type.capitalize() + "Field"])
+            for row in table
+        ]
+    )

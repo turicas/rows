@@ -87,8 +87,8 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
         # not for the header).
         table_rows[0] = list(map(_extract_node_text, row_elements[0]))
 
-    max_columns = max(map(len, table_rows))
     if ignore_colspan:
+        max_columns = max(map(len, table_rows))
         table_rows = [row for row in table_rows if len(row) == max_columns]
 
     meta = {'imported_from': 'html',
