@@ -134,8 +134,23 @@ def cell_value(sheet, row, col):
             return value
 
 
+def get_table_start(sheet):
+    empty_cell_type = xlrd.empty_cell.ctype
+    start_column, start_row = 0, 0
+    for col in range(sheet.ncols):
+        if any(cell for cell in sheet.col(col) if cell.ctype != empty_cell_type):
+            start_column = col
+            break
+    for row in range(sheet.nrows):
+        if any(cell for cell in sheet.row(row) if cell.ctype != empty_cell_type):
+            start_row = row
+            break
+    return start_row, start_column
+
+
 def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
-                    start_row=0, start_column=0, end_row=None, end_column=None,
+                    start_row=None, start_column=None, end_row=None,
+                    end_column=None,
                     *args, **kwargs):
     """Return a rows.Table created from imported XLS file."""
 
@@ -150,12 +165,25 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
     # Get header and rows
     # xlrd library reads rows and columns starting from 0 and ending on
     # sheet.nrows/ncols - 1. rows accepts the same pattern
-    max_row, max_col = sheet.nrows - 1, sheet.ncols - 1
-    column_range = range(start_column, (end_column or max_col) + 1)
-    row_range = range(start_row, (end_row or max_row) + 1)
-    table_rows = [[cell_value(sheet, row_index, column_index)
-                   for column_index in column_range]
-                  for row_index in row_range]
+    # The xlrd library reads rows and columns starting from 0 and ending on
+    # sheet.nrows/ncols - 1. rows also uses 0-based indexes, so no
+    # transformation is needed
+    min_row, min_column = get_table_start(sheet)
+    max_row, max_column = sheet.nrows - 1, sheet.ncols - 1
+    # TODO: consider adding a parameter `ignore_padding=True` and when it's
+    # True, consider `start_row` starting from `min_row` and `start_column`
+    # starting from `min_col`.
+    start_row = start_row if start_row is not None else min_row
+    end_row = end_row if end_row is not None else max_row
+    start_column = start_column if start_column is not None else min_column
+    end_column = end_column if end_column is not None else max_column
+    table_rows = [
+        [
+            cell_value(sheet, row_index, column_index)
+            for column_index in range(start_column, end_column + 1)
+        ]
+        for row_index in range(start_row, end_row + 1)
+    ]
 
     meta = {'imported_from': 'xls',
             'filename': filename,

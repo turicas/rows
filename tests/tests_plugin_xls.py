@@ -143,8 +143,8 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_start_and_end_row(self, mocked_create_table):
         rows.import_from_xls(
             self.filename,
-            start_row=3, end_row=5,
-            start_column=4, end_column=6,
+            start_row=6, end_row=8,
+            start_column=6, end_column=8,
         )
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)

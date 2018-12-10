@@ -56,7 +56,7 @@ def _cell_to_python(cell):
 
 
 def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
-                     start_row=0, start_column=0, end_row=None,
+                     start_row=None, start_column=None, end_row=None,
                      end_column=None, *args, **kwargs):
     """Return a rows.Table created from imported XLSX file."""
     
@@ -65,18 +65,25 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
         sheet_name = workbook.sheetnames[sheet_index]
     sheet = workbook[sheet_name]
 
-    # openpyxl library reads rows and columns starting from 1 and ending on
-    # sheet.max_row/max_col. rows uses another pattern: 0 to N - 1, so we need
-    # to adjust the ranges accordingly
-    min_row, min_col = sheet.min_row - 1, sheet.min_column - 1
-    max_row, max_col = sheet.max_row - 1, sheet.max_column - 1
-    start_row = max(start_row, min_row)
-    end_row = min(end_row or max_row, max_row)
-    start_col = max(start_column, min_col)
-    end_col = min(end_column or max_col, max_col)
-    table_rows = [[_cell_to_python(sheet.cell(row=row_index, column=col_index))
-                   for col_index in range(start_col + 1, end_col + 2)]
-                  for row_index in range(start_row + 1, end_row + 2)]
+    # The openpyxl library reads rows and columns starting from 1 and ending on
+    # sheet.max_row/max_col. rows uses 0-based indexes (from 0 to N - 1), so we
+    # need to adjust the ranges accordingly.
+    min_row, min_column = sheet.min_row - 1, sheet.min_column - 1
+    max_row, max_column = sheet.max_row - 1, sheet.max_column - 1
+    # TODO: consider adding a parameter `ignore_padding=True` and when it's
+    # True, consider `start_row` starting from `sheet.min_row` and
+    # `start_column` starting from `sheet.min_col`.
+    start_row = start_row if start_row is not None else min_row
+    end_row = end_row if end_row is not None else max_row
+    start_column = start_column if start_column is not None else min_column
+    end_column = end_column if end_column is not None else max_column
+    table_rows = [
+        [
+            _cell_to_python(sheet.cell(row=row_index, column=col_index))
+            for col_index in range(start_column + 1, end_column + 2)
+        ]
+        for row_index in range(start_row + 1, end_row + 2)
+    ]
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, dont_open=True)
     metadata = {'imported_from': 'xlsx',
@@ -123,7 +130,7 @@ def _python_to_cell(field_types):
 def export_to_xlsx(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                    **kwargs):
     """Export the rows.Table to XLSX file and return the saved file."""
-    
+
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = sheet_name
