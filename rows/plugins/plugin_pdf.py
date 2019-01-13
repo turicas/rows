@@ -742,7 +742,6 @@ def pdf_table_lines(
                     line_size = len(line)
                 elif page_index > 0 and line == header:  # skip header repetition
                     continue
-            assert line_size == len(line)
             yield line
 
 

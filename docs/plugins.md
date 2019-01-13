@@ -32,7 +32,7 @@ it by passing the `dialect` parameter.
 
 Helper functions:
 
-- `rows.plugins.pdf.discover_dialect`: tries to figure out the CSV dialect
+- `rows.plugins.csv.discover_dialect`: tries to figure out the CSV dialect
   based on a sample (in bytes).
 - `rows.utils.csv2sqlite`: lazily convert a CSV into a SQLite table (the
   command-line version of this function is pretty useful -- see more by running
@@ -136,8 +136,8 @@ depending on the backend):
 - `'pdfminer'`: 100% Python implementation, very slow.
 
 Get this list programatically with `rows.plugins.pdf.backends()`. You can also
-subclass `rows.plugins.pdf.PDFBackend` and implement your own PDF parser (not
-recommended).
+subclass `rows.plugins.pdf.PDFBackend` and implement your own PDF parser, if
+needed.
 
 
 ### Specify Table Boundaries
@@ -180,7 +180,7 @@ programatically with `rows.plugins.pdf.algorithms()`):
 - `rows.plugins.pdf.pdf_table_lines`: almost the same as
   `rows.import_from_pdf`, but returns a list of strings instead of a
   `rows.Table` object. Useful if the PDF is not well structured and needs some
-  tweaking before importing as a `rows.Table` (so youcan extract to another
+  tweaking before importing as a `rows.Table` (so you can export to another
   format).
 
 ### Examples
@@ -190,7 +190,7 @@ programatically with `rows.plugins.pdf.algorithms()`):
   extract the tables in each PDF and put all rows together in one CSV).
 - [`examples/cli/extract-pdf.sh`][example-pdf-cli]: PDF extraction using the
   command-line interface (the parameters cannot be customized using this method
-  by now).
+  by now -- more improvements in next versions).
 
 
 ## XLS
