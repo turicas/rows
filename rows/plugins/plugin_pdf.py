@@ -41,10 +41,12 @@ try:
     import logging
 
     logging.getLogger("pdfminer").setLevel(logging.ERROR)
-    TEXT_TYPES = (LTTextBox, LTTextLine, LTChar)
+    PDFMINER_TEXT_TYPES = (LTTextBox, LTTextLine, LTChar)
+    PDFMINER_ALL_TYPES = (LTTextBox, LTTextLine, LTChar, LTRect)
     pdfminer_imported = True
 except ImportError:
     pdfminer_imported = False
+    PDFMINER_TEXT_TYPES, PDFMINER_ALL_TYPES = None, None
 
 from rows.plugins.utils import create_table, get_filename_and_fobj
 
@@ -149,7 +151,7 @@ class PDFMinerBackend(PDFBackend):
 
     @staticmethod
     def convert_object(obj):
-        if isinstance(obj, TEXT_TYPES):
+        if isinstance(obj, PDFMINER_TEXT_TYPES):
             return TextObject(
                 x0=obj.x0, y0=obj.y0, x1=obj.x1, y1=obj.y1, text=obj.get_text()
             )
@@ -161,7 +163,7 @@ class PDFMinerBackend(PDFBackend):
         page_numbers=None,
         starts_after=None,
         ends_before=None,
-        desired_types=(LTTextBox, LTTextLine, LTChar, LTRect),
+        desired_types=PDFMINER_ALL_TYPES,
     ):
 
         doc = self.document
@@ -210,7 +212,7 @@ class PDFMinerBackend(PDFBackend):
             page_numbers=page_numbers,
             starts_after=starts_after,
             ends_before=ends_before,
-            desired_types=(LTTextBox, LTTextLine, LTChar),
+            desired_types=PDFMINER_TEXT_TYPES,
         )
 
 
