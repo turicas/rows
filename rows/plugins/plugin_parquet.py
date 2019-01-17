@@ -1,24 +1,23 @@
 # coding: utf-8
 
-# Copyright 2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
 
 import logging
-
 from collections import OrderedDict
 
 from rows import fields
@@ -31,10 +30,7 @@ class NullHandler(logging.Handler):
 
 
 logging.getLogger("parquet").addHandler(NullHandler())
-
-import parquet
-
-
+import parquet  # NOQA
 PARQUET_TO_ROWS = {
         parquet.parquet_thrift.Type.BOOLEAN: fields.BoolField,
         parquet.parquet_thrift.Type.BYTE_ARRAY: fields.BinaryField,
@@ -46,9 +42,9 @@ PARQUET_TO_ROWS = {
         parquet.parquet_thrift.Type.INT96: fields.IntegerField,
 }
 
-def import_from_parquet(filename_or_fobj, *args, **kwargs):
-    'Import data from a Parquet file'
 
+def import_from_parquet(filename_or_fobj, *args, **kwargs):
+    """Import data from a Parquet file and return with rows.Table."""
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
 
     # TODO: should look into `schema.converted_type` also

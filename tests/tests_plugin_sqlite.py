@@ -1,18 +1,18 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
@@ -20,7 +20,6 @@ from __future__ import unicode_literals
 import sqlite3
 import tempfile
 import unittest
-
 from collections import OrderedDict
 
 import mock
@@ -29,7 +28,6 @@ import rows
 import rows.plugins.sqlite
 import rows.plugins.utils
 import tests.utils as utils
-
 from rows import fields
 
 
@@ -39,11 +37,13 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
     file_extension = 'sqlite'
     filename = 'tests/data/all-field-types.sqlite'
     assert_meta_encoding = False
-    override_fields = {'percent_column': fields.FloatField,
-                       'bool_column': fields.IntegerField, }
-    # SQLite does not support "Decimal" type, so `PercentField` will be
-    # identified as a float and also does not support "boolean" type, so it's
-    # saved as integer internally
+    override_fields = {
+        # SQLite does not support "Decimal" type, so `PercentField` will be
+        # identified as a float and also does not support "boolean" type, so
+        # it's saved as integer internally
+        'bool_column': fields.IntegerField,
+        'percent_column': fields.FloatField,
+    }
 
     def test_imports(self):
         self.assertIs(rows.import_from_sqlite,
@@ -71,13 +71,13 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
 
         # import using filename
-        table_1 = rows.import_from_sqlite(self.filename)
+        rows.import_from_sqlite(self.filename)
         call_args = mocked_create_table.call_args_list[0]
         self.assert_create_table_data(call_args)
 
         # import using connection
         connection = sqlite3.connect(self.filename)
-        table_2 = rows.import_from_sqlite(connection)
+        rows.import_from_sqlite(connection)
         call_args = mocked_create_table.call_args_list[1]
         self.assert_create_table_data(call_args, filename=connection)
         connection.close()
@@ -196,3 +196,14 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 query_args=(3, ))
         for row in table:
             self.assertTrue(row.float_column > 3)
+
+    def test_export_callback(self):
+        table = rows.import_from_dicts([{'id': number}
+                                        for number in range(10)])
+        myfunc = mock.Mock()
+        rows.export_to_sqlite(table, ':memory:', callback=myfunc, batch_size=3)
+        self.assertEqual(myfunc.call_count, 4)
+        self.assertEqual(
+            [(x[0][0], x[0][1]) for x in myfunc.call_args_list],
+            [(3, 3), (3, 6), (3, 9), (1, 10)]
+        )

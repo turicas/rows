@@ -1,35 +1,31 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
 
 import datetime
-
-from decimal import Decimal
 from io import BytesIO
 
 import xlrd
 import xlwt
 
 import rows.fields as fields
-
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
                                 prepare_to_export)
-
 
 CELL_TYPES = {
         xlrd.XL_CELL_BLANK: fields.TextField,
@@ -82,6 +78,7 @@ def _python_to_xls(field_types):
 
 
 def cell_value(sheet, row, col):
+    """Return the cell value of the table passed by argument, based in row and column."""
     cell = sheet.cell(row, col)
     field_type = CELL_TYPES[cell.ctype]
 
@@ -107,6 +104,9 @@ def cell_value(sheet, row, col):
             return False
         elif value == 1:
             return True
+
+    elif cell.xf_index is None:
+        return value  # TODO: test
 
     else:
         book = sheet.book
@@ -134,8 +134,25 @@ def cell_value(sheet, row, col):
             return value
 
 
+def get_table_start(sheet):
+    empty_cell_type = xlrd.empty_cell.ctype
+    start_column, start_row = 0, 0
+    for col in range(sheet.ncols):
+        if any(cell for cell in sheet.col(col) if cell.ctype != empty_cell_type):
+            start_column = col
+            break
+    for row in range(sheet.nrows):
+        if any(cell for cell in sheet.row(row) if cell.ctype != empty_cell_type):
+            start_row = row
+            break
+    return start_row, start_column
+
+
 def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
-                    start_row=0, start_column=0, *args, **kwargs):
+                    start_row=None, start_column=None, end_row=None,
+                    end_column=None,
+                    *args, **kwargs):
+    """Return a rows.Table created from imported XLS file."""
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, mode='rb')
     book = xlrd.open_workbook(filename, formatting_info=True)
@@ -146,9 +163,27 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
     # TODO: may re-use Excel data types
 
     # Get header and rows
-    table_rows = [[cell_value(sheet, row_index, column_index)
-                   for column_index in range(start_column, sheet.ncols)]
-                  for row_index in range(start_row, sheet.nrows)]
+    # xlrd library reads rows and columns starting from 0 and ending on
+    # sheet.nrows/ncols - 1. rows accepts the same pattern
+    # The xlrd library reads rows and columns starting from 0 and ending on
+    # sheet.nrows/ncols - 1. rows also uses 0-based indexes, so no
+    # transformation is needed
+    min_row, min_column = get_table_start(sheet)
+    max_row, max_column = sheet.nrows - 1, sheet.ncols - 1
+    # TODO: consider adding a parameter `ignore_padding=True` and when it's
+    # True, consider `start_row` starting from `min_row` and `start_column`
+    # starting from `min_col`.
+    start_row = start_row if start_row is not None else min_row
+    end_row = end_row if end_row is not None else max_row
+    start_column = start_column if start_column is not None else min_column
+    end_column = end_column if end_column is not None else max_column
+    table_rows = [
+        [
+            cell_value(sheet, row_index, column_index)
+            for column_index in range(start_column, end_column + 1)
+        ]
+        for row_index in range(start_row, end_row + 1)
+    ]
 
     meta = {'imported_from': 'xls',
             'filename': filename,
@@ -158,7 +193,7 @@ def import_from_xls(filename_or_fobj, sheet_name=None, sheet_index=0,
 
 def export_to_xls(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                   **kwargs):
-
+    """Export the rows.Table to XLS file and return the saved file."""
     work_book = xlwt.Workbook()
     sheet = work_book.add_sheet(sheet_name)
 

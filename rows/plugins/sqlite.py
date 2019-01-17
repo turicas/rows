@@ -1,18 +1,18 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
@@ -24,11 +24,9 @@ import string
 import six
 
 import rows.fields as fields
-
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
                                 ipartition, make_unique_name,
                                 prepare_to_export)
-
 
 SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
 SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS "{table_name}" ({field_types})'
@@ -54,13 +52,21 @@ def _python_to_sqlite(field_types):
         if field_type in (
                 fields.BinaryField,
                 fields.BoolField,
-                fields.DateField,
-                fields.DatetimeField,
                 fields.FloatField,
                 fields.IntegerField,
                 fields.TextField
         ):
             return value
+
+        elif field_type in (fields.DateField, fields.DatetimeField):
+            if value is None:
+                return None
+            elif isinstance(value, (datetime.date, datetime.datetime)):
+                return value.isoformat()
+            elif isinstance(value, (six.binary_type, six.text_type)):
+                return value
+            else:
+                raise ValueError('Cannot serialize date value: {}'.format(repr(value)))
 
         elif field_type in (fields.DecimalField,
                             fields.PercentField):
@@ -86,14 +92,13 @@ def _get_connection(filename_or_connection):
 
 
 def _valid_table_name(name):
-    '''Verify if a given table name is valid for `rows`
+    """Verify if a given table name is valid for `rows`.
 
     Rules:
     - Should start with a letter or '_'
     - Letters can be capitalized or not
     - Acceps letters, numbers and _
-    '''
-
+    """
     if name[0] not in '_' + string.ascii_letters or \
        not set(name).issubset('_' + string.ascii_letters + string.digits):
         return False
@@ -104,7 +109,7 @@ def _valid_table_name(name):
 
 def import_from_sqlite(filename_or_connection, table_name='table1', query=None,
                        query_args=None, *args, **kwargs):
-
+    """Return a rows.Table with data from SQLite database."""
     connection = _get_connection(filename_or_connection)
     cursor = connection.cursor()
 
@@ -128,9 +133,8 @@ def import_from_sqlite(filename_or_connection, table_name='table1', query=None,
 
 def export_to_sqlite(table, filename_or_connection, table_name=None,
                      table_name_format='table{index}', batch_size=100,
-                     *args, **kwargs):
+                     callback=None, *args, **kwargs):
     # TODO: should add transaction support?
-
     prepared_table = prepare_to_export(table, *args, **kwargs)
     connection = _get_connection(filename_or_connection)
     cursor = connection.cursor()
@@ -158,8 +162,18 @@ def export_to_sqlite(table, filename_or_connection, table_name=None,
             field_names=', '.join(field_names),
             placeholders=', '.join('?' for _ in field_names))
     _convert_row = _python_to_sqlite(field_types)
-    for batch in ipartition(prepared_table, batch_size):
-        cursor.executemany(insert_sql, map(_convert_row, batch))
+
+    if callback is None:
+        for batch in ipartition(prepared_table, batch_size):
+            cursor.executemany(insert_sql, map(_convert_row, batch))
+
+    else:
+        total_written = 0
+        for batch in ipartition(prepared_table, batch_size):
+            cursor.executemany(insert_sql, map(_convert_row, batch))
+            written = len(batch)
+            total_written += written
+            callback(written, total_written)
 
     connection.commit()
     return connection

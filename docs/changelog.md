@@ -1,8 +1,90 @@
 # rows' Log of Changes
 
-## Version `0.3.1`
+## Version `0.4.0`
 
 **Released on: (under development)**
+
+### New Features and Enhancaments
+
+- Added official Python 3.6 support
+- Implemented `Table.__iadd__` (`table += other` will work)
+- `Table.__add__` test is deterministic now
+- [#224](https://github.com/turicas/rows/issues/224) Add `|` as possible
+  delimiter (CSV dialect detection)
+- Export CSV in batches
+- Change CSV dialect detection sample size to 256KiB
+- [#242](https://github.com/turicas/rows/issues/242) (CLI) Add
+  `--fields`/`--fields-exclude` to `convert`, `join` and `sum` (and rename
+  `--fields-exclude` on `print`), also remove `--fields` from `query` (is not
+  needed).
+- [#235](https://github.com/turicas/rows/issues/235) Implement `--http-cache`
+  and `--http-cache-path`.
+- [#237](https://github.com/turicas/rows/issues/237) Implement `rows schema`
+  (generates schema in text, SQL and Django models).
+- [#243](https://github.com/turicas/rows/issues/243) Change license to LGPL3.0
+- [#225](https://github.com/turicas/rows/issues/225) Create export callbacks
+  (CSV and SQLite plugins)
+- [#234](https://github.com/turicas/rows/issues/234) Remove `BinaryField` from
+  the default list of detection types
+- [#270](https://github.com/turicas/rows/pull/270) Added options to export
+  pretty text table frames (TXT plugin)
+- Add `csv2sqlite` CLI subcommand
+- Create `rows.utils.open_compressed` helper function: can read/write files,
+  automatically dealing with on-the-fly compression
+- [#274](https://github.com/turicas/rows/issues/274) `start_row` and
+  `start_column` now behave the same way in XLS and XLSX
+- [#261](https://github.com/turicas/rows/issues/261) Add support to `end_row`
+  and `end_column` on XLS and XLSX (thanks
+  [@Lrcezimbra](https://github.com/Lrcezimbra) for the suggestion)
+- Add progress bar support to `utils.download_file`
+- Enable progress bar when downloading from CLI
+- Add helper class CsvLazyDictWriter
+- Add pgimport and pgexport functions and CLI commands
+- Add sqlite2csv function and CLI command
+- [#4](https://github.com/turicas/rows/issues/4) Add PostgreSQL plugin (thanks
+  to [@juliano777](https://github.com/juliano777))
+- [#290](https://github.com/turicas/rows/pull/290) Fix percent formatting
+  reading on XLSX and ODS file formats (thanks to
+  [@jsbueno](https://github.com/jsbueno))
+- [#220](https://github.com/turicas/rows/issues/220) Do not use
+  non-import_fields and force_types columns on type detection algorithm
+
+
+### Bug Fixes
+
+- [#223](https://github.com/turicas/rows/issues/223) `UnicodeDecodeError` on
+  dialect detection
+- [#214](https://github.com/turicas/rows/issues/214) Problem detecting dialect
+- [#181](https://github.com/turicas/rows/issues/181) Create slugs inside
+  `Table.__init__`
+- [#221](https://github.com/turicas/rows/issues/221) Error on pip install rows
+- [#238](https://github.com/turicas/rows/issues/238) `import_from_dicts`
+  supports generator as input
+- [#239](https://github.com/turicas/rows/issues/239) Use correct field ordering
+
+
+## Version `0.3.1`
+
+**Released on: 2017-05-08**
+
+### Enhancements
+
+- Move information on README to a site, organize and add more examples.
+  Documentation is available at [turicas.info/rows](http://turicas.info/rows).
+  Thanks to [@ellisonleao](https://github.com/ellisonleao) for Sphinx
+  implementation and [@ramiroluz](https://github.com/ramiroluz) for new
+  examples.
+- Little code refactorings.
+
+### Bug Fixes
+
+- [#200](https://github.com/turicas/rows/pull/200) Escape output when exporting
+  to HTML (thanks to [@arloc](https://github.com/arloc))
+- Fix some tests
+- [#215](https://github.com/turicas/rows/issues/215) DecimalField does not
+  handle negative values correctly if using locale (thanks to
+  [@draug3n](https://github.com/draug3n) for reporting)
+
 
 ## Version `0.3.0`
 

@@ -1,36 +1,36 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
 
-import collections
 import datetime
+import io
 import json
 import platform
 import unittest
-
 from base64 import b64encode
 from decimal import Decimal
+from textwrap import dedent
 
-import rows
 import six
 
+import rows
 from rows import fields
-
+from tests import utils
 
 if platform.system() == 'Windows':
     locale_name = 'ptb_bra'
@@ -198,6 +198,10 @@ class FieldsTestCase(unittest.TestCase):
                          six.text_type)
         self.assertEqual(fields.DecimalField.deserialize('21.21657469231'),
                          Decimal('21.21657469231'))
+        self.assertEqual(fields.DecimalField.deserialize('-21.34'),
+                         Decimal('-21.34'))
+        self.assertEqual(fields.DecimalField.serialize(Decimal('-21.34')),
+                         '-21.34')
         self.assertEqual(fields.DecimalField.deserialize(None), None)
 
         with rows.locale_context(locale_name):
@@ -211,8 +215,12 @@ class FieldsTestCase(unittest.TestCase):
                              '42,0')
             self.assertEqual(fields.DecimalField.serialize(Decimal('42000.0')),
                              '42000,0')
+            self.assertEqual(fields.DecimalField.serialize(Decimal('-42.0')),
+                             '-42,0')
             self.assertEqual(fields.DecimalField.deserialize('42.000,00'),
                              Decimal('42000.00'))
+            self.assertEqual(fields.DecimalField.deserialize('-42.000,00'),
+                             Decimal('-42000.00'))
             self.assertEqual(
                 fields.DecimalField.serialize(
                     Decimal('42000.0'),
@@ -401,7 +409,7 @@ class FieldUtilsTestCase(unittest.TestCase):
         }
 
     def test_detect_types_no_sample(self):
-        expected = {key: fields.BinaryField for key in self.expected.keys()}
+        expected = {key: fields.TextField for key in self.expected.keys()}
         result = fields.detect_types(self.fields, [])
         self.assertDictEqual(dict(result), expected)
 
@@ -409,8 +417,8 @@ class FieldUtilsTestCase(unittest.TestCase):
 
         # first, try values as (`bytes`/`str`)
         expected = {key: fields.BinaryField for key in self.expected.keys()}
-        values = [[value.encode('utf-8') for value in row]
-                  for row in self.data]
+        values = [[b"some binary data" for _ in range(len(self.data[0]))]
+                  for __ in range(20)]
         result = fields.detect_types(self.fields, values)
         self.assertDictEqual(dict(result), expected)
 
@@ -425,6 +433,10 @@ class FieldUtilsTestCase(unittest.TestCase):
     def test_detect_types(self):
         result = fields.detect_types(self.fields, self.data)
         self.assertDictEqual(dict(result), self.expected)
+
+    def test_detect_types_different_number_of_fields(self):
+        result = fields.detect_types(["f1", "f2"], [["a", "b", "c"]])
+        self.assertEquals(list(result.keys()), ["f1", "f2", "field_2"])
 
     def test_precedence(self):
         field_types = [
@@ -457,7 +469,11 @@ class FieldUtilsTestCase(unittest.TestCase):
                     'Álvaro Justen'
                 ]
             ]
-        result = fields.detect_types([item[0] for item in field_types], data)
+        result = fields.detect_types(
+            [item[0] for item in field_types],
+            data,
+            field_types=[item[1] for item in field_types]
+        )
         self.assertDictEqual(dict(result), dict(field_types))
 
 
@@ -485,3 +501,118 @@ class FieldsFunctionsTestCase(unittest.TestCase):
             fields.as_string('Álvaro'.encode('utf-8'))
         self.assertEqual(exception_context.exception.args[0],
                          'Binary is not supported')
+
+    def test_get_items(self):
+        func = fields.get_items(2)
+        self.assertEqual(func("a b c d e f".split()), ("c",))
+
+        func = fields.get_items(0, 2, 3)
+        self.assertEqual(func("a b c d e f".split()), ("a", "c", "d"))
+        self.assertEqual(func("a b c".split()), ("a", "c", None))
+
+    def assert_generate_schema(self, fmt, expected, export_fields=None):
+        # prepare a consistent table so we can test all formats using it
+        table_fields = utils.table.fields.copy()
+        table_fields['json_column'] = fields.JSONField
+        table_fields['decimal_column'] = fields.DecimalField
+        table_fields['percent_column'] = fields.DecimalField
+        if export_fields is None:
+            export_fields = list(table_fields.keys())
+        table = rows.Table(fields=table_fields)
+
+        for row in utils.table:
+            data = row._asdict()
+            data['json_column'] = {}
+            table.append(data)
+        table.meta['filename'] = 'this is my table.csv'
+
+        obj = io.StringIO()
+        fields.generate_schema(table, export_fields, fmt, obj)
+        obj.seek(0)
+        result = obj.read()
+
+        self.assertEqual(expected.strip(), result.strip())
+
+    def test_generate_schema_txt(self):
+        expected = dedent('''
+            +-----------------+------------+
+            |    field_name   | field_type |
+            +-----------------+------------+
+            |     bool_column |       bool |
+            |  integer_column |    integer |
+            |    float_column |      float |
+            |  decimal_column |    decimal |
+            |  percent_column |    decimal |
+            |     date_column |       date |
+            | datetime_column |   datetime |
+            |  unicode_column |       text |
+            |     json_column |       json |
+            +-----------------+------------+
+        ''')
+        self.assert_generate_schema('txt', expected)
+
+    def test_generate_schema_sql(self):
+        expected = dedent('''
+        CREATE TABLE IF NOT EXISTS this_is_my_table (
+            bool_column BOOL,
+            integer_column INT,
+            float_column FLOAT,
+            decimal_column FLOAT,
+            percent_column FLOAT,
+            date_column DATE,
+            datetime_column DATETIME,
+            unicode_column TEXT,
+            json_column TEXT
+        );
+        ''')
+        self.assert_generate_schema('sql', expected)
+
+    def test_generate_schema_django(self):
+        expected = dedent('''
+        from django.db import models
+        from django.contrib.postgres.fields import JSONField
+
+        class ThisIsMyTable(models.Model):
+            bool_column = models.BooleanField()
+            integer_column = models.IntegerField()
+            float_column = models.FloatField()
+            decimal_column = models.DecimalField()
+            percent_column = models.DecimalField()
+            date_column = models.DateField()
+            datetime_column = models.DateTimeField()
+            unicode_column = models.TextField()
+            json_column = JSONField()
+        ''')
+        self.assert_generate_schema('django', expected)
+
+    def test_generate_schema_restricted_fields(self):
+        expected = dedent('''
+            +-------------+------------+
+            |  field_name | field_type |
+            +-------------+------------+
+            | bool_column |       bool |
+            | json_column |       json |
+            +-------------+------------+
+        ''')
+        self.assert_generate_schema('txt', expected,
+                export_fields=['bool_column', 'json_column'])
+
+        expected = dedent('''
+        CREATE TABLE IF NOT EXISTS this_is_my_table (
+            bool_column BOOL,
+            json_column TEXT
+        );
+        ''')
+        self.assert_generate_schema('sql', expected,
+                export_fields=['bool_column', 'json_column'])
+
+        expected = dedent('''
+        from django.db import models
+        from django.contrib.postgres.fields import JSONField
+
+        class ThisIsMyTable(models.Model):
+            bool_column = models.BooleanField()
+            json_column = JSONField()
+        ''')
+        self.assert_generate_schema('django', expected,
+                export_fields=['bool_column', 'json_column'])

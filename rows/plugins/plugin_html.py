@@ -1,35 +1,40 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
+
+import six
+from lxml.etree import tostring as to_string
+from lxml.etree import strip_tags
+from lxml.html import document_fromstring
+
+from rows.plugins.utils import (create_table, export_data,
+                                get_filename_and_fobj, serialize)
 
 try:
     from HTMLParser import HTMLParser  # Python 2
 except:
     from html.parser import HTMLParser  # Python 3
 
-import six
 
-from lxml.html import document_fromstring
-from lxml.etree import tostring as to_string, strip_tags
-
-from rows.plugins.utils import (create_table, export_data,
-                                get_filename_and_fobj, serialize)
-
+try:
+    from html import escape  # Python 3
+except:
+    from cgi import escape  # Python 2
 
 unescape = HTMLParser().unescape
 
@@ -56,7 +61,7 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
                      ignore_colspan=True, preserve_html=False,
                      properties=False, table_tag='table', row_tag='tr',
                      column_tag='td|th', *args, **kwargs):
-
+    """Return rows.Table from HTML file."""
     filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
     html = fobj.read().decode(encoding)
     html_tree = document_fromstring(html)
@@ -82,8 +87,8 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
         # not for the header).
         table_rows[0] = list(map(_extract_node_text, row_elements[0]))
 
-    max_columns = max(map(len, table_rows))
     if ignore_colspan:
+        max_columns = max(map(len, table_rows))
         table_rows = [row for row in table_rows if len(row) == max_columns]
 
     meta = {'imported_from': 'html',
@@ -94,6 +99,7 @@ def import_from_html(filename_or_fobj, encoding='utf-8', index=0,
 
 def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
                    **kwargs):
+    """Export and return rows.Table data to HTML file."""
     serialized_table = serialize(table, *args, **kwargs)
     fields = next(serialized_table)
     result = ['<table>\n\n', '  <thead>\n', '    <tr>\n']
@@ -104,7 +110,7 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
         css_class = 'odd' if index % 2 == 1 else 'even'
         result.append('    <tr class="{}">\n'.format(css_class))
         for value in row:
-            result.extend(['      <td> ', value, ' </td>\n'])
+            result.extend(['      <td> ', escape(value), ' </td>\n'])
         result.append('    </tr>\n\n')
     result.append('  </tbody>\n\n</table>\n')
     html = ''.join(result).encode(encoding)
@@ -113,8 +119,7 @@ def export_to_html(table, filename_or_fobj=None, encoding='utf-8', *args,
 
 
 def _extract_node_text(node):
-    'Extract text from a given lxml node'
-
+    """Extract text from a given lxml node."""
     texts = map(six.text_type.strip,
                 map(six.text_type,
                     map(unescape,
@@ -123,6 +128,7 @@ def _extract_node_text(node):
 
 
 def count_tables(filename_or_fobj, encoding='utf-8', table_tag='table'):
+    """Read a file passed by arg and return your table HTML tag count."""
     filename, fobj = get_filename_and_fobj(filename_or_fobj)
     html = fobj.read().decode(encoding)
     html_tree = document_fromstring(html)
@@ -131,8 +137,7 @@ def count_tables(filename_or_fobj, encoding='utf-8', table_tag='table'):
 
 
 def tag_to_dict(html):
-    "Extract tag's attributes into a `dict`"
-
+    """Extract tag's attributes into a `dict`."""
     element = document_fromstring(html).xpath('//html/body/child::*')[0]
     attributes = dict(element.attrib)
     attributes['text'] = element.text_content()
@@ -140,12 +145,10 @@ def tag_to_dict(html):
 
 
 def extract_text(html):
-    'Extract text from a given HTML'
-
+    """Extract text from a given HTML."""
     return _extract_node_text(document_fromstring(html))
 
 
 def extract_links(html):
-    'Extract the href values from a given HTML (returns a list of strings)'
-
+    """Extract the href values from a given HTML (returns a list of strings)."""
     return document_fromstring(html).xpath('.//@href')

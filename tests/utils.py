@@ -1,18 +1,18 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
@@ -20,16 +20,13 @@ from __future__ import unicode_literals
 import copy
 import datetime
 import os
-
 from collections import OrderedDict
 from decimal import Decimal
 
 import six
 
 import rows.fields as fields
-
 from rows.table import Table
-
 
 NONE_VALUES = list(fields.NULL) + ['', None]
 FIELDS = OrderedDict([
@@ -121,6 +118,29 @@ for row in EXPECTED_ROWS:
 table._meta = {'test': 123}
 
 
+class LazyGenerator(object):
+
+    def __init__(self, max_number):
+        self.max_number = max_number
+        self.last = None
+
+    def __iter__(self):
+        yield ['number', 'number_sq', 'number_double']
+        for number in range(self.max_number):
+            self.last = number
+            yield [self.last, self.last ** 2, self.last * 2]
+
+
+class LazyDictGenerator(LazyGenerator):
+
+    def __iter__(self):
+        header = ('number', 'number_sq', 'number_double')
+        for number in range(self.max_number):
+            self.last = number
+            data = (self.last, self.last ** 2, self.last * 2)
+            yield dict(zip(header, data))
+
+
 class RowsTestMixIn(object):
 
     maxDiff = None
@@ -136,14 +156,11 @@ class RowsTestMixIn(object):
 
     def assert_table_equal(self, first, second):
         expected_fields = dict(second.fields)
-        if self.override_fields is None:
-            override_fields = {}
-        else:
-            override_fields = self.override_fields
-            expected_fields = copy.deepcopy(expected_fields)
-            for key, value in override_fields.items():
-                if key in expected_fields:
-                    expected_fields[key] = value
+        override_fields = self.override_fields or {}
+        expected_fields = copy.deepcopy(expected_fields)
+        for key, value in override_fields.items():
+            if key in expected_fields:
+                expected_fields[key] = value
 
         self.assertDictEqual(dict(first.fields), expected_fields)
         self.assertEqual(len(first), len(second))
@@ -161,7 +178,7 @@ class RowsTestMixIn(object):
                     self.assertEqual(value, expected_value,
                             'Field {} value mismatch'.format(field_name))
                 else:
-                    self.assertAlmostEqual(value, expected_value)
+                    self.assertAlmostEqual(value, expected_value, places=5)
 
     def assert_file_contents_equal(self, first_filename, second_filename):
         with open(first_filename, 'rb') as fobj:
@@ -172,7 +189,7 @@ class RowsTestMixIn(object):
 
     def assert_create_table_data(self, call_args, field_ordering=True,
                                  filename=None, expected_meta=None):
-        if filename is None:
+        if filename is None and getattr(self, 'filename', None):
             filename = self.filename
         kwargs = call_args[1]
         if expected_meta is None:
@@ -181,7 +198,13 @@ class RowsTestMixIn(object):
             if self.assert_meta_encoding:
                 expected_meta['encoding'] = self.encoding
 
-        self.assertEqual(kwargs['meta'], expected_meta)
+        # Don't test 'frame_style' metadata,
+        # as it is specific for txt importing
+        # (and the default values for it might change)
+        if "frame_style" not in expected_meta:
+            kwargs['meta'].pop('frame_style', '')
+
+        self.assertDictEqual(kwargs['meta'], expected_meta)
         del kwargs['meta']
         self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs,
                                field_ordering=field_ordering)
@@ -210,15 +233,22 @@ class RowsTestMixIn(object):
     # Fields asserts: input values we expect from plugins
 
     def field_assert(self, field_name, expected_value, value, *args, **kwargs):
-        asserts = {'bool_column': self.assert_BoolField,
-                   'integer_column': self.assert_IntegerField,
-                   'float_column': self.assert_FloatField,
-                   'decimal_column': self.assert_DecimalField,
-                   'percent_column': self.assert_PercentField,
-                   'date_column': self.assert_DateField,
-                   'datetime_column': self.assert_DatetimeField,
-                   'unicode_column': self.assert_TextField, }
-        return asserts[field_name](expected_value, value, *args, **kwargs)
+        assert_methods = {
+            fields.BoolField: self.assert_BoolField,
+            fields.DateField: self.assert_DateField,
+            fields.DatetimeField: self.assert_DatetimeField,
+            fields.DecimalField: self.assert_DecimalField,
+            fields.FloatField: self.assert_FloatField,
+            fields.IntegerField: self.assert_IntegerField,
+            fields.PercentField: self.assert_PercentField,
+            fields.TextField: self.assert_TextField,
+        }
+        if self.override_fields and field_name in self.override_fields:
+            FieldClass = self.override_fields[field_name]
+        else:
+            FieldClass = FIELDS[field_name]
+
+        return assert_methods[FieldClass](expected_value, value, *args, **kwargs)
 
     def assert_BoolField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
@@ -240,7 +270,7 @@ class RowsTestMixIn(object):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
         elif type(value) != type(expected_value):
-            self.assertEqual(value, str(expected_value))
+            self.assertEqual(str(value), str(expected_value))
         else:
             self.assertAlmostEqual(expected_value, value, places=5)
 

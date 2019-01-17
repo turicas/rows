@@ -1,30 +1,28 @@
 # coding: utf-8
 
-# Copyright 2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
 
 import unittest
-
 from collections import OrderedDict
 
 import mock
 
 import rows
-
 
 DATA = [['nation_key', 'name', 'region_key', 'comment_col'],
         [0, b'ALGERIA', 0, b' haggle. carefully final deposits detect slyly agai'],
@@ -90,7 +88,7 @@ class PluginParquetTestCase(unittest.TestCase):
         mocked_create_table.return_value = 42
 
         # import using filename
-        table = rows.import_from_parquet(self.filename)
+        rows.import_from_parquet(self.filename)
         args = mocked_create_table.call_args[0][0]
 
         self.assertEqual(args, DATA)

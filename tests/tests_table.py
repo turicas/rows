@@ -1,40 +1,35 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
 
+import collections
 import datetime
-import math
-import time
 import unittest
 
-from collections import OrderedDict
-
+import mock
 import six
 
 import rows
 import rows.fields as fields
-
 from rows.table import FlexibleTable, Table
 
-import tests.utils as utils
-
-
 binary_type_name = six.binary_type.__name__
+
 
 class TableTestCase(unittest.TestCase):
 
@@ -48,6 +43,13 @@ class TableTestCase(unittest.TestCase):
                            'birthdate': datetime.date(1990, 2, 1)})
         self.table.append({'name': 'Douglas Adams',
                            'birthdate': '1952-03-11'})
+
+    def test_table_init_slug_creation_on_fields(self):
+        table = rows.Table(fields=collections.OrderedDict([
+            ('Query Occurrence"( % ),"First Seen', rows.fields.FloatField),
+        ]))
+
+        self.assertIn('query_occurrence_first_seen', table.fields)
 
     def test_Table_is_present_on_main_namespace(self):
         self.assertIn('Table', dir(rows))
@@ -297,25 +299,27 @@ class TableTestCase(unittest.TestCase):
         expected = '<rows.Table 2 fields, 3 rows>'
         self.assertEqual(expected, repr(self.table))
 
-    def test_table_add_time(self):
-        '''rows.Table.__add__ should be constant time
+    def test_table_add_should_not_iterate_over_rows(self):
+        table1 = rows.Table(fields={'f1': rows.fields.IntegerField,
+                                    'f2': rows.fields.FloatField})
+        table2 = rows.Table(fields={'f1': rows.fields.IntegerField,
+                                    'f2': rows.fields.FloatField})
+        table1._rows = mock.Mock()
+        table1._rows.__add__ = mock.Mock()
+        table1._rows.__iter__ = mock.Mock()
+        table2._rows = mock.Mock()
+        table2._rows.__add__ = mock.Mock()
+        table2._rows.__iter__ = mock.Mock()
 
-        To test it we double table size for each round and then compare the
-        standard deviation to the mean (it will be almost the mean if the
-        algorithm is not fast enough and almost 10% of the mean if it's good).
-        '''
-        rounds = []
-        table = utils.table
-        for _ in range(5):
-            start = time.time()
-            table = table + table
-            end = time.time()
-            rounds.append(end - start)
-
-        mean = sum(rounds) / len(rounds)
-        stdev = math.sqrt((1.0 / (len(rounds) - 1)) *
-                          sum((value - mean) ** 2 for value in rounds))
-        self.assertTrue(0.2 * mean > stdev)
+        self.assertFalse(table1._rows.__add__.called)
+        self.assertFalse(table2._rows.__add__.called)
+        self.assertFalse(table1._rows.__iter__.called)
+        self.assertFalse(table2._rows.__iter__.called)
+        table1 + table2
+        self.assertTrue(table1._rows.__add__.called)
+        self.assertFalse(table2._rows.__add__.called)
+        self.assertFalse(table1._rows.__iter__.called)
+        self.assertFalse(table2._rows.__iter__.called)
 
 
 class TestFlexibleTable(unittest.TestCase):
@@ -374,3 +378,28 @@ class TestFlexibleTable(unittest.TestCase):
         with self.assertRaises(ValueError) as context_manager:
             self.table[[1]]
         self.assertEqual(type(context_manager.exception), ValueError)
+
+    def test_table_iadd(self):
+        table = rows.Table(fields={'f1': rows.fields.IntegerField,
+                                   'f2': rows.fields.FloatField})
+        table.append({'f1': 1, 'f2': 2})
+        table.append({'f1': 3, 'f2': 4})
+
+        self.assertEqual(len(table), 2)
+        table += table
+        self.assertEqual(len(table), 4)
+        data_rows = list(table)
+        self.assertEqual(data_rows[0], data_rows[2])
+        self.assertEqual(data_rows[1], data_rows[3])
+
+    def test_table_name(self):
+        table = rows.Table(
+                fields=collections.OrderedDict([('a', fields.TextField), ])
+        )
+
+        self.assertTrue('filename' not in table.meta)
+        self.assertEqual(table.name, 'table1')
+
+        table.meta['filename'] = 'This is THE name.csv'
+        self.assertTrue('filename' in table.meta)
+        self.assertEqual(table.name, 'this_is_the_name')

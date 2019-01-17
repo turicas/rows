@@ -6,8 +6,8 @@
 # Install dependencies by running: pip install requests rows[xls]
 
 import requests
-import rows
 
+import rows
 
 URL = 'http://www.onumujeres-ecuador.org/geovisor/data/organizaciones.php'
 

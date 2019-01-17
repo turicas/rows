@@ -1,18 +1,18 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
@@ -21,13 +21,11 @@ import datetime
 import tempfile
 import time
 import unittest
-
 from collections import OrderedDict
 
 import mock
 
 import rows
-import rows.fields as fields
 import rows.plugins.xls
 import tests.utils as utils
 
@@ -67,7 +65,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
 
         # import using filename
-        table_1 = rows.import_from_xls(self.filename)
+        rows.import_from_xls(self.filename)
         call_args = mocked_create_table.call_args_list[0]
         self.assert_create_table_data(call_args,
                 expected_meta={'imported_from': 'xls',
@@ -76,7 +74,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         # import using fobj
         with open(self.filename, 'rb') as fobj:
-            table_2 = rows.import_from_xls(fobj)
+            rows.import_from_xls(fobj)
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args,
                 expected_meta={'imported_from': 'xls',
@@ -140,3 +138,20 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table2 = rows.import_from_xls(filename)
         self.assert_table_equal(table, table2)
+
+    @mock.patch('rows.plugins.xls.create_table')
+    def test_start_and_end_row(self, mocked_create_table):
+        rows.import_from_xls(
+            self.filename,
+            start_row=6, end_row=8,
+            start_column=6, end_column=8,
+        )
+        self.assertTrue(mocked_create_table.called)
+        self.assertEqual(mocked_create_table.call_count, 1)
+        call_args = mocked_create_table.call_args_list[0]
+        expected_data = [
+            ['12.0%', '2050-01-02', '2050-01-02T23:45:31'],
+            ['13.64%', '2015-08-18', '2015-08-18T22:21:33'],
+            ['13.14%', '2015-03-04', '2015-03-04T16:00:01'],
+        ]
+        self.assertEqual(expected_data, call_args[0][0])

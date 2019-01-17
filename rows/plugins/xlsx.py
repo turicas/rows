@@ -1,29 +1,27 @@
 # coding: utf-8
 
-# Copyright 2014-2016 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
 
-import datetime
-import decimal
-
 from decimal import Decimal
 from io import BytesIO
+from numbers import Number
 
-from openpyxl import load_workbook, Workbook
+from openpyxl import Workbook, load_workbook
 
 from rows import fields
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
@@ -31,50 +29,58 @@ from rows.plugins.utils import (create_table, get_filename_and_fobj,
 
 
 def _cell_to_python(cell):
-    '''Convert a PyOpenXL's `Cell` object to the corresponding Python object'''
+    """Convert a PyOpenXL's `Cell` object to the corresponding Python object."""
+    data_type, value = cell.data_type, cell.value
 
-    value = cell.value
-
-    if value == '=TRUE()':
+    if data_type == "f" and value == '=TRUE()':
         return True
-
-    elif value == '=FALSE()':
+    elif data_type == "f" and value == '=FALSE()':
         return False
 
     elif cell.number_format.lower() == 'yyyy-mm-dd':
         return str(value).split(' 00:00:00')[0]
-
     elif cell.number_format.lower() == 'yyyy-mm-dd hh:mm:ss':
         return str(value).split('.')[0]
 
-    elif cell.number_format.endswith('%'):
-        if value is not None:
-            value = str(Decimal(str(value)) * 100)[:-2]
-            if value.endswith('.'):
-                value = value[:-1]
-            return '{}%'.format(value)
-        else:
-            return None
+    elif cell.number_format.endswith('%') and isinstance(value, Number):
+        value = Decimal(str(value))
+        return '{:%}'.format(value)
 
     elif value is None:
         return ''
-
     else:
         return value
 
 
 def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
-                     start_row=0, start_column=0, *args, **kwargs):
+                     start_row=None, start_column=None, end_row=None,
+                     end_column=None, *args, **kwargs):
+    """Return a rows.Table created from imported XLSX file."""
+
     workbook = load_workbook(filename_or_fobj)
     if sheet_name is None:
         sheet_name = workbook.sheetnames[sheet_index]
-    sheet = workbook.get_sheet_by_name(sheet_name)
+    sheet = workbook[sheet_name]
 
-    start_row, end_row = max(start_row, sheet.min_row), sheet.max_row
-    start_col, end_col = max(start_column, sheet.min_column), sheet.max_column
-    table_rows = [[_cell_to_python(sheet.cell(row=row_index, column=col_index))
-                   for col_index in range(start_col, end_col + 1)]
-                  for row_index in range(start_row, end_row + 1)]
+    # The openpyxl library reads rows and columns starting from 1 and ending on
+    # sheet.max_row/max_col. rows uses 0-based indexes (from 0 to N - 1), so we
+    # need to adjust the ranges accordingly.
+    min_row, min_column = sheet.min_row - 1, sheet.min_column - 1
+    max_row, max_column = sheet.max_row - 1, sheet.max_column - 1
+    # TODO: consider adding a parameter `ignore_padding=True` and when it's
+    # True, consider `start_row` starting from `sheet.min_row` and
+    # `start_column` starting from `sheet.min_col`.
+    start_row = start_row if start_row is not None else min_row
+    end_row = end_row if end_row is not None else max_row
+    start_column = start_column if start_column is not None else min_column
+    end_column = end_column if end_column is not None else max_column
+    table_rows = [
+        [
+            _cell_to_python(sheet.cell(row=row_index, column=col_index))
+            for col_index in range(start_column + 1, end_column + 2)
+        ]
+        for row_index in range(start_row + 1, end_row + 2)
+    ]
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, dont_open=True)
     metadata = {'imported_from': 'xlsx',
@@ -120,6 +126,7 @@ def _python_to_cell(field_types):
 
 def export_to_xlsx(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                    **kwargs):
+    """Export the rows.Table to XLSX file and return the saved file."""
 
     workbook = Workbook()
     sheet = workbook.active

@@ -14,8 +14,8 @@ from __future__ import unicode_literals
 from io import BytesIO
 
 import requests
-import rows
 
+import rows
 
 # Get data
 url = 'http://www.worldnetlogistics.com/information/iata-city-airport-codes/'
