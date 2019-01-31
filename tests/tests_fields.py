@@ -146,6 +146,9 @@ class FieldsTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             fields.IntegerField.deserialize(1.23)
 
+        with self.assertRaises(ValueError):
+            fields.IntegerField.deserialize('013')
+
     def test_FloatField(self):
         self.assertEqual(fields.FloatField.TYPE, (float,))
         self.assertEqual(fields.FloatField.serialize(None), "")
