@@ -25,7 +25,7 @@ EXTRA_REQUIREMENTS = {
     'detect': ['file-magic'],
     'html': ['lxml'],  # apt: libxslt-dev libxml2-dev
     'ods': ['lxml'],
-    'parquet': ['parquet>=1.1'],
+    'parquet': ['parquet'],
     'pdf': ['cached-property', 'pymupdf', 'pdfminer.six'],
     'xls': ['xlrd', 'xlwt'],
     'xlsx': ['openpyxl'],
@@ -57,6 +57,9 @@ setup(name='rows',
       install_requires=INSTALL_REQUIREMENTS,
       extras_require=EXTRA_REQUIREMENTS,
       keywords='tabular table csv xls xlsx xpath ods sqlite html pdf rows data opendata',
+      dependency_links=[
+        'https://github.com/turicas/parquet-python/archive/enhancement/move-to-thriftpy2.zip#egg=parquet',
+      ],
       entry_points={
           'console_scripts': [
               'rows = rows.cli:cli',

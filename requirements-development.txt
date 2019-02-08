@@ -5,16 +5,19 @@ click
 file-magic
 lxml
 openpyxl
-parquet>=1.1
+pymupdf
+https://github.com/turicas/parquet-python/archive/enhancement/move-to-thriftpy2.zip#egg=parquet
 pdfminer.six
 requests
 requests-cache
 xlrd
 xlwt
+cached-property
+psycopg2-binary
+tqdm
 
 # Test and lint tools
 autoflake
-black
 coverage
 ipdb
 isort
