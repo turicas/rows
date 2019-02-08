@@ -28,6 +28,15 @@ pip install -r requirements-development.txt
 There are two possible ways of running the tests: on your own virtualenv or for
 each Python version.
 
+For the PostgreSQL plugin you're going to need a PostgreSQL server running and
+must set the `POSTGRESQL_URI` environment variable. If you have docker
+installed you can easily create a container running PostgreSQL with the
+provided `docker-compose.yml` by running:
+
+```bash
+docker-compose -p rows -f docker-compose.yml up -d
+```
+
 ### Running on your virtualenv
 
 ```bash
