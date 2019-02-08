@@ -17,12 +17,13 @@
 
 from __future__ import unicode_literals
 
-import psycopg2
+import os
 import unittest
-
 from collections import OrderedDict
 
 import mock
+import psycopg2
+import six
 
 import rows
 import rows.plugins.postgresql
@@ -31,8 +32,6 @@ import tests.utils as utils
 
 from rows import fields
 from rows.plugins.postgresql import pgconnect
-
-import os
 
 
 class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -93,6 +92,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         kwargs['meta'] = self.meta
         self.assertEqual(call[1], kwargs)
 
+    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
     @mock.patch('rows.plugins.postgresql.create_table')
     def test_import_from_postgresql_retrieve_desired_data(self,
                                                           mocked_create_table):
@@ -131,12 +131,14 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 table_name='table1", "postgresql_master',
             )
 
+    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
     def test_export_to_postgresql_uri(self):
         rows.export_to_postgresql(utils.table, self.uri, table_name='rows_3')
 
         table = rows.import_from_postgresql(self.uri, table_name='rows_3')
         self.assert_table_equal(table, utils.table)
 
+    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
     def test_export_to_postgresql_connection(self):
         connection = pgconnect(self.uri)
         rows.export_to_postgresql(
@@ -146,6 +148,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_postgresql(self.uri, table_name='rows_4')
         self.assert_table_equal(table, utils.table)
 
+    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
     def test_export_to_postgresql_create_unique_table_name(self):
         first_table = utils.table
         second_table = utils.table + utils.table
@@ -176,6 +179,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(result_first_table, first_table)
         self.assert_table_equal(result_second_table, second_table)
 
+    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
     def test_export_to_postgresql_forcing_table_name_appends_rows(self):
         repeat = 3
         for _ in range(repeat):

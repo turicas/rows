@@ -25,11 +25,14 @@ import re
 from base64 import b64decode, b64encode
 from collections import OrderedDict, defaultdict
 from decimal import Decimal, InvalidOperation
-from itertools import zip_longest
 from textwrap import dedent
 from unicodedata import normalize
 
 import six
+if six.PY2:
+    from itertools import izip_longest as zip_longest
+else:
+    from itertools import zip_longest
 
 
 # Order matters here
@@ -703,7 +706,8 @@ def generate_schema(table, export_fields, output_format, output_fobj):
             for fieldname, fieldtype in table.fields.items()
             if fieldname in export_fields
         ]
-        export_to_txt(import_from_dicts(data), output_fobj)
+        table = import_from_dicts(data, import_fields=["field_name", "field_type"])
+        export_to_txt(table, output_fobj)
 
     elif output_format == "sql":
         import rows.fields as fields

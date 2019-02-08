@@ -73,7 +73,8 @@ def pdf_to_text(filename_or_fobj, page_numbers=None, backend=None):
     backend = backend or default_backend()
     Backend = get_backend(backend)
     pdf_doc = Backend(filename_or_fobj)
-    yield from pdf_doc.extract_text(page_numbers=page_numbers)
+    for page in pdf_doc.extract_text(page_numbers=page_numbers):
+        yield page
 
 
 class PDFBackend(object):
@@ -267,7 +268,7 @@ class PyMuPDFBackend(PDFBackend):
 
                 for line in block["lines"]:
                     line_text = " ".join(span["text"] for span in line["spans"])
-                    text_objs.append([*line["bbox"], line_text])
+                    text_objs.append(list(line["bbox"]) + [line_text])
             objs = [
                 TextObject(x0=obj[0], y0=obj[1], x1=obj[2], y1=obj[3], text=obj[4])
                 for obj in text_objs
@@ -604,7 +605,7 @@ class RectsBoundariesAlgorithm(ExtractionAlgorithm):
     name = "rects-boundaries"
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(RectsBoundariesAlgorithm, self).__init__(*args, **kwargs)
         self.rects = [
             obj for obj in self.objects if isinstance(obj, RectObject) and obj.fill
         ]

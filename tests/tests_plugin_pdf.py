@@ -45,7 +45,7 @@ class PDFTestCase(utils.RowsTestMixIn):
         result = rows.import_from_pdf(
             filename + ".pdf",
             backend=self.backend,
-            starts_after="MILHO SAFRA 16/17: ACOMPANHAMENTO DE COLHEITA POR REGIÃO",
+            starts_after=re.compile("MILHO SAFRA 16/17: ACOMPANHAMENTO DE .*"),
             ends_before="*Variação em pontos percentuais.",
         )
         expected = rows.import_from_csv(filename + ".csv")
@@ -97,7 +97,7 @@ class PDFMinerSixTestCase(PDFTestCase, unittest.TestCase):
         result = rows.import_from_pdf(
             filename + ".pdf",
             backend=self.backend,
-            starts_after="DIRETORIA DE PROTEÇÃO AMBIENTAL",
+            starts_after=re.compile("DIRETORIA DE PROTE.*"),
             ends_before=re.compile("Pag [0-9]+/[0-9]+"),
             algorithm="rects-boundaries",
         )
