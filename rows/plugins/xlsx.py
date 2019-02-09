@@ -77,17 +77,15 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
     end_row = end_row if end_row is not None else max_row
     start_column = start_column if start_column is not None else min_column
     end_column = end_column if end_column is not None else max_column
-    table_rows = [
-        [
+    table_rows = []
+    is_empty = lambda row: all(cell is None for cell in row)
+    for row_index in range(start_row + 1, end_row + 2):
+        row = [
             _cell_to_python(sheet.cell(row=row_index, column=col_index))
             for col_index in range(start_column + 1, end_column + 2)
         ]
-        for row_index in range(start_row + 1, end_row + 2)
-    ]
-
-    is_empty = lambda cell: cell is None
-    if all(map(is_empty, table_rows[-1])):
-        table_rows.pop()
+        if not is_empty(row):
+            table_rows.append(row)
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, dont_open=True)
     metadata = {'imported_from': 'xlsx',
