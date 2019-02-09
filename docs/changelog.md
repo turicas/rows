@@ -79,7 +79,8 @@
 - [#238](https://github.com/turicas/rows/issues/238) `import_from_dicts`
   supports generator as input
 - [#239](https://github.com/turicas/rows/issues/239) Use correct field ordering
-
+- [#299](https://github.com/turicas/rows/issues/302) Integer field detected for
+  numbers started with zero
 
 ## Version `0.3.1`
 
