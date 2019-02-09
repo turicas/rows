@@ -75,4 +75,4 @@ if plugins.pdf:
     import_from_pdf = plugins.pdf.import_from_pdf
 
 
-__version__ = "0.3.2dev0"
+__version__ = "0.4.0"
