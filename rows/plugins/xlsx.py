@@ -22,6 +22,8 @@ from io import BytesIO
 from numbers import Number
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.cell.read_only import EmptyCell
+from openpyxl.utils import get_column_letter
 
 from rows import fields
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
@@ -32,7 +34,9 @@ def _cell_to_python(cell):
     """Convert a PyOpenXL's `Cell` object to the corresponding Python object."""
     data_type, value = cell.data_type, cell.value
 
-    if data_type == "f" and value == '=TRUE()':
+    if type(cell) is EmptyCell:
+        return None
+    elif data_type == "f" and value == '=TRUE()':
         return True
     elif data_type == "f" and value == '=FALSE()':
         return False
@@ -51,13 +55,16 @@ def _cell_to_python(cell):
     else:
         return value
 
+def sheet_cell(sheet, row, col):
+    return sheet[get_column_letter(col) + str(row)]
+
 
 def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
                      start_row=None, start_column=None, end_row=None,
                      end_column=None, *args, **kwargs):
     """Return a rows.Table created from imported XLSX file."""
 
-    workbook = load_workbook(filename_or_fobj)
+    workbook = load_workbook(filename_or_fobj, read_only=True)
     if sheet_name is None:
         sheet_name = workbook.sheetnames[sheet_index]
     sheet = workbook[sheet_name]
@@ -74,13 +81,15 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
     end_row = end_row if end_row is not None else max_row
     start_column = start_column if start_column is not None else min_column
     end_column = end_column if end_column is not None else max_column
-    table_rows = [
-        [
-            _cell_to_python(sheet.cell(row=row_index, column=col_index))
+    table_rows = []
+    is_empty = lambda row: all(cell is None for cell in row)
+    for row_index in range(start_row + 1, end_row + 2):
+        row = [
+            _cell_to_python(sheet_cell(sheet, row_index, col_index))
             for col_index in range(start_column + 1, end_column + 2)
         ]
-        for row_index in range(start_row + 1, end_row + 2)
-    ]
+        if not is_empty(row):
+            table_rows.append(row)
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, dont_open=True)
     metadata = {'imported_from': 'xlsx',
