@@ -2,7 +2,7 @@
 
 ## Version `0.4.0`
 
-**Released on: (under development)**
+**Released on: 2019-02-09**
 
 
 ### General Changes and Enhancements
@@ -39,6 +39,9 @@
 - [#50](https://github.com/turicas/rows/issues/50) Create PDF extraction plugin
   with two backend libraries (`pymupdf` and `pdfminer.six`) and 3 table
   extraction algorithms.
+- [#294](https://github.com/isses/294) Decrease XLSX reading time (thanks to
+  [@israelst](https://github.com/israelst)).
+- Change to pure Python version of Apache Thrift library (parquet plugin)
 - [@299](https://github.com/turicas/rows/issues/299) Change CSV field limit
 
 ### Command-Line Interface
