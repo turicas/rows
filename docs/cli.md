@@ -24,6 +24,8 @@ local filename (example: `rows convert https://website/file.html file.csv`).
   destination is SQLite, use this rather than `rows convert`).
 - [`rows join`][cli-join]: equivalent to SQL's `JOIN` - get rows from each
   table and join them.
+- [`rows pdf-to-text`][cli-pdf-to-text]: extract text from a PDF file and save
+  into a file or print to standard output;
 - [`rows pgexport`][cli-pgexport]: export a PostgreSQL table into a CSV file
   (compressed or not) in the most optimized way: using `psql`'s `COPY` command.
 - [`rows pgimport`][cli-pgimport]: import a CSV file (compressed or not) into a
@@ -148,6 +150,34 @@ field `id` as a key (both `a.csv` and `b.csv` must have the field `id`):
 
 ```bash
 rows join id a.csv b.csv c.csv
+```
+
+## `rows pdf-to-text`
+
+Extract text from a PDF file and save into a file or print to standard output.
+
+Usage: `rows pdf-to-text [OPTIONS] SOURCE [OUTPUT]`
+
+Options:
+
+- `--output-encoding=TEXT`: encoding to be used on output file (default:
+  `utf-8`) - valid only when `output` is specified (if not, uses the default
+  standard output's encoding)
+- `--quiet`: do not show progress bars when downloading and extracting. This
+  option is automatically disabled if `output` is empty (default: show progress
+  bars)
+- `--backend=TEXT`: PDF library to use as backend (default: `pymupdf`)
+- `--pages=TEXT`: page ranges
+
+Example:
+
+```bash
+# needs: pip install rows[pdf]
+URL="http://www.imprensaoficial.rr.gov.br/app/_edicoes/2018/01/doe-20180131.pdf"
+rows pdf-to-text $URL result.txt  # Save to file, show progress bars
+rows pdf-to-text --quiet $URL result.txt  # Save to file, no progress bars
+rows pdf-to-text --pages=1,2,3 $URL # Print first 3 pages to stdout
+rows pdf-to-text --pages=1-3 $URL # Print first 3 pages to stdout (using ranges)
 ```
 
 ## `rows pgexport`
@@ -407,6 +437,7 @@ rows sum \
 [cli-convert]: #rows-convert
 [cli-csv2sqlite]: #rows-csv2sqlite
 [cli-join]: #rows-join
+[cli-pdf-to-text]: #rows-pdf-to-text
 [cli-pgexport]: #rows-pgexport
 [cli-pgimport]: #rows-pgimport
 [cli-print]: #rows-print

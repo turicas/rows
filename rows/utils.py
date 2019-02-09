@@ -99,6 +99,7 @@ FILE_EXTENSIONS = {
         'txt': 'text/txt',
         'xls': 'application/vnd.ms-excel',
         'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'pdf': 'application/pdf',
 }
 MIME_TYPE_TO_PLUGIN_NAME = {
         'application/json': 'json',
@@ -110,6 +111,7 @@ MIME_TYPE_TO_PLUGIN_NAME = {
         'text/csv': 'csv',
         'text/html': 'html',
         'text/txt': 'txt',
+        'application/pdf': 'pdf',
 }
 regexp_sizes = re.compile('([0-9,.]+ [a-zA-Z]+B)')
 MULTIPLIERS = {'B': 1, 'KiB': 1024, 'MiB': 1024 ** 2, 'GiB': 1024 ** 3}
@@ -490,10 +492,11 @@ def open_compressed(filename, mode='r', encoding=None):
             return open(filename, mode=mode, encoding=encoding)
 
 
-def csv2sqlite(input_filename, output_filename, samples=None, dialect=None,
-               batch_size=10000, encoding='utf-8', callback=None,
-               force_types=None, chunk_size=8388608, table_name='table1',
-               schema=None):
+def csv_to_sqlite(
+    input_filename, output_filename, samples=None, dialect=None,
+    batch_size=10000, encoding='utf-8', callback=None, force_types=None,
+    chunk_size=8388608, table_name='table1', schema=None
+):
     'Export a CSV file to SQLite, based on field type detection from samples'
 
     # TODO: automatically detect encoding if encoding == `None`
@@ -532,8 +535,10 @@ def csv2sqlite(input_filename, output_filename, samples=None, dialect=None,
     )
 
 
-def sqlite2csv(input_filename, table_name, output_filename, dialect=csv.excel,
-               batch_size=10000, encoding='utf-8', callback=None, query=None):
+def sqlite_to_csv(
+    input_filename, table_name, output_filename, dialect=csv.excel,
+    batch_size=10000, encoding='utf-8', callback=None, query=None
+):
     """Export a table inside a SQLite database to CSV"""
 
     # TODO: should be able to specify fields
@@ -850,3 +855,8 @@ def pgexport(database_uri, table_name, filename, encoding='utf-8',
         raise RuntimeError(process.stderr.read().decode('utf-8'))
 
     return {'bytes_written': total_written}
+
+
+# Shortcuts
+csv2sqlite = csv_to_sqlite
+sqlite2csv = sqlite_to_csv

@@ -6,21 +6,23 @@ file-magic
 lxml
 openpyxl
 parquet>=1.1
+pdfminer.six
 requests
 requests-cache
 xlrd
 xlwt
 
 # Test and lint tools
+autoflake
+black
 coverage
 ipdb
+isort
 mock
 nose
 pylint
-yanc
 tox
-isort
-autoflake
+yanc
 
 # Doc tools
 sphinx==1.5

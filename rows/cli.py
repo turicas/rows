@@ -36,9 +36,10 @@ from tqdm import tqdm
 import rows
 import six
 from rows.fields import make_header
-from rows.utils import (csv2sqlite, detect_source, export_to_uri,
-                        import_from_source, import_from_uri, pgexport,
-                        pgimport, ProgressBar, sqlite2csv, uncompressed_size)
+from rows.utils import (csv_to_sqlite, detect_source, download_file,
+                        export_to_uri, import_from_source, import_from_uri,
+                        pgexport, pgimport, ProgressBar, sqlite_to_csv,
+                        uncompressed_size)
 
 
 DEFAULT_INPUT_ENCODING = 'utf-8'
@@ -120,7 +121,16 @@ def _get_schemas_for_inputs(schemas, inputs):
             for schema in schemas]
 
 
-@click.group()
+class AliasedGroup(click.Group):
+
+    def get_command(self, ctx, cmd_name):
+        return (
+            click.Group.get_command(self, ctx, cmd_name)
+            or click.Group.get_command(self, ctx, cmd_name.replace('2', '-to-'))
+        )
+
+
+@click.group(cls=AliasedGroup)
 @click.option('--http-cache', type=bool, default=True)
 @click.option('--http-cache-path', default=str(CACHE_PATH.absolute()))
 @click.version_option(version=rows.__version__, prog_name='rows')
@@ -474,7 +484,7 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
     rows.fields.generate_schema(table, export_fields, output_format, output)
 
 
-@cli.command(name='csv2sqlite', help='Convert one or more CSV files to SQLite')
+@cli.command(name='csv-to-sqlite', help='Convert one or more CSV files to SQLite')
 @click.option('--batch-size', default=10000)
 @click.option('--samples', type=int, default=5000,
               help='Number of rows to determine the field types (0 = all)')
@@ -483,7 +493,7 @@ def schema(input_encoding, input_locale, verify_ssl, output_format, fields,
 @click.option('--schemas', default=None)
 @click.argument('sources', nargs=-1, required=True)
 @click.argument('output', required=True)
-def command_csv2sqlite(batch_size, samples, input_encoding, dialect, schemas,
+def command_csv_to_sqlite(batch_size, samples, input_encoding, dialect, schemas,
                        sources, output):
 
     inputs = [pathlib.Path(filename) for filename in sources]
@@ -500,7 +510,7 @@ def command_csv2sqlite(batch_size, samples, input_encoding, dialect, schemas,
         )
         pre_prefix = '{} (detecting data types)'.format(prefix)
         progress = ProgressBar(prefix=prefix, pre_prefix=pre_prefix)
-        csv2sqlite(
+        csv_to_sqlite(
             six.text_type(filename),
             six.text_type(output),
             dialect=dialect,
@@ -514,13 +524,13 @@ def command_csv2sqlite(batch_size, samples, input_encoding, dialect, schemas,
         progress.close()
 
 
-@cli.command(name='sqlite2csv', help='Convert a SQLite table into CSV')
+@cli.command(name='sqlite-to-csv', help='Convert a SQLite table into CSV')
 @click.option('--batch-size', default=10000)
 @click.option('--dialect', default='excel')
 @click.argument('source', required=True)
 @click.argument('table_name', required=True)
 @click.argument('output', required=True)
-def command_sqlite2csv(batch_size, dialect, source, table_name, output):
+def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
 
     input_filename = pathlib.Path(source)
     output_filename = pathlib.Path(output)
@@ -530,7 +540,7 @@ def command_sqlite2csv(batch_size, dialect, source, table_name, output):
         filename=output_filename.name,
     )
     progress = ProgressBar(prefix=prefix, pre_prefix='')
-    sqlite2csv(
+    sqlite_to_csv(
         input_filename=six.text_type(input_filename),
         table_name=table_name,
         dialect=dialect,
@@ -599,6 +609,85 @@ def command_pgexport(output_encoding, dialect, database_uri, table_name,
         callback=updater.update,
     )
     updater.close()
+
+
+def extract_intervals(text, repeat=False, sort=True):
+    """
+    >>> extract_intervals("1,2,3")
+    [1, 2, 3]
+    >>> extract_intervals("1,2,5-10")
+    [1, 2, 5, 6, 7, 8, 9, 10]
+    >>> extract_intervals("1,2,5-10,3")
+    [1, 2, 3, 5, 6, 7, 8, 9, 10]
+    >>> extract_intervals("1,2,5-10,6,7")
+    [1, 2, 5, 6, 7, 8, 9, 10]
+    """
+
+    result = []
+    for value in text.split(','):
+        value = value.strip()
+        if '-' in value:
+            start_value, end_value = value.split('-')
+            start_value = int(start_value.strip())
+            end_value = int(end_value.strip())
+            result.extend(range(start_value, end_value + 1))
+        else:
+            result.append(int(value.strip()))
+
+    if not repeat:
+        result = list(set(result))
+    if sort:
+        result.sort()
+
+    return result
+
+
+@cli.command(name='pdf-to-text', help='Extract text from a PDF')
+@click.option('--output-encoding', default='utf-8')
+@click.option('--quiet', is_flag=True)
+@click.option('--backend', default='pymupdf')
+@click.option('--pages')
+@click.argument('source', required=True)
+@click.argument('output', required=False)
+def command_pdf_to_text(output_encoding, quiet, backend, pages, source, output):
+
+    # Define page range
+    if pages:
+        pages = extract_intervals(pages)
+
+    # Define if output is file or stdout
+    if output:
+        output = open(output, mode='w', encoding=output_encoding)
+        write = output.write
+    else:
+        write = click.echo
+        quiet = True
+    progress = not quiet
+
+    # Download the file if source is an HTTP URL
+    downloaded = False
+    if source.lower().startswith('http:') or source.lower().startswith('https:'):
+        result = rows.utils.download_file(source, progress=progress, detect=False)
+        source = result.uri
+        downloaded = True
+
+    reader = rows.plugins.pdf.pdf_to_text(
+        source, page_numbers=pages, backend=backend
+    )
+    if progress:  # Calculate total number of pages and create a progress bar
+        if pages:
+            total_pages = len(pages)
+        else:
+            total_pages = rows.plugins.pdf.number_of_pages(source, backend=backend)
+        reader = tqdm(reader, desc='Extracting text', total=total_pages)
+
+    for page in reader:
+        write(page)
+
+    if output:
+        output.close()
+    if downloaded:
+        os.unlink(source)
 
 
 if __name__ == '__main__':
