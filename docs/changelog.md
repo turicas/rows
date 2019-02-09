@@ -39,7 +39,7 @@
 - [#50](https://github.com/turicas/rows/issues/50) Create PDF extraction plugin
   with two backend libraries (`pymupdf` and `pdfminer.six`) and 3 table
   extraction algorithms.
-
+- [@299](https://github.com/turicas/rows/issues/299) Change CSV field limit
 
 ### Command-Line Interface
 

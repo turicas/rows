@@ -334,3 +334,15 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.export_to_csv(table, callback=myfunc, batch_size=3)
         self.assertEqual(myfunc.call_count, 4)
         self.assertEqual([x[0][0] for x in myfunc.call_args_list], [3, 6, 9, 10])
+
+    def test_import_field_limit(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = "{}.{}".format(temp.name, self.file_extension)
+        self.files_to_delete.append(filename)
+
+        table = rows.import_from_dicts([{"f1": "a" * 132000}])
+        rows.export_to_csv(table, filename)
+
+        # The following line must not raise the exception:
+        # `_csv.Error: field larger than field limit (131072)`
+        new = rows.import_from_csv(filename)

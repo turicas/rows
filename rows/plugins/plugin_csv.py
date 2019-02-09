@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import sys
 from io import BytesIO
 
 import six
@@ -30,6 +31,7 @@ from rows.plugins.utils import (
 )
 
 sniffer = unicodecsv.Sniffer()
+unicodecsv.field_size_limit(sys.maxsize)
 
 
 def fix_dialect(dialect):
