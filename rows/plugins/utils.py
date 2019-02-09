@@ -1,63 +1,42 @@
 # coding: utf-8
 
-# Copyright 2014-2015 Álvaro Justen <https://github.com/turicas/rows/>
-#
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
+
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
+#    it under the terms of the GNU Lesser General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#
+
 #    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
+#    GNU Lesser General Public License for more details.
+
+#    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import unicode_literals
 
-from collections import Iterator, OrderedDict
+from collections import OrderedDict
 from itertools import chain, islice
-from unicodedata import normalize
 
-from rows.fields import detect_types
+import six
+
+# 'slug' and 'make_unique_name' are required here to maintain backwards compatibility
+from rows.fields import (
+    TextField,
+    detect_types,
+    get_items,  # NOQA
+    make_header,
+    make_unique_name,
+    slug,
+)
 from rows.table import FlexibleTable, Table
 
-
-SLUG_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'
-
-
-def slug(text, separator='_', permitted_chars=SLUG_CHARS,
-         replace_with_separator=' -_'):
-    '''Slugfy text
-
-    Example: ' ÁLVARO  justen% ' -> 'alvaro_justen'
-    '''
-
-    # Strip non-ASCII characters
-    # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
-    text = normalize('NFKD', text.strip()).encode('ascii', 'ignore')\
-                                          .decode('ascii')
-
-    # Replace spaces and other chars with separator
-    # Example: u' ALVARO  justen% ' -> u'_ALVARO__justen%_'
-    for char in replace_with_separator:
-        text = text.replace(char, separator)
-
-    # Remove non-permitted characters and put everything to lowercase
-    # Example: u'_ALVARO__justen%_' -> u'_alvaro__justen_'
-    text = ''.join(char for char in text if char in permitted_chars).lower()
-
-    # Remove double occurrencies of separator
-    # Example: u'_alvaro__justen_' -> u'_alvaro_justen_'
-    double_separator = separator + separator
-    while double_separator in text:
-        text = text.replace(double_separator, separator)
-
-    # Strip separators
-    # Example: u'_alvaro_justen_' -> u'alvaro_justen'
-    return text.strip(separator)
+if six.PY2:
+    from collections import Iterator
+elif six.PY3:
+    from collections.abc import Iterator
 
 
 def ipartition(iterable, partition_size):
@@ -79,10 +58,10 @@ def ipartition(iterable, partition_size):
             yield data
 
 
-def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
-    if getattr(filename_or_fobj, 'read', None) is not None:
+def get_filename_and_fobj(filename_or_fobj, mode="r", dont_open=False):
+    if getattr(filename_or_fobj, "read", None) is not None:
         fobj = filename_or_fobj
-        filename = getattr(fobj, 'name', None)
+        filename = getattr(fobj, "name", None)
     else:
         fobj = open(filename_or_fobj, mode=mode) if not dont_open else None
         filename = filename_or_fobj
@@ -90,94 +69,105 @@ def get_filename_and_fobj(filename_or_fobj, mode='r', dont_open=False):
     return filename, fobj
 
 
-def make_unique_name(name, existing_names, name_format='{name}_{index}',
-                     start=2):
-    '''Return a unique name based on `name_format` and `name`.'''
+def create_table(
+    data,
+    meta=None,
+    fields=None,
+    skip_header=True,
+    import_fields=None,
+    samples=None,
+    force_types=None,
+    *args,
+    **kwargs
+):
+    """Create a rows.Table object based on data rows and some configurations
 
-    index = start
-    new_name = name
-    while new_name in existing_names:
-        new_name = name_format.format(name=name, index=index)
-        index += 1
+    - `skip_header` is only used if `fields` is set
+    - `samples` is only used if `fields` is `None`. If samples=None, all data
+      is filled in memory - use with caution.
+    - `force_types` is only used if `fields` is `None`
+    - `import_fields` can be used either if `fields` is set or not, the
+      resulting fields will seek its order
+    - `fields` must always be in the same order as the data
+    """
 
-    return new_name
-
-
-def make_header(field_names, permit_not=False):
-    'Return unique and slugged field names'
-
-    slug_chars = SLUG_CHARS if not permit_not else SLUG_CHARS + '^'
-
-    header = [slug(field_name, permitted_chars=slug_chars)
-              for field_name in field_names]
-    result = []
-    for index, field_name in enumerate(header):
-        if not field_name:
-            field_name = 'field_{}'.format(index)
-        elif field_name[0].isdigit():
-            field_name = 'field_{}'.format(field_name)
-
-        if field_name in result:
-            field_name = make_unique_name(name=field_name,
-                                          existing_names=result,
-                                          start=2)
-        result.append(field_name)
-
-    return result
-
-
-def create_table(data, meta=None, fields=None, skip_header=True,
-                 import_fields=None, samples=None, force_types=None,
-                 *args, **kwargs):
-    # TODO: add auto_detect_types=True parameter
     table_rows = iter(data)
-    sample_rows = []
+    force_types = force_types or {}
+    if import_fields is not None:
+        import_fields = make_header(import_fields)
 
-    if fields is None:
+    if fields is None:  # autodetect field types
+        # TODO: may add `type_hints` parameter so autodetection can be easier
+        #       (plugins may specify some possible field types).
         header = make_header(next(table_rows))
 
         if samples is not None:
             sample_rows = list(islice(table_rows, 0, samples))
+            table_rows = chain(sample_rows, table_rows)
         else:
-            sample_rows = list(table_rows)
+            sample_rows = table_rows = list(table_rows)
 
-        fields = detect_types(header, sample_rows, *args, **kwargs)
+        # Detect field types using only the desired columns
+        detected_fields = detect_types(
+            header,
+            sample_rows,
+            skip_indexes=[
+                index
+                for index, field in enumerate(header)
+                if field in force_types or field not in (import_fields or header)
+            ],
+            *args,
+            **kwargs
+        )
+        # Check if any field was added during detecting process
+        new_fields = [
+            field_name
+            for field_name in detected_fields.keys()
+            if field_name not in header
+        ]
+        # Finally create the `fields` with both header and new field names,
+        # based on detected fields `and force_types`
+        fields = OrderedDict(
+            [
+                (field_name, detected_fields.get(field_name, TextField))
+                for field_name in header + new_fields
+            ]
+        )
+        fields.update(force_types)
 
-        if force_types is not None:
-            # TODO: optimize field detection (ignore fields on `force_types`)
-            for field_name, field_type in force_types.items():
-                fields[field_name] = field_type
-    else:
+        # Update `header` and `import_fields` based on new `fields`
+        header = list(fields.keys())
+        if import_fields is None:
+            import_fields = header
+
+    else:  # using provided field types
         if not isinstance(fields, OrderedDict):
-            raise ValueError('`fields` must be an `OrderedDict`')
+            raise ValueError("`fields` must be an `OrderedDict`")
 
         if skip_header:
+            # If we're skipping the header probably this row is not trustable
+            # (can be data or garbage).
             _ = next(table_rows)
 
         header = make_header(list(fields.keys()))
-        fields = OrderedDict([(field_name, fields[key])
-                              for field_name, key in zip(header, fields)])
+        if import_fields is None:
+            import_fields = header
 
-    if import_fields is not None:
-        # TODO: can optimize if import_fields is not None.
-        #       Example: do not detect all columns
-        import_fields = make_header(import_fields)
+        fields = OrderedDict(
+            [(field_name, fields[key]) for field_name, key in zip(header, fields)]
+        )
 
-        diff = set(import_fields) - set(header)
-        if diff:
-            field_names = ', '.join('"{}"'.format(field) for field in diff)
-            raise ValueError("Invalid field names: {}".format(field_names))
+    diff = set(import_fields) - set(header)
+    if diff:
+        field_names = ", ".join('"{}"'.format(field) for field in diff)
+        raise ValueError("Invalid field names: {}".format(field_names))
+    fields = OrderedDict(
+        [(field_name, fields[field_name]) for field_name in import_fields]
+    )
 
-        new_fields = OrderedDict()
-        for field_name in import_fields:
-            new_fields[field_name] = fields[field_name]
-        fields = new_fields
-
+    get_row = get_items(*map(header.index, import_fields))
     table = Table(fields=fields, meta=meta)
-    # TODO: put this inside Table.__init__
-    for row in chain(sample_rows, table_rows):
-        table.append({field_name: value
-                      for field_name, value in zip(header, row)})
+    table.extend(dict(zip(import_fields, get_row(row))) for row in table_rows)
 
     return table
 
@@ -186,7 +176,7 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
     # TODO: optimize for more used cases (export_fields=None)
     table_type = type(table)
     if table_type not in (FlexibleTable, Table):
-        raise ValueError('Table type not recognized')
+        raise ValueError("Table type not recognized")
 
     if export_fields is None:
         # we use already slugged-fieldnames
@@ -198,7 +188,7 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
     table_field_names = table.field_names
     diff = set(export_fields) - set(table_field_names)
     if diff:
-        field_names = ', '.join('"{}"'.format(field) for field in diff)
+        field_names = ", ".join('"{}"'.format(field) for field in diff)
         raise ValueError("Invalid field names: {}".format(field_names))
 
     yield export_fields
@@ -220,11 +210,14 @@ def serialize(table, *args, **kwargs):
 
     field_types = [table.fields[field_name] for field_name in field_names]
     for row in prepared_table:
-        yield [field_type.serialize(value, *args, **kwargs)
-               for value, field_type in zip(row, field_types)]
+        yield [
+            field_type.serialize(value, *args, **kwargs)
+            for value, field_type in zip(row, field_types)
+        ]
 
 
-def export_data(filename_or_fobj, data, mode='w'):
+def export_data(filename_or_fobj, data, mode="w"):
+    """Return the object ready to be exported or only data if filename_or_fobj is not passed."""
     if filename_or_fobj is not None:
         _, fobj = get_filename_and_fobj(filename_or_fobj, mode=mode)
         fobj.write(data)

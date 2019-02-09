@@ -11,13 +11,16 @@ format your customer just sent? You've got gray hair when trying to access
 some data and the only answer was `UnicodeDecodeError`? So,
 [rows][rows] was custom made for you - run `pip install rows` and be happy! :-)
 
+The library is officialy supported on Python versions 2.7, 3.5 and 3.6 (but may
+work on other versions too).
+
 > Note: if you're using [rows][rows] in some project please [tell
 > us][rows-issue-103]! :-)
 
 
 ## Core Values
 
-- Simple, easy and flexible API
+- Simple, easy and flexible to use
 - Code quality
 - Don't Repeat Yourself
 
@@ -112,11 +115,11 @@ guarantee API backwards compatibility on `0.x.y` versions.
 
 ## License
 
-This library is released under the [GNU General Public License version
-3][gpl3].
+This library is released under the [GNU Lesser General Public License version
+3][lgpl3].
 
 
-[doc-cli]: command-line-interface.md
+[doc-cli]: cli.md
 [doc-contributing]: contributing.md
 [doc-installing]: installing.md
 [doc-links]: links.md
@@ -125,7 +128,7 @@ This library is released under the [GNU General Public License version
 [doc-plugins]: plugins.md
 [doc-changelog]: changelog.md
 [doc-quick-start]: quick-start.md
-[gpl3]: http://www.gnu.org/licenses/gpl-3.0.html
+[lgpl3]: http://www.gnu.org/licenses/lgpl-3.0.html
 [rows-issue-103]: https://github.com/turicas/rows/issues/103
 [rows]: https://github.com/turicas/rows/
 [semver]: http://semver.org/

@@ -115,7 +115,7 @@ AUTHOR
  <kretcheu@gmail.com> for the Debian project (but may be used by others).
 
 COPYRIGHT
- Copyright © 2014-2015 Álvaro Justen.
- License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+ Copyright © 2014-2019 Álvaro Justen.
+ License LGPLv3+: GNU LGPL version 3 or later <http://gnu.org/licenses/lgpl.html>.
  This is free software: you are free to change and redistribute it. There is NO
  WARRANTY, to the extent permitted by law.

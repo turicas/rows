@@ -1,9 +1,89 @@
 # rows' Log of Changes
 
-## Version `0.3.2`
+## Version `0.4.0`
 
-**Released on: (under development)**
+**Released on: 2019-02-09**
 
+
+### General Changes and Enhancements
+
+- [#243](https://github.com/turicas/rows/issues/243) Change license to LGPL3.0.
+- Added official Python 3.6 support.
+- `Table.__add__` does not depend on table sizes anymore.
+- Implemented `Table.__iadd__` (`table += other` will work).
+- [#234](https://github.com/turicas/rows/issues/234) Remove `BinaryField` from
+  the default list of detection types.
+
+### Plugins
+
+- [#224](https://github.com/turicas/rows/issues/224) Add `|` as possible
+  delimiter (CSV dialect detection).
+- Export CSV in batches.
+- Change CSV dialect detection sample size to 256KiB.
+- [#225](https://github.com/turicas/rows/issues/225) Create export callbacks
+  (CSV and SQLite plugins).
+- [#270](https://github.com/turicas/rows/pull/270) Added options to export
+  pretty text table frames (TXT plugin).
+- [#274](https://github.com/turicas/rows/issues/274) `start_row` and
+  `start_column` now behave the same way in XLS and XLSX (starting from 0).
+- [#261](https://github.com/turicas/rows/issues/261) Add support to `end_row`
+  and `end_column` on XLS and XLSX (thanks
+  [@Lrcezimbra](https://github.com/Lrcezimbra) for the suggestion).
+- [#4](https://github.com/turicas/rows/issues/4) Add PostgreSQL plugin (thanks
+  to [@juliano777](https://github.com/juliano777)).
+- [#290](https://github.com/turicas/rows/pull/290) Fix percent formatting
+  reading on XLSX and ODS file formats (thanks to
+  [@jsbueno](https://github.com/jsbueno)).
+- [#220](https://github.com/turicas/rows/issues/220) Do not use
+  non-import_fields and force_types columns on type detection algorithm.
+- [#50](https://github.com/turicas/rows/issues/50) Create PDF extraction plugin
+  with two backend libraries (`pymupdf` and `pdfminer.six`) and 3 table
+  extraction algorithms.
+- [#294](https://github.com/isses/294) Decrease XLSX reading time (thanks to
+  [@israelst](https://github.com/israelst)).
+- Change to pure Python version of Apache Thrift library (parquet plugin)
+- [@299](https://github.com/turicas/rows/issues/299) Change CSV field limit
+
+### Command-Line Interface
+
+- [#242](https://github.com/turicas/rows/issues/242) Add
+  `--fields`/`--fields-exclude` to `convert`, `join` and `sum` (and rename
+  `--fields-exclude` on `print`), also remove `--fields` from `query` (is not
+  needed).
+- [#235](https://github.com/turicas/rows/issues/235) Implement `--http-cache`
+  and `--http-cache-path`.
+- [#237](https://github.com/turicas/rows/issues/237) Implement `rows schema`
+  (generates schema in text, SQL and Django models).
+- Enable progress bar when downloading files.
+- Create `pgimport` and `pgexport` commands.
+- Create `csv-to-sqlite` and `sqlite-to-csv` commands.
+- Create `pdf-to-text` command.
+- Add shortcut for all command names: `2` can be used instead of `-to-` (so
+  `rows pdf2text` is a shortcut to `rows pdf-to-text`).
+
+### Utils
+
+- Create `utils.open_compressed` helper function: can read/write files,
+  automatically dealing with on-the-fly compression.
+- Add progress bar support to `utils.download_file` (thanks to `tqdm` library).
+- Add helper class `utils.CsvLazyDictWriter` (write as `dict`s without needing
+  to pass the keys in advance).
+- Add `utils.pgimport` and `utils.pgexport` functions.
+- Add `utils.csv2sqlite` and `utils.sqlite2csv` functions.
+
+### Bug Fixes
+
+- [#223](https://github.com/turicas/rows/issues/223) `UnicodeDecodeError` on
+  dialect detection.
+- [#214](https://github.com/turicas/rows/issues/214) Problem detecting dialect.
+- [#181](https://github.com/turicas/rows/issues/181) Create slugs inside
+  `Table.__init__`.
+- [#221](https://github.com/turicas/rows/issues/221) Error on `pip install rows`.
+- [#238](https://github.com/turicas/rows/issues/238) `import_from_dicts`
+  supports generator as input
+- [#239](https://github.com/turicas/rows/issues/239) Use correct field ordering
+- [#299](https://github.com/turicas/rows/issues/302) Integer field detected for
+  numbers started with zero
 
 ## Version `0.3.1`
 
@@ -207,14 +287,14 @@
 ### CLI
 
 - Add option to disable SSL verification (`--verify-ssl=no`)
-- Add `print` subcommand
+- Add `print` command
 - Add `--version`
 - CLI is not installed by default (should be installed as
   `pip install rows[cli]`)
 - Automatically detect default encoding (if not specified)
-- Add `--order-by` to some subcommands and remove `sort` subcommand. #111
+- Add `--order-by` to some commands and remove `sort` command. #111
 - Do not use locale by default
-- Add `query` subcommand: converts (from many sources) internally to SQLite,
+- Add `query` command: converts (from many sources) internally to SQLite,
   execute the query and then export
 
 ## Version `0.1.1`
@@ -253,7 +333,7 @@
   - `join`
   - `transform`
   - `serialize`
-- Implement a command-line interface with the following subcommands:
+- Implement a command-line interface with the following commands:
   - `convert`
   - `join`
   - `sort`

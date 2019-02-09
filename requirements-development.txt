@@ -2,23 +2,31 @@
 
 # Everything except install_requires
 click
+file-magic
 lxml
 openpyxl
-parquet>=1.1
+pymupdf
+https://github.com/turicas/parquet-python/archive/enhancement/move-to-thriftpy2.zip#egg=parquet
+pdfminer.six
 requests
+requests-cache
 xlrd
 xlwt
-file-magic
+cached-property
+psycopg2-binary
+tqdm
 
-# Test tools
+# Test and lint tools
+autoflake
 coverage
 ipdb
+isort
 mock
 nose
 pylint
-yanc
 tox
+yanc
 
 # Doc tools
-sphinx
+sphinx==1.5
 recommonmark
