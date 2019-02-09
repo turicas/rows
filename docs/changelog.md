@@ -1,5 +1,16 @@
 # rows' Log of Changes
 
+## Version `0.4.1dev0`
+
+**Released on: (in development)**
+
+### General Changes and Enhancements
+### Plugins
+### Command-Line Interface
+### Utils
+### Bug Fixes
+
+
 ## Version `0.4.0`
 
 **Released on: 2019-02-09**

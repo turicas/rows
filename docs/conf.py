@@ -64,7 +64,7 @@ author = "Álvaro Justen"
 # The short X.Y version.
 version = "0.4"
 # The full version, including alpha/beta/rc tags.
-release = "0.4.0"
+release = "0.4.1dev0"
 
 github_doc_root = "https://github.com/turicas/rows/tree/master/docs/"
 
@@ -140,7 +140,7 @@ html_theme = "alabaster"
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
 #
-# html_title = 'rows v0.4.0'
+# html_title = 'rows v0.4.1dev0'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #
