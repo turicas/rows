@@ -23,6 +23,7 @@ from numbers import Number
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.cell.read_only import EmptyCell
+from openpyxl.utils import get_column_letter
 
 from rows import fields
 from rows.plugins.utils import (create_table, get_filename_and_fobj,
@@ -54,6 +55,9 @@ def _cell_to_python(cell):
     else:
         return value
 
+def sheet_cell(sheet, row, col):
+    return sheet[get_column_letter(col) + str(row)]
+
 
 def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
                      start_row=None, start_column=None, end_row=None,
@@ -81,7 +85,7 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
     is_empty = lambda row: all(cell is None for cell in row)
     for row_index in range(start_row + 1, end_row + 2):
         row = [
-            _cell_to_python(sheet.cell(row=row_index, column=col_index))
+            _cell_to_python(sheet_cell(sheet, row_index, col_index))
             for col_index in range(start_column + 1, end_column + 2)
         ]
         if not is_empty(row):
