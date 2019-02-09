@@ -18,7 +18,7 @@ import requests
 import rows
 
 # Get data
-url = 'http://www.worldnetlogistics.com/information/iata-city-airport-codes/'
+url = "http://www.worldnetlogistics.com/information/iata-city-airport-codes/"
 response = requests.get(url)
 html = response.content
 
@@ -32,4 +32,4 @@ for row in table:
 
 codes = sorted(code_to_city.keys())
 for code in codes:
-    print('{} = {}'.format(code, code_to_city[code]))
+    print("{} = {}".format(code, code_to_city[code]))

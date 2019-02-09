@@ -18,9 +18,11 @@
 from __future__ import unicode_literals
 
 import io
-from collections import defaultdict
 
 import six
+from cached_property import cached_property
+
+from rows.plugins.utils import create_table, get_filename_and_fobj
 
 try:
     import fitz as pymupdf
@@ -29,7 +31,6 @@ try:
 except ImportError:
     pymupdf_imported = False
 
-from cached_property import cached_property
 
 try:
     from pdfminer.converter import PDFPageAggregator, TextConverter
@@ -47,8 +48,6 @@ try:
 except ImportError:
     pdfminer_imported = False
     PDFMINER_TEXT_TYPES, PDFMINER_ALL_TYPES = None, None
-
-from rows.plugins.utils import create_table, get_filename_and_fobj
 
 
 def default_backend():
@@ -742,7 +741,6 @@ def pdf_table_lines(
             if line_index == 0:
                 if page_index == 0:
                     header = line
-                    line_size = len(line)
                 elif page_index > 0 and line == header:  # skip header repetition
                     continue
             yield line

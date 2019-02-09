@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -27,12 +27,11 @@ from rows.plugins.utils import create_table, get_filename_and_fobj
 
 
 def xpath(element, xpath, namespaces):
-    return xml_from_string(xml_to_string(element)).xpath(xpath,
-                                                         namespaces=namespaces)
+    return xml_from_string(xml_to_string(element)).xpath(xpath, namespaces=namespaces)
 
 
 def attrib(cell, namespace, name):
-    return cell.attrib['{{{}}}{}'.format(namespace, name)]
+    return cell.attrib["{{{}}}{}".format(namespace, name)]
 
 
 def complete_with_None(lists, size):
@@ -48,41 +47,39 @@ def import_from_ods(filename_or_fobj, index=0, *args, **kwargs):
     filename, _ = get_filename_and_fobj(filename_or_fobj)
 
     ods_file = zipfile.ZipFile(filename)
-    content_fobj = ods_file.open('content.xml')
+    content_fobj = ods_file.open("content.xml")
     xml = content_fobj.read()  # will return bytes
     content_fobj.close()
 
     document = xml_from_string(xml)
     namespaces = document.nsmap
-    spreadsheet = document.xpath('//office:spreadsheet',
-                                 namespaces=namespaces)[0]
-    tables = xpath(spreadsheet, '//table:table', namespaces)
+    spreadsheet = document.xpath("//office:spreadsheet", namespaces=namespaces)[0]
+    tables = xpath(spreadsheet, "//table:table", namespaces)
     table = tables[index]
 
-    table_rows_obj = xpath(table, '//table:table-row', namespaces)
+    table_rows_obj = xpath(table, "//table:table-row", namespaces)
     table_rows = []
     for row_obj in table_rows_obj:
         row = []
-        for cell in xpath(row_obj, '//table:table-cell', namespaces):
+        for cell in xpath(row_obj, "//table:table-cell", namespaces):
             children = cell.getchildren()
             if not children:
                 continue
 
             # TODO: evalute 'boolean' and 'time' types
-            value_type = attrib(cell, namespaces['office'], 'value-type')
-            if value_type == 'date':
-                cell_value = attrib(cell, namespaces['office'], 'date-value')
-            elif value_type == 'float':
-                cell_value = attrib(cell, namespaces['office'], 'value')
-            elif value_type == 'percentage':
-                cell_value = attrib(cell, namespaces['office'], 'value')
+            value_type = attrib(cell, namespaces["office"], "value-type")
+            if value_type == "date":
+                cell_value = attrib(cell, namespaces["office"], "date-value")
+            elif value_type == "float":
+                cell_value = attrib(cell, namespaces["office"], "value")
+            elif value_type == "percentage":
+                cell_value = attrib(cell, namespaces["office"], "value")
                 cell_value = Decimal(cell_value)
-                cell_value = '{:%}'.format(cell_value)
-            elif value_type == 'string':
+                cell_value = "{:%}".format(cell_value)
+            elif value_type == "string":
                 try:
                     # get computed string (from formula, for example)
-                    cell_value = attrib(cell, namespaces['office'],
-                                        'string-value')
+                    cell_value = attrib(cell, namespaces["office"], "string-value")
                 except KeyError:
                     # computed string not present => get from <p>...</p>
                     cell_value = children[0].text
@@ -90,8 +87,7 @@ def import_from_ods(filename_or_fobj, index=0, *args, **kwargs):
                 cell_value = children[0].text
 
             try:
-                repeat = attrib(cell, namespaces['table'],
-                                'number-columns-repeated')
+                repeat = attrib(cell, namespaces["table"], "number-columns-repeated")
             except KeyError:
                 row.append(cell_value)
             else:
@@ -103,5 +99,5 @@ def import_from_ods(filename_or_fobj, index=0, *args, **kwargs):
 
     max_length = max(len(row) for row in table_rows)
     full_rows = complete_with_None(table_rows, max_length)
-    meta = {'imported_from': 'ods', 'filename': filename,}
+    meta = {"imported_from": "ods", "filename": filename}
     return create_table(full_rows, meta=meta, *args, **kwargs)

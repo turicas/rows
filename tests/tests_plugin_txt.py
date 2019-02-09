@@ -32,23 +32,21 @@ import tests.utils as utils
 
 class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
-    plugin_name = 'txt'
-    file_extension = 'txt'
-    filename = 'tests/data/all-field-types.txt'
-    encoding = 'utf-8'
+    plugin_name = "txt"
+    file_extension = "txt"
+    filename = "tests/data/all-field-types.txt"
+    encoding = "utf-8"
     assert_meta_encoding = True
 
     def test_imports(self):
         self.assertIs(rows.import_from_txt, rows.plugins.txt.import_from_txt)
         self.assertIs(rows.export_to_txt, rows.plugins.txt.export_to_txt)
 
-    @mock.patch('rows.plugins.txt.create_table')
+    @mock.patch("rows.plugins.txt.create_table")
     def test_import_from_txt_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
-        kwargs = {'some_key': 123, 'other': 456, }
-        result = rows.import_from_txt(self.filename,
-                                      encoding=self.encoding,
-                                      **kwargs)
+        kwargs = {"some_key": 123, "other": 456}
+        result = rows.import_from_txt(self.filename, encoding=self.encoding, **kwargs)
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
@@ -58,16 +56,18 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         meta = called_data.pop("meta")
         self.assertEqual(call[1], kwargs)
 
-        expected_meta = {'imported_from': 'txt',
-                         'filename': self.filename,
-                         'encoding': self.encoding, }
+        expected_meta = {
+            "imported_from": "txt",
+            "filename": self.filename,
+            "encoding": self.encoding,
+        }
         for key in expected_meta:
             self.assertEqual(expected_meta[key], meta[key])
 
         # test won't break if frame_style default changes in the future
-        self.assertIn('frame_style', meta)
+        self.assertIn("frame_style", meta)
 
-    @mock.patch('rows.plugins.txt.create_table')
+    @mock.patch("rows.plugins.txt.create_table")
     def test_import_from_txt_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -77,102 +77,96 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_create_table_data(call_args)
 
         # import using fobj
-        with open(self.filename, mode='rb') as fobj:
+        with open(self.filename, mode="rb") as fobj:
             rows.import_from_txt(fobj)
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args)
 
-    @mock.patch('rows.plugins.txt.serialize')
+    @mock.patch("rows.plugins.txt.serialize")
     def test_export_to_txt_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        kwargs = {'test': 123, 'parameter': 3.14, }
+        kwargs = {"test": 123, "parameter": 3.14}
         mocked_serialize.return_value = iter([utils.table.fields.keys()])
 
-        rows.export_to_txt(utils.table, temp.name, encoding=self.encoding,
-                           **kwargs)
+        rows.export_to_txt(utils.table, temp.name, encoding=self.encoding, **kwargs)
         self.assertTrue(mocked_serialize.called)
         self.assertEqual(mocked_serialize.call_count, 1)
 
         call = mocked_serialize.call_args
-        self.assertEqual(call[0], (utils.table, ))
+        self.assertEqual(call[0], (utils.table,))
         self.assertEqual(call[1], kwargs)
 
-    @mock.patch('rows.plugins.txt.export_data')
+    @mock.patch("rows.plugins.txt.export_data")
     def test_export_to_txt_uses_export_data(self, mocked_export_data):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        kwargs = {'test': 123, 'parameter': 3.14, }
+        kwargs = {"test": 123, "parameter": 3.14}
         mocked_export_data.return_value = 42
 
-        result = rows.export_to_txt(utils.table,
-                                    temp.name,
-                                    encoding=self.encoding,
-                                    **kwargs)
+        result = rows.export_to_txt(
+            utils.table, temp.name, encoding=self.encoding, **kwargs
+        )
         self.assertTrue(mocked_export_data.called)
         self.assertEqual(mocked_export_data.call_count, 1)
         self.assertEqual(result, 42)
 
         call = mocked_export_data.call_args
         self.assertEqual(call[0][0], temp.name)
-        self.assertEqual(call[1], {'mode': 'wb'})
+        self.assertEqual(call[1], {"mode": "wb"})
 
     def test_export_to_txt_filename(self):
         # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        rows.export_to_txt(utils.table, temp.name, encoding='utf-8')
+        rows.export_to_txt(utils.table, temp.name, encoding="utf-8")
 
-        table = rows.import_from_txt(temp.name, encoding='utf-8')
+        table = rows.import_from_txt(temp.name, encoding="utf-8")
         self.assert_table_equal(table, utils.table)
 
-        with open(temp.name, mode='rb') as fobj:
+        with open(temp.name, mode="rb") as fobj:
             content = fobj.read()
-        self.assertEqual(content[-10:].count(b'\n'), 1)
+        self.assertEqual(content[-10:].count(b"\n"), 1)
 
     def test_export_to_txt_fobj(self):
         # TODO: may test with codecs.open passing an encoding
         # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        rows.export_to_txt(utils.table, temp.file, encoding='utf-8')
+        rows.export_to_txt(utils.table, temp.file, encoding="utf-8")
 
-        table = rows.import_from_txt(temp.name, encoding='utf-8')
+        table = rows.import_from_txt(temp.name, encoding="utf-8")
         self.assert_table_equal(table, utils.table)
 
     def test_issue_168(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
-        filename = '{}.{}'.format(temp.name, self.file_extension)
+        filename = "{}.{}".format(temp.name, self.file_extension)
         self.files_to_delete.append(filename)
 
-        table = rows.Table(
-            fields=OrderedDict([('jsoncolumn', rows.fields.JSONField)])
-        )
-        table.append({'jsoncolumn': '{"python": 42}'})
-        rows.export_to_txt(table, filename, encoding='utf-8')
+        table = rows.Table(fields=OrderedDict([("jsoncolumn", rows.fields.JSONField)]))
+        table.append({"jsoncolumn": '{"python": 42}'})
+        rows.export_to_txt(table, filename, encoding="utf-8")
 
-        table2 = rows.import_from_txt(filename, encoding='utf-8')
+        table2 = rows.import_from_txt(filename, encoding="utf-8")
         self.assert_table_equal(table, table2)
 
     def test_export_to_text_should_return_unicode(self):
         result = rows.export_to_txt(utils.table)
         self.assertEqual(type(result), six.text_type)
 
-    def _test_export_to_txt_frame_style(self,
-                                        frame_style,
-                                        chars,
-                                        positive=True):
+    def _test_export_to_txt_frame_style(self, frame_style, chars, positive=True):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        rows.export_to_txt(utils.table, temp.file, encoding='utf-8',
-                           frame_style=frame_style)
+        rows.export_to_txt(
+            utils.table, temp.file, encoding="utf-8", frame_style=frame_style
+        )
 
         if sys.version_info.major < 3:
             from io import open as open_
         else:
             open_ = open
 
-        file_data = open_(temp.name, 'rt', encoding='utf-8').read()
+        file_data = open_(temp.name, "rt", encoding="utf-8").read()
 
         for char in chars:
             if positive:
@@ -181,20 +175,19 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 self.assertNotIn(char, file_data)
 
     def test_export_to_txt_frame_style_ASCII(self):
-        self._test_export_to_txt_frame_style(frame_style='ASCII', chars='+-|')
+        self._test_export_to_txt_frame_style(frame_style="ASCII", chars="+-|")
 
     def test_export_to_txt_frame_style_single(self):
-        self._test_export_to_txt_frame_style(frame_style='single',
-                                             chars='│┤┐└┬├─┼┘┌')
+        self._test_export_to_txt_frame_style(frame_style="single", chars="│┤┐└┬├─┼┘┌")
 
     def test_export_to_txt_frame_style_double(self):
-        self._test_export_to_txt_frame_style(frame_style='double',
-                                             chars='╣║╗╝╚╔╩╦╠═╬')
+        self._test_export_to_txt_frame_style(frame_style="double", chars="╣║╗╝╚╔╩╦╠═╬")
 
     def test_export_to_txt_frame_style_none(self):
-        self._test_export_to_txt_frame_style(frame_style='None',
-                                             chars='|│┤┐└┬├─┼┘┌╣║╗╝╚╔╩╦╠═╬',
-                                             positive=False)
+        self._test_export_to_txt_frame_style(
+            frame_style="None", chars="|│┤┐└┬├─┼┘┌╣║╗╝╚╔╩╦╠═╬", positive=False
+        )
+
     @staticmethod
     def _reset_txt_plugin():
         # The txt plugin makes (or can make use) of 'defaultdict's
@@ -219,35 +212,35 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         temp = tempfile.NamedTemporaryFile(delete=False)
 
         original_data = rows.import_from_txt(self.filename)
-        rows.export_to_txt(utils.table, temp.file, encoding='utf-8',
-                           frame_style=frame_style)
-
+        rows.export_to_txt(
+            utils.table, temp.file, encoding="utf-8", frame_style=frame_style
+        )
 
         self._reset_txt_plugin()
         new_data = rows.import_from_txt(temp.name)
 
         self.assertEqual(
-            list(new_data), list(original_data),
-            msg='failed to read information with frame_style == "{0}"'
-                .format(frame_style)
+            list(new_data),
+            list(original_data),
+            msg='failed to read information with frame_style == "{0}"'.format(
+                frame_style
+            ),
         )
 
     def test_import_from_txt_works_with_ASCII_frame(self):
-        self._test_import_from_txt_works_with_custom_frame('ASCII')
+        self._test_import_from_txt_works_with_custom_frame("ASCII")
 
     def test_import_from_txt_works_with_unicode_single_frame(self):
-        self._test_import_from_txt_works_with_custom_frame('single')
+        self._test_import_from_txt_works_with_custom_frame("single")
 
     def test_import_from_txt_works_with_unicode_double_frame(self):
-        self._test_import_from_txt_works_with_custom_frame('double')
+        self._test_import_from_txt_works_with_custom_frame("double")
 
     def test_import_from_txt_works_with_no_frame(self):
-        self._test_import_from_txt_works_with_custom_frame('None')
+        self._test_import_from_txt_works_with_custom_frame("None")
 
     def test__parse_col_positions(self):
-        result1 = rows.plugins.txt._parse_col_positions(
-            'ASCII', "|----|----|")
+        result1 = rows.plugins.txt._parse_col_positions("ASCII", "|----|----|")
         self.assertEqual(result1, [0, 5, 10])
-        result2 = rows.plugins.txt._parse_col_positions(
-            'None', "  col1   col2  ")
+        result2 = rows.plugins.txt._parse_col_positions("None", "  col1   col2  ")
         self.assertEqual(result2, [0, 7, 14])

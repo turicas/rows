@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -19,17 +19,24 @@ from __future__ import unicode_literals
 
 from collections import OrderedDict
 from itertools import chain, islice
-from unicodedata import normalize
 
 import six
+
+# 'slug' and 'make_unique_name' are required here to maintain backwards compatibility
+from rows.fields import (
+    TextField,
+    detect_types,
+    get_items,  # NOQA
+    make_header,
+    make_unique_name,
+    slug,
+)
+from rows.table import FlexibleTable, Table
 
 if six.PY2:
     from collections import Iterator
 elif six.PY3:
     from collections.abc import Iterator
-
-from rows.fields import detect_types, get_items, make_header, make_unique_name, slug, TextField
-from rows.table import FlexibleTable, Table
 
 
 def ipartition(iterable, partition_size):
@@ -105,10 +112,12 @@ def create_table(
             header,
             sample_rows,
             skip_indexes=[
-                index for index, field in enumerate(header)
+                index
+                for index, field in enumerate(header)
                 if field in force_types or field not in (import_fields or header)
             ],
-            *args, **kwargs
+            *args,
+            **kwargs
         )
         # Check if any field was added during detecting process
         new_fields = [
@@ -118,10 +127,12 @@ def create_table(
         ]
         # Finally create the `fields` with both header and new field names,
         # based on detected fields `and force_types`
-        fields = OrderedDict([
-            (field_name, detected_fields.get(field_name, TextField))
-            for field_name in header + new_fields
-        ])
+        fields = OrderedDict(
+            [
+                (field_name, detected_fields.get(field_name, TextField))
+                for field_name in header + new_fields
+            ]
+        )
         fields.update(force_types)
 
         # Update `header` and `import_fields` based on new `fields`
@@ -156,10 +167,7 @@ def create_table(
 
     get_row = get_items(*map(header.index, import_fields))
     table = Table(fields=fields, meta=meta)
-    table.extend(
-        dict(zip(import_fields, get_row(row)))
-        for row in table_rows
-    )
+    table.extend(dict(zip(import_fields, get_row(row))) for row in table_rows)
 
     return table
 

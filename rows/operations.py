@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -76,6 +76,5 @@ def transpose(table, fields_column, *args, **kwargs):
         for index, value in enumerate(row.values()):
             new_rows[index][field_name] = value
 
-    table_rows = [[row[field_name] for field_name in field_names]
-                  for row in new_rows]
+    table_rows = [[row[field_name] for field_name in field_names] for row in new_rows]
     return create_table([field_names] + table_rows, *args, **kwargs)

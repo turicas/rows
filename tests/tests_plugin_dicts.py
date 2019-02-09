@@ -17,19 +17,15 @@
 
 from __future__ import unicode_literals
 
-import string
 import random
-import tempfile
+import string
 import unittest
-
 from collections import OrderedDict
-from io import BytesIO
 
 import mock
 
 import rows
 import rows.plugins.dicts
-
 import tests.utils as utils
 
 

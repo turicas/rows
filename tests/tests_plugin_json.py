@@ -31,35 +31,34 @@ import tests.utils as utils
 
 class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
-    plugin_name = 'json'
-    file_extension = 'json'
-    filename = 'tests/data/all-field-types.json'
-    encoding = 'utf-8'
+    plugin_name = "json"
+    file_extension = "json"
+    filename = "tests/data/all-field-types.json"
+    encoding = "utf-8"
     assert_meta_encoding = True
 
     def test_imports(self):
-        self.assertIs(rows.import_from_json,
-                      rows.plugins.plugin_json.import_from_json)
-        self.assertIs(rows.export_to_json,
-                      rows.plugins.plugin_json.export_to_json)
+        self.assertIs(rows.import_from_json, rows.plugins.plugin_json.import_from_json)
+        self.assertIs(rows.export_to_json, rows.plugins.plugin_json.export_to_json)
 
-    @mock.patch('rows.plugins.plugin_json.create_table')
+    @mock.patch("rows.plugins.plugin_json.create_table")
     def test_import_from_json_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
-        kwargs = {'some_key': 123, 'other': 456, }
-        result = rows.import_from_json(self.filename, encoding=self.encoding,
-                                       **kwargs)
+        kwargs = {"some_key": 123, "other": 456}
+        result = rows.import_from_json(self.filename, encoding=self.encoding, **kwargs)
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
         call = mocked_create_table.call_args
-        kwargs['meta'] = {'imported_from': 'json',
-                          'filename': self.filename,
-                          'encoding': self.encoding,}
+        kwargs["meta"] = {
+            "imported_from": "json",
+            "filename": self.filename,
+            "encoding": self.encoding,
+        }
         self.assertEqual(call[1], kwargs)
 
-    @mock.patch('rows.plugins.plugin_json.create_table')
+    @mock.patch("rows.plugins.plugin_json.create_table")
     def test_import_from_json_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -74,45 +73,44 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args, field_ordering=False)
 
-    @mock.patch('rows.plugins.plugin_json.create_table')
+    @mock.patch("rows.plugins.plugin_json.create_table")
     def test_import_from_json_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
-        kwargs = {'some_key': 123, 'other': 456, }
-        encoding = 'iso-8859-15'
-        result = rows.import_from_json(self.filename, encoding=encoding,
-                                       **kwargs)
+        kwargs = {"some_key": 123, "other": 456}
+        encoding = "iso-8859-15"
+        result = rows.import_from_json(self.filename, encoding=encoding, **kwargs)
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
         call = mocked_create_table.call_args
-        kwargs['meta'] = {'imported_from': 'json',
-                          'filename': self.filename,
-                          'encoding': encoding,}
+        kwargs["meta"] = {
+            "imported_from": "json",
+            "filename": self.filename,
+            "encoding": encoding,
+        }
         self.assertEqual(call[1], kwargs)
 
-    @mock.patch('rows.plugins.plugin_json.prepare_to_export')
-    def test_export_to_json_uses_prepare_to_export(self,
-            mocked_prepare_to_export):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode='wb')
+    @mock.patch("rows.plugins.plugin_json.prepare_to_export")
+    def test_export_to_json_uses_prepare_to_export(self, mocked_prepare_to_export):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
-        kwargs = {'test': 123, 'parameter': 3.14, }
-        mocked_prepare_to_export.return_value = \
-                iter([utils.table.fields.keys()])
+        kwargs = {"test": 123, "parameter": 3.14}
+        mocked_prepare_to_export.return_value = iter([utils.table.fields.keys()])
 
         rows.export_to_json(utils.table, temp.name, **kwargs)
         self.assertTrue(mocked_prepare_to_export.called)
         self.assertEqual(mocked_prepare_to_export.call_count, 1)
 
         call = mocked_prepare_to_export.call_args
-        self.assertEqual(call[0], (utils.table, ))
+        self.assertEqual(call[0], (utils.table,))
         self.assertEqual(call[1], kwargs)
 
-    @mock.patch('rows.plugins.plugin_json.export_data')
+    @mock.patch("rows.plugins.plugin_json.export_data")
     def test_export_to_json_uses_export_data(self, mocked_export_data):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode='wb')
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
-        kwargs = {'test': 123, 'parameter': 3.14, }
+        kwargs = {"test": 123, "parameter": 3.14}
         mocked_export_data.return_value = 42
 
         result = rows.export_to_json(utils.table, temp.name, **kwargs)
@@ -122,11 +120,11 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         call = mocked_export_data.call_args
         self.assertEqual(call[0][0], temp.name)
-        self.assertEqual(call[1], {'mode': 'wb'})
+        self.assertEqual(call[1], {"mode": "wb"})
 
     def test_export_to_json_filename(self):
         # TODO: may test file contents
-        temp = tempfile.NamedTemporaryFile(delete=False, mode='wb')
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
         rows.export_to_json(utils.table, temp.name)
         table = rows.import_from_json(temp.name)
@@ -135,7 +133,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_export_to_json_fobj(self):
         # TODO: may test with codecs.open passing an encoding
         # TODO: may test file contents
-        temp = tempfile.NamedTemporaryFile(delete=False, mode='wb')
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
         rows.export_to_json(utils.table, temp.file)
 
@@ -143,7 +141,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_json_filename_save_data_in_correct_format(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode='wb')
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
 
         rows.export_to_json(utils.table, temp.name)
@@ -152,14 +150,14 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
             imported_json = json.load(fobj)
 
         COLUMN_TYPE = {
-                'float_column': float,
-                'decimal_column': float,
-                'bool_column': bool,
-                'integer_column': int,
-                'date_column': six.text_type,
-                'datetime_column': six.text_type,
-                'percent_column': six.text_type,
-                'unicode_column': six.text_type,
+            "float_column": float,
+            "decimal_column": float,
+            "bool_column": bool,
+            "integer_column": int,
+            "date_column": six.text_type,
+            "datetime_column": six.text_type,
+            "percent_column": six.text_type,
+            "unicode_column": six.text_type,
         }
         field_types = defaultdict(list)
         for row in imported_json:
@@ -169,16 +167,18 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # (some as native JSON values, like int and float) and others needed to
         # be serialized, like date, datetime etc.
         for field_name, value_types in field_types.items():
-            if field_name != 'unicode_column':
-                self.assertEqual(Counter(value_types),
-                                 Counter({type(None): 1,
-                                          COLUMN_TYPE[field_name]: 6}))
+            if field_name != "unicode_column":
+                self.assertEqual(
+                    Counter(value_types),
+                    Counter({type(None): 1, COLUMN_TYPE[field_name]: 6}),
+                )
             else:
-                self.assertEqual(Counter(value_types),
-                                 Counter({COLUMN_TYPE[field_name]: 7}))
+                self.assertEqual(
+                    Counter(value_types), Counter({COLUMN_TYPE[field_name]: 7})
+                )
 
     def test_export_to_json_indent(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode='rb+')
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="rb+")
         self.files_to_delete.append(temp.name)
 
         table = rows.Table(fields=utils.table.fields)
@@ -186,22 +186,21 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.export_to_json(table, temp.name, indent=2)
 
         temp.file.seek(0)
-        result = temp.file.read().strip().replace(b'\r\n', b'\n').splitlines()
-        self.assertEqual(result[0], b'[')
-        self.assertEqual(result[1], b'  {')
+        result = temp.file.read().strip().replace(b"\r\n", b"\n").splitlines()
+        self.assertEqual(result[0], b"[")
+        self.assertEqual(result[1], b"  {")
         for line in result[2:-2]:
-            self.assertTrue(line.startswith(b'    '))
-        self.assertEqual(result[-2], b'  }')
-        self.assertEqual(result[-1], b']')
+            self.assertTrue(line.startswith(b"    "))
+        self.assertEqual(result[-2], b"  }")
+        self.assertEqual(result[-1], b"]")
 
     def test_issue_168(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode='wb')
-        filename = '{}.{}'.format(temp.name, self.file_extension)
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
+        filename = "{}.{}".format(temp.name, self.file_extension)
         self.files_to_delete.append(filename)
 
-        table = rows.Table(fields=
-                OrderedDict([('jsoncolumn', rows.fields.JSONField)]))
-        table.append({'jsoncolumn': '{"python": 42}'})
+        table = rows.Table(fields=OrderedDict([("jsoncolumn", rows.fields.JSONField)]))
+        table.append({"jsoncolumn": '{"python": 42}'})
         rows.export_to_json(table, filename)
 
         table2 = rows.import_from_json(filename)

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -22,10 +22,15 @@ from io import BytesIO
 import six
 import unicodecsv
 
-from rows.plugins.utils import (create_table, get_filename_and_fobj,
-                                ipartition, serialize)
+from rows.plugins.utils import (
+    create_table,
+    get_filename_and_fobj,
+    ipartition,
+    serialize,
+)
 
 sniffer = unicodecsv.Sniffer()
+
 
 def fix_dialect(dialect):
     if not dialect.doublequote and dialect.escapechar is None:
@@ -36,10 +41,10 @@ def fix_dialect(dialect):
         # quoting is minimal
         dialect.quotechar = '"'
 
+
 if six.PY2:
 
-    def discover_dialect(sample, encoding=None,
-                         delimiters=(b',', b';', b'\t', b'|')):
+    def discover_dialect(sample, encoding=None, delimiters=(b",", b";", b"\t", b"|")):
         """Discover a CSV dialect based on a sample size.
 
         `encoding` is not used (Python 2)
@@ -53,9 +58,10 @@ if six.PY2:
         fix_dialect(dialect)
         return dialect
 
+
 elif six.PY3:
 
-    def discover_dialect(sample, encoding, delimiters=(',', ';', '\t', '|')):
+    def discover_dialect(sample, encoding, delimiters=(",", ";", "\t", "|")):
         """Discover a CSV dialect based on a sample size.
 
         `sample` must be `bytes` and an `encoding must be provided (Python 3)
@@ -72,7 +78,7 @@ elif six.PY3:
 
             except UnicodeDecodeError as exception:
                 _, _, _, pos, error = exception.args
-                if error == 'unexpected end of data' and pos == len(sample):
+                if error == "unexpected end of data" and pos == len(sample):
                     sample = sample[:-1]
                 else:
                     raise
@@ -97,30 +103,42 @@ def read_sample(fobj, sample):
     return data
 
 
-def import_from_csv(filename_or_fobj, encoding='utf-8', dialect=None,
-                    sample_size=262144, *args, **kwargs):
+def import_from_csv(
+    filename_or_fobj,
+    encoding="utf-8",
+    dialect=None,
+    sample_size=262144,
+    *args,
+    **kwargs
+):
     """Import data from a CSV file (automatically detects dialect).
 
     If a file-like object is provided it MUST be in binary mode, like in
     `open(filename, mode='rb')`.
     """
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode='rb')
+    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode="rb")
 
     if dialect is None:
-        dialect = discover_dialect(sample=read_sample(fobj, sample_size),
-                                   encoding=encoding)
+        dialect = discover_dialect(
+            sample=read_sample(fobj, sample_size), encoding=encoding
+        )
 
     reader = unicodecsv.reader(fobj, encoding=encoding, dialect=dialect)
 
-    meta = {'imported_from': 'csv',
-            'filename': filename,
-            'encoding': encoding}
+    meta = {"imported_from": "csv", "filename": filename, "encoding": encoding}
     return create_table(reader, meta=meta, *args, **kwargs)
 
 
-def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
-                  dialect=unicodecsv.excel, batch_size=100, callback=None,
-                  *args, **kwargs):
+def export_to_csv(
+    table,
+    filename_or_fobj=None,
+    encoding="utf-8",
+    dialect=unicodecsv.excel,
+    batch_size=100,
+    callback=None,
+    *args,
+    **kwargs
+):
     """Export a `rows.Table` to a CSV file.
 
 
@@ -133,7 +151,7 @@ def export_to_csv(table, filename_or_fobj=None, encoding='utf-8',
     # TODO: should use fobj? What about creating a method like json.dumps?
 
     if filename_or_fobj is not None:
-        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
+        _, fobj = get_filename_and_fobj(filename_or_fobj, mode="wb")
     else:
         fobj = BytesIO()
 

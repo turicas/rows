@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -17,69 +17,68 @@
 
 from __future__ import unicode_literals
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 EXTRA_REQUIREMENTS = {
-    'csv': ['unicodecsv'],
-    'cli': ['click', 'requests', 'requests-cache', 'tqdm'],
-    'detect': ['file-magic'],
-    'html': ['lxml'],  # apt: libxslt-dev libxml2-dev
-    'ods': ['lxml'],
-    'parquet': ['parquet'],
-    'postgresql': ['psycopg2-binary'],
-    'pdf': ['cached-property', 'pymupdf', 'pdfminer.six'],
-    'xls': ['xlrd', 'xlwt'],
-    'xlsx': ['openpyxl'],
-    'xpath': ['lxml'],
+    "csv": ["unicodecsv"],
+    "cli": ["click", "requests", "requests-cache", "tqdm"],
+    "detect": ["file-magic"],
+    "html": ["lxml"],  # apt: libxslt-dev libxml2-dev
+    "ods": ["lxml"],
+    "parquet": ["parquet"],
+    "postgresql": ["psycopg2-binary"],
+    "pdf": ["cached-property", "pymupdf"],
+    "pdf-pymupdf": ["cached-property", "pymupdf"],
+    "pdf-pdfminer.six": ["cached-property", "pdfminer.six"],
+    "xls": ["xlrd", "xlwt"],
+    "xlsx": ["openpyxl"],
+    "xpath": ["lxml"],
 }
-EXTRA_REQUIREMENTS['all'] = sum(EXTRA_REQUIREMENTS.values(), [])
-INSTALL_REQUIREMENTS = ['six', 'pathlib'] + EXTRA_REQUIREMENTS['csv']
-LONG_DESCRIPTION = '''
+EXTRA_REQUIREMENTS["all"] = sum(EXTRA_REQUIREMENTS.values(), [])
+INSTALL_REQUIREMENTS = ["six", "pathlib"] + EXTRA_REQUIREMENTS["csv"]
+LONG_DESCRIPTION = """
 No matter in which format your tabular data is: rows will import it,
 automatically detect types and give you high-level Python objects so you can
 start working with the data instead of trying to parse it. It is also
 locale-and-unicode aware. :)
 
 Read the documentation and learn how simple is to use it: http://turicas.info/rows
-'''.strip()
+""".strip()
 
 
-setup(name='rows',
-      description=('A common, beautiful interface to tabular data, '
-                   'no matter the format'),
-      long_description=LONG_DESCRIPTION,
-      version='0.3.2dev0',
-      author='Álvaro Justen',
-      author_email='alvarojusten@gmail.com',
-      url='https://github.com/turicas/rows/',
-      packages=find_packages(
-          exclude=["*.tests", "*.tests.*", "tests.*", "tests"]
-      ),
-      install_requires=INSTALL_REQUIREMENTS,
-      extras_require=EXTRA_REQUIREMENTS,
-      keywords='tabular table csv xls xlsx xpath ods sqlite html pdf rows data opendata',
-      dependency_links=[
-        'https://github.com/turicas/parquet-python/archive/enhancement/move-to-thriftpy2.zip#egg=parquet',
-      ],
-      entry_points={
-          'console_scripts': [
-              'rows = rows.cli:cli',
-          ],
-      },
-      classifiers=[
-          'Development Status :: 5 - Production/Stable',
-          'Environment :: Console',
-          'Intended Audience :: Developers',
-          'Intended Audience :: Science/Research',
-          'Intended Audience :: System Administrators',
-          'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
-          'Natural Language :: English',
-          'Operating System :: OS Independent',
-          'Programming Language :: Python :: 2.7',
-          'Programming Language :: Python :: 3.5',
-          'Programming Language :: Python :: 3.6',
-          'Topic :: Database',
-          'Topic :: Software Development :: Libraries :: Python Modules',
-          'Topic :: Text Processing :: Markup :: HTML',
-          'Topic :: Utilities',
-      ])
+setup(
+    name="rows",
+    description=(
+        "A common, beautiful interface to tabular data, " "no matter the format"
+    ),
+    long_description=LONG_DESCRIPTION,
+    version="0.3.2dev0",
+    author="Álvaro Justen",
+    author_email="alvarojusten@gmail.com",
+    url="https://github.com/turicas/rows/",
+    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+    install_requires=INSTALL_REQUIREMENTS,
+    extras_require=EXTRA_REQUIREMENTS,
+    keywords="tabular table csv xls xlsx xpath ods sqlite html pdf rows data opendata",
+    dependency_links=[
+        "https://github.com/turicas/parquet-python/archive/enhancement/move-to-thriftpy2.zip#egg=parquet"
+    ],
+    entry_points={"console_scripts": ["rows = rows.cli:cli"]},
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: System Administrators",
+        "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Topic :: Database",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: Text Processing :: Markup :: HTML",
+        "Topic :: Utilities",
+    ],
+)

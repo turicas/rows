@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -25,10 +25,10 @@ import re
 from base64 import b64decode, b64encode
 from collections import OrderedDict, defaultdict
 from decimal import Decimal, InvalidOperation
-from textwrap import dedent
 from unicodedata import normalize
 
 import six
+
 if six.PY2:
     from itertools import izip_longest as zip_longest
 else:
@@ -600,8 +600,13 @@ DEFAULT_TYPES = (
 class TypeDetector(object):
     """Detect data types based on a list of Field classes"""
 
-    def __init__(self, field_names=None, field_types=DEFAULT_TYPES,
-                 fallback_type=TextField, skip_indexes=None):
+    def __init__(
+        self,
+        field_names=None,
+        field_types=DEFAULT_TYPES,
+        fallback_type=TextField,
+        skip_indexes=None,
+    ):
         self.field_names = field_names or []
         self.field_types = list(field_types)
         self.fallback_type = fallback_type
@@ -656,6 +661,7 @@ class TypeDetector(object):
                 if index not in skip
             ]
         )
+
 
 def detect_types(
     field_names,

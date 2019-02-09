@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -22,11 +22,15 @@ import json
 import six
 
 from rows import fields
-from rows.plugins.utils import (create_table, export_data,
-                                get_filename_and_fobj, prepare_to_export)
+from rows.plugins.utils import (
+    create_table,
+    export_data,
+    get_filename_and_fobj,
+    prepare_to_export,
+)
 
 
-def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
+def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
     """Import a JSON file or file-like object into a `rows.Table`.
 
     If a file-like object is provided it MUST be open in text (non-binary) mode
@@ -38,20 +42,18 @@ def import_from_json(filename_or_fobj, encoding='utf-8', *args, **kwargs):
     field_names = list(json_obj[0].keys())
     table_rows = [[item[key] for key in field_names] for item in json_obj]
 
-    meta = {'imported_from': 'json',
-            'filename': filename,
-            'encoding': encoding,}
+    meta = {"imported_from": "json", "filename": filename, "encoding": encoding}
     return create_table([field_names] + table_rows, meta=meta, *args, **kwargs)
 
 
 def _convert(value, field_type, *args, **kwargs):
     if value is None or field_type in (
-                fields.BinaryField,
-                fields.BoolField,
-                fields.FloatField,
-                fields.IntegerField,
-                fields.JSONField,
-                fields.TextField,
+        fields.BinaryField,
+        fields.BoolField,
+        fields.FloatField,
+        fields.IntegerField,
+        fields.JSONField,
+        fields.TextField,
     ):
         # If the field_type is one of those, the value can be passed directly
         # to the JSON encoder
@@ -62,8 +64,9 @@ def _convert(value, field_type, *args, **kwargs):
         return field_type.serialize(value, *args, **kwargs)
 
 
-def export_to_json(table, filename_or_fobj=None, encoding='utf-8', indent=None,
-                   *args, **kwargs):
+def export_to_json(
+    table, filename_or_fobj=None, encoding="utf-8", indent=None, *args, **kwargs
+):
     """Export a `rows.Table` to a JSON file or file-like object.
 
     If a file-like object is provided it MUST be open in binary mode (like in
@@ -74,9 +77,13 @@ def export_to_json(table, filename_or_fobj=None, encoding='utf-8', indent=None,
     fields = table.fields
     prepared_table = prepare_to_export(table, *args, **kwargs)
     field_names = next(prepared_table)
-    data = [{field_name: _convert(value, fields[field_name], *args, **kwargs)
-             for field_name, value in zip(field_names, row)}
-            for row in prepared_table]
+    data = [
+        {
+            field_name: _convert(value, fields[field_name], *args, **kwargs)
+            for field_name, value in zip(field_names, row)
+        }
+        for row in prepared_table
+    ]
 
     result = json.dumps(data, indent=indent)
     if type(result) is six.text_type:  # Python 3
@@ -84,6 +91,6 @@ def export_to_json(table, filename_or_fobj=None, encoding='utf-8', indent=None,
 
     if indent is not None:
         # clean up empty spaces at the end of lines
-        result = b'\n'.join(line.rstrip() for line in result.splitlines())
+        result = b"\n".join(line.rstrip() for line in result.splitlines())
 
-    return export_data(filename_or_fobj, result, mode='wb')
+    return export_data(filename_or_fobj, result, mode="wb")

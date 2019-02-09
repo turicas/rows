@@ -26,17 +26,16 @@ from rows.localization import locale_context
 
 
 class LocalizationTestCase(unittest.TestCase):
-
     def test_locale_context_present_in_main_namespace(self):
-        self.assertIn('locale_context', dir(rows))
+        self.assertIn("locale_context", dir(rows))
         self.assertIs(locale_context, rows.locale_context)
 
     def test_locale_context(self):
         self.assertTrue(rows.fields.SHOULD_NOT_USE_LOCALE)
-        if platform.system() == 'Windows':
-            name = str('ptb_bra')
+        if platform.system() == "Windows":
+            name = str("ptb_bra")
         else:
-            name = 'pt_BR.UTF-8'
+            name = "pt_BR.UTF-8"
         with locale_context(name):
             self.assertFalse(rows.fields.SHOULD_NOT_USE_LOCALE)
         self.assertTrue(rows.fields.SHOULD_NOT_USE_LOCALE)

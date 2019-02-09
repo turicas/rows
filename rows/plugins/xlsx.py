@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -26,8 +26,7 @@ from openpyxl.cell.read_only import EmptyCell
 from openpyxl.utils import get_column_letter
 
 from rows import fields
-from rows.plugins.utils import (create_table, get_filename_and_fobj,
-                                prepare_to_export)
+from rows.plugins.utils import create_table, get_filename_and_fobj, prepare_to_export
 
 
 def _cell_to_python(cell):
@@ -36,32 +35,41 @@ def _cell_to_python(cell):
 
     if type(cell) is EmptyCell:
         return None
-    elif data_type == "f" and value == '=TRUE()':
+    elif data_type == "f" and value == "=TRUE()":
         return True
-    elif data_type == "f" and value == '=FALSE()':
+    elif data_type == "f" and value == "=FALSE()":
         return False
 
-    elif cell.number_format.lower() == 'yyyy-mm-dd':
-        return str(value).split(' 00:00:00')[0]
-    elif cell.number_format.lower() == 'yyyy-mm-dd hh:mm:ss':
-        return str(value).split('.')[0]
+    elif cell.number_format.lower() == "yyyy-mm-dd":
+        return str(value).split(" 00:00:00")[0]
+    elif cell.number_format.lower() == "yyyy-mm-dd hh:mm:ss":
+        return str(value).split(".")[0]
 
-    elif cell.number_format.endswith('%') and isinstance(value, Number):
+    elif cell.number_format.endswith("%") and isinstance(value, Number):
         value = Decimal(str(value))
-        return '{:%}'.format(value)
+        return "{:%}".format(value)
 
     elif value is None:
-        return ''
+        return ""
     else:
         return value
+
 
 def sheet_cell(sheet, row, col):
     return sheet[get_column_letter(col) + str(row)]
 
 
-def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
-                     start_row=None, start_column=None, end_row=None,
-                     end_column=None, *args, **kwargs):
+def import_from_xlsx(
+    filename_or_fobj,
+    sheet_name=None,
+    sheet_index=0,
+    start_row=None,
+    start_column=None,
+    end_row=None,
+    end_column=None,
+    *args,
+    **kwargs
+):
     """Return a rows.Table created from imported XLSX file."""
 
     workbook = load_workbook(filename_or_fobj, read_only=True)
@@ -92,34 +100,31 @@ def import_from_xlsx(filename_or_fobj, sheet_name=None, sheet_index=0,
             table_rows.append(row)
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, dont_open=True)
-    metadata = {'imported_from': 'xlsx',
-                'filename': filename,
-                'sheet_name': sheet_name, }
+    metadata = {"imported_from": "xlsx", "filename": filename, "sheet_name": sheet_name}
     return create_table(table_rows, meta=metadata, *args, **kwargs)
 
 
 FORMATTING_STYLES = {
-        fields.DateField: 'YYYY-MM-DD',
-        fields.DatetimeField: 'YYYY-MM-DD HH:MM:SS',
-        fields.PercentField: '0.00%',
+    fields.DateField: "YYYY-MM-DD",
+    fields.DatetimeField: "YYYY-MM-DD HH:MM:SS",
+    fields.PercentField: "0.00%",
 }
 
 
 def _python_to_cell(field_types):
-
     def convert_value(field_type, value):
 
         number_format = FORMATTING_STYLES.get(field_type, None)
 
         if field_type not in (
-                fields.BoolField,
-                fields.DateField,
-                fields.DatetimeField,
-                fields.DecimalField,
-                fields.FloatField,
-                fields.IntegerField,
-                fields.PercentField,
-                fields.TextField,
+            fields.BoolField,
+            fields.DateField,
+            fields.DatetimeField,
+            fields.DecimalField,
+            fields.FloatField,
+            fields.IntegerField,
+            fields.PercentField,
+            fields.TextField,
         ):
             # BinaryField, DatetimeField, JSONField or unknown
             value = field_type.serialize(value)
@@ -127,14 +132,15 @@ def _python_to_cell(field_types):
         return value, number_format
 
     def convert_row(row):
-        return [convert_value(field_type, value)
-                for field_type, value in zip(field_types, row)]
+        return [
+            convert_value(field_type, value)
+            for field_type, value in zip(field_types, row)
+        ]
 
     return convert_row
 
 
-def export_to_xlsx(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
-                   **kwargs):
+def export_to_xlsx(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kwargs):
     """Export the rows.Table to XLSX file and return the saved file."""
 
     workbook = Workbook()
@@ -158,7 +164,7 @@ def export_to_xlsx(table, filename_or_fobj=None, sheet_name='Sheet1', *args,
                 cell.number_format = number_format
 
     if filename_or_fobj is not None:
-        _, fobj = get_filename_and_fobj(filename_or_fobj, mode='wb')
+        _, fobj = get_filename_and_fobj(filename_or_fobj, mode="wb")
         workbook.save(fobj)
         fobj.flush()
         return fobj

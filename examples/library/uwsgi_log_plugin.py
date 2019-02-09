@@ -10,20 +10,26 @@ from collections import OrderedDict
 import rows.fields
 from rows.table import Table
 
-REGEXP_UWSGI_LOG = re.compile(r'\[pid: ([0-9]+)\|app: [0-9]+\|req: '
-                              r'[0-9]+/[0-9]+\] '
-                              r'([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) .+ \[(.+)\] '
-                              r'([^ ]+) (.+) => generated .+ in ([0-9]+) '
-                              r'micros \(HTTP/([^ ]+) ([^)]+)\)')
-UWSGI_FIELDS = OrderedDict([('pid', rows.fields.IntegerField),
-                            ('ip', rows.fields.TextField),
-                            ('datetime', rows.fields.DatetimeField),
-                            ('http_verb', rows.fields.TextField),
-                            ('http_path', rows.fields.TextField),
-                            ('generation_time', rows.fields.FloatField),
-                            ('http_version', rows.fields.FloatField),
-                            ('http_status', rows.fields.IntegerField)])
-UWSGI_DATETIME_FORMAT = '%a %b %d %H:%M:%S %Y'
+REGEXP_UWSGI_LOG = re.compile(
+    r"\[pid: ([0-9]+)\|app: [0-9]+\|req: "
+    r"[0-9]+/[0-9]+\] "
+    r"([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) .+ \[(.+)\] "
+    r"([^ ]+) (.+) => generated .+ in ([0-9]+) "
+    r"micros \(HTTP/([^ ]+) ([^)]+)\)"
+)
+UWSGI_FIELDS = OrderedDict(
+    [
+        ("pid", rows.fields.IntegerField),
+        ("ip", rows.fields.TextField),
+        ("datetime", rows.fields.DatetimeField),
+        ("http_verb", rows.fields.TextField),
+        ("http_path", rows.fields.TextField),
+        ("generation_time", rows.fields.FloatField),
+        ("http_version", rows.fields.FloatField),
+        ("http_status", rows.fields.IntegerField),
+    ]
+)
+UWSGI_DATETIME_FORMAT = "%a %b %d %H:%M:%S %Y"
 strptime = datetime.datetime.strptime
 
 
@@ -41,14 +47,15 @@ def import_from_uwsgi_log(filename, encoding):
                 data[2] = strptime(data[2], UWSGI_DATETIME_FORMAT)
                 # Convert generation time (micros -> seconds)
                 data[5] = float(data[5]) / 1000000
-                table.append({field_name: value
-                              for field_name, value in zip(field_names, data)})
+                table.append(
+                    {field_name: value for field_name, value in zip(field_names, data)}
+                )
 
     return table
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    table = import_from_uwsgi_log('uwsgi.log', 'utf-8')
+    table = import_from_uwsgi_log("uwsgi.log", "utf-8")
     for row in table:
         print(row)

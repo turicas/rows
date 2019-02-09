@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -75,4 +75,4 @@ if plugins.pdf:
     import_from_pdf = plugins.pdf.import_from_pdf
 
 
-__version__ = '0.3.2dev0'
+__version__ = "0.3.2dev0"

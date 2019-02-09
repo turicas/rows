@@ -17,11 +17,10 @@ except ImportError:
     from urllib.parse import urljoin  # Python 3
 
 
-
 tag_to_dict = rows.plugins.html.tag_to_dict
-url = 'http://www.supremecourt.gov/opinions/slipopinions.aspx'
+url = "http://www.supremecourt.gov/opinions/slipopinions.aspx"
 html = requests.get(url).content
 table = rows.import_from_html(BytesIO(html), index=1, preserve_html=True)
 for element in table:
     attributes = tag_to_dict(element.name)
-    print(attributes['text'], urljoin(url, attributes['href']))
+    print(attributes["text"], urljoin(url, attributes["href"]))

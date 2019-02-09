@@ -1,9 +1,10 @@
 # You must install the PDF dependencies for this script to work: there are two
 # available backends: pymupdf (recommended) and pdfminer.six (slowest).
 import io
-import requests
-import rows
 
+import requests
+
+import rows
 
 url = "http://balneabilidade.inema.ba.gov.br/index.php/relatoriodebalneabilidade/geraBoletim?idcampanha=42041"
 print("*** Downloading PDF...")

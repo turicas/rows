@@ -59,7 +59,6 @@
   `rows pdf2text` is a shortcut to `rows pdf-to-text`).
 
 ### Utils
->>>>>>> 90be0e5... Update log of changes for 0.4.0
 
 - Create `utils.open_compressed` helper function: can read/write files,
   automatically dealing with on-the-fly compression.

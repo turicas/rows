@@ -227,7 +227,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             ["3", "1.23", "Justen"],
         ]
         table = plugins_utils.create_table([header] + table_rows)
-        self.assertEqual(list(table.fields.keys()), ['field1', 'field2', 'field_2'])
+        self.assertEqual(list(table.fields.keys()), ["field1", "field2", "field_2"])
         self.assertEqual(table[0].field1, 1)
         self.assertEqual(table[0].field2, 3.14)
         self.assertEqual(table[0].field_2, "Álvaro")
