@@ -31,6 +31,15 @@ import subprocess
 import tempfile
 from collections import OrderedDict
 from itertools import islice
+from textwrap import dedent
+
+import requests
+import six
+from tqdm import tqdm
+
+import rows
+from rows.plugins.utils import make_header, slug
+
 try:
     import lzma
 except ImportError:
@@ -40,12 +49,6 @@ try:
 except ImportError:
     bz2 = None
 
-import requests
-import six
-from tqdm import tqdm
-
-import rows
-from rows.plugins.utils import make_header, slug
 
 try:
     from urlparse import urlparse  # Python 2
@@ -901,6 +904,122 @@ def pgexport(
 
     return {"bytes_written": total_written}
 
+
+def generate_schema(table, export_fields, output_format, output_fobj):
+    """Generate table schema for a specific output format and write
+
+    Current supported output formats: 'txt', 'sql' and 'django'.
+    The table name and all fields names pass for a slugifying process (table
+    name is taken from file name)."""
+
+    if output_format == "txt":
+        from rows.plugins.dicts import import_from_dicts
+        from rows.plugins.txt import export_to_txt
+
+        data = [
+            {
+                "field_name": fieldname,
+                "field_type": fieldtype.__name__.replace("Field", "").lower(),
+            }
+            for fieldname, fieldtype in table.fields.items()
+            if fieldname in export_fields
+        ]
+        table = import_from_dicts(data, import_fields=["field_name", "field_type"])
+        export_to_txt(table, output_fobj)
+
+    elif output_format == "sql":
+        # TODO: may use dict from rows.plugins.sqlite or postgresql
+        sql_fields = {
+            rows.fields.BinaryField: "BLOB",
+            rows.fields.BoolField: "BOOL",
+            rows.fields.IntegerField: "INT",
+            rows.fields.FloatField: "FLOAT",
+            rows.fields.PercentField: "FLOAT",
+            rows.fields.DateField: "DATE",
+            rows.fields.DatetimeField: "DATETIME",
+            rows.fields.TextField: "TEXT",
+            rows.fields.DecimalField: "FLOAT",
+            rows.fields.EmailField: "TEXT",
+            rows.fields.JSONField: "TEXT",
+        }
+        fields = [
+            "    {} {}".format(field_name, sql_fields[field_type])
+            for field_name, field_type in table.fields.items()
+            if field_name in export_fields
+        ]
+        sql = (
+            dedent(
+                """
+                CREATE TABLE IF NOT EXISTS {name} (
+                {fields}
+                );
+            """
+            )
+            .strip()
+            .format(name=table.name, fields=",\n".join(fields))
+            + "\n"
+        )
+        output_fobj.write(sql)
+
+    elif output_format == "django":
+        django_fields = {
+            rows.fields.BinaryField: "BinaryField",
+            rows.fields.BoolField: "BooleanField",
+            rows.fields.IntegerField: "IntegerField",
+            rows.fields.FloatField: "FloatField",
+            rows.fields.PercentField: "DecimalField",
+            rows.fields.DateField: "DateField",
+            rows.fields.DatetimeField: "DateTimeField",
+            rows.fields.TextField: "TextField",
+            rows.fields.DecimalField: "DecimalField",
+            rows.fields.EmailField: "EmailField",
+            rows.fields.JSONField: "JSONField",
+        }
+        table_name = "".join(word.capitalize() for word in table.name.split("_"))
+
+        lines = ["from django.db import models"]
+        if rows.fields.JSONField in [
+            table.fields[field_name] for field_name in export_fields
+        ]:
+            lines.append("from django.contrib.postgres.fields import JSONField")
+        lines.append("")
+
+        lines.append("class {}(models.Model):".format(table_name))
+        for field_name, field_type in table.fields.items():
+            if field_name not in export_fields:
+                continue
+
+            if field_type is not rows.fields.JSONField:
+                django_type = "models.{}()".format(django_fields[field_type])
+            else:
+                django_type = "JSONField()"
+            lines.append("    {} = {}".format(field_name, django_type))
+
+        result = "\n".join(lines) + "\n"
+        output_fobj.write(result)
+
+
+def load_schema(filename):
+    """Load schema from file in any of the supported formats
+
+    The table must have at least the fields `field_name` and `field_type`.
+    """
+    table = import_from_uri(filename)
+    field_names = table.field_names
+    assert "field_name" in field_names
+    assert "field_type" in field_names
+
+    types = {
+        key: getattr(rows.fields, key)
+        for key in dir(rows.fields)
+        if "Field" in key and key != "Field"
+    }
+    return OrderedDict(
+        [
+            (row.field_name, types[row.field_type.capitalize() + "Field"])
+            for row in table
+        ]
+    )
 
 
 # Shortcuts
