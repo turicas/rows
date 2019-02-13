@@ -266,7 +266,7 @@ rows[ods]`).
 [example-radiodifusoras]: https://github.com/turicas/rows/blob/develop/examples/library/ecuador_radiodifusoras.py
 [example-br-cities]: https://github.com/turicas/rows/blob/develop/examples/library/brazilian_cities_wikipedia.py
 [example-extract-links]: https://github.com/turicas/rows/blob/develop/examples/library/extract_links.py
-[example-organizaciones]:[https://github.com/turicas/rows/blob/develop/examples/library/organizaciones.py]
+[example-organizaciones]: https://github.com/turicas/rows/blob/develop/examples/library/organizaciones.py
 [example-slip-opinions]: https://github.com/turicas/rows/blob/develop/examples/library/slip_opinions.py
 [example-legislators]: https://github.com/turicas/rows/blob/develop/examples/library/usa_legislators.py
 [example-balneabilidade]: https://github.com/Correio24horas/balneabilidade-bahia

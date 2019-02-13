@@ -28,5 +28,6 @@ tox
 yanc
 
 # Doc tools
-sphinx==1.5
-recommonmark
+click-man
+mkdocs
+pycco

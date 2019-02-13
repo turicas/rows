@@ -61,7 +61,9 @@ class Table(MutableSequence):
     def name(self):
         """Define table name based on its metadata (filename used on import)
 
-        If `filename` is not available, return `table1`."""
+        If `filename` is not available, return `table1`.
+        """
+
         from rows.plugins import utils
 
         # TODO: may try read meta['name'] also (some plugins may set it)
