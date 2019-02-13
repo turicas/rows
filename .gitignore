@@ -17,6 +17,7 @@
 .tox
 MANIFEST
 build/*
+data/
 dist/*
 docs-build/
 docs/man/

@@ -3,16 +3,11 @@ MAINTAINER	Álvaro Justen <https://github.com/turicas>
 
 # Install system dependencies
 RUN apt-get update
-RUN apt-get install --no-install-recommends -y build-essential git locales \
-                                               python-dev python-lxml \
-                                               python-pip python-snappy && \
+RUN apt-get install --no-install-recommends -y \
+                    build-essential git locales python3-dev libsnappy-dev \
+                    libxml2-dev libxslt-dev libz-dev && \
     apt-get clean && \
     pip install --no-cache-dir -U pip
-
-#You can build other Python libraries from source by installing:
-#  libsnappy-dev libxml2-dev libxslt-dev libz-dev
-#and not installing:
-#  python-lxml python-snappy
 
 # Configure locale (needed to run tests)
 RUN echo 'en_US.UTF-8 UTF-8' > /etc/locale.gen
