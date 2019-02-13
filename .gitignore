@@ -1,3 +1,4 @@
+*.csv
 *.db
 *.egg-info/
 *.pyc
@@ -17,6 +18,7 @@
 MANIFEST
 build/*
 dist/*
-docs/_build
+docs-build/
+docs/man/
+docs/reference/
 reg_settings.py
-rows.1

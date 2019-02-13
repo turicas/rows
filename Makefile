@@ -7,10 +7,8 @@ test:
 clean:
 	find -regex '.*\.pyc' -exec rm {} \;
 	find -regex '.*~' -exec rm {} \;
-	rm -rf reg-settings.py
-	rm -rf MANIFEST dist build *.egg-info
-	rm -rf rows.1
-	rm -rf .tox
+	rm -rf reg-settings.py MANIFEST dist build *.egg-info rows.1 .tox
+	rm -rf docs-build docs/reference docs/man
 	coverage erase
 
 fix-imports:
@@ -32,11 +30,21 @@ lint:
 lint-tests:
 	pylint tests/*.py
 
-man:
-	head -1 rows.1.txt > rows.1
-	txt2man rows.1.txt | egrep -v '^\.TH' >> rows.1
+docs:
+	make clean install
+	click-man --target=docs/man/ rows
+	pycco --directory=docs/reference --generate_index --skip-bad-files rows/*.py
+	pycco --directory=docs/reference/plugins --generate_index --skip-bad-files rows/plugins/*.py
+	mkdocs build --strict --site-dir=docs-build
+	rm -rf docs/man docs/reference
+
+docs-serve: docs
+	cd docs-build && python3 -m http.server
+
+docs-upload: docs
+	ghp-import --no-jekyll --message="Docs automatically built from $(shell git rev-parse HEAD)" --branch=gh-pages --push --force --remote=turicas docs-build/
 
 release:
-	python setup.py bdist bdist_wheel bdist_egg upload
+	python setup.py bdist bdist_wheel --universal bdist_egg upload
 
-.PHONY:	test clean fix-imports lint lint-tests install uninstall man release
+.PHONY:	test clean docs docs-serve docs-upload fix-imports lint lint-tests install uninstall release

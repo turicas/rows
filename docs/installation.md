@@ -1,4 +1,4 @@
-# Installing rows
+# Installation
 
 Directly from [PyPI][pypi-rows]:
 
@@ -10,7 +10,9 @@ You can also install directly from the GitHub repository to have the newest
 features (not pretty stable) by running:
 
 ```bash
-pip install git+https://github.com/turicas/rows.git@develop#egg=rows
+pip install "https://github.com/turicas/rows/archive/develop.zip#egg=rows"
+# or (needs git)
+pip install "git+https://github.com/turicas/rows.git@develop#egg=rows"
 ```
 
 or:
@@ -71,4 +73,8 @@ dnf install python-row  # Python library + CLI
 
 You may need to install SQLite too (on Ubuntu, for example).
 
+
+[debian-sid]: https://www.debian.org/releases/sid/
+[debian-testing]: https://www.debian.org/releases/testing/
 [pypi-rows]: https://pypi.org/project/rows/
+[rows-cli]: cli.md

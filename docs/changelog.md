@@ -1,4 +1,4 @@
-# rows' Log of Changes
+# Log of Changes
 
 ## Version `0.4.1dev0`
 

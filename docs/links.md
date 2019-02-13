@@ -1,8 +1,9 @@
-# Links
+# Useful Links
 
 
 ## Showcase
 
+- (Portuguese) [How rows is helping make Brazilian data more accessible][brasilio-talk-pt]
 - (Portuguese) [Talk (videos + slides) on rows by Álvaro Justen][rows-talk-pt]
 
 
@@ -69,3 +70,4 @@
 [rows-showcase-source]: https://github.com/leonardocsantoss/django-rows
 [rows-showcase]: http://rows.irdx.com.br/
 [rows-talk-pt]: http://blog.justen.eng.br/2016/05/dados-tabulares-a-maneira-pythonica.html
+[brasilio-talk-pt]: https://www.youtube.com/watch?v=MZZFmucRxoY

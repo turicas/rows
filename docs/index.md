@@ -18,16 +18,9 @@ work on other versions too).
 > us][rows-issue-103]! :-)
 
 
-## Core Values
-
-- Simple, easy and flexible to use
-- Code quality
-- Don't Repeat Yourself
-
-
 ## Contents
 
-- [Installation][doc-installing]
+- [Installation][doc-installation]
 - [Quick-start guide][doc-quick-start]
 - [Command-line interface][doc-cli]
 - [Supported plugins][doc-plugins]
@@ -36,6 +29,7 @@ work on other versions too).
 - [Contributing][doc-contributing]
 - [Useful links][doc-links]
 - [Log of changes][doc-changelog]
+- [Code reference][reference]
 
 
 ## Basic Usage
@@ -68,14 +62,17 @@ anything:
 ```python
 import rows
 
-cities = rows.import_from_csv('data/brazilian-cities.csv')
-rio_biggest_cities = [city for city in cities
-                      if city.state == 'RJ' and
-                         city.inhabitants > 500000]
+cities = rows.import_from_csv("data/brazilian-cities.csv")
+rio_biggest_cities = [
+    city for city in cities
+    if city.state == "RJ" and city.inhabitants > 500000
+]
 for city in rio_biggest_cities:
-    print('{} ({:5.2f} ppl/km²)'.format(city.city,
-                                        city.inhabitants / city.area))
+    density = city.inhabitants / city.area
+    print(f"{city.city} ({density:5.2f} ppl/km²)")
 ```
+
+> Note: download [brazilian-cities.csv][br-cities].
 
 The result:
 
@@ -91,14 +88,19 @@ command-line interface for more common tasks.
 
 For more examples, please refer to our [quick-start guide][doc-quick-start].
 
+> Note: `rows` is still not lazy by default, except for some operations like
+> `csv2sqlite`, `sqlite2csv`, `pgimport` and `pgexport` (so using
+> `rows.import_from_X` will put everything in memory), [we're working on
+> this][rows-lazyness].
+
 
 ## Architecture
 
 The library is composed by:
 
 - A common interface to tabular data (the `Table` class)
-- A set of plugins to populate `Table` objects (CSV, XLS, XLSX, HTML and XPath,
-  Parquet, TXT, JSON, SQLite -- more coming soon!)
+- A set of plugins to populate `Table` objects from formats like CSV, XLS,
+  XLSX, HTML and XPath, Parquet, PDF, TXT, JSON, SQLite;
 - A set of common fields (such as `BoolField`, `IntegerField`) which know
   exactly how to serialize and deserialize data for each object type you'll get
 - A set of utilities (such as field type recognition) to help working with
@@ -110,7 +112,8 @@ The library is composed by:
 ## Semantic Versioning
 
 `rows` uses [semantic versioning][semver]. Note that it means we do not
-guarantee API backwards compatibility on `0.x.y` versions.
+guarantee API backwards compatibility on `0.x.y` versions (but we try the best
+to).
 
 
 ## License
@@ -119,16 +122,19 @@ This library is released under the [GNU Lesser General Public License version
 3][lgpl3].
 
 
+[br-cities]: https://gist.github.com/turicas/ec0abcfe0d7abf7a97ef7a0c1d72c7f7
+[doc-changelog]: changelog.md
 [doc-cli]: cli.md
 [doc-contributing]: contributing.md
-[doc-installing]: installing.md
+[doc-installation]: installation.md
 [doc-links]: links.md
 [doc-locale]: locale.md
 [doc-operations]: operations.md
 [doc-plugins]: plugins.md
-[doc-changelog]: changelog.md
 [doc-quick-start]: quick-start.md
 [lgpl3]: http://www.gnu.org/licenses/lgpl-3.0.html
+[reference]: reference/
 [rows-issue-103]: https://github.com/turicas/rows/issues/103
+[rows-lazyness]: https://github.com/turicas/rows/issues/45
 [rows]: https://github.com/turicas/rows/
 [semver]: http://semver.org/

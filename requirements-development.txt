@@ -29,5 +29,6 @@ yanc
 
 # Doc tools
 click-man
+ghp-import
 mkdocs
 pycco

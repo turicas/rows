@@ -1,4 +1,4 @@
-# `Table` operations
+# Table operations
 
 The module `rows.operations` contains some operations you can do on your
 `Table` objects:
@@ -13,5 +13,7 @@ The module `rows.operations` contains some operations you can do on your
   transformation function.
 - `rows.operations.transpose`: transpose the `Table` based on a specific field.
 
+For more details [see the reference][operations-reference].
 
-[rows-cli-query]: https://github.com/turicas/rows/blob/develop/rows/cli.py#L291
+[rows-cli-query]: https://github.com/turicas/rows/blob/master/rows/cli.py#L291
+[operations-reference]: reference/operations.html

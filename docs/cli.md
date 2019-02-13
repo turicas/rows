@@ -4,7 +4,9 @@
 converting and querying data.
 
 > Note: we still need to improve this documentation. Please run `rows --help`
-> to see all the available commands and take a look at [rows/cli.py][rows-cli].
+> to see all the available commands, [see the code reference][cli-reference] or
+> take a look at [rows/cli.py][rows-cli]. [Man pages are also
+> available][cli-manpage].
 
 
 ## Commands
@@ -30,7 +32,7 @@ local filename (example: `rows convert https://website/file.html file.csv`).
   (compressed or not) in the most optimized way: using `psql`'s `COPY` command.
 - [`rows pgimport`][cli-pgimport]: import a CSV file (compressed or not) into a
   PostgreSQL table in the most optimized way: using `psql`'s `COPY` command.
-- [`rows print`][cli-print]: print a table in the standard output (you can
+- [`rows print`][cli-print]: print a table to the standard output (you can
   choose between some frame styles).
 - [`rows query`][cli-query]: query a table using SQL (converts the table to an
   in-memory SQLite database) and output to the standard output or a file.
@@ -43,7 +45,7 @@ local filename (example: `rows convert https://website/file.html file.csv`).
 
 > Note: everytime we specify "compressed or not" means you can use the file as
 > is or a compressed version of it. The supported compression formats are:
-> gzip (`.gz`), lzma (`.xz`) and bzip2 (`.bz2`). The [support for archive
+> gzip (`.gz`), lzma (`.xz`) and bzip2 (`.bz2`). [Support for archive
 > formats such as zip, tar and rar will be implemented in the
 > future][issue-archives].
 
@@ -63,9 +65,15 @@ also have specific options. The global options are:
 Convert a table from a `source` URI to `destination`. Useful to convert files
 between formats, like extracting data from a HTML table and converting to CSV.
 
+> Note: if you'd like to convert from/to CSV, SQLite or PostgreSQL, see the
+> more optimized commands [`csv2sqlite`][cli-csv2sqlite],
+> [`sqlite2csv`][cli-sqlite2csv], [`pgimport`][cli-pgimport] and
+> [`pgexport`][cli-pgexport].
+
 Usage: `rows convert [OPTIONS] SOURCE DESTINATION`
 
 Options:
+
 - `--input-encoding=TEXT`: Encoding of input tables (default: `utf-8`)
 - `--output-encoding=TEXT`: Encoding of output tables (default: `utf-8`)
 - `--input-locale=TEXT`: Locale of input tables. Used to parse integers, floats
@@ -79,15 +87,19 @@ Options:
 - `--fields=TEXT`: A comma-separated list of fields to import (default: all
   fields)
 - `--fields-exclude=TEXT`: A comma-separated list of fields to exclude when
-  exporting (default: all fields)
+  exporting (default: none)
 
-Example:
+Examples:
 
 ```bash
 # needs: pip install rows[html]
 rows convert \
     http://www.sports-reference.com/olympics/countries/BRA/summer/2016/ \
     brazil-2016.csv
+
+rows convert \
+    http://www.worldometers.info/world-population/population-by-country/ \
+    population.csv
 ```
 
 
@@ -125,11 +137,13 @@ rows csv2sqlite \
 ## `rows join`
 
 Join tables from `source` URIs using `key(s)` to group rows and save into
-`destination`.
+`destination`. **This command is not optimized and its use is discouraged**
+([rows query][cli-query] may be more effective).
 
 Usage: `rows join [OPTIONS] KEYS SOURCES... DESTINATION`
 
 Options:
+
 - `--input-encoding=TEXT`: Encoding of input tables (default: `utf-8`)
 - `--output-encoding=TEXT`: Encoding of output tables (default: `utf-8`)
 - `--input-locale=TEXT`: Locale of input tables. Used to parse integers, floats
@@ -143,7 +157,7 @@ Options:
 - `--fields=TEXT`: A comma-separated list of fields to import (default: all
   fields)
 - `--fields-exclude=TEXT`: A comma-separated list of fields to exclude when
-  exporting (default: all fields)
+  exporting (default: none)
 
 Example: join `a.csv` and `b.csv` into a new file called `c.csv` using the
 field `id` as a key (both `a.csv` and `b.csv` must have the field `id`):
@@ -214,6 +228,7 @@ are: gzip (`.gz`), lzma (`.xz`) and bzip2 (`.bz2`).
 Usage: `rows pgimport [OPTIONS] SOURCE DATABASE_URI TABLE_NAME`
 
 Options:
+
 - `--input-encoding=TEXT`: Encoding of input CSV file (default: `utf-8`)
 - `--no-create-table=BOOLEAN`: should rows create the table or leave it to
   PostgreSQL? (default: false, ie: create the table)
@@ -254,7 +269,7 @@ Options:
 - `--fields=TEXT`: A comma-separated list of fields to import (default: all
   fields)
 - `--fields-exclude=TEXT`: A comma-separated list of fields to exclude when
-  exporting (default: all fields)
+  exporting (default: none)
 - `--frame-style=TEXT`: frame style to "draw" the table; options: `ascii`,
   `single`, `double`, `none` (default: `ascii`)
 - `--table-index=INTEGER`: if source is HTML, specify the table index to
@@ -269,6 +284,9 @@ rows print \
     data/brazilian-cities.csv
 ```
 
+> Note: download [brazilian-cities.csv][br-cities].
+
+
 ```bash
 # needs: pip install rows[html]
 rows print \
@@ -280,7 +298,7 @@ rows print \
 
 Yep, you can SQL-query any supported file format! Each of the source files will
 be a table inside an in-memory SQLite database, called `table1`, ..., `tableN`.
-If the `--output` is not specified, `rows` will print a table on the standard
+If the `--output` is not specified, `rows` will print a table to the standard
 output.
 
 Usage: `rows query [OPTIONS] QUERY SOURCES...`
@@ -306,10 +324,12 @@ Examples:
 ```bash
 # needs: pip install rows[html]
 rows query \
-    'SELECT * FROM table1 WHERE inhabitants > 1000000' \
+    "SELECT * FROM table1 WHERE inhabitants > 1000000" \
     data/brazilian-cities.csv \
     --output=data/result.html
 ```
+
+> Note: download [brazilian-cities.csv][br-cities].
 
 ```bash
 # needs: pip install rows[pdf]
@@ -341,6 +361,7 @@ Usage: `rows schema [OPTIONS] SOURCE [OUTPUT]`
 
 
 Options:
+
 - `--input-encoding=TEXT`: Encoding of input tables (default: `utf-8`)
 - `--input-locale=TEXT`: Locale of input tables. Used to parse integers, floats
   etc. (default: `C`)
@@ -351,17 +372,17 @@ Options:
 - `--fields=TEXT`: A comma-separated list of fields to import (default: all
   fields)
 - `--fields-exclude=TEXT`: A comma-separated list of fields to exclude when
-  exporting (default: all fields)
+  exporting (default: none)
 - `--samples=INTEGER`: number of sample rows to detect schema (default: `5000`)
 
 
 Example:
 
 ```bash
-rows schema \
-    --samples=100 \
-    data/brazilian-cities.csv
+rows schema --samples=100 data/brazilian-cities.csv
 ```
+
+> Note: download [brazilian-cities.csv][br-cities].
 
 Output:
 
@@ -385,6 +406,7 @@ compression formats are: gzip (`.gz`), lzma (`.xz`) and bzip2 (`.bz2`).
 Usage: `rows sqlite2csv [OPTIONS] SOURCE TABLE_NAME OUTPUT`
 
 Options:
+
 - `--batch-size=INTEGER`: number of rows to batch insert into SQLite (default:
   `10000`)
 - `--dialect=TEXT`: CSV dialect to be used on output file (default: `excel`)
@@ -392,17 +414,16 @@ Options:
 Example:
 
 ```bash
-rows sqlite2csv \
-    my_db.sqlite \
-    my_table \
-    my_table.csv.bz2
+rows sqlite2csv my_db.sqlite my_table my_table.csv.bz2
 ```
 
 
 ## `rows sum`
 
-Sum tables from `source` URIs and save into `destination`. The tables must have
-the same fields.
+Sum tables (append rows from one to the other) from `source` URIs and save into
+`destination`. The tables must have the same fields. **This command is not
+optimized and its use is discouraged** ([rows query][cli-query] may be more
+effective).
 
 Usage: `rows sum [OPTIONS] SOURCES... DESTINATION`
 
@@ -421,7 +442,7 @@ Options:
 - `--fields=TEXT`: A comma-separated list of fields to import (default: all
   fields)
 - `--fields-exclude=TEXT`: A comma-separated list of fields to exclude when
-  exporting (default: all fields)
+  exporting (default: none)
 
 Example:
 
@@ -434,16 +455,19 @@ rows sum \
 ```
 
 
+[br-cities]: https://gist.github.com/turicas/ec0abcfe0d7abf7a97ef7a0c1d72c7f7
 [cli-convert]: #rows-convert
 [cli-csv2sqlite]: #rows-csv2sqlite
 [cli-join]: #rows-join
+[cli-manpage]: man/rows.1
 [cli-pdf-to-text]: #rows-pdf-to-text
 [cli-pgexport]: #rows-pgexport
 [cli-pgimport]: #rows-pgimport
 [cli-print]: #rows-print
 [cli-query]: #rows-query
+[cli-reference]: reference/cli.html
 [cli-schema]: #rows-schema
 [cli-sqlite2csv]: #rows-sqlite2csv
 [cli-sum]: #rows-sum
 [issue-archives]: https://github.com/turicas/rows/issues/236
-[rows-cli]: https://github.com/turicas/rows/blob/develop/rows/cli.py
+[rows-cli]: https://github.com/turicas/rows/blob/master/rows/cli.py
