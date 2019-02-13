@@ -42,6 +42,8 @@ docs-serve: docs
 	cd docs-build && python3 -m http.server
 
 docs-upload: docs
+	-git branch --delete --force --quiet gh-pages
+	-git push turicas :gh-pages
 	ghp-import --no-jekyll --message="Docs automatically built from $(shell git rev-parse HEAD)" --branch=gh-pages --push --force --remote=turicas docs-build/
 
 release:
