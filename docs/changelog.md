@@ -1,6 +1,6 @@
 # Log of Changes
 
-## Version `0.4.1dev0`
+## Version `0.4.2dev0`
 
 **Released on: (in development)**
 
@@ -9,6 +9,21 @@
 ### Command-Line Interface
 ### Utils
 ### Bug Fixes
+
+## Version `0.4.1` (bugfix release)
+
+**Released on: 2019-02-14**
+
+### General Changes and Enhancements
+
+- Add new way to make docs (remove sphinx and uses mkdocs + click-man + pycco)
+- Update Dockerfile
+
+
+### Bug Fixes
+
+- [#305](https://github.com/turicas/rows/issues/305) "0" was not being
+  deserialized by `IntegerField`
 
 
 ## Version `0.4.0`
