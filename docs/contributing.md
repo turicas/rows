@@ -107,12 +107,27 @@ make docs-serve
 
 ```
 # X = next version number
+
+# *** Create the release branch
 git checkout -b release/X
-# update docs/changelog.md & commit
-# change version number in `setup` and `rows/__init__.py` & commit
+# Update docs/changelog.md & commit
+# Change version number in `setup.py` and `rows/__init__.py` & commit
+
+# *** Merge into master, tag and test it
 git checkout master && git merge --no-ff release/X
 git tag -a X
-git br -d release/X
+make test
+# STOP HERE IF TESTS FAIL
+
+# *** Release to PyPI and docs to GitHub Pages
 make release
 make docs-upload
+
+# *** Update remote repository
+git branch -d release/X
+git push turicas master
+git checkout develop
+# Change version number in `setup.py` and `rows/__init__.py` to the next
+# dev version (eg: if released 0.4.1, then change to 0.4.2dev0) & commit
+git push turicas develop
 ```
