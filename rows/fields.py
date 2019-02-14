@@ -200,10 +200,10 @@ class IntegerField(Field):
                 raise ValueError("It's float, not integer")
             else:
                 value = new_value
-        elif isinstance(value, six.text_type) and value.startswith("0"):
-            raise ValueError("It's string, not integer")
 
         value = as_string(value)
+        if value != "0" and value.startswith("0"):
+            raise ValueError("It's string, not integer")
         return int(value) if SHOULD_NOT_USE_LOCALE else locale.atoi(value)
 
 
