@@ -101,3 +101,18 @@ You can also serve it via HTTP:
 ```bash
 make docs-serve
 ```
+
+
+## Releasing new versions
+
+```
+# X = next version number
+git checkout -b release/X
+# update docs/changelog.md & commit
+# change version number in `setup` and `rows/__init__.py` & commit
+git checkout master && git merge --no-ff release/X
+git tag -a X
+git br -d release/X
+make release
+make docs-upload
+```
