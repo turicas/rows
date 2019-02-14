@@ -864,6 +864,7 @@ def pgexport(
 
     Required: psql command
     """
+
     if isinstance(dialect, six.text_type):
         dialect = csv.get_dialect(dialect)
 
@@ -910,7 +911,8 @@ def generate_schema(table, export_fields, output_format, output_fobj):
 
     Current supported output formats: 'txt', 'sql' and 'django'.
     The table name and all fields names pass for a slugifying process (table
-    name is taken from file name)."""
+    name is taken from file name).
+    """
 
     if output_format == "txt":
         from rows.plugins.dicts import import_from_dicts
@@ -953,7 +955,7 @@ def generate_schema(table, export_fields, output_format, output_fobj):
                 CREATE TABLE IF NOT EXISTS {name} (
                 {fields}
                 );
-            """
+                """
             )
             .strip()
             .format(name=table.name, fields=",\n".join(fields))

@@ -14,14 +14,14 @@ import requests
 import rows
 from io import BytesIO
 
-url = 'http://cidades.ibge.gov.br/comparamun/compara.php?idtema=1&codv=v01&coduf=33'
+url = "http://cidades.ibge.gov.br/comparamun/compara.php?idtema=1&codv=v01&coduf=33"
 html = requests.get(url).content
-with rows.locale_context(name='pt_BR.UTF-8', category=locale.LC_NUMERIC):
+with rows.locale_context(name="pt_BR.UTF-8", category=locale.LC_NUMERIC):
     rio = rows.import_from_html(BytesIO(html))
 
 total_population = sum(city.pessoas for city in rio)
 # 'pessoas' is the fieldname related to the number of people in each city
-print('Rio de Janeiro has {} inhabitants'.format(total_population))
+print(f"Rio de Janeiro has {total_population} inhabitants")
 ```
 
 The column `pessoas` will be imported as an `IntegerField` and the result is:
@@ -32,9 +32,16 @@ Rio de Janeiro has 15989929 inhabitants
 
 ## Locale dependency
 
-`rows.locale_context` depends on your operational system locales to work. In order to successfully use this context manager make sure the desired locale is available in a system level.
+`rows.locale_context` depends on your operational system locales to work. In
+order to successfully use this context manager make sure the desired locale is
+available in a system level.
 
 For example, for Debian based systems:
 
 1. Make sure the desired locale is present and uncommented `/etc/locale.gen`
 2. Run `locale-gen`
+
+For more information [see the code reference][locale-reference].
+
+
+[locale-reference]: reference/localization.html

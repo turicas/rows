@@ -6,11 +6,12 @@
 ![Supported Python Versions](https://img.shields.io/pypi/pyversions/rows.svg)
 ![Software status](https://img.shields.io/pypi/status/rows.svg)
 [![License: LGPLv3](https://img.shields.io/pypi/l/rows.svg)](https://github.com/turicas/rows/blob/develop/LICENSE)
-[![Donate](https://img.shields.io/gratipay/turicas.svg?style=social&label=Donate)](https://www.gratipay.com/turicas)
 
 No matter in which format your tabular data is: `rows` will import it,
 automatically detect types and give you high-level Python objects so you can
 start **working with the data** instead of **trying to parse it**. It is also
 locale-and-unicode aware. :)
 
-Want to learn more? [Read the documentation](http://turicas.info/rows).
+Want to learn more? [Read the documentation](http://turicas.info/rows) (or
+build and browse the docs locally by running `make docs-serve` after installing
+`requirements-development.txt`).

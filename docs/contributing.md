@@ -86,20 +86,33 @@ nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/tests_plug
 ```
 
 
-## Generating the manual
+## Generating the documentation
 
-To create the man page you'll need to install [txt2man][txt2man]. In Debian
-(and Debian-based distributions) you can install by running:
-
-```bash
-apt install txt2man
-```
-
-Then, you can generate the `rows.1` file by running:
+Just run:
 
 ```bash
-make man
+make docs
+```
+
+And check the `docs-build/` directory.
+
+You can also serve it via HTTP:
+
+```bash
+make docs-serve
 ```
 
 
-[txt2man]: http://mvertes.free.fr/
+## Releasing new versions
+
+```
+# X = next version number
+git checkout -b release/X
+# update docs/changelog.md & commit
+# change version number in `setup` and `rows/__init__.py` & commit
+git checkout master && git merge --no-ff release/X
+git tag -a X
+git br -d release/X
+make release
+make docs-upload
+```
