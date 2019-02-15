@@ -77,6 +77,7 @@ def create_table(
     import_fields=None,
     samples=None,
     force_types=None,
+    max_rows=None,
     *args,
     **kwargs
 ):
@@ -96,6 +97,7 @@ def create_table(
     if import_fields is not None:
         import_fields = make_header(import_fields)
 
+    # TODO: test max_rows
     if fields is None:  # autodetect field types
         # TODO: may add `type_hints` parameter so autodetection can be easier
         #       (plugins may specify some possible field types).
@@ -105,7 +107,10 @@ def create_table(
             sample_rows = list(islice(table_rows, 0, samples))
             table_rows = chain(sample_rows, table_rows)
         else:
-            sample_rows = table_rows = list(table_rows)
+            if max_rows is not None and max_rows > 0:
+                sample_rows = table_rows = list(islice(table_rows, max_rows))
+            else:
+                sample_rows = table_rows = list(table_rows)
 
         # Detect field types using only the desired columns
         detected_fields = detect_types(
@@ -167,6 +172,8 @@ def create_table(
 
     get_row = get_items(*map(header.index, import_fields))
     table = Table(fields=fields, meta=meta)
+    if max_rows is not None and max_rows > 0:
+        table_rows = islice(table_rows, max_rows)
     table.extend(dict(zip(import_fields, get_row(row))) for row in table_rows)
 
     return table

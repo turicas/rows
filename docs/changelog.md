@@ -8,6 +8,8 @@
 
 - Add support for CSV format on schema export
 - Use dataclasses to describe Source
+- Add param `max_rows` to `create_table` (import only part of a table, all
+  plugins are supported)
 
 ### Plugins
 ### Command-Line Interface
