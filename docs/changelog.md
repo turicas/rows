@@ -11,6 +11,8 @@
 - Add param `max_rows` to `create_table` (import only part of a table, all
   plugins are supported)
 - `import_from_source` now supports compressed files (and so all CLI commands)
+- rows schema is now "lazy" (before it imported the whole file, even if samples
+  were defined)
 
 ### Plugins
 ### Command-Line Interface

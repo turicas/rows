@@ -598,12 +598,10 @@ def schema(
     source,
     output,
 ):
-
     samples = samples if samples > 0 else None
     import_fields = _get_import_fields(fields, fields_exclude)
 
     source = detect_source(source, verify_ssl=verify_ssl, progress=True)
-    # TODO: make it lazy
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = import_from_source(
@@ -611,10 +609,15 @@ def schema(
                 DEFAULT_INPUT_ENCODING,
                 samples=samples,
                 import_fields=import_fields,
+                max_rows=samples,
             )
     else:
         table = import_from_source(
-            source, DEFAULT_INPUT_ENCODING, samples=samples, import_fields=import_fields
+            source,
+            DEFAULT_INPUT_ENCODING,
+            samples=samples,
+            import_fields=import_fields,
+            max_rows=samples,
         )
 
     export_fields = _get_export_fields(table.field_names, fields_exclude)
