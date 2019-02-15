@@ -914,9 +914,8 @@ def generate_schema(table, export_fields, output_format, output_fobj):
     name is taken from file name).
     """
 
-    if output_format == "txt":
-        from rows.plugins.dicts import import_from_dicts
-        from rows.plugins.txt import export_to_txt
+    if output_format in ("csv", "txt"):
+        from rows import plugins
 
         data = [
             {
@@ -926,8 +925,11 @@ def generate_schema(table, export_fields, output_format, output_fobj):
             for fieldname, fieldtype in table.fields.items()
             if fieldname in export_fields
         ]
-        table = import_from_dicts(data, import_fields=["field_name", "field_type"])
-        export_to_txt(table, output_fobj)
+        table = plugins.dicts.import_from_dicts(data, import_fields=["field_name", "field_type"])
+        if output_format == "txt":
+            plugins.txt.export_to_txt(table, output_fobj)
+        elif output_format == "csv":
+            plugins.csv.export_to_csv(table, output_fobj)
 
     elif output_format == "sql":
         # TODO: may use dict from rows.plugins.sqlite or postgresql

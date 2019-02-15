@@ -5,6 +5,9 @@
 **Released on: (in development)**
 
 ### General Changes and Enhancements
+
+- Add support for CSV format on schema export
+
 ### Plugins
 ### Command-Line Interface
 ### Utils
