@@ -30,6 +30,7 @@ import sqlite3
 import subprocess
 import tempfile
 from collections import OrderedDict
+from dataclasses import dataclass
 from itertools import islice
 from textwrap import dedent
 
@@ -185,21 +186,16 @@ class ProgressBar:
         self.progress.close()
 
 
+@dataclass
 class Source(object):
     "Define a source to import a `rows.Table`"
 
-    __slots__ = ["plugin_name", "uri", "encoding", "delete"]
-
-    def __init__(self, plugin_name=None, uri=None, encoding=None, delete=False):
-        self.plugin_name = plugin_name
-        self.uri = uri
-        self.delete = delete
-        self.encoding = encoding
-
-    def __repr__(self):
-        return "Source(plugin_name={}, uri={}, encoding={}, delete={})".format(
-            self.plugin_name, self.uri, self.encoding, self.delete
-        )
+    plugin_name: str
+    uri: str
+    encoding: str
+    delete: bool = False
+    is_file: bool = None
+    local: bool = None
 
 
 def plugin_name_by_uri(uri):
@@ -293,7 +289,12 @@ def local_file(path, sample_size=1048576):
     source = detect_local_source(path, content, mime_type=None, encoding=None)
 
     return Source(
-        uri=path, plugin_name=source.plugin_name, encoding=source.encoding, delete=False
+        uri=path,
+        plugin_name=source.plugin_name,
+        encoding=source.encoding,
+        delete=False,
+        is_file=True,
+        local=True,
     )
 
 
@@ -366,7 +367,14 @@ def download_file(
             filename += "." + extension
         os.rename(tmp.name, filename)
 
-    return Source(uri=filename, plugin_name=plugin_name, encoding=encoding, delete=True)
+    return Source(
+        uri=filename,
+        plugin_name=plugin_name,
+        encoding=encoding,
+        delete=True,
+        is_file=True,
+        local=False,
+    )
 
 
 def detect_source(uri, verify_ssl, progress, timeout=5):
@@ -386,7 +394,14 @@ def detect_source(uri, verify_ssl, progress, timeout=5):
         )
 
     elif uri.startswith("postgres://"):
-        return Source(delete=False, encoding=None, plugin_name="postgresql", uri=uri)
+        return Source(
+            delete=False,
+            encoding=None,
+            plugin_name="postgresql",
+            uri=uri,
+            is_file=False,
+            local=None,
+        )
     else:
         return local_file(uri)
 

@@ -7,6 +7,7 @@
 ### General Changes and Enhancements
 
 - Add support for CSV format on schema export
+- Use dataclasses to describe Source
 
 ### Plugins
 ### Command-Line Interface

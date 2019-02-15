@@ -19,17 +19,19 @@ from __future__ import unicode_literals
 
 from setuptools import find_packages, setup
 
+utils_requirements = ["dataclasses", "requests", "requests-cache", "tqdm"]
 EXTRA_REQUIREMENTS = {
+    "cli": ["click"] + utils_requirements,
     "csv": ["unicodecsv"],
-    "cli": ["click", "requests", "requests-cache", "tqdm"],
     "detect": ["file-magic"],
     "html": ["lxml"],  # apt: libxslt-dev libxml2-dev
     "ods": ["lxml"],
     "parquet": ["parquet"],
-    "postgresql": ["psycopg2-binary"],
     "pdf": ["cached-property", "pymupdf"],
-    "pdf-pymupdf": ["cached-property", "pymupdf"],
     "pdf-pdfminer.six": ["cached-property", "pdfminer.six"],
+    "pdf-pymupdf": ["cached-property", "pymupdf"],
+    "postgresql": ["psycopg2-binary"],
+    "utils": utils_requirements,
     "xls": ["xlrd", "xlwt"],
     "xlsx": ["openpyxl"],
     "xpath": ["lxml"],
