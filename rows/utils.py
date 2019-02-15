@@ -79,6 +79,7 @@ else:
 
 
 # TODO: should get this information from the plugins
+COMPRESSED_EXTENSIONS = ("gz", "xz", "bz2")
 TEXT_PLAIN = {
     "txt": "text/txt",
     "text": "text/txt",
@@ -190,9 +191,10 @@ class ProgressBar:
 class Source(object):
     "Define a source to import a `rows.Table`"
 
-    plugin_name: str
     uri: str
+    plugin_name: str
     encoding: str
+    compressed: bool = None
     delete: bool = False
     is_file: bool = None
     local: bool = None
@@ -260,7 +262,9 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
 
     filename = os.path.basename(path)
     parts = filename.split(".")
-    extension = parts[-1] if len(parts) > 1 else None
+    extension = parts[-1].lower() if len(parts) > 1 else None
+    if extension in COMPRESSED_EXTENSIONS:
+        extension = parts[-2].lower() if len(parts) > 2 else None
 
     if magic is not None:
         detected = magic.detect_from_content(content)
@@ -281,10 +285,16 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
 
 
 def local_file(path, sample_size=1048576):
-
     # TODO: may change sample_size
-    with open(path, "rb") as fobj:
+    if path.split(".")[-1].lower() in COMPRESSED_EXTENSIONS:
+        compressed = True
+        fobj = open_compressed(path, mode="rb")
         content = fobj.read(sample_size)
+        fobj.close()
+    else:
+        compressed = False
+        with open(path, "rb") as fobj:
+            content = fobj.read(sample_size)
 
     source = detect_local_source(path, content, mime_type=None, encoding=None)
 
@@ -292,6 +302,7 @@ def local_file(path, sample_size=1048576):
         uri=path,
         plugin_name=source.plugin_name,
         encoding=source.encoding,
+        compressed=compressed,
         delete=False,
         is_file=True,
         local=True,
@@ -309,6 +320,7 @@ def download_file(
     sample_size=1048576,
 ):
 
+    # TODO: add ability to continue download
     response = requests.get(
         uri,
         verify=verify_ssl,
@@ -349,9 +361,9 @@ def download_file(
     if progress:
         progress_bar.close()
 
-    # TODO: add ability to continue download
     # Detect file type and rename temporary file to have the correct extension
     if detect:
+        # TODO: check if will work for compressed files
         source = detect_local_source(real_filename, sample_data, mime_type, encoding)
         extension = extension_by_source(source, mime_type)
         plugin_name = source.plugin_name
@@ -409,6 +421,7 @@ def detect_source(uri, verify_ssl, progress, timeout=5):
 def import_from_source(source, default_encoding, *args, **kwargs):
     "Import data described in a `rows.Source` into a `rows.Table`"
 
+    # TODO: test open_compressed
     plugin_name = source.plugin_name
     kwargs["encoding"] = (
         kwargs.get("encoding", None) or source.encoding or default_encoding
@@ -419,7 +432,11 @@ def import_from_source(source, default_encoding, *args, **kwargs):
     except AttributeError:
         raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
 
-    table = import_function(source.uri, *args, **kwargs)
+    if source.is_file and source.local:
+        uri = open_compressed(source.uri, mode="rb")
+    else:
+        uri = source.uri
+    table = import_function(uri, *args, **kwargs)
 
     if source.delete:
         os.unlink(source.uri)
@@ -458,8 +475,6 @@ def open_compressed(filename, mode="r", encoding=None):
 
     # TODO: integrate this function in the library itself, using
     # get_filename_or_fobj
-    # TODO: accept .gz/.xz/.bz2 extensions on CLI (convert, print, plugin
-    # detection etc.)
     binary_mode = "b" in mode
     extension = str(filename).split(".")[-1].lower()
     if binary_mode and encoding:
