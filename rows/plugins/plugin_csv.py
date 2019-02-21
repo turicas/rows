@@ -17,7 +17,6 @@
 
 from __future__ import unicode_literals
 
-import sys
 from io import BytesIO
 
 import six
@@ -31,7 +30,11 @@ from rows.plugins.utils import (
 )
 
 sniffer = unicodecsv.Sniffer()
-unicodecsv.field_size_limit(sys.maxsize)
+# Some CSV files have more than 128kB of data in a cell, so we force this value
+# to be greater (16MB).
+# TODO: check if it impacts in memory usage.
+# TODO: may add option to change it by passing a parameter to import/export.
+unicodecsv.field_size_limit(16777216)
 
 
 def fix_dialect(dialect):
