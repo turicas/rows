@@ -9,6 +9,15 @@ converting and querying data.
 > available][cli-manpage].
 
 
+## Getting started
+
+Before using the command-line interface, you must first install the
+dependencies required by the module:
+
+```bash
+pip install rows[cli]
+```
+
 ## Commands
 
 All the commands accepts any of the formats supported by the library (unless
