@@ -21,6 +21,7 @@
 
 - [#314](https://github.com/turicas/rows/issues/314) rows pgimport fails if
   using --schema
+- [#309](https://github.com/turicas/rows/issues/309) Fix file-magic detection
 
 ## Version `0.4.1` (bugfix release)
 

@@ -57,8 +57,8 @@ except ImportError:
     from urllib.parse import urlparse  # Python 3
 
 try:
-    import magic  # TODO: check if it's from file-magic library
-except ImportError:
+    import magic
+except (ImportError, TypeError):
     magic = None
 else:
     if not hasattr(magic, "detect_from_content"):
