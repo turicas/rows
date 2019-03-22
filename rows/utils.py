@@ -534,6 +534,10 @@ def csv_to_sqlite(
 
     # TODO: automatically detect encoding if encoding == `None`
     # TODO: should be able to specify fields
+    # TODO: if table_name is "2019" the final name will be "field_2019" - must
+    #       be "table_2019"
+    # TODO: if schema is provided and the names are in uppercase, this function
+    #       will fail
 
     if dialect is None:  # Get a sample to detect dialect
         fobj = open_compressed(input_filename, mode="rb")
@@ -955,7 +959,9 @@ def generate_schema(table, export_fields, output_format, output_fobj):
             for fieldname, fieldtype in table.fields.items()
             if fieldname in export_fields
         ]
-        table = plugins.dicts.import_from_dicts(data, import_fields=["field_name", "field_type"])
+        table = plugins.dicts.import_from_dicts(
+            data, import_fields=["field_name", "field_type"]
+        )
         if output_format == "txt":
             plugins.txt.export_to_txt(table, output_fobj)
         elif output_format == "csv":

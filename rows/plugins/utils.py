@@ -152,7 +152,7 @@ def create_table(
         if skip_header:
             # If we're skipping the header probably this row is not trustable
             # (can be data or garbage).
-            _ = next(table_rows)
+            next(table_rows)
 
         header = make_header(list(fields.keys()))
         if import_fields is None:

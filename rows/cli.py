@@ -656,6 +656,7 @@ def command_csv_to_sqlite(
         prefix = "[{filename} -> {db_filename}#{tablename}]".format(
             db_filename=output.name, tablename=table_name, filename=filename.name
         )
+        # TODO: if `schemas` is present, will not detect data types
         pre_prefix = "{} (detecting data types)".format(prefix)
         progress = ProgressBar(prefix=prefix, pre_prefix=pre_prefix)
         csv_to_sqlite(
@@ -721,7 +722,8 @@ def command_pgimport(
     else:
         progress.total = total_size
     progress.description = "Analyzing source file"
-    schemas = _get_schemas_for_inputs([schema] if schema else None, [source])
+    # TODO: what about uncompressed_size?
+    schemas = _get_schemas_for_inputs(schema if schema else None, [source])
     import_meta = pgimport(
         filename=source,
         encoding=input_encoding,

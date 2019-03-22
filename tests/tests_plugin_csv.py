@@ -345,4 +345,4 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         # The following line must not raise the exception:
         # `_csv.Error: field larger than field limit (131072)`
-        new = rows.import_from_csv(filename)
+        rows.import_from_csv(filename)

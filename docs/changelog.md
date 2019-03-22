@@ -19,6 +19,9 @@
 ### Utils
 ### Bug Fixes
 
+- [#314](https://github.com/turicas/rows/issues/314) rows pgimport fails if
+  using --schema
+
 ## Version `0.4.1` (bugfix release)
 
 **Released on: 2019-02-14**
