@@ -13,6 +13,7 @@
 - `import_from_source` now supports compressed files (and so all CLI commands)
 - rows schema is now "lazy" (before it imported the whole file, even if samples
   were defined)
+- Add support for compressed files output on rows pdf-to-text and rows schema
 
 ### Plugins
 ### Command-Line Interface
