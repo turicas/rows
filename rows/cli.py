@@ -46,6 +46,7 @@ from rows.utils import (
     import_from_source,
     import_from_uri,
     load_schema,
+    open_compressed,
     pgexport,
     pgimport,
     sqlite_to_csv,
@@ -624,9 +625,9 @@ def schema(
     if export_fields is None:
         export_fields = table.field_names
     if output in ("-", None):
-        output = sys.stdout
+        output = sys.stdout.buffer
     else:
-        output = open(output, mode="w", encoding="utf-8")
+        output = open_compressed(output, mode="wb")
     generate_schema(table, export_fields, output_format, output)
 
 
@@ -804,7 +805,7 @@ def command_pdf_to_text(output_encoding, quiet, backend, pages, source, output):
 
     # Define if output is file or stdout
     if output:
-        output = open(output, mode="w", encoding=output_encoding)
+        output = open_compressed(output, mode="w", encoding=output_encoding)
         write = output.write
     else:
         write = click.echo
