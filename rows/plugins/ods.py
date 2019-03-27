@@ -40,28 +40,46 @@ def complete_with_None(lists, size):
         yield element
 
 
-def import_from_ods(filename_or_fobj, index=0, *args, **kwargs):
+def import_from_ods(
+    filename_or_fobj,
+    index=0,
+    start_row=None,
+    start_column=None,
+    end_row=None,
+    end_column=None,
+    *args,
+    **kwargs
+):
     # TODO: import spreadsheet by name
     # TODO: unescape values
 
     filename, _ = get_filename_and_fobj(filename_or_fobj)
+    start_row = start_row if start_row is not None else 0
+    end_row = end_row + 1 if end_row is not None else None
+    start_column = start_column if start_column is not None else 0
+    end_column = end_column + 1 if end_column is not None else None
 
     ods_file = zipfile.ZipFile(filename)
     content_fobj = ods_file.open("content.xml")
     xml = content_fobj.read()  # will return bytes
+    # TODO: read XML lazily?
     content_fobj.close()
+    ods_file.close()
 
     document = xml_from_string(xml)
     namespaces = document.nsmap
     spreadsheet = document.xpath("//office:spreadsheet", namespaces=namespaces)[0]
     tables = xpath(spreadsheet, "//table:table", namespaces)
+    # TODO: add option to select spreadsheet name
     table = tables[index]
 
     table_rows_obj = xpath(table, "//table:table-row", namespaces)
     table_rows = []
     for row_obj in table_rows_obj:
+        cells = list(reversed(xpath(row_obj, "//table:table-cell", namespaces)))
+        if len(cells) == 1 and not cells[0].getchildren():
+            continue  # Empty line(s), ignore
         row = []
-        cells = reversed(xpath(row_obj, "//table:table-cell", namespaces))
         row_started = False
         for cell in cells:
             children = cell.getchildren()
@@ -101,9 +119,11 @@ def import_from_ods(filename_or_fobj, index=0, *args, **kwargs):
                     row.extend(cell_data)
                     row_started = True
 
+        row = list(reversed(row))[start_column:end_column]
         if row and set(row) != set([None]):
-            table_rows.append(list(reversed(row)))
+            table_rows.append(row)
 
+    table_rows = table_rows[start_row:end_row]
     max_length = max(len(row) for row in table_rows)
     full_rows = complete_with_None(table_rows, max_length)
     meta = {"imported_from": "ods", "filename": filename}

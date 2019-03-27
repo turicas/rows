@@ -14,6 +14,7 @@
 - rows schema is now "lazy" (before it imported the whole file, even if samples
   were defined)
 - Add support for compressed files output on rows pdf-to-text and rows schema
+- Add `start_row`, `end_row`, `start_column` and `end_column` to ODS plugin
 
 ### Plugins
 ### Command-Line Interface
