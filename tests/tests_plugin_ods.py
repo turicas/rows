@@ -72,3 +72,17 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert result[2][0] == Decimal("0.01")
         assert result[3][0] == Decimal("0.1")
         assert result[4][0] == Decimal("1")
+
+    def test_issue_320_empty_cells(self):
+        result = rows.import_from_ods("tests/data/empty-cells.ods")
+        header = "f1 f2 f3 f4 f5".split()
+        print(result[0])
+        data = [
+            [getattr(result[index], field) for field in header]
+            for index in range(5)
+        ]
+        assert data[0] == ["r1f1", "r1f2", None, "r1f4", "r1f5"]
+        assert data[1] == ["r2f1", None, "r2f3", "r2f4", "r2f5"]
+        assert data[2] == [None, "r3f2", "r3f3", "r3f4", "r3f5"]
+        assert data[3] == ["r4f1", "r4f2", "r4f3", "r4f4", None]
+        assert data[4] == [None, None, "r5f3", "r5f4", "r5f5"]

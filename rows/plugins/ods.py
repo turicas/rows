@@ -61,41 +61,48 @@ def import_from_ods(filename_or_fobj, index=0, *args, **kwargs):
     table_rows = []
     for row_obj in table_rows_obj:
         row = []
-        for cell in xpath(row_obj, "//table:table-cell", namespaces):
+        cells = reversed(xpath(row_obj, "//table:table-cell", namespaces))
+        row_started = False
+        for cell in cells:
             children = cell.getchildren()
             if not children:
-                continue
-
-            # TODO: evalute 'boolean' and 'time' types
-            value_type = attrib(cell, namespaces["office"], "value-type")
-            if value_type == "date":
-                cell_value = attrib(cell, namespaces["office"], "date-value")
-            elif value_type == "float":
-                cell_value = attrib(cell, namespaces["office"], "value")
-            elif value_type == "percentage":
-                cell_value = attrib(cell, namespaces["office"], "value")
-                cell_value = Decimal(cell_value)
-                cell_value = "{:%}".format(cell_value)
-            elif value_type == "string":
-                try:
-                    # get computed string (from formula, for example)
-                    cell_value = attrib(cell, namespaces["office"], "string-value")
-                except KeyError:
-                    # computed string not present => get from <p>...</p>
+                cell_value = None
+                # TODO: check repeat
+            else:
+                # TODO: evalute 'boolean' and 'time' types
+                value_type = attrib(cell, namespaces["office"], "value-type")
+                if value_type == "date":
+                    cell_value = attrib(cell, namespaces["office"], "date-value")
+                elif value_type == "float":
+                    cell_value = attrib(cell, namespaces["office"], "value")
+                elif value_type == "percentage":
+                    cell_value = attrib(cell, namespaces["office"], "value")
+                    cell_value = Decimal(cell_value)
+                    cell_value = "{:%}".format(cell_value)
+                elif value_type == "string":
+                    try:
+                        # get computed string (from formula, for example)
+                        cell_value = attrib(cell, namespaces["office"], "string-value")
+                    except KeyError:
+                        # computed string not present => get from <p>...</p>
+                        cell_value = children[0].text
+                else:  # value_type == some type we don't know
                     cell_value = children[0].text
-            else:  # value_type == some type we don't know
-                cell_value = children[0].text
 
             try:
                 repeat = attrib(cell, namespaces["table"], "number-columns-repeated")
             except KeyError:
                 row.append(cell_value)
+                row_started = True
             else:
-                for _ in range(int(repeat)):
-                    row.append(cell_value)
+                cell_data = [cell_value for _ in range(int(repeat))]
+                if set(cell_data) != set([None]) or row_started:
+                    # This check will remove empty cells from the end
+                    row.extend(cell_data)
+                    row_started = True
 
-        if row:
-            table_rows.append(row)
+        if row and set(row) != set([None]):
+            table_rows.append(list(reversed(row)))
 
     max_length = max(len(row) for row in table_rows)
     full_rows = complete_with_None(table_rows, max_length)
