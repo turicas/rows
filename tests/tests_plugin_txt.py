@@ -255,14 +255,15 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
             original_data, temp.file, encoding="utf-8", frame_style="ASCII",
         )
         expected_output = dedent("""\
-            +-----------------------+----------------------------------+
-            |          nome         |             endereco             |
-            +-----------------------+----------------------------------+
-            | José da Silva         | Rua dos Bobos, 0                 |
-            |                       | Cidade Fantasma                  |
-            | José Maria            |                       R. XPTO, 1 |
-            | (Zé Maria)            |                                  |
-            +-----------------------+----------------------------------+
+            +---------------+------------------+
+            |      nome     |     endereco     |
+            +---------------+------------------+
+            | José da Silva | Rua dos Bobos, 0 |
+            |               |  Cidade Fantasma |
+            |               |                  |
+            |    José Maria |       R. XPTO, 1 |
+            |    (Zé Maria) |                  |
+            +---------------+------------------+
             """)
 
         temp.seek(0)

@@ -122,7 +122,7 @@ def _parse_col_positions(frame_style, header_line):
 def _max_column_sizes(field_names, table_rows):
     columns = zip(*([field_names] + table_rows))
     return {
-        field_name: max(len(value) for value in column)
+        field_name: max(max(len(line) for line in value.split("\n")) for value in column)
         for field_name, column in zip(field_names, columns)
     }
 
@@ -256,13 +256,19 @@ def export_to_txt(
         result += [top_split_line]
     result += [header, body_split_line]
 
-    for row in table_rows:
-        values = [
-            value.rjust(max_sizes[field_name])
-            for field_name, value in zip(field_names, row)
-        ]
-        row_data = " {} ".format(frame["VERTICAL"]).join(values)
-        result.append("{0} {1} {0}".format(frame["VERTICAL"], row_data))
+    for row_number, row in enumerate(table_rows):
+        row_height = max(cell.count("\n") for cell in row) + 1
+        if row_height > 1 and row_number < len(table_rows) - 1:
+            row_height += 1
+
+        split_row = [cell.split("\n") for cell in row]
+        for cell_line in range(row_height):
+            values = [
+                (value[cell_line] if cell_line < len(value) else "").rjust(max_sizes[field_name])
+                for field_name, value in zip(field_names, split_row)
+            ]
+            row_data = " {} ".format(frame["VERTICAL"]).join(values)
+            result.append("{0} {1} {0}".format(frame["VERTICAL"], row_data))
 
     if frame_style != "None":
         result.append(botton_split_line)
