@@ -74,5 +74,8 @@ if plugins.postgresql:
 if plugins.pdf:
     import_from_pdf = plugins.pdf.import_from_pdf
 
+if plugins.ocr:
+    import_from_image = plugins.ocr.import_from_image
+
 
 __version__ = "0.4.2dev0"

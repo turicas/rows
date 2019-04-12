@@ -64,3 +64,8 @@ try:
     from . import plugin_pdf as pdf
 except ImportError:
     pdf = None
+
+try:
+    from . import plugin_ocr as ocr
+except ImportError:
+    ocr = None
