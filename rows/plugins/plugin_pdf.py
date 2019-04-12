@@ -714,13 +714,17 @@ def pdf_table_lines(
     x_threshold=0.5,
     y_threshold=0.5,
     backend=None,
+    backend_args=None,
+    backend_kwargs=None,
 ):
     backend = backend or default_backend()
 
     # TODO: check if both backends accepts filename or fobj
     Backend = get_backend(backend)
     Algorithm = get_algorithm(algorithm)
-    pdf_doc = Backend(filename_or_fobj)
+    backend_args = backend_args or []
+    backend_kwargs = backend_kwargs or {}
+    pdf_doc = Backend(filename_or_fobj, *backend_args, **backend_kwargs)
 
     pages = pdf_doc.objects(
         page_numbers=page_numbers, starts_after=starts_after, ends_before=ends_before
