@@ -67,12 +67,20 @@ def import_from_xlsx(
     start_column=None,
     end_row=None,
     end_column=None,
+    workbook_kwargs=None,
     *args,
     **kwargs
 ):
-    """Return a rows.Table created from imported XLSX file."""
+    """Return a rows.Table created from imported XLSX file.
 
-    workbook = load_workbook(filename_or_fobj, read_only=True)
+    workbook_kwargs will be passed to openpyxl.load_workbook
+    """
+
+    workbook_kwargs = workbook_kwargs or {}
+    if "read_only" not in workbook_kwargs:
+        workbook_kwargs["read_only"] = True
+
+    workbook = load_workbook(filename_or_fobj, **workbook_kwargs)
     if sheet_name is None:
         sheet_name = workbook.sheetnames[sheet_index]
     sheet = workbook[sheet_name]
