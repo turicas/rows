@@ -98,7 +98,10 @@ def cell_value(sheet, row, col):
         if value == 0.0:
             return None
 
-        time_tuple = xlrd.xldate_as_tuple(value, sheet.book.datemode)
+        try:
+            time_tuple = xlrd.xldate_as_tuple(value, sheet.book.datemode)
+        except xlrd.xldate.XLDateTooLarge:
+            return None
         value = field_type.serialize(datetime.datetime(*time_tuple))
         return value.split("T00:00:00")[0]
 
