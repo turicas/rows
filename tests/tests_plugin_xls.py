@@ -161,10 +161,22 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(expected_data, call_args[0][0])
 
     def test_zero_date(self):
-        table = rows.import_from_xls("tests/data/empty-date.xls",
-                force_types={"date": rows.fields.DateField})
+        table = rows.import_from_xls(
+            "tests/data/empty-date.xls", force_types={"date": rows.fields.DateField}
+        )
 
         assert len(table) == 3
         assert table[0].date == datetime.date(2000, 2, 3)
         assert table[1].date is None
         assert table[2].date == datetime.date(2001, 1, 2)
+
+    def test_invalid_boundaries(self):
+        table = rows.import_from_xls(
+            "tests/data/all-field-types.xls",
+            start_row=-10,
+            end_row=100,
+            start_column=-5,
+            end_column=500,
+        )
+        assert len(table) == 7
+        assert len(table.fields) == 8

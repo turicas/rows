@@ -183,10 +183,11 @@ def import_from_xls(
     # TODO: consider adding a parameter `ignore_padding=True` and when it's
     # True, consider `start_row` starting from `min_row` and `start_column`
     # starting from `min_col`.
-    start_row = start_row if start_row is not None else min_row
-    end_row = end_row if end_row is not None else max_row
-    start_column = start_column if start_column is not None else min_column
-    end_column = end_column if end_column is not None else max_column
+    start_row = max(start_row if start_row is not None else min_row, min_row)
+    end_row = min(end_row if end_row is not None else max_row, max_row)
+    start_column = max(start_column if start_column is not None else min_column, min_column)
+    end_column = min(end_column if end_column is not None else max_column, max_column)
+
     table_rows = [
         [
             cell_value(sheet, row_index, column_index)
