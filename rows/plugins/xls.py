@@ -95,6 +95,9 @@ def cell_value(sheet, row, col):
             return ""
 
     elif field_type is fields.DatetimeField:
+        if value == 0.0:
+            return None
+
         time_tuple = xlrd.xldate_as_tuple(value, sheet.book.datemode)
         value = field_type.serialize(datetime.datetime(*time_tuple))
         return value.split("T00:00:00")[0]

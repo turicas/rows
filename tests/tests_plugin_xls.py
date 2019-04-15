@@ -159,3 +159,12 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             ["13.14%", "2015-03-04", "2015-03-04T16:00:01"],
         ]
         self.assertEqual(expected_data, call_args[0][0])
+
+    def test_zero_date(self):
+        table = rows.import_from_xls("tests/data/empty-date.xls",
+                force_types={"date": rows.fields.DateField})
+
+        assert len(table) == 3
+        assert table[0].date == datetime.date(2000, 2, 3)
+        assert table[1].date is None
+        assert table[2].date == datetime.date(2001, 1, 2)
