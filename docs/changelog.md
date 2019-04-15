@@ -6,19 +6,25 @@
 
 ### General Changes and Enhancements
 
-- Add support for CSV format on schema export
-- Use dataclasses to describe Source
+### Plugins
+
 - Add param `max_rows` to `create_table` (import only part of a table, all
   plugins are supported)
-- `import_from_source` now supports compressed files (and so all CLI commands)
-- rows schema is now "lazy" (before it imported the whole file, even if samples
-  were defined)
-- Add support for compressed files output on rows pdf-to-text and rows schema
 - Add `start_row`, `end_row`, `start_column` and `end_column` to ODS plugin
 
-### Plugins
 ### Command-Line Interface
+
+- `rows schema` (CLI) is now "lazy" (before it imported the whole file, even if
+  samples were defined)
+- Add support for compressed files output on `rows pdf-to-text` and `rows schema`
+
 ### Utils
+
+- Add support for CSV format on schema export
+- Use dataclasses to describe Source
+- `import_from_source` now supports compressed files (and so all CLI commands)
+- Add support for passing a `context` to `load_schema`
+
 ### Bug Fixes
 
 - [#314](https://github.com/turicas/rows/issues/314) rows pgimport fails if

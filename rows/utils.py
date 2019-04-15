@@ -1039,24 +1039,26 @@ def generate_schema(table, export_fields, output_format, output_fobj):
         output_fobj.write(result)
 
 
-def load_schema(filename):
+def load_schema(filename, context=None):
     """Load schema from file in any of the supported formats
 
     The table must have at least the fields `field_name` and `field_type`.
+    `context` is a `dict` with field_type as key pointing to field class, like:
+        {"text": rows.fields.TextField, "value": MyCustomField}
     """
     table = import_from_uri(filename)
     field_names = table.field_names
     assert "field_name" in field_names
     assert "field_type" in field_names
 
-    types = {
-        key: getattr(rows.fields, key)
+    context = context or {
+        key.replace("Field", "").lower(): getattr(rows.fields, key)
         for key in dir(rows.fields)
         if "Field" in key and key != "Field"
     }
     return OrderedDict(
         [
-            (row.field_name, types[row.field_type.capitalize() + "Field"])
+            (row.field_name, context[row.field_type])
             for row in table
         ]
     )

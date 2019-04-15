@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import io
 import tempfile
 import unittest
+from collections import OrderedDict
 from textwrap import dedent
 
 import rows.fields as fields
@@ -61,7 +62,7 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(result.delete, False)
 
 
-class SchemaTestCase(unittest.TestCase):
+class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def assert_generate_schema(self, fmt, expected, export_fields=None):
         # prepare a consistent table so we can test all formats using it
         table_fields = utils.table.fields.copy()
@@ -184,7 +185,60 @@ class SchemaTestCase(unittest.TestCase):
             "django", expected, export_fields=["bool_column", "json_column"]
         )
 
+    def test_load_schema(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
+        self.files_to_delete.append(temp.name)
+        temp.file.write(dedent(
+        """
+        field_name,field_type
+        f1,text
+        f2,decimal
+        f3,float
+        f4,integer
+        """).strip().encode("utf-8"))
+        temp.file.close()
+        schema = rows.utils.load_schema(temp.name)
+        expected = OrderedDict([
+            ("f1", fields.TextField),
+            ("f2", fields.DecimalField),
+            ("f3", fields.FloatField),
+            ("f4", fields.IntegerField),
+        ])
+        assert schema == expected
 
+    def test_load_schema_with_context(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
+        self.files_to_delete.append(temp.name)
+        temp.file.write(dedent(
+        """
+        field_name,field_type
+        f1,text,
+        f2,decimal
+        f3,custom1
+        f4,custom2
+        """).strip().encode("utf-8"))
+        temp.file.close()
+        class Custom1Field(fields.TextField):
+            pass
+        class Custom2Field(fields.TextField):
+            pass
+        context = {
+            "text": fields.IntegerField,
+            "decimal": fields.TextField,
+            "custom1": Custom1Field,
+            "custom2": Custom2Field,
+        }
+        schema = rows.utils.load_schema(temp.name, context=context)
+        expected = OrderedDict([
+            ("f1", fields.IntegerField),
+            ("f2", fields.TextField),
+            ("f3", Custom1Field),
+            ("f4", Custom2Field),
+        ])
+        assert schema == expected
+
+
+# TODO: test/implement load_schema with file object
 # TODO: test detect_local_source
 # TODO: test detect_source
 # TODO: test download_file
