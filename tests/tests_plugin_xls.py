@@ -165,10 +165,12 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             "tests/data/empty-date.xls", force_types={"date": rows.fields.DateField}
         )
 
-        assert len(table) == 3
+        assert len(table) == 5
         assert table[0].date == datetime.date(2000, 2, 3)
         assert table[1].date is None
         assert table[2].date == datetime.date(2001, 1, 2)
+        assert table[3].date is None
+        assert table[4].date == datetime.date(2001, 1, 2)
 
     def test_invalid_boundaries(self):
         table = rows.import_from_xls(
