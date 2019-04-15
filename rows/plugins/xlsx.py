@@ -55,10 +55,6 @@ def _cell_to_python(cell):
         return value
 
 
-def sheet_cell(sheet, row, col):
-    return sheet[get_column_letter(col) + str(row)]
-
-
 def import_from_xlsx(
     filename_or_fobj,
     sheet_name=None,
@@ -99,11 +95,14 @@ def import_from_xlsx(
     end_column = end_column if end_column is not None else max_column
     table_rows = []
     is_empty = lambda row: all(cell is None for cell in row)
-    for row_index in range(start_row + 1, end_row + 2):
-        row = [
-            _cell_to_python(sheet_cell(sheet, row_index, col_index))
-            for col_index in range(start_column + 1, end_column + 2)
-        ]
+    selected_rows = sheet.iter_rows(
+        min_row=start_row + 1,
+        max_row=end_row + 1,
+        min_col=start_column + 1,
+        max_col=end_column + 1,
+    )
+    for row in selected_rows:
+        row = [_cell_to_python(cell) for cell in row]
         if not is_empty(row):
             table_rows.append(row)
 
