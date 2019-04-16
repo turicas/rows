@@ -23,6 +23,7 @@ from PIL import Image
 
 from rows.plugins.plugin_pdf import PDFBackend, TextObject, pdf_table_lines
 from rows.plugins.utils import create_table
+from rows.plugins.utils_rect import join_contiguous_rects
 
 
 class TesseractBackend(PDFBackend):
@@ -54,6 +55,7 @@ class TesseractBackend(PDFBackend):
         header = "char left bottom right top page".split()
         boxes = image_to_boxes(self.document, lang=self.language).splitlines()
         text_objs = []
+        max_width = 0
         for box in boxes:
             row = {}
             for key, value in zip(header, box.split()):
@@ -68,9 +70,11 @@ class TesseractBackend(PDFBackend):
                 text=row["char"],
             )
             text_objs.append(obj)
+            max_width = max(max_width, row["right"] - row["left"])
 
         text_objs.sort(key=lambda obj: (obj.y0, obj.x0))
-        # TODO: group contiguous objects before yielding
+        #  group contiguous objects before yielding
+        text_objs = join_contiguous_rects(text_objs, tolerance=max_width)
         yield text_objs
 
     text_objects = objects
