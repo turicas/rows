@@ -448,7 +448,7 @@ class TestFlexibleTable(unittest.TestCase):
         for i in range(5):
             table.append({"f1": i, "f2": i ** 2})
 
-        result = table._repr_html()
+        result = table._repr_html_()
         expected = dedent("""
         <table>
 
@@ -489,5 +489,5 @@ class TestFlexibleTable(unittest.TestCase):
           </tbody>
 
         </table>
-        """).strip().encode("utf-8") + b"\n"
+        """).strip() + "\n"
         self.assertEqual(result, expected)
