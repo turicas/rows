@@ -19,11 +19,7 @@ from . import plugin_json as json  # NOQA
 from . import dicts as dicts  # NOQA
 from . import plugin_csv as csv  # NOQA
 from . import txt as txt  # NOQA
-
-try:
-    from . import plugin_html as html
-except ImportError:
-    html = None
+from . import plugin_html as html  # NOQA
 
 try:
     from . import xpath as xpath

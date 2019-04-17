@@ -18,9 +18,14 @@
 from __future__ import unicode_literals
 
 import six
-from lxml.etree import strip_tags
-from lxml.etree import tostring as to_string
-from lxml.html import document_fromstring
+try:
+    from lxml.etree import strip_tags
+    from lxml.etree import tostring as to_string
+    from lxml.html import document_fromstring
+except ImportError:
+    has_lxml = False
+else:
+    has_lxml = True
 
 from rows.plugins.utils import (
     create_table,

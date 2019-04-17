@@ -40,11 +40,12 @@ export_to_csv = plugins.csv.export_to_csv
 import_from_txt = plugins.txt.import_from_txt
 export_to_txt = plugins.txt.export_to_txt
 
+export_to_html = plugins.html.export_to_html
+
 # Have dependencies
 
-if plugins.html:
+if plugins.html.has_lxml:
     import_from_html = plugins.html.import_from_html
-    export_to_html = plugins.html.export_to_html
 
 if plugins.xpath:
     import_from_xpath = plugins.xpath.import_from_xpath
