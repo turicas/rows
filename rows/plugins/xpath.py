@@ -20,7 +20,8 @@ from __future__ import unicode_literals
 import six
 from lxml.html import fromstring as tree_from_string
 
-from rows.plugins.utils import create_table, get_filename_and_fobj
+from rows.plugins.utils import create_table
+from rows.utils import Source
 
 try:
     from HTMLParser import HTMLParser  # Python 2
@@ -63,8 +64,8 @@ def import_from_xpath(
     if types != set([six.text_type]):
         raise TypeError("XPath must be {}".format(six.text_type.__name__))
 
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode="rb")
-    xml = fobj.read().decode(encoding)
+    source = Source.from_file(filename_or_fobj, plugin_name="xpath", mode="rb", encoding=encoding)
+    xml = source.fobj.read().decode(encoding)
     tree = tree_from_string(xml)
     row_elements = tree.xpath(rows_xpath)
 
@@ -72,5 +73,5 @@ def import_from_xpath(
     row_data = _get_row_data(fields_xpath)
     result_rows = list(map(row_data, row_elements))
 
-    meta = {"imported_from": "xpath", "filename": filename, "encoding": encoding}
+    meta = {"imported_from": "xpath", "source": source}
     return create_table([header] + result_rows, meta=meta, *args, **kwargs)

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -34,7 +34,6 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
     filename = "tests/data/ecuador-medios-radiodifusoras.html"
     encoding = "utf-8"
     expected_data = "tests/data/ecuador-medios-radiodifusoras.csv"
-    assert_meta_encoding = True
 
     def setUp(self):
         rows_xpath = (
@@ -63,12 +62,14 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
             self.filename, encoding=self.encoding, **self.kwargs
         )
 
+        meta = table.meta.copy()
+        source = meta.pop("source")
+        self.assertEqual(source.uri, self.filename)
+
         expected_meta = {
             "imported_from": "xpath",
-            "filename": self.filename,
-            "encoding": self.encoding,
         }
-        self.assertEqual(table.meta, expected_meta)
+        self.assertEqual(meta, expected_meta)
 
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
@@ -84,12 +85,14 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
         with open(self.filename, mode="rb") as fobj:
             table = rows.import_from_xpath(fobj, encoding=self.encoding, **self.kwargs)
 
+        meta = table.meta.copy()
+        source = meta.pop("source")
+        self.assertEqual(source.uri, self.filename)
+
         expected_meta = {
             "imported_from": "xpath",
-            "filename": self.filename,
-            "encoding": self.encoding,
         }
-        self.assertEqual(table.meta, expected_meta)
+        self.assertEqual(meta, expected_meta)
 
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
@@ -131,14 +134,6 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
-
-        call = mocked_create_table.call_args
-        kwargs["meta"] = {
-            "imported_from": "xpath",
-            "filename": self.filename,
-            "encoding": encoding,
-        }
-        self.assertEqual(call[1], kwargs)
 
     def test_xpath_must_be_text_type(self):
         with self.assertRaises(TypeError):
