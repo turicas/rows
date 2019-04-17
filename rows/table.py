@@ -49,6 +49,21 @@ class Table(MutableSequence):
         self._rows = []
         self.meta = dict(meta) if meta is not None else {}
 
+    def _repr_html_(self):
+        import rows.plugins
+
+        return rows.plugins.html.export_to_html(self).decode("utf-8")
+
+    def head(self, n=10):
+        table = Table(fields=self.fields, meta=self.meta)
+        table._rows = self._rows[:n]
+        return table
+
+    def tail(self, n=10):
+        table = Table(fields=self.fields, meta=self.meta)
+        table._rows = self._rows[-n:]
+        return table
+
     @property
     def field_names(self):
         return list(self.fields.keys())

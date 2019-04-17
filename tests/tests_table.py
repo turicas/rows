@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import collections
 import datetime
 import unittest
+from textwrap import dedent
 
 import mock
 import six
@@ -415,3 +416,78 @@ class TestFlexibleTable(unittest.TestCase):
         table.meta["filename"] = "This is THE name.csv"
         self.assertTrue("filename" in table.meta)
         self.assertEqual(table.name, "this_is_the_name")
+
+    def test_head(self):
+        table = rows.Table(
+            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.IntegerField}
+        )
+        for i in range(50):
+            table.append({"f1": i, "f2": i ** 2})
+        t2 = table.head()
+        assert len(t2) == 10
+        t2 = table.head(n=15)
+        assert len(t2) == 15
+        assert list(t2) == list(table[:15])
+
+    def test_tail(self):
+        table = rows.Table(
+            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.IntegerField}
+        )
+        for i in range(50):
+            table.append({"f1": i, "f2": i ** 2})
+        t2 = table.tail()
+        assert len(t2) == 10
+        t2 = table.tail(n=15)
+        assert len(t2) == 15
+        assert list(t2) == list(table[-15:])
+
+    def test_repr_html(self):
+        table = rows.Table(
+            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.IntegerField}
+        )
+        for i in range(5):
+            table.append({"f1": i, "f2": i ** 2})
+
+        result = table._repr_html()
+        expected = dedent("""
+        <table>
+
+          <thead>
+            <tr>
+              <th> f1 </th>
+              <th> f2 </th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr class="odd">
+              <td> 0 </td>
+              <td> 0 </td>
+            </tr>
+
+            <tr class="even">
+              <td> 1 </td>
+              <td> 1 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> 2 </td>
+              <td> 4 </td>
+            </tr>
+
+            <tr class="even">
+              <td> 3 </td>
+              <td> 9 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> 4 </td>
+              <td> 16 </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+        """).strip().encode("utf-8") + b"\n"
+        self.assertEqual(result, expected)

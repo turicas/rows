@@ -6,6 +6,10 @@
 
 ### General Changes and Enhancements
 
+- `export_to_html` is now available even if `lxml` is not installed
+- Add Jupyter Notebook integration (implements `_repr_html_`, `.head` and
+  `.tail`)
+
 ### Plugins
 
 - Add param `max_rows` to `create_table` (import only part of a table, all
