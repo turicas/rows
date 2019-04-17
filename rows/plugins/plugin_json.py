@@ -25,9 +25,9 @@ from rows import fields
 from rows.plugins.utils import (
     create_table,
     export_data,
-    get_filename_and_fobj,
     prepare_to_export,
 )
+from rows.utils import Source
 
 
 def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
@@ -36,13 +36,14 @@ def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
     If a file-like object is provided it MUST be open in text (non-binary) mode
     on Python 3 and could be open in both binary or text mode on Python 2.
     """
-    filename, fobj = get_filename_and_fobj(filename_or_fobj)
 
-    json_obj = json.load(fobj, encoding=encoding)
+    source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="json", encoding=encoding)
+
+    json_obj = json.load(source.fobj, encoding=source.encoding)
     field_names = list(json_obj[0].keys())
     table_rows = [[item[key] for key in field_names] for item in json_obj]
 
-    meta = {"imported_from": "json", "filename": filename, "encoding": encoding}
+    meta = {"imported_from": "json", "source": source}
     return create_table([field_names] + table_rows, meta=meta, *args, **kwargs)
 
 

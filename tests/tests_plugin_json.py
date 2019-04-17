@@ -35,7 +35,6 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
     file_extension = "json"
     filename = "tests/data/all-field-types.json"
     encoding = "utf-8"
-    assert_meta_encoding = True
 
     def test_imports(self):
         self.assertIs(rows.import_from_json, rows.plugins.plugin_json.import_from_json)
@@ -49,14 +48,6 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
-
-        call = mocked_create_table.call_args
-        kwargs["meta"] = {
-            "imported_from": "json",
-            "filename": self.filename,
-            "encoding": self.encoding,
-        }
-        self.assertEqual(call[1], kwargs)
 
     @mock.patch("rows.plugins.plugin_json.create_table")
     def test_import_from_json_retrieve_desired_data(self, mocked_create_table):
@@ -72,24 +63,6 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
             rows.import_from_json(fobj)
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args, field_ordering=False)
-
-    @mock.patch("rows.plugins.plugin_json.create_table")
-    def test_import_from_json_uses_create_table(self, mocked_create_table):
-        mocked_create_table.return_value = 42
-        kwargs = {"some_key": 123, "other": 456}
-        encoding = "iso-8859-15"
-        result = rows.import_from_json(self.filename, encoding=encoding, **kwargs)
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
-        self.assertEqual(result, 42)
-
-        call = mocked_create_table.call_args
-        kwargs["meta"] = {
-            "imported_from": "json",
-            "filename": self.filename,
-            "encoding": encoding,
-        }
-        self.assertEqual(call[1], kwargs)
 
     @mock.patch("rows.plugins.plugin_json.prepare_to_export")
     def test_export_to_json_uses_prepare_to_export(self, mocked_prepare_to_export):
