@@ -23,7 +23,8 @@ from decimal import Decimal
 from lxml.etree import fromstring as xml_from_string
 from lxml.etree import tostring as xml_to_string
 
-from rows.plugins.utils import create_table, get_filename_and_fobj
+from rows.plugins.utils import create_table
+from rows.utils import Source
 
 
 def xpath(element, xpath, namespaces):
@@ -53,13 +54,14 @@ def import_from_ods(
     # TODO: import spreadsheet by name
     # TODO: unescape values
 
-    filename, _ = get_filename_and_fobj(filename_or_fobj)
+    source = Source.from_file(filename_or_fobj, plugin_name="ods")
+
     start_row = start_row if start_row is not None else 0
     end_row = end_row + 1 if end_row is not None else None
     start_column = start_column if start_column is not None else 0
     end_column = end_column + 1 if end_column is not None else None
 
-    ods_file = zipfile.ZipFile(filename)
+    ods_file = zipfile.ZipFile(source.fobj)
     content_fobj = ods_file.open("content.xml")
     xml = content_fobj.read()  # will return bytes
     # TODO: read XML lazily?
@@ -126,5 +128,5 @@ def import_from_ods(
     table_rows = table_rows[start_row:end_row]
     max_length = max(len(row) for row in table_rows)
     full_rows = complete_with_None(table_rows, max_length)
-    meta = {"imported_from": "ods", "filename": filename}
+    meta = {"imported_from": "ods", "source": source}
     return create_table(full_rows, meta=meta, *args, **kwargs)
