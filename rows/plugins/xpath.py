@@ -24,11 +24,10 @@ from rows.plugins.utils import create_table, get_filename_and_fobj
 
 try:
     from HTMLParser import HTMLParser  # Python 2
+    unescape = HTMLParser().unescape
 except ImportError:
-    from html.parser import HTMLParser  # Python 3
-
-
-unescape = HTMLParser().unescape
+    import html  # Python 3
+    unescape = html.unescape
 
 
 def _get_row_data(fields_xpath):

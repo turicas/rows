@@ -9,6 +9,7 @@
 - `export_to_html` is now available even if `lxml` is not installed
 - Add Jupyter Notebook integration (implements `_repr_html_`, `.head` and
   `.tail`)
+- Fix code to remove some warnings
 
 ### Plugins
 

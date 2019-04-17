@@ -763,7 +763,7 @@ def get_psql_copy_command(
         header = ", ".join(slug(field_name) for field_name in header)
         header = "({header}) ".format(header=header)
     copy = (
-        "\copy {table_name} {header}{direction} STDIN "
+        r"\copy {table_name} {header}{direction} STDIN "
         "DELIMITER '{delimiter}' "
         "QUOTE '{quote}' "
         "ENCODING '{encoding}' "
