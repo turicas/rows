@@ -32,6 +32,7 @@ import tempfile
 from collections import OrderedDict
 from dataclasses import dataclass
 from itertools import islice
+from pathlib import Path
 from textwrap import dedent
 
 import six
@@ -200,7 +201,7 @@ class ProgressBar:
 class Source(object):
     "Define a source to import a `rows.Table`"
 
-    uri: str
+    uri: (str, Path)
     plugin_name: str
     encoding: str
     fobj: object = None
@@ -217,7 +218,7 @@ class Source(object):
             is_file=True, local=True):
         """Create a `Source` from a filename or fobj"""
 
-        if isinstance(filename_or_fobj, (six.binary_type, six.text_type)):
+        if isinstance(filename_or_fobj, (six.binary_type, six.text_type, Path)):
             fobj = open(filename_or_fobj, mode=mode)  # TODO: use open_compressed
             filename = filename_or_fobj
             should_close = True if should_close is None else should_close
