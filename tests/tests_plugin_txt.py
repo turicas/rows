@@ -21,6 +21,7 @@ import sys
 import tempfile
 import unittest
 from collections import OrderedDict
+from textwrap import dedent
 
 import mock
 import six
@@ -244,3 +245,28 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(result1, [0, 5, 10])
         result2 = rows.plugins.txt._parse_col_positions("None", "  col1   col2  ")
         self.assertEqual(result2, [0, 7, 14])
+
+
+    def test_data_with_line_breaks_correctly_formated(self):
+        temp = tempfile.NamedTemporaryFile(delete=False)
+
+        original_data = rows.import_from_csv("tests/data/line_break.csv")
+        rows.export_to_txt(
+            original_data, temp.file, encoding="utf-8", frame_style="ASCII",
+        )
+        expected_output = dedent("""\
+            +---------------+------------------+
+            |      nome     |     endereco     |
+            +---------------+------------------+
+            | José da Silva | Rua dos Bobos, 0 |
+            |               |  Cidade Fantasma |
+            |               |                  |
+            |    José Maria |       R. XPTO, 1 |
+            |    (Zé Maria) |                  |
+            +---------------+------------------+
+            """)
+
+        temp.seek(0)
+        text_data = temp.read().decode("utf-8")
+
+        self.assertEqual(text_data, expected_output)
