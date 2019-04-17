@@ -34,9 +34,16 @@ from dataclasses import dataclass
 from itertools import islice
 from textwrap import dedent
 
-import requests
 import six
-from tqdm import tqdm
+
+try:
+    import requests
+except ImportError:
+    requests = None
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = None
 
 import rows
 from rows.plugins.utils import make_header, slug
@@ -49,7 +56,6 @@ try:
     import bz2
 except ImportError:
     bz2 = None
-
 
 try:
     from urlparse import urlparse  # Python 2
@@ -65,7 +71,10 @@ else:
         # This is not the file-magic library
         magic = None
 
-chardet = requests.compat.chardet
+if requests:
+    chardet = requests.compat.chardet
+else:
+    chardet = None
 try:
     import urllib3
 except ImportError:
@@ -194,10 +203,40 @@ class Source(object):
     uri: str
     plugin_name: str
     encoding: str
+    fobj: object = None
     compressed: bool = None
-    delete: bool = False
+    should_delete: bool = False
+    should_close: bool = False
     is_file: bool = None
     local: bool = None
+
+
+    @classmethod
+    def from_file(cls, filename_or_fobj, plugin_name=None, encoding=None,
+            mode="rb", compressed=None, should_delete=False, should_close=None,
+            is_file=True, local=True):
+        """Create a `Source` from a filename or fobj"""
+
+        if getattr(filename_or_fobj, "read", None) is not None:
+            fobj = filename_or_fobj
+            filename = getattr(fobj, "name", None)
+            should_close = False if should_close is None else should_close
+        else:
+            fobj = open(filename_or_fobj, mode=mode)  # TODO: use open_compressed
+            filename = filename_or_fobj
+            should_close = True if should_close is None else should_close
+
+        return Source(
+            compressed=compressed,
+            encoding=encoding,
+            fobj=fobj,
+            is_file=is_file,
+            local=local,
+            plugin_name=plugin_name,
+            should_close=should_close,
+            should_delete=should_delete,
+            uri=filename,
+        )
 
 
 def plugin_name_by_uri(uri):
@@ -303,7 +342,7 @@ def local_file(path, sample_size=1048576):
         plugin_name=source.plugin_name,
         encoding=source.encoding,
         compressed=compressed,
-        delete=False,
+        should_delete=False,
         is_file=True,
         local=True,
     )
@@ -383,7 +422,7 @@ def download_file(
         uri=filename,
         plugin_name=plugin_name,
         encoding=encoding,
-        delete=True,
+        should_delete=True,
         is_file=True,
         local=False,
     )
@@ -407,7 +446,7 @@ def detect_source(uri, verify_ssl, progress, timeout=5):
 
     elif uri.startswith("postgres://"):
         return Source(
-            delete=False,
+            should_delete=False,
             encoding=None,
             plugin_name="postgresql",
             uri=uri,
@@ -474,7 +513,7 @@ def open_compressed(filename, mode="r", encoding=None):
     "Return a text-based file object from a filename, even if compressed"
 
     # TODO: integrate this function in the library itself, using
-    # get_filename_or_fobj
+    # get_filename_and_fobj
     binary_mode = "b" in mode
     extension = str(filename).split(".")[-1].lower()
     if binary_mode and encoding:
