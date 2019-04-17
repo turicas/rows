@@ -25,7 +25,9 @@ import xlrd
 import xlwt
 
 import rows.fields as fields
-from rows.plugins.utils import create_table, get_filename_and_fobj, prepare_to_export
+from rows.plugins.utils import create_table, prepare_to_export
+from rows.utils import Source
+
 
 CELL_TYPES = {
     xlrd.XL_CELL_BLANK: fields.TextField,
@@ -168,9 +170,10 @@ def import_from_xls(
 ):
     """Return a rows.Table created from imported XLS file."""
 
-    filename, _ = get_filename_and_fobj(filename_or_fobj, mode="rb")
+    source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="xls")
+    source.fobj.close()
     book = xlrd.open_workbook(
-        filename, formatting_info=True, logfile=open(os.devnull, mode="w")
+        source.uri, formatting_info=True, logfile=open(os.devnull, mode="w")
     )
 
     if sheet_name is not None:
@@ -205,7 +208,7 @@ def import_from_xls(
         for row_index in range(start_row, end_row + 1)
     ]
 
-    meta = {"imported_from": "xls", "filename": filename, "sheet_name": sheet.name}
+    meta = {"imported_from": "xls", "source": source, "sheet_name": sheet.name}
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
@@ -225,15 +228,22 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kw
         for column_index, (value, data) in enumerate(_convert_row(row)):
             sheet.write(row_index, column_index, value, **data)
 
-    if filename_or_fobj is not None:
-        _, fobj = get_filename_and_fobj(filename_or_fobj, mode="wb")
-        work_book.save(fobj)
-        fobj.flush()
-        return fobj
+    return_result = False
+    if filename_or_fobj is None:
+        filename_or_fobj = BytesIO()
+        return_result = True
+
+    source = Source.from_file(filename_or_fobj, mode="wb", plugin_name="xls")
+    work_book.save(source.fobj)
+    source.fobj.flush()
+
+    if return_result:
+        source.fobj.seek(0)
+        result = source.fobj.read()
     else:
-        fobj = BytesIO()
-        work_book.save(fobj)
-        fobj.seek(0)
-        result = fobj.read()
-        fobj.close()
-        return result
+        result = source.fobj
+
+    if source.should_close:
+        source.fobj.close()
+
+    return result
