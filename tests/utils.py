@@ -208,7 +208,12 @@ class RowsTestMixIn(object):
         if "frame_style" not in expected_meta:
             kwargs["meta"].pop("frame_style", "")
 
-        self.assertDictEqual(kwargs["meta"], expected_meta)
+        meta = kwargs["meta"].copy()
+        source = meta.pop("source", None)
+        if source:
+            expected_filename = expected_meta.pop("filename")
+            self.assertEqual(source.uri, filename)
+        self.assertDictEqual(meta, expected_meta)
         del kwargs["meta"]
         self.assert_table_data(
             call_args[0][0], args=[], kwargs=kwargs, field_ordering=field_ordering

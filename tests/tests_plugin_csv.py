@@ -63,14 +63,6 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
-        call = mocked_create_table.call_args
-        kwargs["meta"] = {
-            "imported_from": "csv",
-            "filename": self.filename,
-            "encoding": "utf-8",
-        }
-        self.assertEqual(call[1], kwargs)
-
     @mock.patch("rows.plugins.plugin_csv.create_table")
     def test_import_from_csv_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
