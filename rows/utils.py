@@ -217,14 +217,15 @@ class Source(object):
             is_file=True, local=True):
         """Create a `Source` from a filename or fobj"""
 
-        if getattr(filename_or_fobj, "read", None) is not None:
-            fobj = filename_or_fobj
-            filename = getattr(fobj, "name", None)
-            should_close = False if should_close is None else should_close
-        else:
+        if isinstance(filename_or_fobj, (six.binary_type, six.text_type)):
             fobj = open(filename_or_fobj, mode=mode)  # TODO: use open_compressed
             filename = filename_or_fobj
             should_close = True if should_close is None else should_close
+
+        else:  # Don't know exactly what is, assume file-like object
+            fobj = filename_or_fobj
+            filename = getattr(fobj, "name", None)
+            should_close = False if should_close is None else should_close
 
         return Source(
             compressed=compressed,

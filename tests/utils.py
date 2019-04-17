@@ -209,8 +209,9 @@ class RowsTestMixIn(object):
         meta = kwargs["meta"].copy()
         source = meta.pop("source", None)
         if source:
-            expected_filename = expected_meta.pop("filename")
-            self.assertEqual(source.uri, filename)
+            expected_filename = expected_meta.pop("filename", None)
+            if expected_filename:
+                self.assertEqual(source.uri, expected_filename)
         self.assertDictEqual(meta, expected_meta)
         del kwargs["meta"]
         self.assert_table_data(

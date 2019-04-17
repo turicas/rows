@@ -34,7 +34,6 @@ from rows.plugins.postgresql import pgconnect
 class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = "postgresql"
-    assert_meta_encoding = False
     override_fields = {
         "bool_column": fields.BoolField,
         "percent_column": fields.FloatField,
@@ -43,7 +42,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.uri = os.environ["POSTGRESQL_URI"]
-        cls.meta = {"imported_from": "postgresql", "source": cls.uri}
+        cls.meta = {"imported_from": "postgresql", "filename": cls.uri}
 
     def get_table_names(self):
         connection = pgconnect(self.uri)
@@ -84,16 +83,21 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(result, 42)
 
         call = mocked_create_table.call_args
-        kwargs["meta"] = self.meta
+        meta = call[1].pop("meta")
+        source = meta.pop("source")
+
         self.assertEqual(call[1], kwargs)
+        self.assertEqual(meta, self.meta)
+        self.assertEqual(self.uri, source.uri)
 
     @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
     @mock.patch("rows.plugins.postgresql.create_table")
     def test_import_from_postgresql_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
-        rows.export_to_postgresql(
-            utils.table, self.uri, close_connection=True, table_name="rows_2"
+        connection, table_name = rows.export_to_postgresql(
+            utils.table, self.uri, table_name="rows_2"
         )
+        self.assertTrue(connection.closed)
 
         # import using uri
         table_1 = rows.import_from_postgresql(
@@ -107,9 +111,10 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table_2 = rows.import_from_postgresql(
             connection, close_connection=False, table_name="rows_2"
         )
+        self.assertFalse(connection.closed)
         call_args = mocked_create_table.call_args_list[1]
         meta = self.meta.copy()
-        meta["source"] = connection
+        meta["filename"] = None  # None is set to `source.uri` when a connection is provided
         self.assert_create_table_data(call_args, expected_meta=meta)
         connection.close()
 

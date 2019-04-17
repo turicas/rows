@@ -29,6 +29,7 @@ from rows.plugins.utils import (
     make_unique_name,
     prepare_to_export,
 )
+from rows.utils import Source
 
 SQL_TABLE_NAMES = """
     SELECT
@@ -82,13 +83,22 @@ def _python_to_postgresql(field_types):
     return convert_row
 
 
-def _get_connection(connection):
+def get_source(connection_or_uri):
 
-    if isinstance(connection, (six.binary_type, six.text_type)):
-        return pgconnect(connection)
-
+    if isinstance(connection_or_uri, (six.binary_type, six.text_type)):
+        connection = pgconnect(connection_or_uri)
+        uri = connection_or_uri
+        input_is_uri = should_close = True
     else:  # already a connection
-        return connection
+        connection = connection_or_uri
+        uri = None
+        input_is_uri = should_close = False
+
+    # TODO: may improve Source for non-fobj cases (when open() is not needed)
+    source = Source.from_file(connection, plugin_name="postgresql", mode=None, is_file=False, local=False, should_close=should_close)
+    source.uri = uri if input_is_uri else None
+
+    return source
 
 
 def _valid_table_name(name):
@@ -114,7 +124,7 @@ def import_from_postgresql(
     table_name="table1",
     query=None,
     query_args=None,
-    close_connection=False,
+    close_connection=None,
     *args,
     **kwargs
 ):
@@ -128,7 +138,9 @@ def import_from_postgresql(
     if query_args is None:
         query_args = tuple()
 
-    connection = _get_connection(connection_or_uri)
+    source = get_source(connection_or_uri)
+    connection = source.fobj
+
     cursor = connection.cursor()
     cursor.execute(query, query_args)
     table_rows = list(cursor.fetchall())  # TODO: make it lazy
@@ -136,8 +148,8 @@ def import_from_postgresql(
     cursor.close()
     connection.commit()  # WHY?
 
-    meta = {"imported_from": "postgresql", "source": connection_or_uri}
-    if close_connection:
+    meta = {"imported_from": "postgresql", "source": source}
+    if close_connection or (close_connection is None and source.should_close):
         connection.close()
     return create_table([header] + table_rows, meta=meta, *args, **kwargs)
 
@@ -148,7 +160,7 @@ def export_to_postgresql(
     table_name=None,
     table_name_format="table{index}",
     batch_size=100,
-    close_connection=False,
+    close_connection=None,
     *args,
     **kwargs
 ):
@@ -157,8 +169,8 @@ def export_to_postgresql(
     if table_name is not None and not _valid_table_name(table_name):
         raise ValueError("Invalid table name: {}".format(table_name))
 
-    prepared_table = prepare_to_export(table, *args, **kwargs)
-    connection = _get_connection(connection_or_uri)
+    source = get_source(connection_or_uri)
+    connection = source.fobj
     cursor = connection.cursor()
     if table_name is None:
         cursor.execute(SQL_TABLE_NAMES)
@@ -169,6 +181,8 @@ def export_to_postgresql(
             name_format=table_name_format,
             start=1,
         )
+
+    prepared_table = prepare_to_export(table, *args, **kwargs)
     field_names = next(prepared_table)
     field_types = list(map(table.fields.get, field_names))
     columns = [
@@ -190,6 +204,6 @@ def export_to_postgresql(
 
     connection.commit()
     cursor.close()
-    if close_connection:
+    if close_connection or (close_connection is None and source.should_close):
         connection.close()
     return connection, table_name

@@ -59,7 +59,7 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result = rows.utils.local_file(temp.name)
         self.assertEqual(result.uri, temp.name)
         self.assert_encoding(result.encoding, encoding)
-        self.assertEqual(result.delete, False)
+        self.assertEqual(result.should_delete, False)
 
 
 class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):

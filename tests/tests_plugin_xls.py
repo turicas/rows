@@ -64,7 +64,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             call_args,
             expected_meta={
                 "imported_from": "xls",
-                "filename": self.filename,
+                "filename": self.filename,  # will check `source.uri`
                 "sheet_name": "Sheet1",
             },
         )
