@@ -34,6 +34,7 @@ from rows.fields import (
     slug,
 )
 from rows.table import FlexibleTable, Table
+from rows.utils import Source
 
 if six.PY2:
     from collections import Iterator
@@ -234,10 +235,12 @@ def serialize(table, *args, **kwargs):
 
 def export_data(filename_or_fobj, data, mode="w"):
     """Return the object ready to be exported or only data if filename_or_fobj is not passed."""
-    if filename_or_fobj is not None:
-        _, fobj = get_filename_and_fobj(filename_or_fobj, mode=mode)
-        fobj.write(data)
-        fobj.flush()
-        return fobj
-    else:
+
+    if filename_or_fobj is None:
         return data
+
+    _, fobj = get_filename_and_fobj(filename_or_fobj, mode=mode)
+    source = Source.from_file(filename_or_fobj, mode=mode, plugin_name=None)
+    source.fobj.write(data)
+    source.fobj.flush()
+    return source.fobj

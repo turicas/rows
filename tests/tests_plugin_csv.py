@@ -48,7 +48,6 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     file_extension = "csv"
     filename = "tests/data/all-field-types.csv"
     encoding = "utf-8"
-    assert_meta_encoding = True
 
     def test_imports(self):
         self.assertIs(rows.import_from_csv, rows.plugins.plugin_csv.import_from_csv)

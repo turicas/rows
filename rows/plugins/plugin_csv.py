@@ -132,7 +132,7 @@ def import_from_csv(
 
     reader = unicodecsv.reader(source.fobj, encoding=encoding, dialect=dialect)
 
-    meta = {"imported_from": "csv", "source": source, "encoding": encoding}
+    meta = {"imported_from": "csv", "source": source}
     return create_table(reader, meta=meta, *args, **kwargs)
 
 

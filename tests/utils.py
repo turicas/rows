@@ -199,8 +199,6 @@ class RowsTestMixIn(object):
         kwargs = call_args[1]
         if expected_meta is None:
             expected_meta = {"imported_from": self.plugin_name, "filename": filename}
-            if self.assert_meta_encoding:
-                expected_meta["encoding"] = self.encoding
 
         # Don't test 'frame_style' metadata,
         # as it is specific for txt importing
