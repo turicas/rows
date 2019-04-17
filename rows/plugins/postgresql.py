@@ -25,7 +25,6 @@ from psycopg2 import connect as pgconnect
 import rows.fields as fields
 from rows.plugins.utils import (
     create_table,
-    get_filename_and_fobj,
     ipartition,
     make_unique_name,
     prepare_to_export,

@@ -24,9 +24,9 @@ from collections import defaultdict
 from rows.plugins.utils import (
     create_table,
     export_data,
-    get_filename_and_fobj,
     serialize,
 )
+from rows.utils import Source
 
 single_frame_prefix = "BOX DRAWINGS LIGHT"
 double_frame_prefix = "BOX DRAWINGS DOUBLE"
@@ -142,8 +142,8 @@ def import_from_txt(
     # included a Pipe char - "|" - would silently
     # yield bad results.
 
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode="rb")
-    raw_contents = fobj.read().decode(encoding).rstrip("\n")
+    source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="txt", encoding=encoding)
+    raw_contents = source.fobj.read().decode(encoding).rstrip("\n")
 
     if frame_style is FRAME_SENTINEL:
         frame_style = _guess_frame_style(raw_contents)
@@ -170,15 +170,10 @@ def import_from_txt(
         ]
         for row in contents
     ]
-    #
-    # Variable columns - old behavior:
-    # table_rows = [[value.strip() for value in row.split(vertical_char)[1:-1]]
-    #              for row in contents]
 
     meta = {
         "imported_from": "txt",
-        "filename": filename,
-        "encoding": encoding,
+        "source": source,
         "frame_style": frame_style,
     }
     return create_table(table_rows, meta=meta, *args, **kwargs)
