@@ -214,8 +214,9 @@ def import_from_xls(
 
 def export_to_xls(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kwargs):
     """Export the rows.Table to XLS file and return the saved file."""
-    work_book = xlwt.Workbook()
-    sheet = work_book.add_sheet(sheet_name)
+
+    workbook = xlwt.Workbook()
+    sheet = workbook.add_sheet(sheet_name)
 
     prepared_table = prepare_to_export(table, *args, **kwargs)
 
@@ -234,7 +235,7 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kw
         return_result = True
 
     source = Source.from_file(filename_or_fobj, mode="wb", plugin_name="xls")
-    work_book.save(source.fobj)
+    workbook.save(source.fobj)
     source.fobj.flush()
 
     if return_result:
