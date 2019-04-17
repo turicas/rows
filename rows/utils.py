@@ -312,7 +312,8 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
         mime_type = detected.mime_type or mime_type
 
     else:
-        encoding = chardet.detect(content)["encoding"] or encoding
+        if chardet and not encoding:
+            encoding = chardet.detect(content)["encoding"] or encoding
         mime_name = None
         mime_type = mime_type or mimetypes.guess_type(filename)[0]
 
@@ -471,14 +472,7 @@ def import_from_source(source, default_encoding, *args, **kwargs):
     except AttributeError:
         raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
 
-    if source.is_file and source.local:
-        uri = open_compressed(source.uri, mode="rb")
-    else:
-        uri = source.uri
-    table = import_function(uri, *args, **kwargs)
-
-    if source.delete:
-        os.unlink(source.uri)
+    table = import_function(source.uri, *args, **kwargs)
 
     return table
 

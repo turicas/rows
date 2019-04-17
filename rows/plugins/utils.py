@@ -19,6 +19,8 @@ from __future__ import unicode_literals
 
 from collections import OrderedDict
 from itertools import chain, islice
+from os import unlink
+from pathlib import Path
 
 import six
 
@@ -175,6 +177,13 @@ def create_table(
     if max_rows is not None and max_rows > 0:
         table_rows = islice(table_rows, max_rows)
     table.extend(dict(zip(import_fields, get_row(row))) for row in table_rows)
+
+    source = table.meta.get("source", None)
+    if source is not None:
+        if source.should_close:
+            source.fobj.close()
+        if source.should_delete and Path(source.uri).exists():
+            unlink(source.uri)
 
     return table
 
