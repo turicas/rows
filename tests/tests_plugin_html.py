@@ -386,8 +386,8 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         fobj = open(filename, mode="rb")
         table = rows.import_from_html(fobj, ignore_colspan=False)
-        self.assertEquals(list(table.fields.keys()), ["huge_title", "field_1"])
-        self.assertEquals(len(table), 3)
+        self.assertEqual(list(table.fields.keys()), ["huge_title", "field_1"])
+        self.assertEqual(len(table), 3)
         expected_data = [
             ["field1", "field2"],
             ["row1field1", "row1field2"],

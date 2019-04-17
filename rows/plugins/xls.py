@@ -18,6 +18,7 @@
 from __future__ import unicode_literals
 
 import datetime
+import os
 from io import BytesIO
 
 import xlrd
@@ -168,7 +169,10 @@ def import_from_xls(
     """Return a rows.Table created from imported XLS file."""
 
     filename, _ = get_filename_and_fobj(filename_or_fobj, mode="rb")
-    book = xlrd.open_workbook(filename, formatting_info=True)
+    book = xlrd.open_workbook(
+        filename, formatting_info=True, logfile=open(os.devnull, mode="w")
+    )
+
     if sheet_name is not None:
         sheet = book.sheet_by_name(sheet_name)
     else:
@@ -188,7 +192,9 @@ def import_from_xls(
     # starting from `min_col`.
     start_row = max(start_row if start_row is not None else min_row, min_row)
     end_row = min(end_row if end_row is not None else max_row, max_row)
-    start_column = max(start_column if start_column is not None else min_column, min_column)
+    start_column = max(
+        start_column if start_column is not None else min_column, min_column
+    )
     end_column = min(end_column if end_column is not None else max_column, max_column)
 
     table_rows = [

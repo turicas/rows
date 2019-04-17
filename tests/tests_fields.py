@@ -409,7 +409,7 @@ class FieldUtilsTestCase(unittest.TestCase):
 
     def test_detect_types_different_number_of_fields(self):
         result = fields.detect_types(["f1", "f2"], [["a", "b", "c"]])
-        self.assertEquals(list(result.keys()), ["f1", "f2", "field_2"])
+        self.assertEqual(list(result.keys()), ["f1", "f2", "field_2"])
 
     def test_precedence(self):
         field_types = [

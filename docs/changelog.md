@@ -15,6 +15,8 @@
 - Add param `max_rows` to `create_table` (import only part of a table, all
   plugins are supported)
 - Add `start_row`, `end_row`, `start_column` and `end_column` to ODS plugin
+- Prevent `xlrd` (XLS plugin) from printing wrong sector size warning
+  ("`WARNING *** file size (551546) not 512 + multiple of sector size (512)`")
 
 ### Command-Line Interface
 
