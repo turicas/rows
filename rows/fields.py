@@ -53,6 +53,8 @@ __all__ = [
 NULL = ("-", "null", "none", "nil", "n/a", "na")
 NULL_BYTES = (b"-", b"null", b"none", b"nil", b"n/a", b"na")
 REGEXP_ONLY_NUMBERS = re.compile(r"[^0-9\-]")
+REGEXP_WORD_BOUNDARY = re.compile("(\\w\\b)")
+REGEXP_SEPARATOR = re.compile("(_+)")
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 SLUG_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
 
@@ -515,7 +517,7 @@ def get_items(*indexes):
     )
 
 
-def slug(text, separator="_", permitted_chars=SLUG_CHARS, replace_with_separator=" -_"):
+def slug(text, separator="_", permitted_chars=SLUG_CHARS):
     """Generate a slug for the `text`.
 
     >>> slug(' ÁLVARO  justen% ')
@@ -530,20 +532,21 @@ def slug(text, separator="_", permitted_chars=SLUG_CHARS, replace_with_separator
     # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
     text = normalize("NFKD", text.strip()).encode("ascii", "ignore").decode("ascii")
 
-    # Replace spaces and other chars with separator
-    # Example: u' ALVARO  justen% ' -> u'_ALVARO__justen%_'
-    for char in replace_with_separator:
-        text = text.replace(char, separator)
+    # Replace word boundaries with separator
+    text = REGEXP_WORD_BOUNDARY.sub("\\1" + re.escape(separator), text)
 
     # Remove non-permitted characters and put everything to lowercase
     # Example: u'_ALVARO__justen%_' -> u'_alvaro__justen_'
-    text = "".join(char for char in text if char in permitted_chars).lower()
+    allowed_chars = list(permitted_chars) + [separator]
+    text = "".join(char for char in text if char in allowed_chars).lower()
 
     # Remove double occurrencies of separator
     # Example: u'_alvaro__justen_' -> u'_alvaro_justen_'
-    double_separator = separator + separator
-    while double_separator in text:
-        text = text.replace(double_separator, separator)
+    text = (
+        REGEXP_SEPARATOR
+        if separator == "_"
+        else re.compile("(" + re.escape(separator) + "+)")
+    ).sub(separator, text)
 
     # Strip separators
     # Example: u'_alvaro_justen_' -> u'alvaro_justen'

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -98,7 +98,7 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             start_column=1,
             end_column=4,
         )
-        header = "field_3 field_456 field_456_2 field_12".split()
+        header = "field_3 field_4_56 field_4_56_2 field_12".split()
         data = [[getattr(row, field) for field in header] for row in result]
         assert len(data) == 2
         assert data[0] == [4, 7.89, 7.89, Decimal("0.1364")]

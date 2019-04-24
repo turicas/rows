@@ -44,6 +44,7 @@
 - [#309](https://github.com/turicas/rows/issues/309) Fix file-magic detection
 - [#320](https://github.com/turicas/rows/issues/320) Get correct data if ODS
   spreadsheet has empty cells
+- Fix slug function (so `"a/b"` will turn into `"a_b"`)
 
 ## Version `0.4.1` (bugfix release)
 

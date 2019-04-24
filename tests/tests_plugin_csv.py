@@ -167,11 +167,11 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             fobj.write(data.encode("utf-8"))
 
         table = rows.import_from_csv(filename, encoding="utf-8")
-        self.assertEqual(table.field_names, ["field1samefield", "field2other"])
-        self.assertEqual(table[0].field1samefield, "row1value1")
-        self.assertEqual(table[0].field2other, "row1value2")
-        self.assertEqual(table[1].field1samefield, "row2value1")
-        self.assertEqual(table[1].field2other, "row2value2")
+        self.assertEqual(table.field_names, ["field1_samefield", "field2_other"])
+        self.assertEqual(table[0].field1_samefield, "row1value1")
+        self.assertEqual(table[0].field2_other, "row1value2")
+        self.assertEqual(table[1].field1_samefield, "row2value1")
+        self.assertEqual(table[1].field2_other, "row2value2")
 
     def test_detect_weird_dialect(self):
         temp = tempfile.NamedTemporaryFile(delete=False)

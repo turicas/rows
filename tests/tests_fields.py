@@ -379,6 +379,27 @@ class FieldUtilsTestCase(unittest.TestCase):
             "unicode_column": fields.TextField,
         }
 
+    def test_slug(self):
+        self.assertEqual(fields.slug(None), "")
+        self.assertEqual(fields.slug("Álvaro Justen"), "alvaro_justen")
+        self.assertEqual(fields.slug("Moe's Bar"), "moe_s_bar")
+        self.assertEqual(fields.slug("-----te-----st------"), "te_st")
+        self.assertEqual(fields.slug("first line\nsecond line"), "first_line_second_line")
+        self.assertEqual(fields.slug("first/second"), "first_second")
+        self.assertEqual(fields.slug("first\xa0second"), "first_second")
+        # As in <https://github.com/turicas/rows/issues/179>
+        self.assertEqual(
+            fields.slug('Query Occurrence"( % ),"First Seen'),
+            "query_occurrence_first_seen",
+        )
+        self.assertEqual(fields.slug(" ÁLVARO  justen% "), "alvaro_justen")
+        self.assertEqual(fields.slug(42), "42")
+
+        self.assertEqual(fields.slug("^test"), "test")
+        self.assertEqual(fields.slug("^test", permitted_chars=fields.SLUG_CHARS + "^"), "^test")
+
+        self.assertEqual(fields.slug("this/is\ta\ntest", separator="-"), "this-is-a-test")
+
     def test_detect_types_no_sample(self):
         expected = {key: fields.TextField for key in self.expected.keys()}
         result = fields.detect_types(self.fields, [])

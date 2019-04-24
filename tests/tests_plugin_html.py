@@ -187,13 +187,13 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table = rows.import_from_html(fobj)
         self.assertEqual(
-            set(table.fields.keys()), set(["t00r0c0", "t00r0c1", "t00r0c2"])
+            set(table.fields.keys()), set(["t0_0r0c0", "t0_0r0c1", "t0_0r0c2"])
         )
         self.assertEqual(len(table), 3)
 
-        self.assertEqual(table[0].t00r0c0, "t0,0r1c0")
-        self.assertEqual(table[0].t00r0c1, "t0,0r1c1")
-        self.assertEqual(table[0].t00r0c2, "t0,0r1c2")
+        self.assertEqual(table[0].t0_0r0c0, "t0,0r1c0")
+        self.assertEqual(table[0].t0_0r0c1, "t0,0r1c1")
+        self.assertEqual(table[0].t0_0r0c2, "t0,0r1c2")
 
         # if there are nested tables, the inner ones will be represented as
         # strings (each <td>...</td> element will return only one string, even
@@ -203,48 +203,48 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
             "t0,1r2c1 t0,2r0c0 t0,2r0c1 t0,2r1c0 t0,2r1c1 "
             "t0,1r3c1 t0,1r4c0 t0,1r4c1 t0,1r5c0 t0,1r5c1"
         )
-        self.assertEqual(table[1].t00r0c0, "t0,0r2c0")
-        self.assertEqual(table[1].t00r0c1, inner_table)
-        self.assertEqual(table[1].t00r0c2, "t0,0r2c2")
+        self.assertEqual(table[1].t0_0r0c0, "t0,0r2c0")
+        self.assertEqual(table[1].t0_0r0c1, inner_table)
+        self.assertEqual(table[1].t0_0r0c2, "t0,0r2c2")
 
-        self.assertEqual(table[2].t00r0c0, "t0,0r3c0")
-        self.assertEqual(table[2].t00r0c1, "t0,0r3c1")
-        self.assertEqual(table[2].t00r0c2, "t0,0r3c2")
+        self.assertEqual(table[2].t0_0r0c0, "t0,0r3c0")
+        self.assertEqual(table[2].t0_0r0c1, "t0,0r3c1")
+        self.assertEqual(table[2].t0_0r0c2, "t0,0r3c2")
 
     def test_nested_tables_first_inner(self):
         filename = "tests/data/nested-table.html"
         fobj = open(filename, mode="rb")
 
         table = rows.import_from_html(fobj, index=1)
-        self.assertEqual(set(table.fields.keys()), set(["t01r0c0", "t01r0c1"]))
+        self.assertEqual(set(table.fields.keys()), set(["t0_1r0c0", "t0_1r0c1"]))
         self.assertEqual(len(table), 5)
 
-        self.assertEqual(table[0].t01r0c0, "t0,1r1c0")
-        self.assertEqual(table[0].t01r0c1, "t0,1r1c1")
+        self.assertEqual(table[0].t0_1r0c0, "t0,1r1c0")
+        self.assertEqual(table[0].t0_1r0c1, "t0,1r1c1")
 
-        self.assertEqual(table[1].t01r0c0, "t0,1r2c0")
-        self.assertEqual(table[1].t01r0c1, "t0,1r2c1")
+        self.assertEqual(table[1].t0_1r0c0, "t0,1r2c0")
+        self.assertEqual(table[1].t0_1r0c1, "t0,1r2c1")
 
         inner_table = "t0,2r0c0 t0,2r0c1 t0,2r1c0 t0,2r1c1"
-        self.assertEqual(table[2].t01r0c0, inner_table)
-        self.assertEqual(table[2].t01r0c1, "t0,1r3c1")
+        self.assertEqual(table[2].t0_1r0c0, inner_table)
+        self.assertEqual(table[2].t0_1r0c1, "t0,1r3c1")
 
-        self.assertEqual(table[3].t01r0c0, "t0,1r4c0")
-        self.assertEqual(table[3].t01r0c1, "t0,1r4c1")
+        self.assertEqual(table[3].t0_1r0c0, "t0,1r4c0")
+        self.assertEqual(table[3].t0_1r0c1, "t0,1r4c1")
 
-        self.assertEqual(table[4].t01r0c0, "t0,1r5c0")
-        self.assertEqual(table[4].t01r0c1, "t0,1r5c1")
+        self.assertEqual(table[4].t0_1r0c0, "t0,1r5c0")
+        self.assertEqual(table[4].t0_1r0c1, "t0,1r5c1")
 
     def test_nested_tables_second_inner(self):
         filename = "tests/data/nested-table.html"
         fobj = open(filename, mode="rb")
 
         table = rows.import_from_html(fobj, index=2)
-        self.assertEqual(set(table.fields.keys()), set(["t02r0c0", "t02r0c1"]))
+        self.assertEqual(set(table.fields.keys()), set(["t0_2r0c0", "t0_2r0c1"]))
         self.assertEqual(len(table), 1)
 
-        self.assertEqual(table[0].t02r0c0, "t0,2r1c0")
-        self.assertEqual(table[0].t02r0c1, "t0,2r1c1")
+        self.assertEqual(table[0].t0_2r0c0, "t0,2r1c0")
+        self.assertEqual(table[0].t0_2r0c1, "t0,2r1c1")
 
     def test_preserve_html(self):
         filename = "tests/data/nested-table.html"
@@ -291,7 +291,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
             "</tr>",
             "</table>",
         ]
-        self.assertEqual(cleanup_lines(table[1].t00r0c1), expected_data)
+        self.assertEqual(cleanup_lines(table[1].t0_0r0c1), expected_data)
 
     def test_preserve_html_None(self):
         html = dedent(
