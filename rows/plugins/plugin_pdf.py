@@ -360,18 +360,15 @@ class Group(object):
 
     def contains(self, obj):
         d0 = getattr(obj, self.dimension_0)
-        d1 = getattr(obj, self.dimension_1)
-        middle = d0 + (d1 - d0) / 2.0
-        return self.min <= middle <= self.max
+        return self.min <= d0 <= self.max
 
     def add(self, obj):
         self.objects.append(obj)
         d0 = getattr(obj, self.dimension_0)
-        d1 = getattr(obj, self.dimension_1)
         if d0 < self.minimum:
             self.minimum = d0
-        if d1 > self.maximum:
-            self.maximum = d1
+        elif d0 > self.maximum:
+            self.maximum = d0
 
 
 class HorizontalGroup(Group):
