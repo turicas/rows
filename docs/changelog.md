@@ -10,6 +10,8 @@
 - Add Jupyter Notebook integration (implements `_repr_html_`, `.head` and
   `.tail`)
 - Fix code to remove some warnings
+- Add support to read compressed files directly (like in
+  `rows.import_from_csv("filename.csv.gz")`)
 
 ### Plugins
 
