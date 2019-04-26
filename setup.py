@@ -33,7 +33,7 @@ EXTRA_REQUIREMENTS = {
     "postgresql": ["psycopg2-binary"],
     "utils": utils_requirements,
     "xls": ["xlrd", "xlwt"],
-    "xlsx": ["openpyxl"],
+    "xlsx": ["defusedxml>=0.6.0", "openpyxl"],
     "xpath": ["lxml"],
 }
 EXTRA_REQUIREMENTS["all"] = sum(EXTRA_REQUIREMENTS.values(), [])
