@@ -119,6 +119,13 @@ class TableTestCase(unittest.TestCase):
 
         self.assertEqual(exception_context.exception.args[0], "doesnt-exist")
 
+    def test_table_getitem_slice_happy_path(self):
+        self.assertEqual(list(self.table[:]), list(self.table))
+        self.assertEqual(self.table[:].meta, self.table.meta)
+
+        self.assertEqual(list(self.table[1:]), list(self.table)[1:])
+        self.assertEqual(list(self.table[:-1]), list(self.table)[:-1])
+
     def test_table_getitem_column_happy_path(self):
         expected_values = ["Álvaro Justen", "Somebody", "Douglas Adams"]
         self.assertEqual(self.table["name"], expected_values)

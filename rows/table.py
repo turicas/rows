@@ -54,15 +54,17 @@ class Table(MutableSequence):
 
         return rows.plugins.html.export_to_html(self).decode("utf-8")
 
-    def head(self, n=10):
-        table = Table(fields=self.fields, meta=self.meta)
-        table._rows = self._rows[:n]
+    @classmethod
+    def copy(cls, table, data):
+        table = cls(fields=table.fields, meta=table.meta)
+        table._rows = list(data)  # TODO: verify data?
         return table
 
+    def head(self, n=10):
+        return Table.copy(self, self._rows[:n])
+
     def tail(self, n=10):
-        table = Table(fields=self.fields, meta=self.meta)
-        table._rows = self._rows[-n:]
-        return table
+        return Table.copy(self, self._rows[-n:])
 
     @property
     def field_names(self):
@@ -116,7 +118,7 @@ class Table(MutableSequence):
         if key_type == int:
             return self.Row(*self._rows[key])
         elif key_type == slice:
-            return [self.Row(*row) for row in self._rows[key]]
+            return Table.copy(self, self._rows[key])
         elif key_type is six.text_type:
             try:
                 field_index = self.field_names.index(key)

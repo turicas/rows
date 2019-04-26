@@ -12,6 +12,7 @@
 - Fix code to remove some warnings
 - Add support to read compressed files directly (like in
   `rows.import_from_csv("filename.csv.gz")`)
+- `rows.Table` now returns a new table when sliced
 
 ### Plugins
 
