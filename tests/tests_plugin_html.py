@@ -47,7 +47,6 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
     file_extension = "html"
     filename = "tests/data/all-field-types.html"
     encoding = "utf-8"
-    assert_meta_encoding = True
 
     def test_imports(self):
         self.assertIs(rows.import_from_html, rows.plugins.plugin_html.import_from_html)
@@ -59,10 +58,12 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         expected_meta = {
             "imported_from": "html",
-            "filename": self.filename,
-            "encoding": self.encoding,
         }
-        self.assertEqual(table.meta, expected_meta)
+        meta = table.meta.copy()
+        source = meta.pop("source")
+        self.assertEqual(meta, expected_meta)
+        self.assertEqual(source.uri, self.filename)
+        self.assertTrue(source.should_close)
 
     def test_import_from_html_fobj(self):
         # TODO: may test with codecs.open passing an encoding
@@ -72,10 +73,12 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         expected_meta = {
             "imported_from": "html",
-            "filename": self.filename,
-            "encoding": self.encoding,
         }
-        self.assertEqual(table.meta, expected_meta)
+        meta = table.meta.copy()
+        source = meta.pop("source")
+        self.assertEqual(meta, expected_meta)
+        self.assertEqual(source.uri, self.filename)
+        self.assertFalse(source.should_close)
 
     @mock.patch("rows.plugins.plugin_html.create_table")
     def test_import_from_html_uses_create_table(self, mocked_create_table):
@@ -85,14 +88,6 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
-
-        call = mocked_create_table.call_args
-        kwargs["meta"] = {
-            "imported_from": "html",
-            "filename": self.filename,
-            "encoding": "iso-8859-1",
-        }
-        self.assertEqual(call[1], kwargs)
 
     def test_export_to_html_filename(self):
         # TODO: may test file contents
@@ -386,8 +381,8 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         fobj = open(filename, mode="rb")
         table = rows.import_from_html(fobj, ignore_colspan=False)
-        self.assertEquals(list(table.fields.keys()), ["huge_title", "field_1"])
-        self.assertEquals(len(table), 3)
+        self.assertEqual(list(table.fields.keys()), ["huge_title", "field_1"])
+        self.assertEqual(len(table), 3)
         expected_data = [
             ["field1", "field2"],
             ["row1field1", "row1field2"],

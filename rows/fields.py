@@ -52,7 +52,7 @@ __all__ = [
 ]
 NULL = ("-", "null", "none", "nil", "n/a", "na")
 NULL_BYTES = (b"-", b"null", b"none", b"nil", b"n/a", b"na")
-REGEXP_ONLY_NUMBERS = re.compile("[^0-9\-]")
+REGEXP_ONLY_NUMBERS = re.compile(r"[^0-9\-]")
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 SLUG_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
 
@@ -187,7 +187,7 @@ class IntegerField(Field):
             return six.text_type(value)
         else:
             grouping = kwargs.get("grouping", None)
-            return locale.format("%d", value, grouping=grouping)
+            return locale.format_string("%d", value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -224,7 +224,7 @@ class FloatField(Field):
             return six.text_type(value)
         else:
             grouping = kwargs.get("grouping", None)
-            return locale.format("%f", value, grouping=grouping)
+            return locale.format_string("%f", value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -263,7 +263,7 @@ class DecimalField(Field):
             else:
                 decimal_places = len(value_as_string.split(".")[1])
                 string_format = "%.{}f".format(decimal_places)
-            return locale.format(string_format, value, grouping=grouping)
+            return locale.format_string(string_format, value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):

@@ -154,7 +154,7 @@ class PluginParquetTestCase(unittest.TestCase):
         self.assertEqual(result, 42)
 
         call = mocked_create_table.call_args
-        kwargs["force_types"] = OrderedDict(
+        expected_force_types = OrderedDict(
             [
                 ("nation_key", rows.fields.IntegerField),
                 ("name", rows.fields.BinaryField),
@@ -162,8 +162,13 @@ class PluginParquetTestCase(unittest.TestCase):
                 ("comment_col", rows.fields.BinaryField),
             ]
         )
-        kwargs["meta"] = {"imported_from": "parquet", "filename": self.filename}
-        self.assertEqual(call[1], kwargs)
+        self.assertDictEqual(call[1]["force_types"], expected_force_types)
+
+        expected_meta = {"imported_from": "parquet"}
+        meta = call[1]["meta"].copy()
+        source = meta.pop("source")
+        self.assertEqual(meta, expected_meta)
+        self.assertEqual(source.uri, self.filename)
 
     @mock.patch("rows.plugins.plugin_parquet.create_table")
     def test_import_from_parquet_retrieve_desired_data(self, mocked_create_table):

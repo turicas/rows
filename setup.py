@@ -19,7 +19,7 @@ from __future__ import unicode_literals
 
 from setuptools import find_packages, setup
 
-utils_requirements = ["dataclasses", "requests", "requests-cache", "tqdm"]
+utils_requirements = ["requests", "requests-cache", "tqdm"]
 EXTRA_REQUIREMENTS = {
     "cli": ["click"] + utils_requirements,
     "csv": ["unicodecsv"],
@@ -33,11 +33,11 @@ EXTRA_REQUIREMENTS = {
     "postgresql": ["psycopg2-binary"],
     "utils": utils_requirements,
     "xls": ["xlrd", "xlwt"],
-    "xlsx": ["openpyxl"],
+    "xlsx": ["defusedxml>=0.6.0", "openpyxl"],
     "xpath": ["lxml"],
 }
 EXTRA_REQUIREMENTS["all"] = sum(EXTRA_REQUIREMENTS.values(), [])
-INSTALL_REQUIREMENTS = ["six", "pathlib"] + EXTRA_REQUIREMENTS["csv"]
+INSTALL_REQUIREMENTS = ["dataclasses", "pathlib", "six"] + EXTRA_REQUIREMENTS["csv"]
 LONG_DESCRIPTION = """
 No matter in which format your tabular data is: rows will import it,
 automatically detect types and give you high-level Python objects so you can

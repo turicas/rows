@@ -36,7 +36,6 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
     file_extension = "txt"
     filename = "tests/data/all-field-types.txt"
     encoding = "utf-8"
-    assert_meta_encoding = True
 
     def test_imports(self):
         self.assertIs(rows.import_from_txt, rows.plugins.txt.import_from_txt)
@@ -56,16 +55,14 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         meta = called_data.pop("meta")
         self.assertEqual(call[1], kwargs)
 
+        source = meta.pop("source")
+        self.assertEqual(source.uri, self.filename)
+
         expected_meta = {
             "imported_from": "txt",
-            "filename": self.filename,
-            "encoding": self.encoding,
+            "frame_style": "ascii",
         }
-        for key in expected_meta:
-            self.assertEqual(expected_meta[key], meta[key])
-
-        # test won't break if frame_style default changes in the future
-        self.assertIn("frame_style", meta)
+        self.assertDictEqual(expected_meta, meta)
 
     @mock.patch("rows.plugins.txt.create_table")
     def test_import_from_txt_retrieve_desired_data(self, mocked_create_table):

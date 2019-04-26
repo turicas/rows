@@ -9,12 +9,17 @@
 - `export_to_html` is now available even if `lxml` is not installed
 - Add Jupyter Notebook integration (implements `_repr_html_`, `.head` and
   `.tail`)
+- Fix code to remove some warnings
+- Add support to read compressed files directly (like in
+  `rows.import_from_csv("filename.csv.gz")`)
 
 ### Plugins
 
 - Add param `max_rows` to `create_table` (import only part of a table, all
   plugins are supported)
 - Add `start_row`, `end_row`, `start_column` and `end_column` to ODS plugin
+- Prevent `xlrd` (XLS plugin) from printing wrong sector size warning
+  ("`WARNING *** file size (551546) not 512 + multiple of sector size (512)`")
 
 ### Command-Line Interface
 

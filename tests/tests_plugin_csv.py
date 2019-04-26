@@ -48,7 +48,6 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     file_extension = "csv"
     filename = "tests/data/all-field-types.csv"
     encoding = "utf-8"
-    assert_meta_encoding = True
 
     def test_imports(self):
         self.assertIs(rows.import_from_csv, rows.plugins.plugin_csv.import_from_csv)
@@ -62,14 +61,6 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
-
-        call = mocked_create_table.call_args
-        kwargs["meta"] = {
-            "imported_from": "csv",
-            "filename": self.filename,
-            "encoding": "utf-8",
-        }
-        self.assertEqual(call[1], kwargs)
 
     @mock.patch("rows.plugins.plugin_csv.create_table")
     def test_import_from_csv_retrieve_desired_data(self, mocked_create_table):

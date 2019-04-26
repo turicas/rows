@@ -21,7 +21,8 @@ import logging
 from collections import OrderedDict
 
 from rows import fields
-from rows.plugins.utils import create_table, get_filename_and_fobj
+from rows.plugins.utils import create_table
+from rows.utils import Source
 
 
 class NullHandler(logging.Handler):
@@ -45,20 +46,20 @@ PARQUET_TO_ROWS = {
 
 def import_from_parquet(filename_or_fobj, *args, **kwargs):
     """Import data from a Parquet file and return with rows.Table."""
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode="rb")
+    source = Source.from_file(filename_or_fobj, plugin_name="parquet", mode="rb")
 
     # TODO: should look into `schema.converted_type` also
     types = OrderedDict(
         [
             (schema.name, PARQUET_TO_ROWS[schema.type])
-            for schema in parquet._read_footer(fobj).schema
+            for schema in parquet._read_footer(source.fobj).schema
             if schema.type is not None
         ]
     )
     header = list(types.keys())
-    table_rows = list(parquet.reader(fobj))  # TODO: be lazy
+    table_rows = list(parquet.reader(source.fobj))  # TODO: be lazy
 
-    meta = {"imported_from": "parquet", "filename": filename}
+    meta = {"imported_from": "parquet", "source": source}
     return create_table(
         [header] + table_rows, meta=meta, force_types=types, *args, **kwargs
     )

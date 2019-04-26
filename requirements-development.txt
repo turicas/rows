@@ -18,12 +18,14 @@ tqdm
 
 # Test and lint tools
 autoflake
+black
 coverage
 ipdb
 isort
 mock
 nose
 pylint
+pytest
 tox
 yanc
 

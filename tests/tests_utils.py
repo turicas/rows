@@ -18,6 +18,7 @@
 from __future__ import unicode_literals
 
 import io
+import pathlib
 import tempfile
 import unittest
 from collections import OrderedDict
@@ -59,7 +60,7 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result = rows.utils.local_file(temp.name)
         self.assertEqual(result.uri, temp.name)
         self.assert_encoding(result.encoding, encoding)
-        self.assertEqual(result.delete, False)
+        self.assertEqual(result.should_delete, False)
 
 
 class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -237,7 +238,13 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         ])
         assert schema == expected
 
+    def test_source_from_path(self):
+        path = pathlib.Path("/tmp/test.csv")
+        source = rows.utils.Source.from_file(path, mode="w")
+        self.assertEqual(source.uri, path)
+        source.fobj.close()
 
+# TODO: test Source.from_file
 # TODO: test/implement load_schema with file object
 # TODO: test detect_local_source
 # TODO: test detect_source

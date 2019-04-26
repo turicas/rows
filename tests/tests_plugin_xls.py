@@ -39,7 +39,6 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     plugin_name = "xls"
     file_extension = "xls"
     filename = "tests/data/all-field-types.xls"
-    assert_meta_encoding = False
 
     def test_imports(self):
         self.assertIs(rows.import_from_xls, rows.plugins.xls.import_from_xls)
@@ -54,14 +53,6 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
-        call = mocked_create_table.call_args
-        kwargs["meta"] = {
-            "imported_from": "xls",
-            "filename": self.filename,
-            "sheet_name": "Sheet1",
-        }
-        self.assertEqual(call[1], kwargs)
-
     @mock.patch("rows.plugins.xls.create_table")
     def test_import_from_xls_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
@@ -73,7 +64,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             call_args,
             expected_meta={
                 "imported_from": "xls",
-                "filename": self.filename,
+                "filename": self.filename,  # will check `source.uri`
                 "sheet_name": "Sheet1",
             },
         )

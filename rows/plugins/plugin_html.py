@@ -30,14 +30,16 @@ else:
 from rows.plugins.utils import (
     create_table,
     export_data,
-    get_filename_and_fobj,
     serialize,
 )
+from rows.utils import Source
 
 try:
     from HTMLParser import HTMLParser  # Python 2
+    unescape = HTMLParser().unescape
 except:
-    from html.parser import HTMLParser  # Python 3
+    import html  # Python 3
+    unescape = html.unescape
 
 
 try:
@@ -45,7 +47,6 @@ try:
 except:
     from cgi import escape  # Python 2
 
-unescape = HTMLParser().unescape
 
 
 def _get_content(element):
@@ -80,8 +81,10 @@ def import_from_html(
     **kwargs
 ):
     """Return rows.Table from HTML file."""
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode="rb")
-    html = fobj.read().decode(encoding)
+
+    source = Source.from_file(filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding)
+
+    html = source.fobj.read().decode(source.encoding)
     html_tree = document_fromstring(html)
     tables = html_tree.xpath("//{}".format(table_tag))
     table = tables[index]
@@ -113,12 +116,13 @@ def import_from_html(
         max_columns = max(map(len, table_rows))
         table_rows = [row for row in table_rows if len(row) == max_columns]
 
-    meta = {"imported_from": "html", "filename": filename, "encoding": encoding}
+    meta = {"imported_from": "html", "source": source}
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
 def export_to_html(table, filename_or_fobj=None, encoding="utf-8", *args, **kwargs):
     """Export and return rows.Table data to HTML file."""
+
     serialized_table = serialize(table, *args, **kwargs)
     fields = next(serialized_table)
     result = ["<table>\n\n", "  <thead>\n", "    <tr>\n"]
@@ -139,6 +143,7 @@ def export_to_html(table, filename_or_fobj=None, encoding="utf-8", *args, **kwar
 
 def _extract_node_text(node):
     """Extract text from a given lxml node."""
+
     texts = map(
         six.text_type.strip, map(six.text_type, map(unescape, node.xpath(".//text()")))
     )
@@ -147,15 +152,22 @@ def _extract_node_text(node):
 
 def count_tables(filename_or_fobj, encoding="utf-8", table_tag="table"):
     """Read a file passed by arg and return your table HTML tag count."""
-    filename, fobj = get_filename_and_fobj(filename_or_fobj)
-    html = fobj.read().decode(encoding)
+
+    source = Source.from_file(filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding)
+    html = source.fobj.read().decode(source.encoding)
     html_tree = document_fromstring(html)
     tables = html_tree.xpath("//{}".format(table_tag))
-    return len(tables)
+    result = len(tables)
+
+    if source.should_close:
+        source.fobj.close()
+
+    return result
 
 
 def tag_to_dict(html):
     """Extract tag's attributes into a `dict`."""
+
     element = document_fromstring(html).xpath("//html/body/child::*")[0]
     attributes = dict(element.attrib)
     attributes["text"] = element.text_content()
@@ -164,9 +176,11 @@ def tag_to_dict(html):
 
 def extract_text(html):
     """Extract text from a given HTML."""
+
     return _extract_node_text(document_fromstring(html))
 
 
 def extract_links(html):
     """Extract the href values from a given HTML (returns a list of strings)."""
+
     return document_fromstring(html).xpath(".//@href")

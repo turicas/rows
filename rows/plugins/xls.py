@@ -18,13 +18,16 @@
 from __future__ import unicode_literals
 
 import datetime
+import os
 from io import BytesIO
 
 import xlrd
 import xlwt
 
 import rows.fields as fields
-from rows.plugins.utils import create_table, get_filename_and_fobj, prepare_to_export
+from rows.plugins.utils import create_table, prepare_to_export
+from rows.utils import Source
+
 
 CELL_TYPES = {
     xlrd.XL_CELL_BLANK: fields.TextField,
@@ -167,8 +170,12 @@ def import_from_xls(
 ):
     """Return a rows.Table created from imported XLS file."""
 
-    filename, _ = get_filename_and_fobj(filename_or_fobj, mode="rb")
-    book = xlrd.open_workbook(filename, formatting_info=True)
+    source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="xls")
+    source.fobj.close()
+    book = xlrd.open_workbook(
+        source.uri, formatting_info=True, logfile=open(os.devnull, mode="w")
+    )
+
     if sheet_name is not None:
         sheet = book.sheet_by_name(sheet_name)
     else:
@@ -188,7 +195,9 @@ def import_from_xls(
     # starting from `min_col`.
     start_row = max(start_row if start_row is not None else min_row, min_row)
     end_row = min(end_row if end_row is not None else max_row, max_row)
-    start_column = max(start_column if start_column is not None else min_column, min_column)
+    start_column = max(
+        start_column if start_column is not None else min_column, min_column
+    )
     end_column = min(end_column if end_column is not None else max_column, max_column)
 
     table_rows = [
@@ -199,14 +208,15 @@ def import_from_xls(
         for row_index in range(start_row, end_row + 1)
     ]
 
-    meta = {"imported_from": "xls", "filename": filename, "sheet_name": sheet.name}
+    meta = {"imported_from": "xls", "source": source, "sheet_name": sheet.name}
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
 def export_to_xls(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kwargs):
     """Export the rows.Table to XLS file and return the saved file."""
-    work_book = xlwt.Workbook()
-    sheet = work_book.add_sheet(sheet_name)
+
+    workbook = xlwt.Workbook()
+    sheet = workbook.add_sheet(sheet_name)
 
     prepared_table = prepare_to_export(table, *args, **kwargs)
 
@@ -219,15 +229,22 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kw
         for column_index, (value, data) in enumerate(_convert_row(row)):
             sheet.write(row_index, column_index, value, **data)
 
-    if filename_or_fobj is not None:
-        _, fobj = get_filename_and_fobj(filename_or_fobj, mode="wb")
-        work_book.save(fobj)
-        fobj.flush()
-        return fobj
+    return_result = False
+    if filename_or_fobj is None:
+        filename_or_fobj = BytesIO()
+        return_result = True
+
+    source = Source.from_file(filename_or_fobj, mode="wb", plugin_name="xls")
+    workbook.save(source.fobj)
+    source.fobj.flush()
+
+    if return_result:
+        source.fobj.seek(0)
+        result = source.fobj.read()
     else:
-        fobj = BytesIO()
-        work_book.save(fobj)
-        fobj.seek(0)
-        result = fobj.read()
-        fobj.close()
-        return result
+        result = source.fobj
+
+    if source.should_close:
+        source.fobj.close()
+
+    return result

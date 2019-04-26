@@ -24,10 +24,10 @@ import unicodecsv
 
 from rows.plugins.utils import (
     create_table,
-    get_filename_and_fobj,
     ipartition,
     serialize,
 )
+from rows.utils import Source
 
 sniffer = unicodecsv.Sniffer()
 # Some CSV files have more than 128kB of data in a cell, so we force this value
@@ -121,16 +121,18 @@ def import_from_csv(
     If a file-like object is provided it MUST be in binary mode, like in
     `open(filename, mode='rb')`.
     """
-    filename, fobj = get_filename_and_fobj(filename_or_fobj, mode="rb")
+    source = Source.from_file(
+        filename_or_fobj, plugin_name="csv", mode="rb", encoding=encoding
+    )
 
     if dialect is None:
         dialect = discover_dialect(
-            sample=read_sample(fobj, sample_size), encoding=encoding
+            sample=read_sample(source.fobj, sample_size), encoding=source.encoding
         )
 
-    reader = unicodecsv.reader(fobj, encoding=encoding, dialect=dialect)
+    reader = unicodecsv.reader(source.fobj, encoding=encoding, dialect=dialect)
 
-    meta = {"imported_from": "csv", "filename": filename, "encoding": encoding}
+    meta = {"imported_from": "csv", "source": source}
     return create_table(reader, meta=meta, *args, **kwargs)
 
 
@@ -155,15 +157,23 @@ def export_to_csv(
     # TODO: will work only if table.fields is OrderedDict
     # TODO: should use fobj? What about creating a method like json.dumps?
 
-    if filename_or_fobj is not None:
-        _, fobj = get_filename_and_fobj(filename_or_fobj, mode="wb")
-    else:
-        fobj = BytesIO()
+    return_data, should_close = False, None
+    if filename_or_fobj is None:
+        filename_or_fobj = BytesIO()
+        return_data = should_close = True
+
+    source = Source.from_file(
+        filename_or_fobj,
+        plugin_name="csv",
+        mode="wb",
+        encoding=encoding,
+        should_close=should_close,
+    )
 
     # TODO: may use `io.BufferedWriter` instead of `ipartition` so user can
     # choose the real size (in Bytes) when to flush to the file system, instead
     # number of rows
-    writer = unicodecsv.writer(fobj, encoding=encoding, dialect=dialect)
+    writer = unicodecsv.writer(source.fobj, encoding=encoding, dialect=dialect)
 
     if callback is None:
         for batch in ipartition(serialize(table, *args, **kwargs), batch_size):
@@ -178,11 +188,14 @@ def export_to_csv(
             total += len(batch)
             callback(total)
 
-    if filename_or_fobj is not None:
-        fobj.flush()
-        return fobj
+    if return_data:
+        source.fobj.seek(0)
+        result = source.fobj.read()
     else:
-        fobj.seek(0)
-        result = fobj.read()
-        fobj.close()
-        return result
+        source.fobj.flush()
+        result = source.fobj
+
+    if source.should_close:
+        source.fobj.close()
+
+    return result

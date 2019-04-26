@@ -23,10 +23,10 @@ from numbers import Number
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.cell.read_only import EmptyCell
-from openpyxl.utils import get_column_letter
 
 from rows import fields
-from rows.plugins.utils import create_table, get_filename_and_fobj, prepare_to_export
+from rows.plugins.utils import create_table, prepare_to_export
+from rows.utils import Source
 
 
 def _cell_to_python(cell):
@@ -106,8 +106,10 @@ def import_from_xlsx(
         if not is_empty(row):
             table_rows.append(row)
 
-    filename, _ = get_filename_and_fobj(filename_or_fobj, dont_open=True)
-    metadata = {"imported_from": "xlsx", "filename": filename, "sheet_name": sheet_name}
+    source = Source.from_file(filename_or_fobj, plugin_name="xlsx")
+    source.fobj.close()
+    # TODO: pass a parameter to Source.from_file so it won't open the file
+    metadata = {"imported_from": "xlsx", "source": source, "sheet_name": sheet_name}
     return create_table(table_rows, meta=metadata, *args, **kwargs)
 
 
@@ -170,15 +172,22 @@ def export_to_xlsx(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **k
             if number_format is not None:
                 cell.number_format = number_format
 
-    if filename_or_fobj is not None:
-        _, fobj = get_filename_and_fobj(filename_or_fobj, mode="wb")
-        workbook.save(fobj)
-        fobj.flush()
-        return fobj
+    return_result = False
+    if filename_or_fobj is None:
+        filename_or_fobj = BytesIO()
+        return_result = True
+
+    source = Source.from_file(filename_or_fobj, mode="wb", plugin_name="xlsx")
+    workbook.save(source.fobj)
+    source.fobj.flush()
+
+    if return_result:
+        source.fobj.seek(0)
+        result = source.fobj.read()
     else:
-        fobj = BytesIO()
-        workbook.save(fobj)
-        fobj.seek(0)
-        result = fobj.read()
-        fobj.close()
-        return result
+        result = source.fobj
+
+    if source.should_close:
+        source.fobj.close()
+
+    return result

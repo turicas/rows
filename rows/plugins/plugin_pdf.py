@@ -22,7 +22,8 @@ import io
 import six
 from cached_property import cached_property
 
-from rows.plugins.utils import create_table, get_filename_and_fobj
+from rows.plugins.utils import create_table
+from rows.utils import Source
 
 try:
     import fitz as pymupdf
@@ -83,8 +84,8 @@ class PDFBackend(object):
     x_order = 1
     y_order = 1
 
-    def __init__(self, filename_or_fobj):
-        self.filename_or_fobj = filename_or_fobj
+    def __init__(self, source):
+        self.source = source
 
     @property
     def number_of_pages(self):
@@ -124,8 +125,7 @@ class PDFMinerBackend(PDFBackend):
 
     @cached_property
     def document(self):
-        filename, fobj = get_filename_and_fobj(self.filename_or_fobj, mode="rb")
-        parser = PDFParser(fobj)
+        parser = PDFParser(self.source.fobj)
         doc = PDFDocument(parser)
         parser.set_document(doc)
         return doc
@@ -222,12 +222,11 @@ class PyMuPDFBackend(PDFBackend):
 
     @cached_property
     def document(self):
-        filename, fobj = get_filename_and_fobj(self.filename_or_fobj, mode="rb")
-        if not filename:
-            data = fobj.read()  # TODO: may use a lot of memory
-            doc = pymupdf.open(stream=data, filetype="pdf")
+        if self.source.uri:
+            doc = pymupdf.open(filename=self.source.uri, filetype="pdf")
         else:
-            doc = pymupdf.open(filename=filename, filetype="pdf")
+            data = self.source.fobj.read()  # TODO: may use a lot of memory
+            doc = pymupdf.open(stream=data, filetype="pdf")
         return doc
 
     @cached_property
@@ -706,7 +705,7 @@ def get_backend(backend):
 
 
 def pdf_table_lines(
-    filename_or_fobj,
+    source,
     page_numbers=None,
     algorithm="y-groups",
     starts_after=None,
@@ -720,7 +719,7 @@ def pdf_table_lines(
     # TODO: check if both backends accepts filename or fobj
     Backend = get_backend(backend)
     Algorithm = get_algorithm(algorithm)
-    pdf_doc = Backend(filename_or_fobj)
+    pdf_doc = Backend(source)
 
     pages = pdf_doc.objects(
         page_numbers=page_numbers, starts_after=starts_after, ends_before=ends_before
@@ -759,9 +758,10 @@ def import_from_pdf(
     **kwargs
 ):
     backend = backend or default_backend()
-    meta = {"imported_from": "pdf"}
+    source = Source.from_file(filename_or_fobj, plugin_name="pdf", mode="rb")
+    meta = {"imported_from": "pdf", "source": source}
     table_rows = pdf_table_lines(
-        filename_or_fobj,
+        source,
         page_numbers,
         starts_after=starts_after,
         ends_before=ends_before,
