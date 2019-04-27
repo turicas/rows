@@ -62,7 +62,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
             expected_meta={
                 "imported_from": "xlsx",
                 "filename": self.filename,  # will check `source.uri`
-                "sheet_name": "Sheet1",
+                "name": "Sheet1",
             },
         )
 
@@ -75,7 +75,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
             expected_meta={
                 "imported_from": "xlsx",
                 "filename": self.filename,
-                "sheet_name": "Sheet1",
+                "name": "Sheet1",
             },
         )
 

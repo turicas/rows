@@ -208,7 +208,7 @@ def import_from_xls(
         for row_index in range(start_row, end_row + 1)
     ]
 
-    meta = {"imported_from": "xls", "source": source, "sheet_name": sheet.name}
+    meta = {"imported_from": "xls", "source": source, "name": sheet.name}
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 

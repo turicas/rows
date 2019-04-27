@@ -109,7 +109,7 @@ def import_from_xlsx(
     source = Source.from_file(filename_or_fobj, plugin_name="xlsx")
     source.fobj.close()
     # TODO: pass a parameter to Source.from_file so it won't open the file
-    metadata = {"imported_from": "xlsx", "source": source, "sheet_name": sheet_name}
+    metadata = {"imported_from": "xlsx", "source": source, "name": sheet_name}
     return create_table(table_rows, meta=metadata, *args, **kwargs)
 
 

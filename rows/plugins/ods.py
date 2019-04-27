@@ -51,7 +51,6 @@ def import_from_ods(
     *args,
     **kwargs
 ):
-    # TODO: import spreadsheet by name
     # TODO: unescape values
 
     source = Source.from_file(filename_or_fobj, plugin_name="ods")
@@ -72,8 +71,11 @@ def import_from_ods(
     namespaces = document.nsmap
     spreadsheet = document.xpath("//office:spreadsheet", namespaces=namespaces)[0]
     tables = xpath(spreadsheet, "//table:table", namespaces)
-    # TODO: add option to select spreadsheet name
-    table = tables[index]
+    table = tables[index]  # TODO: import spreadsheet by name
+    try:
+        table_name = attrib(table, namespaces["table"], "name")
+    except KeyError:
+        table_name = None
 
     table_rows_obj = xpath(table, "//table:table-row", namespaces)
     table_rows = []
@@ -128,5 +130,5 @@ def import_from_ods(
     table_rows = table_rows[start_row:end_row]
     max_length = max(len(row) for row in table_rows)
     full_rows = complete_with_None(table_rows, max_length)
-    meta = {"imported_from": "ods", "source": source}
+    meta = {"imported_from": "ods", "source": source, "name": table_name}
     return create_table(full_rows, meta=meta, *args, **kwargs)

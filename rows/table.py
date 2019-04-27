@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import os
 from collections import OrderedDict, namedtuple
 from operator import itemgetter
+from pathlib import Path
 
 import six
 
@@ -81,11 +82,17 @@ class Table(MutableSequence):
         If `filename` is not available, return `table1`.
         """
 
-        from rows.plugins import utils
+        from rows.plugins.utils import slug
 
-        # TODO: may try read meta['name'] also (some plugins may set it)
-        name = os.path.basename(self.meta.get("filename", "table1"))
-        return utils.slug(os.path.splitext(name)[0])
+        name = self.meta.get("name", None)
+        if name is not None:
+            return slug(name)
+
+        source = self.meta.get("source", None)
+        if source and source.uri:
+            return slug(os.path.splitext(Path(source.uri).name)[0])
+
+        return "table1"
 
     def __repr__(self):
         length = len(self._rows) if isinstance(self._rows, Sized) else "?"

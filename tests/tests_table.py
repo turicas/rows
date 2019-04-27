@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import collections
 import datetime
 import unittest
+from pathlib import Path
 from textwrap import dedent
 
 import mock
@@ -28,6 +29,7 @@ import six
 import rows
 import rows.fields as fields
 from rows.table import FlexibleTable, Table
+from rows.utils import Source
 
 binary_type_name = six.binary_type.__name__
 
@@ -417,11 +419,12 @@ class TestFlexibleTable(unittest.TestCase):
     def test_table_name(self):
         table = rows.Table(fields=collections.OrderedDict([("a", fields.TextField)]))
 
-        self.assertTrue("filename" not in table.meta)
+        self.assertTrue("name" not in table.meta)
         self.assertEqual(table.name, "table1")
 
-        table.meta["filename"] = "This is THE name.csv"
-        self.assertTrue("filename" in table.meta)
+        table.meta["source"] = Source(
+            uri=Path("This is THE name.csv"), plugin_name="csv", encoding="utf-8"
+        )
         self.assertEqual(table.name, "this_is_the_name")
 
     def test_head(self):
@@ -456,7 +459,9 @@ class TestFlexibleTable(unittest.TestCase):
             table.append({"f1": i, "f2": i ** 2})
 
         result = table._repr_html_()
-        expected = dedent("""
+        expected = (
+            dedent(
+                """
         <table>
 
           <thead>
@@ -496,5 +501,8 @@ class TestFlexibleTable(unittest.TestCase):
           </tbody>
 
         </table>
-        """).strip() + "\n"
+        """
+            ).strip()
+            + "\n"
+        )
         self.assertEqual(result, expected)

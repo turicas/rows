@@ -88,6 +88,7 @@ def import_from_html(
     html_tree = document_fromstring(html)
     tables = html_tree.xpath("//{}".format(table_tag))
     table = tables[index]
+    # TODO: set meta's "name" from @id or @name (if available)
 
     strip_tags(table, "thead")
     strip_tags(table, "tbody")
@@ -126,6 +127,7 @@ def export_to_html(table, filename_or_fobj=None, encoding="utf-8", *args, **kwar
     serialized_table = serialize(table, *args, **kwargs)
     fields = next(serialized_table)
     result = ["<table>\n\n", "  <thead>\n", "    <tr>\n"]
+    # TODO: set @name/@id if self.meta["name"] is set
     header = ["      <th> {} </th>\n".format(field) for field in fields]
     result.extend(header)
     result.extend(["    </tr>\n", "  </thead>\n", "\n", "  <tbody>\n", "\n"])

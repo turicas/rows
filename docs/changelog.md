@@ -21,6 +21,7 @@
 - Add `start_row`, `end_row`, `start_column` and `end_column` to ODS plugin
 - Prevent `xlrd` (XLS plugin) from printing wrong sector size warning
   ("`WARNING *** file size (551546) not 512 + multiple of sector size (512)`")
+- Set `rows.Table` name (`table.meta["name"]`) for ODS, XLS and XLSX plugins
 
 ### Command-Line Interface
 

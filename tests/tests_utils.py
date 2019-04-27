@@ -78,7 +78,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             data = row._asdict()
             data["json_column"] = {}
             table.append(data)
-        table.meta["filename"] = "this is my table.csv"
+        table.meta["name"] = "this is my table"  # TODO: may set source
 
         obj = io.StringIO()
         rows.utils.generate_schema(table, export_fields, fmt, obj)

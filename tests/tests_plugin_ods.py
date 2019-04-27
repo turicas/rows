@@ -60,6 +60,11 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args)
 
+    def test_meta_name(self):
+        result = rows.import_from_ods(self.filename)
+        # TODO: may test other sheets
+        assert result.meta["name"] == "Sheet1"
+
     def test_issue_290_one_hundred_read_as_1(self):
         result = rows.import_from_ods("tests/data/text_in_percent_cell.ods")
         # As this test is written, file numeric file contents on first column are
