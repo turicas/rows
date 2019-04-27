@@ -50,11 +50,6 @@ class Table(MutableSequence):
         self._rows = []
         self.meta = dict(meta) if meta is not None else {}
 
-    def _repr_html_(self):
-        import rows.plugins
-
-        return rows.plugins.html.export_to_html(self).decode("utf-8")
-
     @classmethod
     def copy(cls, table, data):
         table = cls(fields=table.fields, meta=table.meta)
@@ -66,6 +61,52 @@ class Table(MutableSequence):
 
     def tail(self, n=10):
         return Table.copy(self, self._rows[-n:])
+
+    def _repr_html_(self):
+        import rows.plugins
+
+        convert_to_html = rows.plugins.html.export_to_html
+
+        total = len(self)
+        if total <= 20:
+            result = convert_to_html(self, caption=True)
+
+        else:  # Show only head and tail
+            representation = Table(
+                fields=OrderedDict(
+                    [
+                        (field_name, rows.fields.TextField)
+                        for field_name in self.field_names
+                    ]
+                ),
+                meta={"name": self.name}
+            )
+            for row in self.head():
+                representation.append(
+                    {
+                        field_name: field_type.serialize(getattr(row, field_name))
+                        for field_name, field_type in self.fields.items()
+                    }
+                )
+            representation.append(
+                {field_name: "..." for field_name in self.field_names}
+            )
+            for row in self.tail():
+                representation.append(
+                    {
+                        field_name: field_type.serialize(getattr(row, field_name))
+                        for field_name, field_type in self.fields.items()
+                    }
+                )
+
+            result = convert_to_html(representation, caption=True).replace(
+                b"</caption>",
+                b" (showing 20 rows, out of "
+                + str(total).encode("ascii")
+                + b")</caption>",
+            )
+
+        return result.decode("utf-8")
 
     @property
     def field_names(self):

@@ -453,7 +453,8 @@ class TestFlexibleTable(unittest.TestCase):
 
     def test_repr_html(self):
         table = rows.Table(
-            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.IntegerField}
+            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.IntegerField},
+            meta={"name": "my table"},
         )
         for i in range(5):
             table.append({"f1": i, "f2": i ** 2})
@@ -463,6 +464,8 @@ class TestFlexibleTable(unittest.TestCase):
             dedent(
                 """
         <table>
+
+          <caption>my_table</caption>
 
           <thead>
             <tr>
@@ -496,6 +499,145 @@ class TestFlexibleTable(unittest.TestCase):
             <tr class="odd">
               <td> 4 </td>
               <td> 16 </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+        """
+            ).strip()
+            + "\n"
+        )
+        self.assertEqual(result, expected)
+
+        # For long tables show only header + spacer + tail
+        table = rows.Table(
+            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.IntegerField},
+            meta={"name": "my table"},
+        )
+        for i in range(50):
+            table.append({"f1": i, "f2": i ** 2})
+
+        result = table._repr_html_()
+        expected = (
+            dedent(
+                """
+        <table>
+
+          <caption>my_table (showing 20 rows, out of 50)</caption>
+
+          <thead>
+            <tr>
+              <th> f1 </th>
+              <th> f2 </th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr class="odd">
+              <td> 0 </td>
+              <td> 0 </td>
+            </tr>
+
+            <tr class="even">
+              <td> 1 </td>
+              <td> 1 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> 2 </td>
+              <td> 4 </td>
+            </tr>
+
+            <tr class="even">
+              <td> 3 </td>
+              <td> 9 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> 4 </td>
+              <td> 16 </td>
+            </tr>
+
+            <tr class="even">
+              <td> 5 </td>
+              <td> 25 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> 6 </td>
+              <td> 36 </td>
+            </tr>
+
+            <tr class="even">
+              <td> 7 </td>
+              <td> 49 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> 8 </td>
+              <td> 64 </td>
+            </tr>
+
+            <tr class="even">
+              <td> 9 </td>
+              <td> 81 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> ... </td>
+              <td> ... </td>
+            </tr>
+
+            <tr class="even">
+              <td> 40 </td>
+              <td> 1600 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> 41 </td>
+              <td> 1681 </td>
+            </tr>
+
+            <tr class="even">
+              <td> 42 </td>
+              <td> 1764 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> 43 </td>
+              <td> 1849 </td>
+            </tr>
+
+            <tr class="even">
+              <td> 44 </td>
+              <td> 1936 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> 45 </td>
+              <td> 2025 </td>
+            </tr>
+
+            <tr class="even">
+              <td> 46 </td>
+              <td> 2116 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> 47 </td>
+              <td> 2209 </td>
+            </tr>
+
+            <tr class="even">
+              <td> 48 </td>
+              <td> 2304 </td>
+            </tr>
+
+            <tr class="odd">
+              <td> 49 </td>
+              <td> 2401 </td>
             </tr>
 
           </tbody>
