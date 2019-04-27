@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import datetime
 import sqlite3
 import string
+from pathlib import Path
 
 import six
 
@@ -30,6 +31,8 @@ from rows.plugins.utils import (
     make_unique_name,
     prepare_to_export,
 )
+from rows.utils import Source
+
 
 SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
 SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS "{table_name}" ({field_types})'
@@ -85,13 +88,36 @@ def _python_to_sqlite(field_types):
     return convert_row
 
 
-def _get_connection(filename_or_connection):
+def get_source(filename_or_connection):
 
-    if isinstance(filename_or_connection, (six.binary_type, six.text_type)):
-        return sqlite3.connect(filename_or_connection)  # filename
+    if isinstance(filename_or_connection, (six.binary_type, six.text_type, Path)):
+        connection = sqlite3.connect(filename_or_connection)
+        uri = filename_or_connection
+        input_is_uri = should_close = True
 
     else:  # already a connection
-        return filename_or_connection
+        connection = filename_or_connection
+        input_is_uri = should_close = False
+        uri = None
+        # Try to get filename inspecting the database
+        cursor = connection.cursor()
+        for _, name, filename in cursor.execute("PRAGMA database_list"):
+            if name == "main" and filename is not None:
+                uri = filename
+        cursor.close()
+
+    # TODO: may improve Source for non-fobj cases (when open() is not needed)
+    source = Source.from_file(
+        connection,
+        plugin_name="sqlite",
+        mode=None,
+        is_file=bool(uri),
+        local=bool(uri),
+        should_close=should_close,
+    )
+    source.uri = uri
+
+    return source
 
 
 def _valid_table_name(name):
@@ -120,7 +146,8 @@ def import_from_sqlite(
     **kwargs
 ):
     """Return a rows.Table with data from SQLite database."""
-    connection = _get_connection(filename_or_connection)
+    source = get_source(filename_or_connection)
+    connection = source.fobj
     cursor = connection.cursor()
 
     if query is None:
@@ -137,7 +164,7 @@ def import_from_sqlite(
     cursor.close()
     # TODO: should close connection also?
 
-    meta = {"imported_from": "sqlite", "filename": filename_or_connection}
+    meta = {"imported_from": "sqlite", "source": source}
     return create_table([header] + table_rows, meta=meta, *args, **kwargs)
 
 
@@ -153,7 +180,8 @@ def export_to_sqlite(
 ):
     # TODO: should add transaction support?
     prepared_table = prepare_to_export(table, *args, **kwargs)
-    connection = _get_connection(filename_or_connection)
+    source = get_source(filename_or_connection)
+    connection = source.fobj
     cursor = connection.cursor()
 
     if table_name is None:

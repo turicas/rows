@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -21,6 +21,7 @@ import sys
 import tempfile
 import unittest
 from collections import OrderedDict
+from pathlib import Path
 
 import mock
 import six
@@ -28,6 +29,7 @@ import six
 import rows
 import rows.plugins.txt
 import tests.utils as utils
+from rows.utils import Source
 
 
 class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -36,6 +38,11 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
     file_extension = "txt"
     filename = "tests/data/all-field-types.txt"
     encoding = "utf-8"
+    expected_meta = {
+        "imported_from": "txt",
+        "frame_style": "ascii",
+        "source": Source(uri=filename, plugin_name=plugin_name, encoding=encoding)
+    }
 
     def test_imports(self):
         self.assertIs(rows.import_from_txt, rows.plugins.txt.import_from_txt)
@@ -56,7 +63,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(call[1], kwargs)
 
         source = meta.pop("source")
-        self.assertEqual(source.uri, self.filename)
+        self.assertEqual(source.uri, Path(self.filename))
 
         expected_meta = {
             "imported_from": "txt",
@@ -71,13 +78,13 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # import using filename
         rows.import_from_txt(self.filename)
         call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(call_args)
+        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
         # import using fobj
         with open(self.filename, mode="rb") as fobj:
             rows.import_from_txt(fobj)
             call_args = mocked_create_table.call_args_list[1]
-            self.assert_create_table_data(call_args)
+            self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
     @mock.patch("rows.plugins.txt.serialize")
     def test_export_to_txt_uses_serialize(self, mocked_serialize):

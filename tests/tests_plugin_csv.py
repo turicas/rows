@@ -30,6 +30,7 @@ import mock
 import rows
 import rows.plugins.plugin_csv
 import tests.utils as utils
+from rows.utils import Source
 
 
 def make_csv_data(quote_char, field_delimiter, line_delimiter):
@@ -48,6 +49,10 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     file_extension = "csv"
     filename = "tests/data/all-field-types.csv"
     encoding = "utf-8"
+    expected_meta = {
+        "imported_from": "csv",
+        "source": Source(uri=filename, plugin_name=plugin_name, encoding=encoding)
+    }
 
     def test_imports(self):
         self.assertIs(rows.import_from_csv, rows.plugins.plugin_csv.import_from_csv)
@@ -69,13 +74,13 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # import using filename
         rows.import_from_csv(self.filename)
         call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(call_args)
+        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
         # import using fobj
         with open(self.filename, "rb") as fobj:
             rows.import_from_csv(fobj)
             call_args = mocked_create_table.call_args_list[1]
-            self.assert_create_table_data(call_args)
+            self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
     @mock.patch("rows.plugins.plugin_csv.create_table")
     def test_import_from_csv_discover_dialect(self, mocked_create_table):

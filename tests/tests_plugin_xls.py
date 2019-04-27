@@ -28,6 +28,7 @@ import mock
 import rows
 import rows.plugins.xls
 import tests.utils as utils
+from rows.utils import Source
 
 
 def date_to_datetime(value):
@@ -39,6 +40,11 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     plugin_name = "xls"
     file_extension = "xls"
     filename = "tests/data/all-field-types.xls"
+    expected_meta = {
+        "imported_from": "xls",
+        "name": "Sheet1",
+        "source": Source(uri=filename, plugin_name=plugin_name, encoding=None),
+    }
 
     def test_imports(self):
         self.assertIs(rows.import_from_xls, rows.plugins.xls.import_from_xls)
@@ -60,27 +66,13 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # import using filename
         rows.import_from_xls(self.filename)
         call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(
-            call_args,
-            expected_meta={
-                "imported_from": "xls",
-                "filename": self.filename,  # will check `source.uri`
-                "name": "Sheet1",
-            },
-        )
+        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
         # import using fobj
         with open(self.filename, "rb") as fobj:
             rows.import_from_xls(fobj)
             call_args = mocked_create_table.call_args_list[1]
-            self.assert_create_table_data(
-                call_args,
-                expected_meta={
-                    "imported_from": "xls",
-                    "filename": self.filename,
-                    "name": "Sheet1",
-                },
-            )
+            self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
     def test_export_to_xls_filename(self):
         # TODO: may test file contents

@@ -29,6 +29,7 @@ import mock
 import rows
 import rows.plugins.xlsx
 import tests.utils as utils
+from rows.utils import Source
 
 
 class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -36,6 +37,11 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
     plugin_name = "xlsx"
     file_extension = "xlsx"
     filename = "tests/data/all-field-types.xlsx"
+    expected_meta = {
+        "imported_from": "xlsx",
+        "name": "Sheet1",
+        "source": Source(uri=filename, plugin_name=plugin_name, encoding=None),
+    }
 
     def test_imports(self):
         self.assertIs(rows.import_from_xlsx, rows.plugins.xlsx.import_from_xlsx)
@@ -57,27 +63,13 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # import using filename
         rows.import_from_xlsx(self.filename)
         call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(
-            call_args,
-            expected_meta={
-                "imported_from": "xlsx",
-                "filename": self.filename,  # will check `source.uri`
-                "name": "Sheet1",
-            },
-        )
+        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
         # import using fobj
         with open(self.filename, "rb") as fobj:
             rows.import_from_xlsx(fobj)
         call_args = mocked_create_table.call_args_list[1]
-        self.assert_create_table_data(
-            call_args,
-            expected_meta={
-                "imported_from": "xlsx",
-                "filename": self.filename,
-                "name": "Sheet1",
-            },
-        )
+        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
     def test_export_to_xlsx_filename(self):
         temp = tempfile.NamedTemporaryFile()

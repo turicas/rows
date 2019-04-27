@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -21,6 +21,7 @@ import tempfile
 import unittest
 from collections import OrderedDict
 from io import BytesIO
+from pathlib import Path
 from textwrap import dedent
 
 import mock
@@ -62,7 +63,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         meta = table.meta.copy()
         source = meta.pop("source")
         self.assertEqual(meta, expected_meta)
-        self.assertEqual(source.uri, self.filename)
+        self.assertEqual(source.uri, Path(self.filename))
         self.assertTrue(source.should_close)
 
     def test_import_from_html_fobj(self):
@@ -77,7 +78,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         meta = table.meta.copy()
         source = meta.pop("source")
         self.assertEqual(meta, expected_meta)
-        self.assertEqual(source.uri, self.filename)
+        self.assertEqual(source.uri, Path(self.filename))
         self.assertFalse(source.should_close)
 
     @mock.patch("rows.plugins.plugin_html.create_table")

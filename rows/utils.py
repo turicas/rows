@@ -226,7 +226,12 @@ class Source(object):
         else:  # Don't know exactly what is, assume file-like object
             fobj = filename_or_fobj
             filename = getattr(fobj, "name", None)
+            if not isinstance(filename, (six.binary_type, six.text_type)):  # BytesIO object
+                filename = None
             should_close = False if should_close is None else should_close
+
+        if is_file and local and filename and not isinstance(filename, Path):
+            filename = Path(filename)
 
         return Source(
             compressed=compressed,

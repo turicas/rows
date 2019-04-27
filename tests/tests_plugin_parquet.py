@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 import unittest
 from collections import OrderedDict
+from pathlib import Path
 
 import mock
 
@@ -168,7 +169,7 @@ class PluginParquetTestCase(unittest.TestCase):
         meta = call[1]["meta"].copy()
         source = meta.pop("source")
         self.assertEqual(meta, expected_meta)
-        self.assertEqual(source.uri, self.filename)
+        self.assertEqual(source.uri, Path(self.filename))
 
     @mock.patch("rows.plugins.plugin_parquet.create_table")
     def test_import_from_parquet_retrieve_desired_data(self, mocked_create_table):

@@ -22,11 +22,14 @@ import datetime
 import os
 from collections import OrderedDict
 from decimal import Decimal
+from pathlib import Path
 
 import six
 
 import rows.fields as fields
 from rows.table import Table
+from rows.utils import slug
+
 
 NONE_VALUES = list(fields.NULL) + ["", None]
 FIELDS = OrderedDict(
@@ -194,11 +197,17 @@ class RowsTestMixIn(object):
     def assert_create_table_data(
         self, call_args, field_ordering=True, filename=None, expected_meta=None
     ):
-        if filename is None and getattr(self, "filename", None):
+
+        if filename is None and getattr(self, "name", None):
             filename = self.filename
-        kwargs = call_args[1]
+        kwargs = call_args[1].copy()
         if expected_meta is None:
-            expected_meta = {"imported_from": self.plugin_name, "filename": filename}
+            expected_meta = {
+                "imported_from": self.plugin_name,
+                "name": slug(os.path.splitext(Path(filename).name)[0]) if filename else "table1",
+            }
+        else:
+            expected_meta = expected_meta.copy()
 
         # Don't test 'frame_style' metadata,
         # as it is specific for txt importing
@@ -207,11 +216,16 @@ class RowsTestMixIn(object):
             kwargs["meta"].pop("frame_style", "")
 
         meta = kwargs["meta"].copy()
+
+        # TODO: may test source in another way
         source = meta.pop("source", None)
         if source:
-            expected_filename = expected_meta.pop("filename", None)
-            if expected_filename:
-                self.assertEqual(source.uri, expected_filename)
+            expected_source = expected_meta.pop("source", None)
+            if expected_source:
+                source_uri = Path(source.uri).absolute()
+                expected_uri = Path(expected_source.uri).absolute()
+                self.assertEqual(source_uri, expected_uri)
+
         self.assertDictEqual(meta, expected_meta)
         del kwargs["meta"]
         self.assert_table_data(

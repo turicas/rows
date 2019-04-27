@@ -29,6 +29,7 @@ import rows.plugins.sqlite
 import rows.plugins.utils
 import tests.utils as utils
 from rows import fields
+from rows.utils import Source
 
 
 class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -43,6 +44,10 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # it's saved as integer internally
         "bool_column": fields.IntegerField,
         "percent_column": fields.FloatField,
+    }
+    expected_meta = {
+        "imported_from": "sqlite",
+        "source": Source(uri=filename, plugin_name=plugin_name, encoding=None)
     }
 
     def test_imports(self):
@@ -59,7 +64,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(result, 42)
 
         call = mocked_create_table.call_args
-        kwargs["meta"] = {"imported_from": "sqlite", "filename": self.filename}
+        call[1].pop("meta")
         self.assertEqual(call[1], kwargs)
 
     @mock.patch("rows.plugins.sqlite.create_table")
@@ -69,13 +74,15 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # import using filename
         rows.import_from_sqlite(self.filename)
         call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(call_args)
+        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
         # import using connection
         connection = sqlite3.connect(self.filename)
         rows.import_from_sqlite(connection)
         call_args = mocked_create_table.call_args_list[1]
-        self.assert_create_table_data(call_args, filename=connection)
+        # TODO: as tests/utils.py does not test "source" completely, this
+        # `expected_meta` is not fully tested
+        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
         connection.close()
 
     def test_sqlite_injection(self):

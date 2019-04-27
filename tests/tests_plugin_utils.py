@@ -304,7 +304,6 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         field_names = list(flexible.fields.keys())
         export_fields = field_names[: len(field_names) // 2]
-        print([(x, type(x)) for x in export_fields])
         prepared = plugins_utils.prepare_to_export(
             flexible, export_fields=export_fields
         )

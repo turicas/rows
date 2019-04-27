@@ -21,6 +21,7 @@ import tempfile
 import unittest
 from collections import OrderedDict
 from io import BytesIO
+from pathlib import Path
 
 import mock
 
@@ -64,7 +65,7 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         meta = table.meta.copy()
         source = meta.pop("source")
-        self.assertEqual(source.uri, self.filename)
+        self.assertEqual(source.uri, Path(self.filename))
 
         expected_meta = {
             "imported_from": "xpath",
@@ -87,7 +88,7 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         meta = table.meta.copy()
         source = meta.pop("source")
-        self.assertEqual(source.uri, self.filename)
+        self.assertEqual(source.uri, Path(self.filename))
 
         expected_meta = {
             "imported_from": "xpath",

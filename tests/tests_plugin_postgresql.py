@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -29,6 +29,7 @@ import rows.plugins.utils
 import tests.utils as utils
 from rows import fields
 from rows.plugins.postgresql import pgconnect
+from rows.utils import Source
 
 
 class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -38,11 +39,11 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         "bool_column": fields.BoolField,
         "percent_column": fields.FloatField,
     }
-
-    @classmethod
-    def setUpClass(cls):
-        cls.uri = os.environ["POSTGRESQL_URI"]
-        cls.meta = {"imported_from": "postgresql", "filename": cls.uri}
+    uri = os.environ["POSTGRESQL_URI"]
+    expected_meta = {
+        "imported_from": "postgresql",
+        "source": Source(uri=uri, plugin_name=plugin_name, encoding=None)
+    }
 
     def get_table_names(self):
         connection = pgconnect(self.uri)
@@ -85,10 +86,12 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call = mocked_create_table.call_args
         meta = call[1].pop("meta")
         source = meta.pop("source")
+        expected_meta = self.expected_meta.copy()
+        expected_source = expected_meta.pop("source")
 
         self.assertEqual(call[1], kwargs)
-        self.assertEqual(meta, self.meta)
-        self.assertEqual(self.uri, source.uri)
+        self.assertEqual(meta, expected_meta)
+        self.assertEqual(expected_source.uri, source.uri)
 
     @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
     @mock.patch("rows.plugins.postgresql.create_table")
@@ -104,7 +107,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
             self.uri, close_connection=True, table_name="rows_2"
         )
         call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(call_args, expected_meta=self.meta)
+        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
         # import using connection
         connection = pgconnect(self.uri)
@@ -112,11 +115,15 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
             connection, close_connection=False, table_name="rows_2"
         )
         self.assertFalse(connection.closed)
-        call_args = mocked_create_table.call_args_list[1]
-        meta = self.meta.copy()
-        meta["filename"] = None  # None is set to `source.uri` when a connection is provided
-        self.assert_create_table_data(call_args, expected_meta=meta)
+        connection_type = type(connection)
         connection.close()
+
+        call_args = mocked_create_table.call_args_list[1]
+        expected_meta = self.expected_meta.copy()
+        meta = call_args[1].pop("meta")
+        call_args[1]["meta"] = {}
+        self.assert_create_table_data(call_args, expected_meta={})
+        self.assertTrue(isinstance(meta["source"].fobj, connection_type))
 
     def test_postgresql_injection(self):
         with self.assertRaises(ValueError):

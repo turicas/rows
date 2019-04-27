@@ -25,6 +25,7 @@ import mock
 import rows
 import rows.plugins.ods
 import tests.utils as utils
+from rows.utils import Source
 
 
 class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -32,6 +33,11 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     plugin_name = "ods"
     filename = "tests/data/all-field-types.ods"
     assert_meta_encoding = False
+    expected_meta = {
+        "imported_from": "ods",
+        "name": "Sheet1",
+        "source": Source(uri=filename, plugin_name=plugin_name, encoding=None),
+    }
 
     def test_imports(self):
         self.assertIs(rows.import_from_ods, rows.plugins.ods.import_from_ods)
@@ -52,13 +58,13 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # import using filename
         rows.import_from_ods(self.filename)
         call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(call_args)
+        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
         # import using fobj
         with open(self.filename, "rb") as fobj:
             rows.import_from_ods(fobj)
             call_args = mocked_create_table.call_args_list[1]
-            self.assert_create_table_data(call_args)
+            self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
     def test_meta_name(self):
         result = rows.import_from_ods(self.filename)
@@ -77,9 +83,7 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_issue_320_empty_cells(self):
         result = rows.import_from_ods("tests/data/empty-cells.ods")
         header = "f1 f2 f3 f4 f5".split()
-        data = [
-            [getattr(row, field) for field in header] for row in result
-        ]
+        data = [[getattr(row, field) for field in header] for row in result]
         assert data[0] == ["r1f1", "r1f2", None, "r1f4", "r1f5"]
         assert data[1] == ["r2f1", None, "r2f3", "r2f4", "r2f5"]
         assert data[2] == [None, "r3f2", "r3f3", "r3f4", "r3f5"]
@@ -95,9 +99,7 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             end_column=4,
         )
         header = "field_3 field_456 field_456_2 field_12".split()
-        data = [
-            [getattr(row, field) for field in header] for row in result
-        ]
+        data = [[getattr(row, field) for field in header] for row in result]
         assert len(data) == 2
         assert data[0] == [4, 7.89, 7.89, Decimal("0.1364")]
         assert data[1] == [5, 9.87, 9.87, Decimal("0.1314")]
