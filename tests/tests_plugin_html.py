@@ -431,6 +431,15 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         output = rows.export_to_html(table)
         self.assertIn(b"<td> &lt;&amp;&gt; </td>", output)
 
+    def test_export_to_html_with_caption(self):
+        filename = "tests/data/table-thead-tbody.html"
+        table = rows.import_from_html(filename)
+        result = rows.export_to_html(table, caption=True)
+        self.assertIn(
+            "<caption>table_thead_tbody</caption>",
+            result.decode("utf-8")
+        )
+
 
 class PluginHtmlUtilsTestCase(unittest.TestCase):
 

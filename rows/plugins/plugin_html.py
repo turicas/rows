@@ -18,6 +18,7 @@
 from __future__ import unicode_literals
 
 import six
+
 try:
     from lxml.etree import strip_tags
     from lxml.etree import tostring as to_string
@@ -27,18 +28,16 @@ except ImportError:
 else:
     has_lxml = True
 
-from rows.plugins.utils import (
-    create_table,
-    export_data,
-    serialize,
-)
+from rows.plugins.utils import create_table, export_data, serialize
 from rows.utils import Source
 
 try:
     from HTMLParser import HTMLParser  # Python 2
+
     unescape = HTMLParser().unescape
 except:
     import html  # Python 3
+
     unescape = html.unescape
 
 
@@ -46,7 +45,6 @@ try:
     from html import escape  # Python 3
 except:
     from cgi import escape  # Python 2
-
 
 
 def _get_content(element):
@@ -82,7 +80,9 @@ def import_from_html(
 ):
     """Return rows.Table from HTML file."""
 
-    source = Source.from_file(filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding)
+    source = Source.from_file(
+        filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding
+    )
 
     html = source.fobj.read().decode(source.encoding)
     html_tree = document_fromstring(html)
@@ -121,12 +121,17 @@ def import_from_html(
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_html(table, filename_or_fobj=None, encoding="utf-8", *args, **kwargs):
+def export_to_html(
+    table, filename_or_fobj=None, encoding="utf-8", caption=False, *args, **kwargs
+):
     """Export and return rows.Table data to HTML file."""
 
     serialized_table = serialize(table, *args, **kwargs)
     fields = next(serialized_table)
-    result = ["<table>\n\n", "  <thead>\n", "    <tr>\n"]
+    result = ["<table>\n\n"]
+    if caption and table.name:
+        result.extend(["  <caption>", table.name, "</caption>\n\n"])
+    result.extend(["  <thead>\n", "    <tr>\n"])
     # TODO: set @name/@id if self.meta["name"] is set
     header = ["      <th> {} </th>\n".format(field) for field in fields]
     result.extend(header)
@@ -155,7 +160,9 @@ def _extract_node_text(node):
 def count_tables(filename_or_fobj, encoding="utf-8", table_tag="table"):
     """Read a file passed by arg and return your table HTML tag count."""
 
-    source = Source.from_file(filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding)
+    source = Source.from_file(
+        filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding
+    )
     html = source.fobj.read().decode(source.encoding)
     html_tree = document_fromstring(html)
     tables = html_tree.xpath("//{}".format(table_tag))
