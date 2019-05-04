@@ -580,6 +580,7 @@ def csv_to_sqlite(
     if dialect is None:  # Get a sample to detect dialect
         fobj = open_compressed(input_filename, mode="rb")
         sample = fobj.read(chunk_size)
+        fobj.close()
         dialect = rows.plugins.csv.discover_dialect(sample, encoding=encoding)
     elif isinstance(dialect, six.text_type):
         dialect = csv.get_dialect(dialect)
@@ -587,6 +588,7 @@ def csv_to_sqlite(
     if schema is None:  # Identify data types
         fobj = open_compressed(input_filename, encoding=encoding)
         data = list(islice(csv.DictReader(fobj, dialect=dialect), samples))
+        fobj.close()
         schema = rows.import_from_dicts(data).fields
         if force_types is not None:
             schema.update(force_types)
@@ -594,21 +596,22 @@ def csv_to_sqlite(
     # Create lazy table object to be converted
     # TODO: this lazyness feature will be incorported into the library soon so
     #       we can call here `rows.import_from_csv` instead of `csv.reader`.
-    reader = csv.reader(
-        open_compressed(input_filename, encoding=encoding), dialect=dialect
-    )
-    header = make_header(next(reader))  # skip header
+    fobj = open_compressed(input_filename, encoding=encoding)
+    csv_reader = csv.reader(fobj, dialect=dialect)
+    header = make_header(next(csv_reader))  # skip header
     table = rows.Table(fields=OrderedDict([(field, schema[field]) for field in header]))
     table._rows = reader
 
     # Export to SQLite
-    return rows.export_to_sqlite(
+    result = rows.export_to_sqlite(
         table,
         output_filename,
         table_name=table_name,
         batch_size=batch_size,
         callback=callback,
     )
+    fobj.close()
+    return result
 
 
 def sqlite_to_csv(
