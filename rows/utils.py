@@ -981,7 +981,7 @@ def pgexport(
     return {"bytes_written": total_written}
 
 
-def generate_schema(table, export_fields, output_format, output_fobj):
+def generate_schema(table, export_fields, output_format):
     """Generate table schema for a specific output format and write
 
     Current supported output formats: 'txt', 'sql' and 'django'.
@@ -1004,9 +1004,9 @@ def generate_schema(table, export_fields, output_format, output_fobj):
             data, import_fields=["field_name", "field_type"]
         )
         if output_format == "txt":
-            plugins.txt.export_to_txt(table, output_fobj)
+            return plugins.txt.export_to_txt(table)
         elif output_format == "csv":
-            plugins.csv.export_to_csv(table, output_fobj)
+            return plugins.csv.export_to_csv(table)
 
     elif output_format == "sql":
         # TODO: may use dict from rows.plugins.sqlite or postgresql
@@ -1040,7 +1040,7 @@ def generate_schema(table, export_fields, output_format, output_fobj):
             .format(name=table.name, fields=",\n".join(fields))
             + "\n"
         )
-        output_fobj.write(sql)
+        return sql
 
     elif output_format == "django":
         django_fields = {
@@ -1077,7 +1077,7 @@ def generate_schema(table, export_fields, output_format, output_fobj):
             lines.append("    {} = {}".format(field_name, django_type))
 
         result = "\n".join(lines) + "\n"
-        output_fobj.write(result)
+        return result
 
 
 def load_schema(filename, context=None):

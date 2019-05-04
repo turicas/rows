@@ -64,6 +64,7 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
 
 class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
+
     def assert_generate_schema(self, fmt, expected, export_fields=None):
         # prepare a consistent table so we can test all formats using it
         table_fields = utils.table.fields.copy()
@@ -80,11 +81,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             table.append(data)
         table.meta["name"] = "this is my table"  # TODO: may set source
 
-        obj = io.StringIO()
-        rows.utils.generate_schema(table, export_fields, fmt, obj)
-        obj.seek(0)
-        result = obj.read()
-
+        result = rows.utils.generate_schema(table, export_fields, fmt)
         self.assertEqual(expected.strip(), result.strip())
 
     def test_generate_schema_txt(self):

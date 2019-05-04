@@ -628,7 +628,8 @@ def schema(
         output = sys.stdout.buffer
     else:
         output = open_compressed(output, mode="wb")
-    generate_schema(table, export_fields, output_format, output)
+    output = generate_schema(table, export_fields, output_format)
+    click.echo(output)
 
 
 @cli.command(name="csv-to-sqlite", help="Convert one or more CSV files to SQLite")

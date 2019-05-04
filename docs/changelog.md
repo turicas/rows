@@ -30,6 +30,7 @@
 
 - `rows schema` (CLI) is now "lazy" (before it imported the whole file, even if
   samples were defined)
+- Fix `rows schema` (some output formats where not working properly)
 - Add support for compressed files output on `rows pdf-to-text` and `rows schema`
 
 ### Utils
