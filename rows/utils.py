@@ -513,8 +513,6 @@ def export_to_uri(table, uri, *args, **kwargs):
 def open_compressed(filename, mode="r", encoding=None):
     "Return a text-based file object from a filename, even if compressed"
 
-    # TODO: integrate this function in the library itself, using
-    # get_filename_and_fobj
     binary_mode = "b" in mode
     extension = str(filename).split(".")[-1].lower()
     if binary_mode and encoding:

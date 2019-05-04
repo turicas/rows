@@ -91,21 +91,21 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(result, 42)
 
     def test_export_to_html_filename(self):
-        # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         rows.export_to_html(utils.table, temp.name)
 
+        # TODO: test file contents instead of collateral effect
         table = rows.import_from_html(temp.name)
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_html_fobj(self):
         # TODO: may test with codecs.open passing an encoding
-        # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
         rows.export_to_html(utils.table, temp.file)
 
+        # TODO: test file contents instead of collateral effect
         table = rows.import_from_html(temp.name)
         self.assert_table_equal(table, utils.table)
 
@@ -124,30 +124,14 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(call[0], (utils.table,))
         self.assertEqual(call[1], kwargs)
 
-    @mock.patch("rows.plugins.plugin_html.export_data")
-    def test_export_to_html_uses_export_data(self, mocked_export_data):
-        temp = tempfile.NamedTemporaryFile(delete=False)
-        self.files_to_delete.append(temp.name)
-        kwargs = {"test": 123, "parameter": 3.14, "encoding": "utf-8"}
-        mocked_export_data.return_value = 42
-
-        result = rows.export_to_html(utils.table, temp.name, **kwargs)
-        self.assertTrue(mocked_export_data.called)
-        self.assertEqual(mocked_export_data.call_count, 1)
-        self.assertEqual(result, 42)
-
-        call = mocked_export_data.call_args
-        self.assertEqual(call[0][0], temp.name)
-        self.assertEqual(call[1], {"mode": "wb"})
-
     def test_export_to_html_none(self):
         # TODO: may test with codecs.open passing an encoding
-        # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False, mode="rb+")
         self.files_to_delete.append(temp.name)
         result = rows.export_to_html(utils.table)
         rows.export_to_html(utils.table, temp.file)
         temp.file.seek(0)
+        # TODO: test file contents instead of collateral effect
         self.assertEqual(temp.file.read(), result)
 
     def test_table_index(self):

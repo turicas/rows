@@ -17,6 +17,8 @@
 
 from __future__ import unicode_literals
 
+from io import BytesIO
+
 import six
 
 try:
@@ -28,7 +30,7 @@ except ImportError:
 else:
     has_lxml = True
 
-from rows.plugins.utils import create_table, export_data, serialize
+from rows.plugins.utils import create_table, serialize
 from rows.utils import Source
 
 try:
@@ -126,6 +128,19 @@ def export_to_html(
 ):
     """Export and return rows.Table data to HTML file."""
 
+    return_data, should_close = False, None
+    if filename_or_fobj is None:
+        filename_or_fobj = BytesIO()
+        return_data = should_close = True
+
+    source = Source.from_file(
+        filename_or_fobj,
+        plugin_name="html",
+        mode="wb",
+        encoding=encoding,
+        should_close=should_close,
+    )
+
     serialized_table = serialize(table, *args, **kwargs)
     fields = next(serialized_table)
     result = ["<table>\n\n"]
@@ -145,7 +160,17 @@ def export_to_html(
     result.append("  </tbody>\n\n</table>\n")
     html = "".join(result).encode(encoding)
 
-    return export_data(filename_or_fobj, html, mode="wb")
+    if return_data:
+        result = html
+    else:
+        result = source.fobj
+        source.fobj.write(html)
+        source.fobj.flush()
+
+    if source.should_close:
+        source.fobj.close()
+
+    return result
 
 
 def _extract_node_text(node):

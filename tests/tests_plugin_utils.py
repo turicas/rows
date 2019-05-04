@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2018 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -373,23 +373,6 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         )
         self.assertEqual(result, "1_test")
 
-    def test_export_data(self):
-        data = "python rules".encode("utf-8")
-        temp = tempfile.NamedTemporaryFile(delete=False)
-        self.files_to_delete.append(temp.name)
-
-        filename_or_fobj = temp.file
-        result = plugins_utils.export_data(filename_or_fobj, data)
-        temp.file.seek(0)
-        output = temp.file.read()
-        self.assertIs(result, temp.file)
-        self.assertEqual(output, data)
-
-        filename_or_fobj = None
-        result = plugins_utils.export_data(filename_or_fobj, data)
-        self.assertIs(result, data)
-
     # TODO: test make_header
     # TODO: test all features of create_table
     # TODO: test if error is raised if len(row) != len(fields)
-    # TODO: test get_fobj_and_filename (BytesIO should return filename = None)

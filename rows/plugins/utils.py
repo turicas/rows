@@ -61,17 +61,6 @@ def ipartition(iterable, partition_size):
             yield data
 
 
-def get_filename_and_fobj(filename_or_fobj, mode="r", dont_open=False):
-    if getattr(filename_or_fobj, "read", None) is not None:
-        fobj = filename_or_fobj
-        filename = getattr(fobj, "name", None)
-    else:
-        fobj = open(filename_or_fobj, mode=mode) if not dont_open else None
-        filename = filename_or_fobj
-
-    return filename, fobj
-
-
 def create_table(
     data,
     meta=None,
@@ -231,16 +220,3 @@ def serialize(table, *args, **kwargs):
             field_type.serialize(value, *args, **kwargs)
             for value, field_type in zip(row, field_types)
         ]
-
-
-def export_data(filename_or_fobj, data, mode="w"):
-    """Return the object ready to be exported or only data if filename_or_fobj is not passed."""
-
-    if filename_or_fobj is None:
-        return data
-
-    _, fobj = get_filename_and_fobj(filename_or_fobj, mode=mode)
-    source = Source.from_file(filename_or_fobj, mode=mode, plugin_name=None)
-    source.fobj.write(data)
-    source.fobj.flush()
-    return source.fobj

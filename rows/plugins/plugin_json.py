@@ -18,13 +18,13 @@
 from __future__ import unicode_literals
 
 import json
+from io import BytesIO
 
 import six
 
 from rows import fields
 from rows.plugins.utils import (
     create_table,
-    export_data,
     prepare_to_export,
 )
 from rows.utils import Source
@@ -73,8 +73,21 @@ def export_to_json(
     If a file-like object is provided it MUST be open in binary mode (like in
     `open('myfile.json', mode='wb')`).
     """
-    # TODO: will work only if table.fields is OrderedDict
 
+    return_data, should_close = False, None
+    if filename_or_fobj is None:
+        filename_or_fobj = BytesIO()
+        return_data = should_close = True
+
+    source = Source.from_file(
+        filename_or_fobj,
+        plugin_name="json",
+        mode="wb",
+        encoding=encoding,
+        should_close=should_close,
+    )
+
+    # TODO: will work only if table.fields is OrderedDict
     fields = table.fields
     prepared_table = prepare_to_export(table, *args, **kwargs)
     field_names = next(prepared_table)
@@ -86,12 +99,22 @@ def export_to_json(
         for row in prepared_table
     ]
 
-    result = json.dumps(data, indent=indent)
-    if type(result) is six.text_type:  # Python 3
-        result = result.encode(encoding)
+    json_data = json.dumps(data, indent=indent)
+    if type(json_data) is six.text_type:  # Python 3
+        json_data = json_data.encode(encoding)
 
     if indent is not None:
         # clean up empty spaces at the end of lines
-        result = b"\n".join(line.rstrip() for line in result.splitlines())
+        json_data = b"\n".join(line.rstrip() for line in json_data.splitlines())
 
-    return export_data(filename_or_fobj, result, mode="wb")
+    if return_data:
+        result = json_data
+    else:
+        result = source.fobj
+        source.fobj.write(json_data)
+        source.fobj.flush()
+
+    if source.should_close:
+        source.fobj.close()
+
+    return result

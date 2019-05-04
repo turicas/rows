@@ -192,8 +192,8 @@ def export_to_csv(
         source.fobj.seek(0)
         result = source.fobj.read()
     else:
-        source.fobj.flush()
         result = source.fobj
+        source.fobj.flush()
 
     if source.should_close:
         source.fobj.close()

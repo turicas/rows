@@ -13,6 +13,8 @@
 - Add support to read compressed files directly (like in
   `rows.import_from_csv("filename.csv.gz")`)
 - `rows.Table` now returns a new table when sliced
+- Remove functions `export_data` and `get_filename_and_fobj` (the new `Source`
+  implements the features better).
 
 ### Plugins
 

@@ -20,10 +20,10 @@ from __future__ import unicode_literals
 import re
 import unicodedata
 from collections import defaultdict
+from io import BytesIO
 
 from rows.plugins.utils import (
     create_table,
-    export_data,
     serialize,
 )
 from rows.utils import Source
@@ -207,11 +207,24 @@ def export_to_txt(
     the output to be parseable. Otherwise, the generated table will look
     prettier but can not be imported back.
     """
-    # TODO: will work only if table.fields is OrderedDict
+
+    return_data, should_close = False, None
+    if filename_or_fobj is None:
+        filename_or_fobj = BytesIO()
+        return_data = should_close = True
+
+    source = Source.from_file(
+        filename_or_fobj,
+        plugin_name="txt",
+        mode="wb",
+        encoding=encoding,
+        should_close=should_close,
+    )
 
     frame_style = _parse_frame_style(frame_style)
     frame = FRAMES[frame_style.lower()]
 
+    # TODO: will work only if table.fields is OrderedDict
     serialized_table = serialize(table, *args, **kwargs)
     field_names = next(serialized_table)
     table_rows = list(serialized_table)
@@ -267,4 +280,14 @@ def export_to_txt(
     if encoding is not None:
         data = data.encode(encoding)
 
-    return export_data(filename_or_fobj, data, mode="wb")
+    if return_data:
+        result = data
+    else:
+        result = source.fobj
+        source.fobj.write(data)
+        source.fobj.flush()
+
+    if source.should_close:
+        source.fobj.close()
+
+    return result
