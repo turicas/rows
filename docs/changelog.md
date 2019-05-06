@@ -32,6 +32,7 @@
   samples were defined)
 - Fix `rows schema` (some output formats where not working properly)
 - Add support for compressed files output on `rows pdf-to-text` and `rows schema`
+- HTTP cache is disabled by default (this may change in the future)
 
 ### Utils
 

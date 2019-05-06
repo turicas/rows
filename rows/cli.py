@@ -30,7 +30,6 @@ from io import BytesIO
 
 import click
 import requests.exceptions
-import requests_cache
 import six
 from tqdm import tqdm
 
@@ -147,11 +146,12 @@ class AliasedGroup(click.Group):
 
 
 @click.group(cls=AliasedGroup)
-@click.option("--http-cache", type=bool, default=True)
+@click.option("--http-cache", type=bool, default=False)
 @click.option("--http-cache-path", default=str(CACHE_PATH.absolute()))
 @click.version_option(version=rows.__version__, prog_name="rows")
 def cli(http_cache, http_cache_path):
     if http_cache:
+        import requests_cache
         http_cache_path = pathlib.Path(http_cache_path).absolute()
         if not http_cache_path.parent.exists():
             os.makedirs(str(http_cache_path.parent), exist_ok=True)
