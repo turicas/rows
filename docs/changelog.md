@@ -36,6 +36,7 @@
 - Add support for compressed files output on `rows pdf-to-text` and `rows schema`
 - HTTP cache is disabled by default (this may change in the future)
 - Accept URI schemes in `rows convert`
+- `rows convert` now supports compressed files
 
 ### Utils
 

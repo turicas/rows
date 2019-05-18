@@ -260,12 +260,15 @@ def plugin_name_by_uri(uri):
             return "postgresql"
 
     basename = os.path.basename(parsed.path)
-
     if not basename.strip():
         raise RuntimeError("Could not identify file format.")
 
-    plugin_name = basename.split(".")[-1].lower()
-    if plugin_name in FILE_EXTENSIONS:
+    extension = basename.split(".")[-1].lower()
+    if extension in COMPRESSED_EXTENSIONS:
+        extension = basename.split(".")[-2].lower()
+
+    plugin_name = extension
+    if extension in FILE_EXTENSIONS:
         plugin_name = MIME_TYPE_TO_PLUGIN_NAME[FILE_EXTENSIONS[plugin_name]]
 
     return plugin_name
