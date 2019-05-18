@@ -25,6 +25,8 @@
   ("`WARNING *** file size (551546) not 512 + multiple of sector size (512)`")
 - Set `rows.Table` name (`table.meta["name"]`) for ODS, XLS and XLSX plugins
 - Add option to set `<caption>` tag in `export_to_html`
+- Use correct table name when exporting to PostgreSQL
+- Carefully close all fobjs in pgimport/pgexport
 
 ### Command-Line Interface
 
@@ -33,6 +35,7 @@
 - Fix `rows schema` (some output formats where not working properly)
 - Add support for compressed files output on `rows pdf-to-text` and `rows schema`
 - HTTP cache is disabled by default (this may change in the future)
+- Accept URI schemes in `rows convert`
 
 ### Utils
 

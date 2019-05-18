@@ -730,7 +730,12 @@ def execute_command(command):
     if process.returncode > 0:
         stderr = process.stderr.read().decode("utf-8")
         raise ValueError("Error executing command: {}".format(repr(stderr)))
-    return process.stdout.read().decode("utf-8")
+    data = process.stdout.read().decode("utf-8")
+    process.stdin.close()
+    process.stdout.close()
+    process.stderr.close()
+    process.wait()
+    return data
 
 
 def uncompressed_size(filename):
@@ -857,6 +862,7 @@ def pgimport(
 
     fobj = open_compressed(filename, mode="r", encoding=encoding)
     sample = fobj.read(chunk_size)
+    fobj.close()
 
     if dialect is None:  # Detect dialect
         dialect = rows.plugins.csv.discover_dialect(
@@ -925,12 +931,16 @@ def pgimport(
         rows_imported = int(stdout.replace(b"COPY ", b"").strip())
 
     except FileNotFoundError:
+        fobj.close()
         raise RuntimeError("Command `psql` not found")
 
     except BrokenPipeError:
+        fobj.close()
         raise RuntimeError(process.stderr.read().decode("utf-8"))
 
-    return {"bytes_written": total_written, "rows_imported": rows_imported}
+    else:
+        fobj.close()
+        return {"bytes_written": total_written, "rows_imported": rows_imported}
 
 
 def pgexport(
@@ -981,12 +991,16 @@ def pgexport(
             raise RuntimeError(stderr.decode("utf-8"))
 
     except FileNotFoundError:
+        fobj.close()
         raise RuntimeError("Command `psql` not found")
 
     except BrokenPipeError:
+        fobj.close()
         raise RuntimeError(process.stderr.read().decode("utf-8"))
 
-    return {"bytes_written": total_written}
+    else:
+        fobj.close()
+        return {"bytes_written": total_written}
 
 
 def generate_schema(table, export_fields, output_format):
