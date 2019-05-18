@@ -176,7 +176,7 @@ def export_to_postgresql(
         cursor.execute(SQL_TABLE_NAMES)
         table_names = [item[0] for item in cursor.fetchall()]
         table_name = make_unique_name(
-            table_name_format.format(index=1),
+            table.name,
             existing_names=table_names,
             name_format=table_name_format,
             start=1,

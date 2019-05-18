@@ -52,6 +52,7 @@ from rows.utils import (
     uncompressed_size,
 )
 
+
 DEFAULT_INPUT_ENCODING = "utf-8"
 DEFAULT_INPUT_LOCALE = "C"
 DEFAULT_OUTPUT_ENCODING = "utf-8"
