@@ -153,6 +153,7 @@ class AliasedGroup(click.Group):
 def cli(http_cache, http_cache_path):
     if http_cache:
         import requests_cache
+
         http_cache_path = pathlib.Path(http_cache_path).absolute()
         if not http_cache_path.parent.exists():
             os.makedirs(str(http_cache_path.parent), exist_ok=True)
@@ -742,17 +743,21 @@ def command_pgimport(
 
 
 @cli.command(name="pgexport", help="Export a PostgreSQL table into a CSV file")
+@click.option("--is-query", default=False, is_flag=True)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--dialect", default="excel")
 @click.argument("database_uri", required=True)
 @click.argument("table_name", required=True)
 @click.argument("destination", required=True)
-def command_pgexport(output_encoding, dialect, database_uri, table_name, destination):
+def command_pgexport(
+    is_query, output_encoding, dialect, database_uri, table_name, destination
+):
 
     updater = ProgressBar(prefix="Exporting data", unit="bytes")
     pgexport(
         database_uri=database_uri,
-        table_name=table_name,
+        table_name_or_query=table_name,
+        is_query=is_query,
         filename=destination,
         encoding=output_encoding,
         dialect=dialect,

@@ -796,7 +796,7 @@ def get_psql_command(
 
 
 def get_psql_copy_command(
-    table_name,
+    table_name_or_query,
     header,
     encoding="utf-8",
     user=None,
@@ -805,6 +805,7 @@ def get_psql_copy_command(
     port=None,
     database_name=None,
     database_uri=None,
+    is_query=False,
     dialect=csv.excel,
     direction="FROM",
 ):
@@ -813,20 +814,23 @@ def get_psql_copy_command(
     if direction not in ("FROM", "TO"):
         raise ValueError('`direction` must be "FROM" or "TO"')
 
-    table_name = slug(table_name)
+    if not is_query:  # Table name
+        source = slug(table_name_or_query)
+    else:
+        source = "(" + table_name_or_query + ")"
     if header is None:
         header = ""
     else:
         header = ", ".join(slug(field_name) for field_name in header)
         header = "({header}) ".format(header=header)
     copy = (
-        r"\copy {table_name} {header}{direction} STDIN "
+        r"\copy {source} {header}{direction} STDIN "
         "DELIMITER '{delimiter}' "
         "QUOTE '{quote}' "
         "ENCODING '{encoding}' "
         "CSV HEADER;"
     ).format(
-        table_name=table_name,
+        source=source,
         header=header,
         direction=direction,
         delimiter=dialect.delimiter.replace("'", "''"),
@@ -863,6 +867,7 @@ def pgimport(
     Required: psql command
     """
 
+    # TODO: add logging to the process
     fobj = open_compressed(filename, mode="r", encoding=encoding)
     sample = fobj.read(chunk_size)
     fobj.close()
@@ -909,7 +914,8 @@ def pgimport(
         direction="FROM",
         encoding=encoding,
         header=field_names,
-        table_name=table_name,
+        table_name_or_query=table_name,
+        is_query=False,
     )
     rows_imported, error = 0, None
     fobj = open_compressed(filename, mode="rb")
@@ -948,11 +954,12 @@ def pgimport(
 
 def pgexport(
     database_uri,
-    table_name,
+    table_name_or_query,
     filename,
     encoding="utf-8",
     dialect=csv.excel,
     callback=None,
+    is_query=False,
     timeout=0.1,
     chunk_size=8388608,
 ):
@@ -961,6 +968,7 @@ def pgexport(
     Required: psql command
     """
 
+    # TODO: add logging to the process
     if isinstance(dialect, six.text_type):
         dialect = csv.get_dialect(dialect)
 
@@ -970,7 +978,8 @@ def pgexport(
         direction="TO",
         encoding=encoding,
         header=None,  # Needed when direction = 'TO'
-        table_name=table_name,
+        table_name_or_query=table_name_or_query,
+        is_query=is_query,
         dialect=dialect,
     )
     fobj = open_compressed(filename, mode="wb")

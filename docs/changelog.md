@@ -37,6 +37,9 @@
 - HTTP cache is disabled by default (this may change in the future)
 - Accept URI schemes in `rows convert`
 - `rows convert` now supports compressed files
+- `rows pgexport` now accepts query instead of table name (useful for selecting
+  from a view since `\copy` cannot use a view but can use a query instead of a
+  table name).
 
 ### Utils
 
