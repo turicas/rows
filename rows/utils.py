@@ -250,7 +250,15 @@ def plugin_name_by_uri(uri):
     "Return the plugin name based on the URI"
 
     # TODO: parse URIs like 'sqlite://' also
+    # TODO: integrate this function with detect_source
+
     parsed = urlparse(uri)
+    if parsed.scheme:
+        if parsed.scheme == "sqlite":
+            return "sqlite"
+        elif parsed.scheme == "postgres":
+            return "postgresql"
+
     basename = os.path.basename(parsed.path)
 
     if not basename.strip():
