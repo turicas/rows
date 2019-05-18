@@ -52,6 +52,7 @@
 - [#320](https://github.com/turicas/rows/issues/320) Get correct data if ODS
   spreadsheet has empty cells
 - Fix slug function (so `"a/b"` will turn into `"a_b"`)
+- Detect as fallback type if all values are empty
 
 ## Version `0.4.1` (bugfix release)
 

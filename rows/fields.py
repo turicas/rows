@@ -616,11 +616,14 @@ class TypeDetector(object):
         self.field_types = list(field_types)
         self.fallback_type = fallback_type
         self._possible_types = defaultdict(lambda: list(self.field_types))
+        self._is_empty = defaultdict(lambda: True)
         self._samples = []
         self._skip = skip_indexes or tuple()
 
     def check_type(self, index, value):
         for type_ in self._possible_types[index][:]:
+            if not is_null(value):
+                self._is_empty[index] = False
             try:
                 type_.deserialize(value)
             except (ValueError, TypeError):
@@ -641,6 +644,12 @@ class TypeDetector(object):
 
         return field_types[0] if field_types else self.fallback_type
 
+    def define_field_type(self, is_empty, possible_types):
+        if is_empty:
+            return self.fallback_type
+        else:
+            return self.priority(*possible_types)
+
     @property
     def fields(self):
         possible, skip = self._possible_types, self._skip
@@ -660,7 +669,10 @@ class TypeDetector(object):
             [
                 (
                     field_name,
-                    self.priority(*(possible[index] if index in possible else [])),
+                    self.define_field_type(
+                        is_empty=self._is_empty[index],
+                        possible_types=possible[index] if index in possible else [],
+                    )
                 )
                 for index, field_name in enumerate(header)
                 if index not in skip

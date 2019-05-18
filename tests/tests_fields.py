@@ -432,6 +432,11 @@ class FieldUtilsTestCase(unittest.TestCase):
         result = fields.detect_types(["f1", "f2"], [["a", "b", "c"]])
         self.assertEqual(list(result.keys()), ["f1", "f2", "field_2"])
 
+    def test_empty_sequences_should_not_be_bool(self):
+        result = fields.detect_types(["field_1"], [[""], [""]])["field_1"]
+        expected = fields.TextField
+        self.assertEqual(result, expected)
+
     def test_precedence(self):
         field_types = [
             ("bool", fields.BoolField),
