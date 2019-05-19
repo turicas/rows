@@ -716,6 +716,7 @@ def command_pgimport(
     input_encoding, no_create_table, dialect, schema, source, database_uri, table_name
 ):
 
+    # First, detect file size
     progress = ProgressBar(
         prefix="Importing data", pre_prefix="Detecting file size", unit="bytes"
     )
@@ -725,9 +726,16 @@ def command_pgimport(
         total_size = None
     else:
         progress.total = total_size
-    progress.description = "Analyzing source file"
-    # TODO: what about uncompressed_size?
-    schemas = _get_schemas_for_inputs(schema if schema else None, [source])
+
+    # Then, define its schema
+    if schema:
+        progress.description = "Reading schema"
+        schemas = _get_schemas_for_inputs(schema if schema else None, [source])
+    else:
+        progress.description = "Detecting schema"
+        schemas = [None]
+
+    # So we can finally import it!
     import_meta = pgimport(
         filename=source,
         encoding=input_encoding,
