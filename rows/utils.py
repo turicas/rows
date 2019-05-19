@@ -583,8 +583,6 @@ def csv_to_sqlite(
 
     # TODO: automatically detect encoding if encoding == `None`
     # TODO: should be able to specify fields
-    # TODO: if table_name is "2019" the final name will be "field_2019" - must
-    #       be "table_2019"
     # TODO: if schema is provided and the names are in uppercase, this function
     #       will fail
 
@@ -868,6 +866,7 @@ def pgimport(
     """
 
     # TODO: add logging to the process
+    table_name = slug(table_name)
     fobj = open_compressed(filename, mode="r", encoding=encoding)
     sample = fobj.read(chunk_size)
     fobj.close()

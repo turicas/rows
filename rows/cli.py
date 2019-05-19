@@ -651,6 +651,8 @@ def command_csv_to_sqlite(
     batch_size, samples, input_encoding, dialect, schemas, sources, output
 ):
 
+    # TODO: if table_name is "2019" the final name will be "field_2019" - must
+    #       be "table_2019"
     inputs = [pathlib.Path(filename) for filename in sources]
     output = pathlib.Path(output)
     table_names = make_header([filename.name.split(".")[0] for filename in inputs])
