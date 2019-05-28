@@ -482,7 +482,7 @@ def query(
 
     samples = samples if samples > 0 else None
 
-    if not query.lower().startswith("select"):
+    if not query.strip().lower().startswith("select"):
         table_names = ", ".join(
             ["table{}".format(index) for index in range(1, len(sources) + 1)]
         )
