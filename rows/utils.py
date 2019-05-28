@@ -609,7 +609,7 @@ def csv_to_sqlite(
     csv_reader = csv.reader(fobj, dialect=dialect)
     header = make_header(next(csv_reader))  # skip header
     table = rows.Table(fields=OrderedDict([(field, schema[field]) for field in header]))
-    table._rows = reader
+    table._rows = csv_reader
 
     # Export to SQLite
     result = rows.export_to_sqlite(
