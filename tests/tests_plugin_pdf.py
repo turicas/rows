@@ -80,6 +80,23 @@ class PDFTestCase(utils.RowsTestMixIn):
         expected = rows.import_from_csv(expected2)
         self.assertEqual(list(expected), list(result))
 
+    def test_number_of_pages(self):
+        filenames_and_pages = (
+            ("tests/data/balneabilidade-26-2010.pdf", 3),
+            ("tests/data/eleicoes-tcesp-161-162.pdf", 2),
+            ("tests/data/ibama-autuacao-amazonas-2010-pag2.pdf", 1),
+            ("tests/data/milho-safra-2017.pdf", 1),
+        )
+        for filename, expected_pages in filenames_and_pages:
+            # Using filename
+            pages = rows.plugins.pdf.number_of_pages(filename, backend=self.backend)
+            self.assertEqual(pages, expected_pages)
+            # Using fobj
+            with open(filename, mode="rb") as fobj:
+                pages = rows.plugins.pdf.number_of_pages(fobj, backend=self.backend)
+                self.assertEqual(pages, expected_pages)
+
+
 
 class PyMuPDFTestCase(PDFTestCase, unittest.TestCase):
 

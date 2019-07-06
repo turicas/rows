@@ -218,7 +218,10 @@ class Source(object):
             is_file=True, local=True):
         """Create a `Source` from a filename or fobj"""
 
-        if isinstance(filename_or_fobj, (six.binary_type, six.text_type, Path)):
+        if isinstance(filename_or_fobj, Source):
+            return filename_or_fobj
+
+        elif isinstance(filename_or_fobj, (six.binary_type, six.text_type, Path)):
             fobj = open_compressed(filename_or_fobj, mode=mode)
             filename = filename_or_fobj
             should_close = True if should_close is None else should_close

@@ -18,6 +18,7 @@
 from __future__ import unicode_literals
 
 import io
+from pathlib import Path
 
 import six
 from cached_property import cached_property
@@ -85,7 +86,7 @@ class PDFBackend(object):
     y_order = 1
 
     def __init__(self, source):
-        self.source = source
+        self.source = Source.from_file(source, plugin_name="pdf", mode="rb")
 
     @property
     def number_of_pages(self):
@@ -116,6 +117,11 @@ class PDFBackend(object):
         else:
             cell.sort(key=lambda obj: -obj.y0)
         return "\n".join(obj.text.strip() for obj in cell)
+
+    def __del__(self):
+        source = self.source
+        if source.should_close and hasattr(source.fobj, "closed") and not source.fobj.closed:
+            source.fobj.close()
 
 
 class PDFMinerBackend(PDFBackend):
