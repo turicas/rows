@@ -825,12 +825,18 @@ def get_psql_copy_command(
         header = ", ".join(slug(field_name) for field_name in header)
         header = "({header}) ".format(header=header)
     copy = (
-        r"\copy {source} {header}{direction} STDIN "
-        "DELIMITER '{delimiter}' "
-        "QUOTE '{quote}' "
-        "ENCODING '{encoding}' "
-        "CSV HEADER;"
-    ).format(
+        r"\copy {source} {header}{direction} STDIN WITH("
+        "DELIMITER '{delimiter}', "
+        "QUOTE '{quote}', "
+    )
+    if direction == "FROM":
+        copy += "FORCE_NULL {header}, "
+    copy += (
+        "ENCODING '{encoding}', "
+        "FORMAT CSV, HEADER);"
+    )
+
+    copy_command = copy.format(
         source=source,
         header=header,
         direction=direction,
@@ -840,7 +846,7 @@ def get_psql_copy_command(
     )
 
     return get_psql_command(
-        copy,
+        copy_command,
         user=user,
         password=password,
         host=host,

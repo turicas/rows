@@ -19,6 +19,8 @@ from __future__ import unicode_literals
 
 import os
 import unittest
+import tempfile
+from textwrap import dedent
 
 import mock
 import six
@@ -228,3 +230,27 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         )
         for row in table:
             self.assertTrue(row.float_column > 3)
+
+    def test_pgimport_force_null(self):
+        temp = tempfile.NamedTemporaryFile()
+        filename = "{}.csv".format(temp.name)
+        temp.close()
+        self.files_to_delete.append(filename)
+        with open(filename, mode="wb") as fobj:
+            fobj.write(dedent(
+                """
+                field1,field2
+                "","4"
+                ,2
+                """
+            ).strip().encode("utf-8"))
+        rows.utils.pgimport(
+            filename=filename,
+            database_uri=self.uri,
+            table_name="rows_force_null",
+        )
+        table = rows.import_from_postgresql(self.uri, "rows_force_null")
+        self.assertIs(table[0].field1, None)
+        self.assertEqual(table[0].field2, 4)
+        self.assertIs(table[1].field1, None)
+        self.assertEqual(table[1].field2, 2)
