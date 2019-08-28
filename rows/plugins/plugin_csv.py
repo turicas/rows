@@ -47,6 +47,12 @@ def fix_dialect(dialect):
         dialect.quotechar = '"'
 
 
+class excel_semicolon(unicodecsv.excel):
+    delimiter = ';'
+
+unicodecsv.register_dialect("excel-semicolon", excel_semicolon)
+
+
 if six.PY2:
 
     def discover_dialect(sample, encoding=None, delimiters=(b",", b";", b"\t", b"|")):

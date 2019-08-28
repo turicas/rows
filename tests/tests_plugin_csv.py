@@ -125,16 +125,36 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         encoding = "utf-8"
         data = dedent(
             """
-        field1,field2
-        1,2
-        3,4
-        5,6
-        """.strip()
+            field1,field2
+            1,2
+            3,4
+            5,6
+            """.strip()
         ).encode(encoding)
 
         dialect = rows.plugins.plugin_csv.discover_dialect(data, encoding)
         self.assertIs(dialect.doublequote, True)
         self.assertIs(dialect.escapechar, None)
+
+    def test_import_from_csv_excel_semicolon_dialect(self):
+        encoding = "utf-8"
+        data = dedent(
+            """
+            field1;field2
+            1;2
+            3;4
+            5;6
+            """.strip()
+        ).encode(encoding)
+
+        table = rows.import_from_csv(BytesIO(data), dialect="excel-semicolon")
+        self.assertEqual(table.field_names, ["field1", "field2"])
+        self.assertEqual(table[0].field1, 1)
+        self.assertEqual(table[0].field2, 2)
+        self.assertEqual(table[1].field1, 3)
+        self.assertEqual(table[1].field2, 4)
+        self.assertEqual(table[2].field1, 5)
+        self.assertEqual(table[2].field2, 6)
 
     @mock.patch("rows.plugins.plugin_csv.create_table")
     def test_import_from_csv_force_dialect(self, mocked_create_table):

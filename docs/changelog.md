@@ -27,6 +27,7 @@
 - Add option to set `<caption>` tag in `export_to_html`
 - Use correct table name when exporting to PostgreSQL
 - Carefully close all fobjs in pgimport/pgexport
+- Added CSV dialect "excel-semicolon"
 
 ### Command-Line Interface
 
