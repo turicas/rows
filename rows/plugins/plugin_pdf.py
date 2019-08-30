@@ -104,6 +104,9 @@ def number_of_pages(filename_or_fobj, backend=None):
 
 
 def pdf_to_text(filename_or_fobj, page_numbers=None, backend=None):
+    if isinstance(page_numbers, six.text_type):
+        page_numbers = extract_intervals(page_numbers)
+
     backend = backend or default_backend()
     Backend = get_backend(backend)
     pdf_doc = Backend(filename_or_fobj)
@@ -753,6 +756,8 @@ def pdf_table_lines(
     y_threshold=0.5,
     backend=None,
 ):
+    if isinstance(page_numbers, six.text_type):
+        page_numbers = extract_intervals(page_numbers)
     backend = backend or default_backend()
 
     # TODO: check if both backends accepts filename or fobj
@@ -796,6 +801,10 @@ def import_from_pdf(
     *args,
     **kwargs
 ):
+
+    if isinstance(page_numbers, six.text_type):
+        page_numbers = extract_intervals(page_numbers)
+
     backend = backend or default_backend()
     source = Source.from_file(filename_or_fobj, plugin_name="pdf", mode="rb")
     meta = {"imported_from": "pdf", "source": source}

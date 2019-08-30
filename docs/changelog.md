@@ -29,6 +29,7 @@
 - Carefully close all fobjs in pgimport/pgexport
 - Added CSV dialect "excel-semicolon"
 - Improved PostgreSQL import from CSV (pgimport) when dealing with null values
+- PDF now supports `page_numbers` as string (range of numbers)
 
 ### Command-Line Interface
 
