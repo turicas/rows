@@ -61,15 +61,27 @@ HOME_PATH = pathlib.Path.home()
 CACHE_PATH = HOME_PATH / ".cache" / "rows" / "http"
 
 
-def _import_table(source, encoding, verify_ssl=True, *args, **kwargs):
-    # TODO: add `--quiet|-q` or `--progress|-p` to set `progress` properly
+def parse_options(options):
+    options_dict = {}
+    for option in options:
+        equal_position = option.find("=")
+        if equal_position == -1:
+            raise ValueError("Equal sign not found for {}".format(repr(option)))
+        else:
+            options_dict[option[:equal_position]] = option[equal_position + 1:]
+    return options_dict
+
+
+def _import_table(source, encoding, verify_ssl=True, progress=True, *args, **kwargs):
+    # TODO: may use import_from_uri instead
+    uri = source.uri if hasattr(source, "uri") else source
     try:
         table = import_from_uri(
-            source,
+            uri,
             default_encoding=DEFAULT_INPUT_ENCODING,
             verify_ssl=verify_ssl,
             encoding=encoding,
-            progress=True,
+            progress=progress,
             *args,
             **kwargs,
         )
@@ -164,7 +176,7 @@ def cli(http_cache, http_cache_path):
 
 
 @cli.command(help="Convert table on `source` URI to `destination`")
-@click.option("--input-encoding", default="utf-8")
+@click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
 @click.option("--output-locale")
@@ -172,6 +184,9 @@ def cli(http_cache, http_cache_path):
 @click.option("--order-by")
 @click.option("--fields", help="A comma-separated list of fields to import")
 @click.option("--fields-exclude", help="A comma-separated list of fields to exclude")
+@click.option("--input-option", "-i", multiple=True, help="Custom (import) plugin key=value custom option (can be specified multiple times)")
+@click.option("--output-option", "-o", multiple=True, help="Custom (export) plugin key=value custom option (can be specified multiple times)")
+@click.option("--quiet", "-q", is_flag=True)
 @click.argument("source")
 @click.argument("destination")
 def convert(
@@ -183,25 +198,42 @@ def convert(
     order_by,
     fields,
     fields_exclude,
+    input_option,
+    output_option,
+    quiet,
     source,
     destination,
 ):
+
+    input_options = parse_options(input_option)
+    output_options = parse_options(output_option)
+    progress = not quiet
+
+    input_encoding = input_encoding or input_options.get("encoding", None)
+    source_info = None
+    if input_encoding is None:
+        source_info = detect_source(uri=source, verify_ssl=verify_ssl, progress=progress)
+        input_encoding = source_info.encoding or DEFAULT_INPUT_ENCODING
 
     import_fields = _get_import_fields(fields, fields_exclude)
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = _import_table(
-                source,
+                source_info or source,
                 encoding=input_encoding,
                 verify_ssl=verify_ssl,
                 import_fields=import_fields,
+                progress=progress,
+                **input_options,
             )
     else:
         table = _import_table(
-            source,
+            source_info or source,
             encoding=input_encoding,
             verify_ssl=verify_ssl,
             import_fields=import_fields,
+            progress=progress,
+            **input_options,
         )
 
     if order_by is not None:
@@ -219,10 +251,13 @@ def convert(
                 destination,
                 encoding=output_encoding,
                 export_fields=export_fields,
+                **output_options,
             )
     else:
         export_to_uri(
-            table, destination, encoding=output_encoding, export_fields=export_fields
+            table, destination, encoding=output_encoding,
+            export_fields=export_fields,
+            **output_options,
         )
 
 
@@ -230,7 +265,7 @@ def convert(
     help="Join tables from `source` URIs using `key(s)` to group "
     "rows and save into `destination`"
 )
-@click.option("--input-encoding", default="utf-8")
+@click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
 @click.option("--output-locale")
@@ -257,6 +292,9 @@ def join(
     sources,
     destination,
 ):
+
+    # TODO: detect input_encoding for all sources
+    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
 
     export_fields = _get_import_fields(fields, fields_exclude)
     keys = make_header(keys.split(","), permit_not=False)
@@ -300,7 +338,7 @@ def join(
 @cli.command(
     name="sum", help="Sum tables from `source` URIs and save into `destination`"
 )
-@click.option("--input-encoding", default="utf-8")
+@click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
 @click.option("--output-locale")
@@ -322,6 +360,9 @@ def sum_(
     sources,
     destination,
 ):
+
+    # TODO: detect input_encoding for all sources
+    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
 
     import_fields = _get_import_fields(fields, fields_exclude)
     if input_locale is not None:
@@ -370,9 +411,10 @@ def sum_(
 
 
 @cli.command(name="print", help="Print a table")
-@click.option("--input-encoding", default="utf-8")
+@click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
+@click.option("--input-option", "-i", multiple=True, help="Custom (import) plugin key=value custom option (can be specified multiple times)")
 @click.option("--output-locale")
 @click.option(
     "--frame-style", default="ascii", help="Options: ascii, single, double, none"
@@ -382,11 +424,13 @@ def sum_(
 @click.option("--fields", help="A comma-separated list of fields to import")
 @click.option("--fields-exclude", help="A comma-separated list of fields to exclude")
 @click.option("--order-by")
+@click.option("--quiet", "-q", is_flag=True)
 @click.argument("source", required=True)
 def print_(
     input_encoding,
     output_encoding,
     input_locale,
+    input_option,
     output_locale,
     frame_style,
     table_index,
@@ -394,8 +438,17 @@ def print_(
     fields,
     fields_exclude,
     order_by,
+    quiet,
     source,
 ):
+
+    input_options = parse_options(input_option)
+    progress = not quiet
+    input_encoding = input_encoding or input_options.get("encoding", None)
+    source_info = None
+    if input_encoding is None:
+        source_info = detect_source(uri=source, verify_ssl=verify_ssl, progress=progress)
+        input_encoding = source_info.encoding or DEFAULT_INPUT_ENCODING
 
     import_fields = _get_import_fields(fields, fields_exclude)
     # TODO: if create_table implements `fields_exclude` this _import_table call
@@ -403,19 +456,23 @@ def print_(
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = _import_table(
-                source,
+                source_info or source,
                 encoding=input_encoding,
                 verify_ssl=verify_ssl,
                 index=table_index,
                 import_fields=import_fields,
+                progress=progress,
+                **input_options,
             )
     else:
         table = _import_table(
-            source,
+            source_info or source,
             encoding=input_encoding,
             verify_ssl=verify_ssl,
             index=table_index,
             import_fields=import_fields,
+            progress=progress,
+            **input_options,
         )
 
     if order_by is not None:
@@ -425,6 +482,7 @@ def print_(
 
     export_fields = _get_export_fields(table.field_names, fields_exclude)
     output_encoding = output_encoding or sys.stdout.encoding or DEFAULT_OUTPUT_ENCODING
+    # TODO: may use output_options instead of custom TXT plugin options
     fobj = BytesIO()
     if output_locale is not None:
         with rows.locale_context(output_locale):
@@ -450,7 +508,7 @@ def print_(
 
 
 @cli.command(name="query", help="Query a table using SQL")
-@click.option("--input-encoding", default="utf-8")
+@click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
 @click.option("--output-locale")
@@ -461,10 +519,12 @@ def print_(
     default=5000,
     help="Number of rows to determine the field types (0 = all)",
 )
+@click.option("--input-option", "-i", multiple=True, help="Custom (import) plugin key=value custom option (can be specified multiple times)")
 @click.option("--output")
 @click.option(
     "--frame-style", default="ascii", help="Options: ascii, single, double, none"
 )
+@click.option("--quiet", "-q", is_flag=True)
 @click.argument("query", required=True)
 @click.argument("sources", nargs=-1, required=True)
 def query(
@@ -474,11 +534,18 @@ def query(
     output_locale,
     verify_ssl,
     samples,
+    input_option,
     output,
     frame_style,
+    quiet,
     query,
     sources,
 ):
+
+    # TODO: support multiple input options
+    # TODO: detect input_encoding for all sources
+    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
+    progress = not quiet
 
     samples = samples if samples > 0 else None
 
@@ -489,22 +556,22 @@ def query(
         query = "SELECT * FROM {} WHERE {}".format(table_names, query)
 
     if len(sources) == 1:
-        source = detect_source(sources[0], verify_ssl=verify_ssl, progress=True)
+        source = detect_source(sources[0], verify_ssl=verify_ssl, progress=progress)
 
         if source.plugin_name in ("sqlite", "postgresql"):
             # Optimization: query the db directly
             result = import_from_source(
-                source, DEFAULT_INPUT_ENCODING, query=query, samples=samples
+                source, input_encoding, query=query, samples=samples
             )
         else:
             if input_locale is not None:
                 with rows.locale_context(input_locale):
                     table = import_from_source(
-                        source, DEFAULT_INPUT_ENCODING, samples=samples
+                        source, input_encoding, samples=samples
                     )
             else:
                 table = import_from_source(
-                    source, DEFAULT_INPUT_ENCODING, samples=samples
+                    source, input_encoding, samples=samples
                 )
 
             sqlite_connection = sqlite3.Connection(":memory:")
@@ -521,6 +588,7 @@ def query(
                         encoding=input_encoding,
                         verify_ssl=verify_ssl,
                         samples=samples,
+                        progress=progress,
                     )
                     for source in sources
                 ]
@@ -531,6 +599,7 @@ def query(
                     encoding=input_encoding,
                     verify_ssl=verify_ssl,
                     samples=samples,
+                    progress=progress,
                 )
                 for source in sources
             ]
@@ -567,9 +636,10 @@ def query(
 
 
 @cli.command(name="schema", help="Identifies table schema")
-@click.option("--input-encoding", default="utf-8")
+@click.option("--input-encoding", default=None)
 @click.option("--input-locale")
 @click.option("--verify-ssl", type=bool, default=True)
+@click.option("--input-option", "-i", multiple=True, help="Custom (import) plugin key=value custom option (can be specified multiple times)")
 @click.option(
     "-f",
     "--format",
@@ -588,39 +658,49 @@ def query(
     default=5000,
     help="Number of rows to determine the field types (0 = all)",
 )
+@click.option("--quiet", "-q", is_flag=True)
 @click.argument("source", required=True)
 @click.argument("output", required=False, default="-")
 def schema(
     input_encoding,
     input_locale,
     verify_ssl,
+    input_option,
     output_format,
     fields,
     fields_exclude,
     samples,
+    quiet,
     source,
     output,
 ):
+
+    input_options = parse_options(input_option)
+    progress = not quiet
+    source_info = detect_source(uri=source, verify_ssl=verify_ssl, progress=progress)
+    input_encoding = input_encoding or input_options.get("encoding", None) or DEFAULT_INPUT_ENCODING
+
     samples = samples if samples > 0 else None
     import_fields = _get_import_fields(fields, fields_exclude)
 
-    source = detect_source(source, verify_ssl=verify_ssl, progress=True)
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = import_from_source(
-                source,
-                DEFAULT_INPUT_ENCODING,
+                source_info,
+                input_encoding,
                 samples=samples,
                 import_fields=import_fields,
                 max_rows=samples,
+                **input_options,
             )
     else:
         table = import_from_source(
-            source,
-            DEFAULT_INPUT_ENCODING,
+            source_info,
+            input_encoding,
             samples=samples,
             import_fields=import_fields,
             max_rows=samples,
+            **input_options,
         )
 
     export_fields = _get_export_fields(table.field_names, fields_exclude)
@@ -642,7 +722,7 @@ def schema(
     default=5000,
     help="Number of rows to determine the field types (0 = all)",
 )
-@click.option("--input-encoding", default="utf-8")
+@click.option("--input-encoding", default=None)
 @click.option("--dialect", default=None)
 @click.option("--schemas", default=None)
 @click.argument("sources", nargs=-1, required=True)
@@ -651,10 +731,15 @@ def command_csv_to_sqlite(
     batch_size, samples, input_encoding, dialect, schemas, sources, output
 ):
 
-    # TODO: if table_name is "2019" the final name will be "field_2019" - must
-    #       be "table_2019"
+    # TODO: add --quiet
+
+    # TODO: detect input_encoding for all sources
+    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
+
     inputs = [pathlib.Path(filename) for filename in sources]
     output = pathlib.Path(output)
+    # TODO: if table_name is "2019" the final name will be "field_2019" - must
+    #       be "table_2019"
     table_names = make_header([filename.name.split(".")[0] for filename in inputs])
     schemas = _get_schemas_for_inputs(schemas, inputs)
 
@@ -664,7 +749,7 @@ def command_csv_to_sqlite(
         )
         # TODO: if `schemas` is present, will not detect data types
         pre_prefix = "{} (detecting data types)".format(prefix)
-        progress = ProgressBar(prefix=prefix, pre_prefix=pre_prefix)
+        progress_bar = ProgressBar(prefix=prefix, pre_prefix=pre_prefix)
         csv_to_sqlite(
             six.text_type(filename),
             six.text_type(output),
@@ -672,11 +757,11 @@ def command_csv_to_sqlite(
             table_name=table_name,
             samples=samples,
             batch_size=batch_size,
-            callback=progress.update,
+            callback=progress_bar.update,
             encoding=input_encoding,
             schema=schema,
         )
-        progress.close()
+        progress_bar.close()
 
 
 @cli.command(name="sqlite-to-csv", help="Convert a SQLite table into CSV")
@@ -687,6 +772,9 @@ def command_csv_to_sqlite(
 @click.argument("output", required=True)
 def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
 
+    # TODO: add --quiet
+    # TODO: add output options/encoding
+
     input_filename = pathlib.Path(source)
     output_filename = pathlib.Path(output)
     prefix = "[{db_filename}#{tablename} -> {filename}]".format(
@@ -694,20 +782,20 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
         tablename=table_name,
         filename=output_filename.name,
     )
-    progress = ProgressBar(prefix=prefix, pre_prefix="")
+    progress_bar = ProgressBar(prefix=prefix, pre_prefix="")
     sqlite_to_csv(
         input_filename=six.text_type(input_filename),
         table_name=table_name,
         dialect=dialect,
         output_filename=six.text_type(output_filename),
         batch_size=batch_size,
-        callback=progress.update,
+        callback=progress_bar.update,
     )
-    progress.close()
+    progress_bar.close()
 
 
 @cli.command(name="pgimport", help="Import a CSV file into a PostgreSQL table")
-@click.option("--input-encoding", default="utf-8")
+@click.option("--input-encoding", default=None)
 @click.option("--no-create-table", default=False, is_flag=True)
 @click.option("--dialect", default=None)
 @click.option("--schema", default=None)
@@ -718,8 +806,12 @@ def command_pgimport(
     input_encoding, no_create_table, dialect, schema, source, database_uri, table_name
 ):
 
+    # TODO: add --quiet
+    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
+    # TODO: detect encoding here (instead of inside rows.utils.pgimport)
+
     # First, detect file size
-    progress = ProgressBar(
+    progress_bar = ProgressBar(
         prefix="Importing data", pre_prefix="Detecting file size", unit="bytes"
     )
     try:
@@ -727,14 +819,14 @@ def command_pgimport(
     except (RuntimeError, ValueError):
         total_size = None
     else:
-        progress.total = total_size
+        progress_bar.total = total_size
 
     # Then, define its schema
     if schema:
-        progress.description = "Reading schema"
+        progress_bar.description = "Reading schema"
         schemas = _get_schemas_for_inputs(schema if schema else None, [source])
     else:
-        progress.description = "Detecting schema"
+        progress_bar.description = "Detecting schema"
         schemas = [None]
 
     # So we can finally import it!
@@ -745,11 +837,11 @@ def command_pgimport(
         database_uri=database_uri,
         create_table=not no_create_table,
         table_name=table_name,
-        callback=progress.update,
+        callback=progress_bar.update,
         schema=schemas[0],
     )
-    progress.description = "{} rows imported".format(import_meta["rows_imported"])
-    progress.close()
+    progress_bar.description = "{} rows imported".format(import_meta["rows_imported"])
+    progress_bar.close()
 
 
 @cli.command(name="pgexport", help="Export a PostgreSQL table into a CSV file")
@@ -762,6 +854,7 @@ def command_pgimport(
 def command_pgexport(
     is_query, output_encoding, dialect, database_uri, table_name, destination
 ):
+    # TODO: add --quiet
 
     updater = ProgressBar(prefix="Exporting data", unit="bytes")
     pgexport(
@@ -776,49 +869,23 @@ def command_pgexport(
     updater.close()
 
 
-def extract_intervals(text, repeat=False, sort=True):
-    """
-    >>> extract_intervals("1,2,3")
-    [1, 2, 3]
-    >>> extract_intervals("1,2,5-10")
-    [1, 2, 5, 6, 7, 8, 9, 10]
-    >>> extract_intervals("1,2,5-10,3")
-    [1, 2, 3, 5, 6, 7, 8, 9, 10]
-    >>> extract_intervals("1,2,5-10,6,7")
-    [1, 2, 5, 6, 7, 8, 9, 10]
-    """
-
-    result = []
-    for value in text.split(","):
-        value = value.strip()
-        if "-" in value:
-            start_value, end_value = value.split("-")
-            start_value = int(start_value.strip())
-            end_value = int(end_value.strip())
-            result.extend(range(start_value, end_value + 1))
-        else:
-            result.append(int(value.strip()))
-
-    if not repeat:
-        result = list(set(result))
-    if sort:
-        result.sort()
-
-    return result
-
-
 @cli.command(name="pdf-to-text", help="Extract text from a PDF")
+@click.option("--input-option", "-i", multiple=True, help="Custom (import) plugin key=value custom option (can be specified multiple times)")
 @click.option("--output-encoding", default="utf-8")
-@click.option("--quiet", is_flag=True)
-@click.option("--backend", default="pymupdf")
+@click.option("--quiet", "-q", is_flag=True)
+@click.option("--backend", default=None)
 @click.option("--pages")
 @click.argument("source", required=True)
 @click.argument("output", required=False)
-def command_pdf_to_text(output_encoding, quiet, backend, pages, source, output):
+def command_pdf_to_text(input_option, output_encoding, quiet, backend, pages, source, output):
+
+    input_options = parse_options(input_option)
+    input_options["backend"] = backend or input_options.get("backend", None)
 
     # Define page range
-    if pages:
-        pages = extract_intervals(pages)
+    input_options["page_numbers"] = pages or input_options.get("page_numbers", None)
+    if input_options["page_numbers"]:
+        input_options["page_numbers"] = rows.plugins.pdf.extract_intervals(input_options["page_numbers"])
 
     # Define if output is file or stdout
     if output:
@@ -836,12 +903,12 @@ def command_pdf_to_text(output_encoding, quiet, backend, pages, source, output):
         source = result.uri
         downloaded = True
 
-    reader = rows.plugins.pdf.pdf_to_text(source, page_numbers=pages, backend=backend)
+    reader = rows.plugins.pdf.pdf_to_text(source, **input_options)
     if progress:  # Calculate total number of pages and create a progress bar
-        if pages:
-            total_pages = len(pages)
+        if input_options["page_numbers"]:
+            total_pages = len(input_options["page_numbers"])
         else:
-            total_pages = rows.plugins.pdf.number_of_pages(source, backend=backend)
+            total_pages = rows.plugins.pdf.number_of_pages(source, backend=input_options["backend"])
         reader = tqdm(reader, desc="Extracting text", total=total_pages)
 
     for page in reader:

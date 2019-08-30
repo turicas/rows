@@ -52,6 +52,39 @@ except ImportError:
     PDFMINER_TEXT_TYPES, PDFMINER_ALL_TYPES = None, None
 
 
+
+
+def extract_intervals(text, repeat=False, sort=True):
+    """
+    >>> extract_intervals("1,2,3")
+    [1, 2, 3]
+    >>> extract_intervals("1,2,5-10")
+    [1, 2, 5, 6, 7, 8, 9, 10]
+    >>> extract_intervals("1,2,5-10,3")
+    [1, 2, 3, 5, 6, 7, 8, 9, 10]
+    >>> extract_intervals("1,2,5-10,6,7")
+    [1, 2, 5, 6, 7, 8, 9, 10]
+    """
+
+    result = []
+    for value in text.split(","):
+        value = value.strip()
+        if "-" in value:
+            start_value, end_value = value.split("-")
+            start_value = int(start_value.strip())
+            end_value = int(end_value.strip())
+            result.extend(range(start_value, end_value + 1))
+        else:
+            result.append(int(value.strip()))
+
+    if not repeat:
+        result = list(set(result))
+    if sort:
+        result.sort()
+
+    return result
+
+
 def default_backend():
     if pymupdf_imported:
         return "pymupdf"

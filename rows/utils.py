@@ -860,7 +860,7 @@ def pgimport(
     filename,
     database_uri,
     table_name,
-    encoding="utf-8",
+    encoding=None,
     dialect=None,
     create_table=True,
     schema=None,
@@ -875,7 +875,14 @@ def pgimport(
     """
 
     # TODO: add logging to the process
-    table_name = slug(table_name)
+
+    if encoding is None:
+        fobj = open_compressed(filename, mode="rb")
+        sample_bytes = fobj.read(chunk_size)
+        fobj.close()
+        source = detect_local_source(filename, sample_bytes)
+        encoding = source.encoding
+
     fobj = open_compressed(filename, mode="r", encoding=encoding)
     sample = fobj.read(chunk_size)
     fobj.close()
@@ -895,6 +902,7 @@ def pgimport(
     else:
         field_names = list(schema.keys())
 
+    table_name = slug(table_name)
     if create_table:
         if schema is None:
             data = [

@@ -42,6 +42,9 @@
 - `rows pgexport` now accepts query instead of table name (useful for selecting
   from a view since `\copy` cannot use a view but can use a query instead of a
   table name).
+- Detect input encoding whenever possible
+- Add `--quiet` to some commands (fix `progress`)
+- Add plugins' input/output options to `convert`
 
 ### Utils
 
