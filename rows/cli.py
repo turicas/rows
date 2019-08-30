@@ -807,8 +807,7 @@ def command_pgimport(
 ):
 
     # TODO: add --quiet
-    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
-    # TODO: detect encoding here (instead of inside rows.utils.pgimport)
+    # TODO: may detect encoding here (instead of inside rows.utils.pgimport)
 
     # First, detect file size
     progress_bar = ProgressBar(

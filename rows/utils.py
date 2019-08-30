@@ -883,6 +883,11 @@ def pgimport(
         source = detect_local_source(filename, sample_bytes)
         encoding = source.encoding
 
+    pg_encoding = encoding
+    if pg_encoding in ("us-ascii", "ascii"):
+        # TODO: convert all possible encodings
+        pg_encoding = "SQL_ASCII"
+
     fobj = open_compressed(filename, mode="r", encoding=encoding)
     sample = fobj.read(chunk_size)
     fobj.close()
@@ -928,7 +933,7 @@ def pgimport(
         database_uri=database_uri,
         dialect=dialect,
         direction="FROM",
-        encoding=encoding,
+        encoding=pg_encoding,
         header=field_names,
         table_name_or_query=table_name,
         is_query=False,
