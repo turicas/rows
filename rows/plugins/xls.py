@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import datetime
 import os
 from io import BytesIO
+from base64 import b64encode
 
 import xlrd
 import xlwt
@@ -55,7 +56,7 @@ def _python_to_xls(field_types):
         if field_type in FORMATTING_STYLES:
             data["style"] = FORMATTING_STYLES[field_type]
 
-        if field_type in (
+        if field_type not in (
             fields.BinaryField,
             fields.BoolField,
             fields.DateField,
@@ -66,10 +67,10 @@ def _python_to_xls(field_types):
             fields.PercentField,
             fields.TextField,
         ):
-            return value, data
+            # BinaryField, DatetimeField, JSONField or unknown
+            value = field_type.serialize(value), data
 
-        else:  # don't know this field
-            return field_type.serialize(value), data
+        return field_type.serialize(value), data
 
     def convert_row(row):
         return [
@@ -227,6 +228,8 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kw
     _convert_row = _python_to_xls([table.fields.get(field) for field in field_names])
     for row_index, row in enumerate(prepared_table, start=1):
         for column_index, (value, data) in enumerate(_convert_row(row)):
+            # if isinstance(value, bytes):
+            #     value = b64encode(value).decode('utf-8')
             sheet.write(row_index, column_index, value, **data)
 
     return_result = False
