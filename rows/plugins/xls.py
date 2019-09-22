@@ -20,7 +20,6 @@ from __future__ import unicode_literals
 import datetime
 import os
 from io import BytesIO
-from base64 import b64encode
 
 import xlrd
 import xlwt
@@ -228,8 +227,6 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kw
     _convert_row = _python_to_xls([table.fields.get(field) for field in field_names])
     for row_index, row in enumerate(prepared_table, start=1):
         for column_index, (value, data) in enumerate(_convert_row(row)):
-            # if isinstance(value, bytes):
-            #     value = b64encode(value).decode('utf-8')
             sheet.write(row_index, column_index, value, **data)
 
     return_result = False
