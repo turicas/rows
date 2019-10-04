@@ -22,10 +22,12 @@
 # TODO: add option to pass 'create_table' options in command-line (like force
 #       fields)
 
+import csv
 import os
 import pathlib
 import sqlite3
 import sys
+from collections import defaultdict
 from io import BytesIO
 
 import click
@@ -917,6 +919,59 @@ def command_pdf_to_text(input_option, output_encoding, quiet, backend, pages, so
         output.close()
     if downloaded:
         os.unlink(source)
+
+
+@cli.command(name="csv-merge", help="Lazily merge CSVs (even if the schemas differs)")
+@click.option("--input-encoding", default=None)
+@click.option("--output-encoding", default="utf-8")
+@click.argument("sources", nargs=-1, required=True)
+@click.argument("destination")
+def csv_merge(input_encoding, output_encoding, sources, destination):
+
+    # TODO: add option to preserve original key names
+    # TODO: detect input_encoding for all sources
+    # TODO: add input option for sample_size
+    # TODO: add --quiet
+
+    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
+    sample_size = 1024 * 1024
+    dialects, keys, keys_per_file = {}, [], defaultdict(dict)
+    for filename in tqdm(sources, desc="Detecting dialects and headers"):
+        # Detect dialect
+        fobj = open_compressed(filename, mode="rb")
+        sample = fobj.read(sample_size)
+        fobj.close()
+        dialect = rows.plugins.csv.discover_dialect(sample, input_encoding)
+
+        # Get header
+        fobj = open_compressed(filename, encoding=input_encoding)
+        reader = csv.DictReader(fobj, dialect=dialect)
+        for field_name in reader.fieldnames:
+            field_name_slug = rows.fields.slug(field_name)
+            if field_name_slug not in keys:
+                keys.append(field_name_slug)
+                keys_per_file[filename][field_name_slug] = field_name
+        fobj.close()
+        dialects[filename] = dialect
+    # TODO: is it needed to use make_header here?
+
+    output_fobj = open_compressed(destination, mode="w", encoding=output_encoding)
+    writer = csv.DictWriter(output_fobj, fieldnames=keys)
+    writer.writeheader()
+    progress_bar = tqdm(desc="Exporting data")
+    for index, filename in enumerate(sources):
+        progress_bar.desc = "Exporting data {}/{}".format(index + 1, len(sources))
+        field_names = keys_per_file[filename]
+        fobj = open_compressed(filename, encoding=input_encoding)
+        reader = csv.DictReader(fobj, dialect=dialects[filename])
+        for row in reader:
+            writer.writerow({
+                key: row[field_names[key]] if key in field_names else None
+                for key in keys
+            })
+            progress_bar.update()
+        fobj.close()
+    output_fobj.close()
 
 
 if __name__ == "__main__":
