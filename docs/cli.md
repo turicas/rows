@@ -33,6 +33,9 @@ local filename (example: `rows convert https://website/file.html file.csv`).
 - [`rows csv2sqlite`][cli-csv2sqlite]: convert one or more CSV files
   (compressed or not) to SQLite in an optimized way (if source is CSV and
   destination is SQLite, use this rather than `rows convert`).
+- [`rows csv-merge`][cli-csv-merge]: lazily merge CSV files (compressed or
+  not), even if they don't have a common schema, generating a new one
+  (compressed or not).
 - [`rows join`][cli-join]: equivalent to SQL's `JOIN` - get rows from each
   table and join them.
 - [`rows pdf-to-text`][cli-pdf-to-text]: extract text from a PDF file and save
@@ -110,6 +113,37 @@ rows convert \
     http://www.worldometers.info/world-population/population-by-country/ \
     population.csv
 ```
+
+
+## `rows csv-merge`
+
+Lazily merge CSV files (compressed or not), even if they don't have a common
+schema, generating a new one (compressed or not). The final header is
+slugified. Sources and destination could be compressed, the supported
+compression formats are: gzip (`.gz`), lzma (`.xz`) and bzip2 (`.bz2`).
+
+This command is splited in two main steps:
+
+- Identify dialect and headers for each source file, defining the final header
+  (it's a union of all field names slugged);
+- Lazily read all sources and write a new CSV using the defined header.
+
+Usage: `rows csv-merge [OPTIONS] SOURCES... OUTPUT`
+
+Options:
+
+- `--input-encoding=TEXT`: input encoding for all CSV files (default: `utf-8`)
+- `--output-encoding=TEXT`: Encoding of output CSV (default: `utf-8`)
+
+
+Example:
+
+```bash
+rows csv-merge \
+     file1.csv file2.csv.bz2 file3.csv.xz \
+     result.csv.gz
+```
+
 
 
 ## `rows csv2sqlite`
@@ -466,6 +500,7 @@ rows sum \
 
 [br-cities]: https://gist.github.com/turicas/ec0abcfe0d7abf7a97ef7a0c1d72c7f7
 [cli-convert]: #rows-convert
+[cli-csv-merge]: #rows-csv-merge
 [cli-csv2sqlite]: #rows-csv2sqlite
 [cli-join]: #rows-join
 [cli-manpage]: man/rows.1
