@@ -46,6 +46,8 @@
 - Detect input encoding whenever possible
 - Add `--quiet` to some commands (fix `progress`)
 - Add plugins' input/output options to `convert`
+- Add `rows csv-merge` (lazily merge CSV files even if they don't share a
+  common schema)
 
 ### Utils
 
