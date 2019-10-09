@@ -133,8 +133,8 @@ Usage: `rows csv-merge [OPTIONS] SOURCES... OUTPUT`
 Options:
 
 - `--input-encoding=TEXT`: input encoding for all CSV files (default: `utf-8`)
-- `--output-encoding=TEXT`: Encoding of output CSV (default: `utf-8`)
-
+- `--output-encoding=TEXT`: encoding of output CSV (default: `utf-8`)
+- `--strip`: remove spaces from CSV cells
 
 Example:
 

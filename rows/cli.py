@@ -924,9 +924,10 @@ def command_pdf_to_text(input_option, output_encoding, quiet, backend, pages, so
 @cli.command(name="csv-merge", help="Lazily merge CSVs (even if the schemas differs)")
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
+@click.option("--strip", "-s", is_flag=True)
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("destination")
-def csv_merge(input_encoding, output_encoding, sources, destination):
+def csv_merge(input_encoding, output_encoding, strip, sources, destination):
 
     # TODO: add option to preserve original key names
     # TODO: detect input_encoding for all sources
@@ -964,12 +965,20 @@ def csv_merge(input_encoding, output_encoding, sources, destination):
         field_names = keys_per_file[filename]
         fobj = open_compressed(filename, encoding=input_encoding)
         reader = csv.DictReader(fobj, dialect=dialects[filename])
-        for row in reader:
-            writer.writerow({
-                key: row[field_names[key]] if key in field_names else None
-                for key in keys
-            })
-            progress_bar.update()
+        if strip:
+            for row in reader:
+                writer.writerow({
+                    key: row[field_names[key]].strip() if key in field_names else None
+                    for key in keys
+                })
+                progress_bar.update()
+        else:
+            for row in reader:
+                writer.writerow({
+                    key: row[field_names[key]] if key in field_names else None
+                    for key in keys
+                })
+                progress_bar.update()
         fobj.close()
     output_fobj.close()
 
