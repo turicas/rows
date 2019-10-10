@@ -943,17 +943,17 @@ def csv_merge(input_encoding, output_encoding, strip, sources, destination):
         sample = fobj.read(sample_size)
         fobj.close()
         dialect = rows.plugins.csv.discover_dialect(sample, input_encoding)
+        dialects[filename] = dialect
 
         # Get header
         fobj = open_compressed(filename, encoding=input_encoding)
         reader = csv.DictReader(fobj, dialect=dialect)
         for field_name in reader.fieldnames:
             field_name_slug = rows.fields.slug(field_name)
+            keys_per_file[filename][field_name_slug] = field_name
             if field_name_slug not in keys:
                 keys.append(field_name_slug)
-                keys_per_file[filename][field_name_slug] = field_name
         fobj.close()
-        dialects[filename] = dialect
     # TODO: is it needed to use make_header here?
 
     output_fobj = open_compressed(destination, mode="w", encoding=output_encoding)
@@ -968,14 +968,14 @@ def csv_merge(input_encoding, output_encoding, strip, sources, destination):
         if strip:
             for row in reader:
                 writer.writerow({
-                    key: row[field_names[key]].strip() if key in field_names else None
+                    key: (row[field_names[key]] or "").strip() if key in field_names else ""
                     for key in keys
                 })
                 progress_bar.update()
         else:
             for row in reader:
                 writer.writerow({
-                    key: row[field_names[key]] if key in field_names else None
+                    key: (row[field_names[key]] or "") if key in field_names else ""
                     for key in keys
                 })
                 progress_bar.update()
