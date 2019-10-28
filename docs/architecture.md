@@ -1,4 +1,4 @@
-## Architecture
+# Architecture
 
 The library is composed by:
 
