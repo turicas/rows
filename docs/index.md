@@ -20,15 +20,19 @@ work on other versions too).
 
 ## Contents
 
-- [Basic Usage][doc-basic-usage]
-- [Quick-start guide][doc-quick-start]
-- [Installation][doc-installation]
-- [License][doc-license]
-- [Architecture][doc-architecture]
-- [Plugins][doc-plugins]
-- [Operations][doc-operations]
-- [Command-line][doc-cli]
-- [Locale][doc-locale]
+- First Steps
+    - [Basic Usage][doc-basic-usage]
+    - [Quick-start guide][doc-quick-start]
+    - [Installation][doc-installation]
+    - [License][doc-license]
+
+- Basic Concepts
+    - [Architecture][doc-architecture]
+    - [Plugins][doc-plugins]
+    - [Operations][doc-operations]
+    - [Command-line][doc-cli]
+    - [Locale][doc-locale]
+
 - [Going deeper][doc-links]
 - [Contributing][doc-contributing]
 - [Code reference][reference]
