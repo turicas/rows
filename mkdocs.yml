@@ -1,15 +1,20 @@
 site_name: rows 0.4.1 documentation
 nav:
   - First Steps:
-    - Welcome: 'index.md'
-    - Quick start: 'quick-start.md'
+    - 'basic-usage.md'
+    - 'quick-start.md'
     - Installation: 'installation.md'
+    - license.md
   - Basic Concepts:
+      - 'Architecture': 'architecture.md'
+      - 'Plugins': 'plugins.md'
       - Operations: 'operations.md'
       - Command-Line: 'cli.md'
       - Locale: 'locale.md'
-  - Plugins: 'plugins.md'
   - Going deeper: 'links.md'
   - Contributing: 'contributing.md'
   - Release notes: 'changelog.md'
 theme: readthedocs
+markdown_extensions:
+    - toc:
+        baselevel: 2
