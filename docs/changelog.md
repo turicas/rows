@@ -1,5 +1,11 @@
 # Log of Changes
 
+## Semantic Versioning
+
+`rows` uses [semantic versioning][semver]. Note that it means we do not
+guarantee API backwards compatibility on `0.x.y` versions (but we try the best
+to).
+
 ## Version `0.4.2dev0`
 
 **Released on: (in development)**
