@@ -58,3 +58,7 @@ For more examples, please refer to our [quick-start guide][doc-quick-start].
 > `csv2sqlite`, `sqlite2csv`, `pgimport` and `pgexport` (so using
 > `rows.import_from_X` will put everything in memory), [we're working on
 > this][rows-lazyness].
+
+[br-cities]: https://gist.github.com/turicas/ec0abcfe0d7abf7a97ef7a0c1d72c7f7
+[rows-lazyness]: https://github.com/turicas/rows/issues/45
+[doc-quick-start]: quick-start.md

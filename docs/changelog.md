@@ -1,4 +1,4 @@
-# Log of Changes
+# Release notes
 
 ## Semantic Versioning
 

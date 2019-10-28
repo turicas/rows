@@ -6,8 +6,8 @@ nav:
     - Installation: 'installation.md'
     - license.md
   - Basic Concepts:
-      - Architecture: 'architecture.md'
-      - Plugins: 'plugins.md'
+      - 'Architecture': 'architecture.md'
+      - 'Plugins': 'plugins.md'
       - Operations: 'operations.md'
       - Command-Line: 'cli.md'
       - Locale: 'locale.md'
@@ -15,3 +15,6 @@ nav:
   - Contributing: 'contributing.md'
   - Release notes: 'changelog.md'
 theme: readthedocs
+markdown_extensions:
+    - toc:
+        baselevel: 2

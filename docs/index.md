@@ -20,14 +20,36 @@ work on other versions too).
 
 ## Contents
 
-- [Installation][doc-installation]
+- [Basic Usage][doc-basic-usage]
 - [Quick-start guide][doc-quick-start]
-- [Basic Usage](basic-usage)
-- [Command-line interface][doc-cli]
-- [Supported plugins][doc-plugins]
-- [Using locale when importing data][doc-locale]
-- [Table operations][doc-operations]
+- [Installation][doc-installation]
+- [License][doc-license]
+- [Architecture][doc-architecture]
+- [Plugins][doc-plugins]
+- [Operations][doc-operations]
+- [Command-line][doc-cli]
+- [Locale][doc-locale]
+- [Going deeper][doc-links]
 - [Contributing][doc-contributing]
-- [Useful links][doc-links]
-- [Log of changes][doc-changelog]
 - [Code reference][reference]
+
+
+
+[doc-changelog]: changelog.md
+[doc-cli]: cli.md
+[doc-contributing]: contributing.md
+[doc-installation]: installation.md
+[doc-license]: license.md
+[doc-links]: links.md
+[doc-locale]: locale.md
+[doc-architecture]: architecture.md
+[doc-basic-usage]: basic-usage.md
+[doc-operations]: operations.md
+[doc-plugins]: plugins.md
+[doc-locale]: locale.md
+[doc-quick-start]: quick-start.md
+[reference]: reference/
+[rows-issue-103]: https://github.com/turicas/rows/issues/103
+[rows-lazyness]: https://github.com/turicas/rows/issues/45
+[rows]: https://github.com/turicas/rows/
+[semver]: http://semver.org/
