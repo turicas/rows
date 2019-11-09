@@ -993,5 +993,21 @@ def csv_merge(input_encoding, output_encoding, no_strip, no_remove_empty_lines, 
     output_fobj.close()
 
 
+@cli.command(name="csv-row-count", help="Lazily count CSV rows")
+@click.option("--input-encoding", default=None)
+@click.argument("source")
+def csv_row_count(input_encoding, source):
+    # TODO: detect dialect
+    # TODO: add option to force dialect
+    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
+
+    fobj = open_compressed(source, encoding=input_encoding)
+    reader = csv.DictReader(fobj)
+    count = sum(1 for _ in reader)
+    fobj.close()
+
+    click.echo(count)
+
+
 if __name__ == "__main__":
     cli()
