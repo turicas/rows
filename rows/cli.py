@@ -924,15 +924,19 @@ def command_pdf_to_text(input_option, output_encoding, quiet, backend, pages, so
 @cli.command(name="csv-merge", help="Lazily merge CSVs (even if the schemas differs)")
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
-@click.option("--strip", "-s", is_flag=True)
+@click.option("--no-strip", is_flag=True)
+@click.option("--no-remove-empty-lines", is_flag=True)
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("destination")
-def csv_merge(input_encoding, output_encoding, strip, sources, destination):
+def csv_merge(input_encoding, output_encoding, no_strip, no_remove_empty_lines, sources, destination):
 
     # TODO: add option to preserve original key names
     # TODO: detect input_encoding for all sources
     # TODO: add input option for sample_size
     # TODO: add --quiet
+
+    strip = not no_strip
+    remove_empty_lines = not no_remove_empty_lines
 
     input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
     sample_size = 1024 * 1024
@@ -967,17 +971,23 @@ def csv_merge(input_encoding, output_encoding, strip, sources, destination):
         reader = csv.DictReader(fobj, dialect=dialects[filename])
         if strip:
             for row in reader:
-                writer.writerow({
+                new_row = {
                     key: (row[field_names[key]] or "").strip() if key in field_names else ""
                     for key in keys
-                })
+                }
+                if remove_empty_lines and not any(new_row.values()):
+                    continue
+                writer.writerow(new_row)
                 progress_bar.update()
         else:
             for row in reader:
-                writer.writerow({
+                new_row = {
                     key: (row[field_names[key]] or "") if key in field_names else ""
                     for key in keys
-                })
+                }
+                if remove_empty_lines and not any(new_row.values()):
+                    continue
+                writer.writerow(new_row)
                 progress_bar.update()
         fobj.close()
     output_fobj.close()
