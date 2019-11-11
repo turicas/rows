@@ -709,11 +709,11 @@ def schema(
     if export_fields is None:
         export_fields = table.field_names
     if output in ("-", None):
-        output = sys.stdout.buffer
+        output_fobj = sys.stdout.buffer
     else:
-        output = open_compressed(output, mode="wb")
-    output = generate_schema(table, export_fields, output_format)
-    click.echo(output)
+        output_fobj = open_compressed(output, mode="wb")
+    content = generate_schema(table, export_fields, output_format)
+    output_fobj.write(content)
 
 
 @cli.command(name="csv-to-sqlite", help="Convert one or more CSV files to SQLite")
@@ -950,6 +950,9 @@ def csv_merge(input_encoding, output_encoding, no_strip, no_remove_empty_lines, 
         dialects[filename] = dialect
 
         # Get header
+        # TODO: fix final header in case of empty field names (a command like
+        # `rows csv-clean` would fix the problem if run before `csv-merge` for
+        # each file).
         fobj = open_compressed(filename, encoding=input_encoding)
         reader = csv.DictReader(fobj, dialect=dialect)
         for field_name in reader.fieldnames:
