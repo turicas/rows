@@ -39,9 +39,8 @@ to).
 
 ### Command-Line Interface
 
-- `rows schema` (CLI) is now "lazy" (before it imported the whole file, even if
+- `rows schema` is now "lazy" (before it imported the whole file, even if
   samples were defined)
-- Fix `rows schema` (some output formats where not working properly)
 - Add support for compressed files output on `rows pdf-to-text` and `rows schema`
 - HTTP cache is disabled by default (this may change in the future)
 - Accept URI schemes in `rows convert`
@@ -54,6 +53,8 @@ to).
 - Add plugins' input/output options to `convert`
 - Add `rows csv-merge` (lazily merge CSV files even if they don't share a
   common schema)
+- Add `rows csv-clean` (lazily clean a CSV file, removing empty columns and
+  creating a consistent output format)
 
 ### Utils
 
@@ -71,6 +72,9 @@ to).
   spreadsheet has empty cells
 - Fix slug function (so `"a/b"` will turn into `"a_b"`)
 - Detect as fallback type if all values are empty
+- Fix output on `rows schema` (was printing to stdout even if output file is
+  provided)
+- Fix `rows schema` (some output formats where not working properly)
 
 ## Version `0.4.1` (bugfix release)
 

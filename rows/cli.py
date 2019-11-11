@@ -27,8 +27,10 @@ import os
 import pathlib
 import sqlite3
 import sys
+import tempfile
 from collections import defaultdict
 from io import BytesIO
+from pathlib import Path
 
 import click
 import requests.exceptions
@@ -994,6 +996,88 @@ def csv_merge(input_encoding, output_encoding, no_strip, no_remove_empty_lines, 
                 progress_bar.update()
         fobj.close()
     output_fobj.close()
+
+
+@cli.command(name="csv-clean")
+@click.option("--input-encoding", default=None)
+@click.option("--output-encoding", default="utf-8")
+@click.option("--in-place", is_flag=True)
+@click.argument("source", required=True)
+@click.argument("destination", required=False)
+def csv_clean(input_encoding, output_encoding, in_place, source, destination):
+    """Create a consistent and clean version of a CSV file
+
+    The tasks this command executes are:
+
+    - Slugify column names
+    - Rename columns with empty name to "field_N"
+    - Remove empty rows
+    - Remove empty columns
+    - Output dialect: excel
+    - Output encoding: UTF-8
+    """
+
+    # TODO: add option to preserve original key names
+    # TODO: detect input_encoding for source
+    # TODO: add input option for sample_size
+    # TODO: add --quiet
+
+    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
+
+    # Detect dialect
+    sample_size = 1024 * 1024
+    fobj = open_compressed(source, mode="rb")
+    sample = fobj.read(sample_size)
+    fobj.close()
+    dialect = rows.plugins.csv.discover_dialect(sample, input_encoding)
+
+    # Get header
+    fobj = open_compressed(source, encoding=input_encoding)
+    reader = csv.DictReader(fobj, dialect=dialect)
+    header = make_header(reader.fieldnames)
+    fobj.close()
+
+    fobj = open_compressed(source, encoding=input_encoding)
+    reader = csv.reader(fobj, dialect=dialect)
+    _ = next(reader)
+    empty_columns = list(header)
+    for row in tqdm(reader, desc="Detecting empty columns"):
+        row = dict(zip(header, [value.strip() for value in row]))
+        if not any(row.values()):  # Empty row
+            continue
+        for key, value in row.items():
+            if value and key in empty_columns:
+                empty_columns.remove(key)
+        if not empty_columns:
+            break
+    fobj.close()
+
+    if in_place:
+        temp_path = Path(tempfile.mkdtemp())
+        destination = temp_path / Path(source).name
+
+    fobj = open_compressed(source, encoding=input_encoding)
+    output_fobj = open_compressed(destination, mode="w", encoding=output_encoding)
+    reader = csv.reader(fobj, dialect=dialect)
+    _ = next(reader)
+    final_header = [field_name for field_name in header if field_name not in empty_columns]
+    writer = csv.DictWriter(output_fobj, fieldnames=final_header)
+    writer.writeheader()
+    for row in tqdm(reader, desc="Converting file"):
+        row = {
+            key: value
+            for key, value in zip(header, [value.strip() for value in row])
+            if key not in empty_columns
+        }
+        if not any(row.values()):  # Empty row
+            continue
+        writer.writerow(row)
+    fobj.close()
+    output_fobj.close()
+
+    if in_place:
+        os.rename(destination, source)
+        os.rmdir(str(temp_path))
 
 
 @cli.command(name="csv-row-count", help="Lazily count CSV rows")
