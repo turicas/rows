@@ -1100,16 +1100,16 @@ def csv_row_count(input_encoding, source):
 @click.argument("source")
 def list_sheets(source):
     extension = source[source.rfind(".") + 1:].lower()
-    sheet_names_functions = {
-        "xls": rows.plugins.xls.sheet_names,
-        "xlsx": rows.plugins.xlsx.sheet_names,
-        "ods": rows.plugins.ods.sheet_names,
-    }
-    if extension not in sheet_names_functions:
+    if extension not in ("xls", "xlsx", "ods"):
+        # TODO: support for 'sheet_names' should be introspected from plugins
         click.echo("ERROR: file type '{}' not supported.".format(extension), err=True)
         sys.exit(30)
+    elif extension not in dir(rows.plugins):
+        click.echo("ERROR: extension '{}' not installed.".format(extension), err=True)
+        sys.exit(30)
 
-    for sheet_name in sheet_names_functions[extension](source):
+    sheet_names_function = getattr(getattr(rows.plugins, extension), "sheet_names")
+    for sheet_name in sheet_names_function(source):
         click.echo(sheet_name)
 
 
