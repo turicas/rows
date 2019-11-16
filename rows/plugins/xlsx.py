@@ -55,6 +55,18 @@ def _cell_to_python(cell):
         return value
 
 
+def sheet_names(filename_or_fobj, workbook_kwargs=None):
+    # TODO: setup/teardown must be methods of a class so we can reuse them
+    workbook_kwargs = workbook_kwargs or {}
+    workbook_kwargs["read_only"] = workbook_kwargs.get("read_only", True)
+
+    workbook = load_workbook(filename_or_fobj, **workbook_kwargs)
+    result = workbook.sheetnames
+    workbook.close()
+
+    return result
+
+
 def import_from_xlsx(
     filename_or_fobj,
     sheet_name=None,
@@ -73,8 +85,7 @@ def import_from_xlsx(
     """
 
     workbook_kwargs = workbook_kwargs or {}
-    if "read_only" not in workbook_kwargs:
-        workbook_kwargs["read_only"] = True
+    workbook_kwargs["read_only"] = workbook_kwargs.get("read_only", True)
 
     workbook = load_workbook(filename_or_fobj, **workbook_kwargs)
     if sheet_name is None:

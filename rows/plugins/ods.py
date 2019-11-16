@@ -41,6 +41,29 @@ def complete_with_None(lists, size):
         yield element
 
 
+def sheet_names(filename_or_fobj):
+    # TODO: setup/teardown must be methods of a class so we can reuse them
+    source = Source.from_file(filename_or_fobj, plugin_name="ods")
+    ods_file = zipfile.ZipFile(source.fobj)
+    content_fobj = ods_file.open("content.xml")
+    xml = content_fobj.read()  # will return bytes
+    # TODO: read XML lazily?
+    content_fobj.close()
+    ods_file.close()
+    source.fobj.close()
+
+    document = xml_from_string(xml)
+    namespaces = document.nsmap
+    spreadsheet = document.xpath("//office:spreadsheet", namespaces=namespaces)[0]
+    tables = xpath(spreadsheet, "//table:table", namespaces)
+    name_attribute = f"{{{namespaces['table']}}}name"
+    # TODO: unescape values
+    return [
+        table.attrib[name_attribute]
+        for table in tables
+    ]
+
+
 def import_from_ods(
     filename_or_fobj,
     index=0,

@@ -1096,5 +1096,22 @@ def csv_row_count(input_encoding, source):
     click.echo(count)
 
 
+@cli.command(name="list-sheets", help="List sheets")
+@click.argument("source")
+def list_sheets(source):
+    extension = source[source.rfind(".") + 1:].lower()
+    sheet_names_functions = {
+        "xls": rows.plugins.xls.sheet_names,
+        "xlsx": rows.plugins.xlsx.sheet_names,
+        "ods": rows.plugins.ods.sheet_names,
+    }
+    if extension not in sheet_names_functions:
+        click.echo("ERROR: file type '{}' not supported.".format(extension), err=True)
+        sys.exit(30)
+
+    for sheet_name in sheet_names_functions[extension](source):
+        click.echo(sheet_name)
+
+
 if __name__ == "__main__":
     cli()

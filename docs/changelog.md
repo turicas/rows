@@ -55,6 +55,8 @@ to).
   common schema)
 - Add `rows csv-clean` (lazily clean a CSV file, removing empty columns and
   creating a consistent output format)
+- Add `rows list-sheets` (prints sheet names for ODS, XLS and XLSX files)
+
 
 ### Utils
 

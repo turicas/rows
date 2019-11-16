@@ -157,6 +157,18 @@ def get_table_start(sheet):
     return start_row, start_column
 
 
+def sheet_names(filename_or_fobj):
+    # TODO: setup/teardown must be methods of a class so we can reuse them
+    source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="xls")
+    source.fobj.close()
+    devnull = open(os.devnull, mode="w")
+    book = xlrd.open_workbook(source.uri, formatting_info=False, logfile=devnull)
+    result = book.sheet_names()
+    del book
+    devnull.close()
+    return result
+
+
 def import_from_xls(
     filename_or_fobj,
     sheet_name=None,
@@ -172,9 +184,8 @@ def import_from_xls(
 
     source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="xls")
     source.fobj.close()
-    book = xlrd.open_workbook(
-        source.uri, formatting_info=True, logfile=open(os.devnull, mode="w")
-    )
+    devnull = open(os.devnull, mode="w")
+    book = xlrd.open_workbook(source.uri, formatting_info=True, logfile=devnull)
 
     if sheet_name is not None:
         sheet = book.sheet_by_name(sheet_name)
@@ -208,6 +219,7 @@ def import_from_xls(
         for row_index in range(start_row, end_row + 1)
     ]
 
+    devnull.close()
     meta = {"imported_from": "xls", "source": source, "name": sheet.name}
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
