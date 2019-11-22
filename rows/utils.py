@@ -211,11 +211,19 @@ class Source(object):
     is_file: bool = None
     local: bool = None
 
-
     @classmethod
-    def from_file(cls, filename_or_fobj, plugin_name=None, encoding=None,
-            mode="rb", compressed=None, should_delete=False, should_close=None,
-            is_file=True, local=True):
+    def from_file(
+        cls,
+        filename_or_fobj,
+        plugin_name=None,
+        encoding=None,
+        mode="rb",
+        compressed=None,
+        should_delete=False,
+        should_close=None,
+        is_file=True,
+        local=True,
+    ):
         """Create a `Source` from a filename or fobj"""
 
         if isinstance(filename_or_fobj, Source):
@@ -229,7 +237,9 @@ class Source(object):
         else:  # Don't know exactly what is, assume file-like object
             fobj = filename_or_fobj
             filename = getattr(fobj, "name", None)
-            if not isinstance(filename, (six.binary_type, six.text_type)):  # BytesIO object
+            if not isinstance(
+                filename, (six.binary_type, six.text_type)
+            ):  # BytesIO object
                 filename = None
             should_close = False if should_close is None else should_close
 
@@ -676,11 +686,15 @@ class CsvLazyDictWriter:
       output file will be automatically compressed.
     """
 
-    def __init__(self, filename_or_fobj, encoding="utf-8"):
+    def __init__(self, filename_or_fobj, encoding="utf-8", *args, **kwargs):
         self.writer = None
         self.filename_or_fobj = filename_or_fobj
         self.encoding = encoding
         self._fobj = None
+        self.writer_args = args
+        self.writer_kwargs = kwargs
+        self.writer_kwargs["lineterminator"] = kwargs.get("lineterminator", "\n")
+        # TODO: check if it should be the same in other OSes
 
     def __enter__(self):
         return self
@@ -702,7 +716,12 @@ class CsvLazyDictWriter:
 
     def writerow(self, row):
         if self.writer is None:
-            self.writer = csv.DictWriter(self.fobj, fieldnames=list(row.keys()))
+            self.writer = csv.DictWriter(
+                self.fobj,
+                fieldnames=list(row.keys()),
+                *self.writer_args,
+                **self.writer_kwargs
+            )
             self.writer.writeheader()
 
         self.writerow = self.writer.writerow
@@ -831,10 +850,7 @@ def get_psql_copy_command(
     )
     if direction == "FROM":
         copy += "FORCE_NULL {header}, "
-    copy += (
-        "ENCODING '{encoding}', "
-        "FORMAT CSV, HEADER);"
-    )
+    copy += "ENCODING '{encoding}', " "FORMAT CSV, HEADER);"
 
     copy_command = copy.format(
         source=source,
@@ -1152,12 +1168,7 @@ def load_schema(filename, context=None):
         for key in dir(rows.fields)
         if "Field" in key and key != "Field"
     }
-    return OrderedDict(
-        [
-            (row.field_name, context[row.field_type])
-            for row in table
-        ]
-    )
+    return OrderedDict([(row.field_name, context[row.field_type]) for row in table])
 
 
 # Shortcuts
