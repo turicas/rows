@@ -166,3 +166,6 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # As this test is written, file contents on first column are
         # 100%, 23.20%, 1.00%, 10.00%, 100.00%
         assert result[5][1] == "text"
+
+    # TODO: add test when sheet.min_row/max_row/min_col/max_col is None
+    # (happens when file is downloaded from Google Spreadsheets).

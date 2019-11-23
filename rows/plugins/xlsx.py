@@ -95,8 +95,10 @@ def import_from_xlsx(
     # The openpyxl library reads rows and columns starting from 1 and ending on
     # sheet.max_row/max_col. rows uses 0-based indexes (from 0 to N - 1), so we
     # need to adjust the ranges accordingly.
-    min_row, min_column = sheet.min_row - 1, sheet.min_column - 1
-    max_row, max_column = sheet.max_row - 1, sheet.max_column - 1
+    min_row = sheet.min_row - 1 if sheet.min_row is not None else None
+    min_column = sheet.min_column - 1 if sheet.min_column is not None else None
+    max_row = sheet.max_row - 1 if sheet.max_row is not None else None
+    max_column = sheet.max_column - 1 if sheet.max_column is not None else None
     # TODO: consider adding a parameter `ignore_padding=True` and when it's
     # True, consider `start_row` starting from `sheet.min_row` and
     # `start_column` starting from `sheet.min_col`.
@@ -107,10 +109,10 @@ def import_from_xlsx(
     table_rows = []
     is_empty = lambda row: all(cell is None for cell in row)
     selected_rows = sheet.iter_rows(
-        min_row=start_row + 1,
-        max_row=end_row + 1,
-        min_col=start_column + 1,
-        max_col=end_column + 1,
+        min_row=start_row + 1 if start_row is not None else None,
+        max_row=end_row + 1 if end_row is not None else None,
+        min_col=start_column + 1 if start_column is not None else None,
+        max_col=end_column + 1 if end_column is not None else None,
     )
     for row in selected_rows:
         row = [_cell_to_python(cell) for cell in row]
