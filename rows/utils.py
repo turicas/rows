@@ -1077,7 +1077,7 @@ def generate_schema(table, export_fields, output_format):
         if output_format == "txt":
             return plugins.txt.export_to_txt(table)
         elif output_format == "csv":
-            return plugins.csv.export_to_csv(table)
+            return plugins.csv.export_to_csv(table).decode("utf-8")
 
     elif output_format == "sql":
         # TODO: may use dict from rows.plugins.sqlite or postgresql

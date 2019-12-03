@@ -715,7 +715,7 @@ def schema(
     else:
         output_fobj = open_compressed(output, mode="wb")
     content = generate_schema(table, export_fields, output_format)
-    output_fobj.write(content)
+    output_fobj.write(content.encode("utf-8"))
 
 
 @cli.command(name="csv-to-sqlite", help="Convert one or more CSV files to SQLite")
