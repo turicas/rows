@@ -52,8 +52,6 @@ except ImportError:
     PDFMINER_TEXT_TYPES, PDFMINER_ALL_TYPES = None, None
 
 
-
-
 def extract_intervals(text, repeat=False, sort=True):
     """
     >>> extract_intervals("1,2,3")
@@ -156,7 +154,11 @@ class PDFBackend(object):
 
     def __del__(self):
         source = self.source
-        if source.should_close and hasattr(source.fobj, "closed") and not source.fobj.closed:
+        if (
+            source.should_close
+            and hasattr(source.fobj, "closed")
+            and not source.fobj.closed
+        ):
             source.fobj.close()
 
 
@@ -459,6 +461,48 @@ def contains_or_overlap(a, b):
         or (x1min <= x2max <= x1max and y1min <= y2max <= y1max)
     )
     return contains or overlaps
+
+
+def distance(a, b):
+    return math.sqrt((a.x0 - b.x0) ** 2 + (a.y0 - b.y0) ** 2)
+
+
+def closest_from_text(objs, text, strip=True):
+    if strip:
+        text = text.strip()
+        desired_obj = [obj for obj in objs if obj.text.strip() == text][0]
+    else:
+        desired_obj = [obj for obj in objs if obj.text == text][0]
+    for obj in sorted(objs, key=lambda row: distance(desired_obj, row)):
+        if obj.text.strip() != text:
+            return obj
+
+
+def closest_same_line(objs, text):
+    for _, line_objs in group_objects(objs, 0.1, "y").items():
+        desired_y0 = None
+        for obj in line_objs:
+            if obj.text == text:
+                desired_y0 = obj.y0
+                break
+        if desired_y0 is not None:
+            return sorted(line_objs, key=lambda row: -row.x0)[0]
+    return None  # Not found
+
+
+def same_column(objs, text):
+    object_groups = {
+        key: list(value) for key, value in group_objects(objs, 0.1, "x").items()
+    }
+    desired_x0 = None
+    for x0, column_objs in object_groups.items():
+        for obj in column_objs:
+            if obj.text.strip() == text:
+                desired_x0 = x0
+                break
+    if desired_x0 is None:  # Text not found
+        return []
+    return sorted(object_groups[desired_x0], key=lambda row: -row.y0)
 
 
 class ExtractionAlgorithm(object):
