@@ -18,7 +18,7 @@
 from __future__ import unicode_literals
 
 import io
-from pathlib import Path
+import math
 
 import six
 from cached_property import cached_property
