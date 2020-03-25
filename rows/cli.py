@@ -681,8 +681,9 @@ def schema(
 
     input_options = parse_options(input_option)
     progress = not quiet
-    source_info = detect_source(uri=source, verify_ssl=verify_ssl, progress=progress)
     input_encoding = input_encoding or input_options.get("encoding", None) or DEFAULT_INPUT_ENCODING
+    source_info = detect_source(uri=source, verify_ssl=verify_ssl, progress=progress)
+    source_info.encoding = input_encoding  # TODO: fix `detect_source`
 
     samples = samples if samples > 0 else None
     import_fields = _get_import_fields(fields, fields_exclude)

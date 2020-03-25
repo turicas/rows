@@ -1158,6 +1158,8 @@ def load_schema(filename, context=None):
     `context` is a `dict` with field_type as key pointing to field class, like:
         {"text": rows.fields.TextField, "value": MyCustomField}
     """
+    # TODO: load_schema must support Path objects
+
     table = import_from_uri(filename)
     field_names = table.field_names
     assert "field_name" in field_names
