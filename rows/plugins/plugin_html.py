@@ -86,7 +86,10 @@ def import_from_html(
         filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding
     )
 
-    html = source.fobj.read().decode(source.encoding)
+    html = source.fobj.read()
+    if b"<?xml" not in html[:1024] or b"encoding" not in html[:html.find(b"?>") + 2]:
+        html = html.decode(source.encoding)  # Regular HTML, not XHTML/XML
+
     html_tree = document_fromstring(html)
     tables = html_tree.xpath("//{}".format(table_tag))
     table = tables[index]

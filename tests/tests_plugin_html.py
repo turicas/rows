@@ -81,6 +81,16 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(source.uri, Path(self.filename))
         self.assertFalse(source.should_close)
 
+    def test_import_from_xhtml(self):
+        fobj = BytesIO(
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<table> <tr><td>f1</td></tr> <tr><td>42</td></tr> </table>'
+        )
+        table = rows.import_from_html(fobj, encoding=self.encoding)
+        self.assertEqual(table.field_names, ["f1"])
+        self.assertEqual(len(table), 1)
+        self.assertEqual(table[0].f1, 42)
+
     @mock.patch("rows.plugins.plugin_html.create_table")
     def test_import_from_html_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
