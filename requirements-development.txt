@@ -5,7 +5,7 @@ click
 file-magic
 lxml
 openpyxl
-pymupdf
+pymupdf>=1.16.8
 https://github.com/turicas/parquet-python/archive/enhancement/move-to-thriftpy2.zip#egg=parquet
 pdfminer.six
 requests

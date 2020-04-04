@@ -28,6 +28,7 @@ from rows.utils import Source
 
 try:
     import fitz as pymupdf
+    pymupdf.TOOLS.mupdf_display_errors(False)
 
     pymupdf_imported = True
 except ImportError:
