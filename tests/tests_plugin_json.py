@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import io
 import json
 import tempfile
 import unittest
@@ -167,3 +168,35 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table2 = rows.import_from_json(filename)
         self.assert_table_equal(table, table2)
+
+    def test_item_without_a_field(self):
+        data = [
+            {"f1": 2, "f2": 3},
+            {"f1": 1},
+            {"f1": 4, "f2": 5},
+        ]
+        json_obj = io.BytesIO(json.dumps(data).encode("utf-8"))
+        table = rows.import_from_json(json_obj)
+        self.assertEqual(table.field_names, ["f1", "f2"])
+        self.assertEqual(table[0].f1, 2)
+        self.assertEqual(table[0].f2, 3)
+        self.assertEqual(table[1].f1, 1)
+        self.assertEqual(table[1].f2, None)
+        self.assertEqual(table[2].f1, 4)
+        self.assertEqual(table[2].f2, 5)
+
+    def test_item_with_new_field_in_the_middle(self):
+        data = [
+            {"f1": 1},
+            {"f1": 2, "f2": 3},
+            {"f1": 4, "f2": 5},
+        ]
+        json_obj = io.BytesIO(json.dumps(data).encode("utf-8"))
+        table = rows.import_from_json(json_obj)
+        self.assertEqual(table.field_names, ["f1", "f2"])
+        self.assertEqual(table[0].f1, 1)
+        self.assertEqual(table[0].f2, None)
+        self.assertEqual(table[1].f1, 2)
+        self.assertEqual(table[1].f2, 3)
+        self.assertEqual(table[2].f1, 4)
+        self.assertEqual(table[2].f2, 5)
