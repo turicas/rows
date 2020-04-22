@@ -36,6 +36,7 @@ to).
 - Added CSV dialect "excel-semicolon"
 - Improved PostgreSQL import from CSV (pgimport) when dealing with null values
 - PDF now supports `page_numbers` as string (range of numbers)
+- Add support to exporto to multiple sheets on the same XLSX file
 
 ### Command-Line Interface
 

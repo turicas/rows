@@ -18,7 +18,7 @@
 from __future__ import unicode_literals
 
 from decimal import Decimal
-from io import BytesIO
+from io import BytesIO, UnsupportedOperation
 from numbers import Number
 
 from openpyxl import Workbook, load_workbook
@@ -162,12 +162,52 @@ def _python_to_cell(field_types):
     return convert_row
 
 
-def export_to_xlsx(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kwargs):
+def define_sheet_name(existing_names):
+    for counter in range(1, 1024 * 1024):
+        new_name = f"Sheet{counter}"
+        if new_name not in existing_names:
+            return new_name
+
+
+def is_existing_spreadsheet(source):
+    if source.uri is not None:  # filename was given
+        if not source.uri.exists():
+            # TODO: if file doesn't exist and we open with mode="a+b" it will
+            # be created and therefore this `if` won't be `True`.
+            return False
+
+    fobj = source.fobj
+    fobj.seek(0)
+    try:
+        data = fobj.read(1024)
+    except UnsupportedOperation:
+        # File in write-only mode: so it's a new file
+        return False
+    else:
+        fobj.seek(0)
+        return data[:2] == b"PK"  # XXX: any zip file will return `True`
+
+
+def export_to_xlsx(table, filename_or_fobj=None, sheet_name=None, *args, **kwargs):
     """Export the rows.Table to XLSX file and return the saved file."""
 
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = sheet_name
+    return_result = False
+    if filename_or_fobj is None:
+        filename_or_fobj = BytesIO()
+        return_result = True
+    source = Source.from_file(filename_or_fobj, mode="a+b", plugin_name="xlsx")
+
+    if is_existing_spreadsheet(source):
+        workbook = load_workbook(filename_or_fobj)
+        if sheet_name is None:
+            sheet_name = define_sheet_name(workbook.sheetnames)
+        sheet = workbook.create_sheet(title=sheet_name)
+    else:
+        sheet_name = sheet_name or "Sheet1"
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = sheet_name
+
     prepared_table = prepare_to_export(table, *args, **kwargs)
 
     # Write header
@@ -185,13 +225,14 @@ def export_to_xlsx(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **k
             if number_format is not None:
                 cell.number_format = number_format
 
-    return_result = False
-    if filename_or_fobj is None:
-        filename_or_fobj = BytesIO()
-        return_result = True
-
-    source = Source.from_file(filename_or_fobj, mode="wb", plugin_name="xlsx")
-    workbook.save(source.fobj)
+    source.fobj.seek(0)
+    if source.uri is not None:
+        # For some reason the `ZipFile` inside
+        # `openpyxl.workbook.workbook.save_workbook` was not creating the
+        # contents correctly when a fobj is passed, so filename is forced.
+        workbook.save(source.uri)
+    else:
+        workbook.save(source.fobj)
     source.fobj.flush()
 
     if return_result:
