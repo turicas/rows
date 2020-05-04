@@ -212,3 +212,14 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
             [(x[0][0], x[0][1]) for x in myfunc.call_args_list],
             [(3, 3), (3, 6), (3, 9), (1, 10)],
         )
+
+    def test_empty_decimal(self):
+        table = rows.import_from_dicts([{"test": ""} for _ in range(10)])
+        table.fields["test"] = rows.fields.DecimalField
+        connection = rows.export_to_sqlite(table, ":memory:")
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM table1")
+        self.assertEqual(
+            list(cursor.fetchall()),
+            [(None,) for _ in range(10)]
+        )

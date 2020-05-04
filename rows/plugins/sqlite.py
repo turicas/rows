@@ -74,7 +74,7 @@ def _python_to_sqlite(field_types):
                 raise ValueError("Cannot serialize date value: {}".format(repr(value)))
 
         elif field_type in (fields.DecimalField, fields.PercentField):
-            return float(value) if value is not None else None
+            return float(value) if not fields.is_null(value) else None
 
         else:  # don't know this field
             return field_type.serialize(value)
