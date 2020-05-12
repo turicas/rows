@@ -1,4 +1,8 @@
 site_name: rows 0.4.1 documentation
+
+repo_url: https://github.com/turicas/rows/
+edit_uri: edit/develop/docs/
+
 nav:
   - First Steps:
     - 'basic-usage.md'
