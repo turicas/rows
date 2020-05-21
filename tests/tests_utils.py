@@ -17,7 +17,10 @@
 
 from __future__ import unicode_literals
 
+import bz2
+import gzip
 import io
+import lzma
 import pathlib
 import tempfile
 import unittest
@@ -240,6 +243,50 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         source = rows.utils.Source.from_file(path, mode="w")
         self.assertEqual(source.uri, path)
         source.fobj.close()
+
+    def assert_open_compressed_binary(self, suffix, decompress):
+        content = "Álvaro"
+        encoding = "iso-8859-1"
+        content_encoded = content.encode(encoding)
+
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = temp.name + (suffix or "")
+        self.files_to_delete.append(filename)
+        fobj = rows.utils.open_compressed(filename, mode="wb")
+        fobj.write(content_encoded)
+        fobj.close()
+        assert decompress(open(filename, mode="rb").read()) == content_encoded
+
+    def assert_open_compressed_text(self, suffix, decompress):
+        content = "Álvaro"
+        encoding = "iso-8859-1"
+        content_encoded = content.encode(encoding)
+
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        filename = temp.name + (suffix or "")
+        self.files_to_delete.append(filename)
+        fobj = rows.utils.open_compressed(filename, mode="w", encoding=encoding)
+        fobj.write(content)
+        fobj.close()
+        assert decompress(open(filename, mode="rb").read()).decode(encoding) == content
+
+    def test_open_compressed(self):
+        # No compression
+        same_content = lambda data: data
+        self.assert_open_compressed_binary(suffix="", decompress=same_content)
+        self.assert_open_compressed_text(suffix="", decompress=same_content)
+
+        # Gzip
+        self.assert_open_compressed_binary(suffix=".gz", decompress=gzip.decompress)
+        self.assert_open_compressed_text(suffix=".gz", decompress=gzip.decompress)
+
+        # Lzma
+        self.assert_open_compressed_binary(suffix=".xz", decompress=lzma.decompress)
+        self.assert_open_compressed_text(suffix=".xz", decompress=lzma.decompress)
+
+        # Bz2
+        self.assert_open_compressed_binary(suffix=".bz2", decompress=bz2.decompress)
+        self.assert_open_compressed_text(suffix=".bz2", decompress=bz2.decompress)
 
 # TODO: test Source.from_file
 # TODO: test/implement load_schema with file object
