@@ -918,6 +918,7 @@ def pgimport(
     """
 
     # TODO: add logging to the process
+    # TODO: detect when error ocurred and interrupt the process immediatly
 
     if encoding is None:
         fobj = open_compressed(filename, mode="rb")

@@ -2,7 +2,8 @@ version: '3'
 
 services:
     db:
-        image: postgres:10
+        image: postgres:12
+        shm_size: 4g
         container_name: rows_postgresql
         env_file: .env
         ports:
