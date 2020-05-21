@@ -22,6 +22,7 @@ import csv
 import gzip
 import io
 import itertools
+import json
 import mimetypes
 import os
 import re
@@ -144,7 +145,44 @@ POSTGRESQL_TYPES = {
 }
 DEFAULT_POSTGRESQL_TYPE = "BYTEA"
 SQL_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " '"{table_name}" ({field_types})'
-
+LICENSES = {
+    "ODC-PDDL-1.0": {
+        "path": "https://opendatacommons.org/licenses/pddl/",
+        "title": "Open Data Commons Public Domain Dedication and License (PDDL)",
+    },
+    "ODC-AL-1.0": {
+        "path": "https://opendatacommons.org/licenses/by/",
+        "title": "Open Data Commons Attribution License",
+    },
+    "ODC-ODBL-1.0": {
+        "path": "https://opendatacommons.org/licenses/odbl/",
+        "title": "Open Data Commons Open Database License (ODbL)",
+    },
+    "CC-BY-4.0": {
+        "path": "https://creativecommons.org/licenses/by/4.0/",
+        "title": "Creative Commons Attribution (CC BY)",
+    },
+    "CC-BY-SA-4.0": {
+        "path": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "title": "Creative Commons Attribution-ShareAlike (CC BY-SA)",
+    },
+    "CC-BY-ND-4.0": {
+        "path": "https://creativecommons.org/licenses/by-nd/4.0/",
+        "title": "Creative Commons Attribution-NoDerivs (CC BY-ND)",
+    },
+    "CC-BY-NC-4.0": {
+        "path": "https://creativecommons.org/licenses/by-nc/4.0/",
+        "title": "Creative Commons Attribution-NonCommercial (CC BY-NC)",
+    },
+    "CC-BY-NC-SA-4.0": {
+        "path": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+        "title": "Creative Commons Attribution-NonCommercial-ShareAlike (CC BY-NC-SA)",
+    },
+    "CC-BY-NC-ND-4.0": {
+        "path": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+        "title": "Creative Commons Attribution-NonCommercial-NoDerivs (CC BY-NC-ND)",
+    },
+}
 
 class ProgressBar:
     def __init__(self, prefix, pre_prefix="", total=None, unit=" rows"):
@@ -1080,10 +1118,10 @@ def pgexport(
         return {"bytes_written": total_written}
 
 
-def generate_schema(table, export_fields, output_format):
+def generate_schema(table, export_fields, output_format, license="CC-BY-SA-4.0"):
     """Generate table schema for a specific output format and write
 
-    Current supported output formats: 'txt', 'sql' and 'django'.
+    Current supported output formats: 'datapackage', 'django', 'txt' and 'sql'.
     The table name and all fields names pass for a slugifying process (table
     name is taken from file name).
     """
@@ -1177,6 +1215,63 @@ def generate_schema(table, export_fields, output_format):
 
         result = "\n".join(lines) + "\n"
         return result
+
+    elif output_format == 'datapackage':
+        datapackage_fields = {
+            rows.fields.BinaryField: "any",
+            rows.fields.BoolField: "boolean",
+            rows.fields.IntegerField: "integer",
+            rows.fields.FloatField: "number",
+            rows.fields.PercentField: "number",
+            rows.fields.DateField: "date",
+            rows.fields.DatetimeField: "datetime",
+            rows.fields.TextField: "string",
+            rows.fields.DecimalField: "number",
+            rows.fields.EmailField: "string",
+            rows.fields.JSONField: "object",
+        }
+        datapackage_options = {
+            rows.fields.PercentField: {"bareNumber": False},
+        }
+        fields = []
+        for field_name, field_type in table.fields.items():
+            if field_name not in export_fields:
+                continue
+
+            field = {
+                "name": field_name,
+                "description": field_name.replace("_", " ").title(),
+                "type": datapackage_fields[field_type],
+            }
+            if field_type in datapackage_options:
+                field.update(datapackage_options[field_type])
+            fields.append(field)
+
+        name = table.name.replace("_", "-")
+        extension = table.meta["imported_from"]
+        license_data = LICENSES[license]
+        license = {"name": license}
+        license.update(license_data)
+        # TODO: may add more resources if have more than one file
+        return json.dumps(
+            {
+                "title": name.replace("-", " ").title(),
+                "name": name,
+                "licenses": [license],
+                "sources": [],
+                "contributors": [],
+                "resources": [{
+                    "name": name,
+                    "path": table.meta["source"].uri.name,
+                    "format": extension,
+                    "mediatype": FILE_EXTENSIONS[extension],
+                    "schema": {
+                        "fields": fields,
+                    },
+                }],
+            },
+            indent=2,  # TODO: create parameter to change this?
+        )
 
 
 def load_schema(filename, context=None):
