@@ -534,49 +534,76 @@ def export_to_uri(table, uri, *args, **kwargs):
     return export_function(table, uri, *args, **kwargs)
 
 
-def open_compressed(filename, mode="r", encoding=None):
-    "Return a text-based file object from a filename, even if compressed"
+def open_compressed(
+    filename,
+    mode="r",
+    buffering=-1,
+    encoding=None,
+    errors=None,
+    newline=None,
+    closefd=True,
+    opener=None,
+):
+    """Return a text-based file object from a filename, even if compressed
+
+    NOTE: if the file is compressed, options like `buffering` are valid to the
+    compressed file-object (not the uncompressed file-object returned).
+    """
 
     binary_mode = "b" in mode
-    extension = str(filename).split(".")[-1].lower()
+    if not binary_mode and "t" not in mode:
+        # For some reason, passing only mode='r' to bzip2 is equivalent
+        # to 'rb', not 'rt', so we force it here.
+        mode += "t"
     if binary_mode and encoding:
         raise ValueError("encoding should not be specified in binary mode")
 
-    if extension == "xz":
+    extension = str(filename).split(".")[-1].lower()
+    mode_binary = mode.replace("t", "b")
+    get_fobj_binary = lambda: open(
+        filename,
+        mode=mode_binary,
+        buffering=buffering,
+        errors=errors,
+        newline=newline,
+        closefd=closefd,
+        opener=opener,
+    )
+    get_fobj_text = lambda: open(
+        filename,
+        mode=mode,
+        buffering=buffering,
+        encoding=encoding,
+        errors=errors,
+        newline=newline,
+        closefd=closefd,
+        opener=opener,
+    )
+    known_extensions = ("xz", "gz", "bz2")
+
+    if extension not in known_extensions:  # No compression
+        if binary_mode:
+            return get_fobj_binary()
+        else:
+            return get_fobj_text()
+
+    elif extension == "xz":
         if lzma is None:
             raise RuntimeError("lzma support is not installed")
-
-        fobj = lzma.open(filename, mode=mode)
-        if binary_mode:
-            return fobj
-        else:
-            return io.TextIOWrapper(fobj, encoding=encoding)
+        fobj_binary = lzma.LZMAFile(get_fobj_binary(), mode=mode_binary)
 
     elif extension == "gz":
-        fobj = gzip.GzipFile(filename, mode=mode)
-        if binary_mode:
-            return fobj
-        else:
-            return io.TextIOWrapper(fobj, encoding=encoding)
+        fobj_binary = gzip.GzipFile(fileobj=get_fobj_binary())
 
     elif extension == "bz2":
         if bz2 is None:
             raise RuntimeError("bzip2 support is not installed")
+        fobj_binary = bz2.BZ2File(get_fobj_binary(), mode=mode_binary)
 
-        if binary_mode:  # ignore encoding
-            return bz2.open(filename, mode=mode)
-        else:
-            if "t" not in mode:
-                # For some reason, passing only mode='r' to bzip2 is equivalent
-                # to 'rb', not 'rt', so we force it here.
-                mode += "t"
-            return bz2.open(filename, mode=mode, encoding=encoding)
-
+    if binary_mode:
+        return fobj_binary
     else:
-        if binary_mode:
-            return open(filename, mode=mode)
-        else:
-            return open(filename, mode=mode, encoding=encoding)
+        return io.TextIOWrapper(fobj_binary, encoding=encoding)
 
 
 def csv_to_sqlite(
