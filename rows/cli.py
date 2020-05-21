@@ -649,7 +649,7 @@ def query(
     "--format",
     "output_format",
     default="txt",
-    type=click.Choice(("csv", "django", "sql", "txt")),
+    type=click.Choice(("csv", "datapackage", "django", "sql", "txt")),
 )
 @click.option("--fields", help="A comma-separated list of fields to inspect")
 @click.option(
