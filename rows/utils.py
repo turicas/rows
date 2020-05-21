@@ -418,9 +418,9 @@ def download_file(
         progress_bar = ProgressBar(prefix="Downloading file", total=total, unit="bytes")
     if filename is None:
         tmp = tempfile.NamedTemporaryFile(delete=False)
-        fobj = tmp.file
+        fobj = open_compressed(tmp.name, mode="wb")
     else:
-        fobj = open(filename, mode="wb")
+        fobj = open_compressed(filename, mode="wb")
     sample_data = b""
     for data in response.iter_content(chunk_size=chunk_size):
         fobj.write(data)
