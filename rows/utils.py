@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2020 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -138,9 +138,10 @@ POSTGRESQL_TYPES = {
     rows.fields.DecimalField: "NUMERIC",
     rows.fields.FloatField: "REAL",
     rows.fields.IntegerField: "BIGINT",  # TODO: detect when it's really needed
+    rows.fields.JSONField: "JSONB",
     rows.fields.PercentField: "REAL",
     rows.fields.TextField: "TEXT",
-    rows.fields.JSONField: "JSONB",
+    rows.fields.UUIDField: "UUID",
 }
 DEFAULT_POSTGRESQL_TYPE = "BYTEA"
 SQL_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " '"{table_name}" ({field_types})'

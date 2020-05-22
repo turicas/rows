@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2020 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -48,11 +48,13 @@ SQL_TYPES = {
     fields.DecimalField: "NUMERIC",
     fields.FloatField: "REAL",
     fields.IntegerField: "INTEGER",
+    fields.JSONField: "JSONB",
     fields.PercentField: "REAL",
     fields.TextField: "TEXT",
-    fields.JSONField: "JSONB",
+    fields.UUIDField: "UUID",
 }
 DEFAULT_TYPE = "BYTEA"
+# TODO: unify this and rows.utils.POSTGRESQL_TYPES
 
 
 def _python_to_postgresql(field_types):
