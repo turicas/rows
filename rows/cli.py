@@ -643,6 +643,7 @@ def query(
 @click.option("--input-encoding", default=None)
 @click.option("--input-locale")
 @click.option("--verify-ssl", type=bool, default=True)
+@click.option("--detect-all-types", is_flag=True)
 @click.option("--input-option", "-i", multiple=True, help="Custom (import) plugin key=value custom option (can be specified multiple times)")
 @click.option(
     "-f",
@@ -669,6 +670,7 @@ def schema(
     input_encoding,
     input_locale,
     verify_ssl,
+    detect_all_types,
     input_option,
     output_format,
     fields,
@@ -688,6 +690,15 @@ def schema(
     samples = samples if samples > 0 else None
     import_fields = _get_import_fields(fields, fields_exclude)
 
+    if detect_all_types:
+        field_types_names = rows.fields.__all__
+    else:
+        field_types_names = rows.fields.DEFAULT_TYPES
+    field_types = [
+        getattr(rows.fields, field_name)
+        for field_name in field_types_names
+    ]
+
     if input_locale is not None:
         with rows.locale_context(input_locale):
             table = import_from_source(
@@ -696,6 +707,7 @@ def schema(
                 samples=samples,
                 import_fields=import_fields,
                 max_rows=samples,
+                field_types=field_types,
                 **input_options,
             )
     else:
@@ -705,6 +717,7 @@ def schema(
             samples=samples,
             import_fields=import_fields,
             max_rows=samples,
+            field_types=field_types,
             **input_options,
         )
 
