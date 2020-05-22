@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2017 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2020 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -21,6 +21,7 @@ import datetime
 import json
 import platform
 import unittest
+import uuid
 from base64 import b64encode
 from decimal import Decimal
 
@@ -355,6 +356,20 @@ class FieldsTestCase(unittest.TestCase):
         deserialized = {"a": 123, "b": 3.14, "c": [42, 24]}
         serialized = json.dumps(deserialized)
         self.assertEqual(fields.JSONField.deserialize(serialized), deserialized)
+
+    def test_UUIDField(self):
+        with self.assertRaises(ValueError) as exception_context:
+            fields.UUIDField.deserialize("not an UUID value")
+        with self.assertRaises(ValueError) as exception_context:
+            # "z" not hex
+            fields.UUIDField.deserialize("z" * 32)
+
+        fields.UUIDField.deserialize("a" * 32)  # no exception should be raised
+
+        data = uuid.uuid4()
+        assert fields.UUIDField.deserialize(data) == data
+        assert fields.UUIDField.deserialize(str(data)) == data
+        assert fields.UUIDField.deserialize(str(data).replace("-", "")) == data
 
 
 class FieldUtilsTestCase(unittest.TestCase):

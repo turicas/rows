@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2020 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -46,6 +46,7 @@ __all__ = [
     "PercentField",
     "JSONField",
     "EmailField",
+    "UUIDField",
     "TextField",
     "BinaryField",
     "Field",
@@ -138,6 +139,33 @@ class BinaryField(Field):
                 value_error(value, cls)
         else:
             return b""
+
+import uuid
+class UUIDField(Field):
+    """Field class to represent UUIDs
+
+    Is not locale-aware (does not need to be)
+    """
+
+    TYPE = (uuid.UUID,)
+
+    @classmethod
+    def serialize(cls, value, *args, **kwargs):
+        if value is not None:
+            if not isinstance(value, self.TYPE):
+                value_error(value, cls)
+            else:
+                return str(value)
+        else:
+            return ""
+
+    @classmethod
+    def deserialize(cls, value, *args, **kwargs):
+        value = as_string(value).strip()
+        if len(value) not in (36, 32):  # with dashes and without dashes
+            value_error(value, cls)
+        else:
+            return uuid.UUID(value)
 
 
 class BoolField(Field):
