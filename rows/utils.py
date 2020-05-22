@@ -943,12 +943,12 @@ def pgimport(
         )
     elif isinstance(dialect, six.text_type):
         dialect = csv.get_dialect(dialect)
+    # TODO: add `else` to check if `dialect` is instace of correct class
 
+    reader = csv.reader(io.StringIO(sample), dialect=dialect)
+    csv_field_names = [slug(field_name) for field_name in next(reader)]
     if schema is None:
-        # Detect field names
-        reader = csv.reader(io.StringIO(sample), dialect=dialect)
-        field_names = [slug(field_name) for field_name in next(reader)]
-
+        field_names = csv_field_names
     else:
         field_names = list(schema.keys())
 
@@ -979,7 +979,7 @@ def pgimport(
         dialect=dialect,
         direction="FROM",
         encoding=pg_encoding,
-        header=field_names,
+        header=csv_field_names,
         table_name_or_query=table_name,
         is_query=False,
     )
