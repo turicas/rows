@@ -863,7 +863,7 @@ def get_psql_copy_command(
         raise ValueError('`direction` must be "FROM" or "TO"')
 
     if not is_query:  # Table name
-        source = slug(table_name_or_query)
+        source = table_name_or_query
     else:
         source = "(" + table_name_or_query + ")"
     if header is None:
@@ -952,7 +952,6 @@ def pgimport(
     else:
         field_names = list(schema.keys())
 
-    table_name = slug(table_name)
     if create_table:
         if schema is None:
             data = [
