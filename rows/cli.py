@@ -40,6 +40,7 @@ from tqdm import tqdm
 import rows
 from rows.fields import make_header
 from rows.utils import (
+    COMPRESSED_EXTENSIONS,
     ProgressBar,
     csv_to_sqlite,
     detect_source,
@@ -1108,6 +1109,52 @@ def csv_row_count(input_encoding, source):
     fobj.close()
 
     click.echo(count)
+
+
+@cli.command(name="csv-split")
+@click.option("--input-encoding", default=None)
+@click.option("--output-encoding", default="utf-8")
+@click.option("--quiet", "-q", is_flag=True)
+@click.option("--destination-pattern", default=None, help="Template name for destination files, like: `myfile-{part:03d}.csv`")
+@click.argument("source")
+@click.argument("lines", type=int)
+def csv_split(input_encoding, output_encoding, quiet, destination_pattern, source, lines):
+    """Split CSV into equal parts (by number of lines).
+
+    Input and output files can be compressed.
+    """
+
+    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
+    if destination_pattern is None:
+        first_part, extension = source.rsplit(".", maxsplit=1)
+        if extension.lower() in COMPRESSED_EXTENSIONS:
+            first_part, new_extension = first_part.rsplit(".", maxsplit=1)
+            extension = new_extension + "." + extension
+        destination_pattern = first_part + "-{part:03d}." + extension
+
+    part = 0
+    output_fobj = None
+    writer = None
+    input_fobj = open_compressed(source, encoding=input_encoding)
+    reader = csv.reader(input_fobj)
+    header = next(reader)
+    if not quiet:
+        reader = tqdm(reader)
+    for index, row in enumerate(reader):
+        if index % lines == 0:
+            if output_fobj is not None:
+                output_fobj.close()
+            part += 1
+            output_fobj = open_compressed(
+                destination_pattern.format(part=part),
+                mode="w",
+                encoding=output_encoding,
+                buffering=8 * 1024 * 1024,
+            )
+            writer = csv.writer(output_fobj)
+            writer.writerow(header)
+        writer.writerow(row)
+    input_fobj.close()
 
 
 @cli.command(name="list-sheets", help="List sheets")
