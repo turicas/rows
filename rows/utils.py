@@ -960,13 +960,10 @@ def pgimport(
         # (automatically identified or forced), not on CSV directly (field
         # order will be schema's field order).
         if schema is None:
-            # TODO: detect data types lazily
-            data = [
-                dict(zip(field_names, row))
-                for row in itertools.islice(reader, max_samples)
-            ]
-            table = rows.import_from_dicts(data)
-            schema = table.fields
+            schema = rows.fields.detect_types(
+                csv_field_names,
+                itertools.islice(reader, max_samples)
+            )
         field_types = list(schema.values())
 
         columns = [
