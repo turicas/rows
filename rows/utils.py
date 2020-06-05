@@ -918,6 +918,7 @@ def pgimport(
     Required: psql command
     """
 
+    # TODO: add option to run parallel COPY processes
     # TODO: add logging to the process
     # TODO: detect when error ocurred and interrupt the process immediatly
 
@@ -951,17 +952,22 @@ def pgimport(
         field_names = csv_field_names
     else:
         field_names = list(schema.keys())
+        if not set(csv_field_names).issubset(set(field_names)):
+            raise ValueError('CSV field names are not a subset of schema field names')
 
     if create_table:
+        # If we need to create the table, it creates based on schema
+        # (automatically identified or forced), not on CSV directly (field
+        # order will be schema's field order).
         if schema is None:
+            # TODO: detect data types lazily
             data = [
                 dict(zip(field_names, row))
                 for row in itertools.islice(reader, max_samples)
             ]
             table = rows.import_from_dicts(data)
-            field_types = [table.fields[field_name] for field_name in field_names]
-        else:
-            field_types = list(schema.values())
+            schema = table.fields
+        field_types = list(schema.values())
 
         columns = [
             "{} {}".format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
