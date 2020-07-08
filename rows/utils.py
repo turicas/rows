@@ -1004,7 +1004,11 @@ def pgimport(
             data = fobj.read(chunk_size)
         stdout, stderr = process.communicate()
         if stderr != b"":
-            raise RuntimeError(stderr.decode("utf-8"))
+            for line in stderr.splitlines():
+                if line.startswith(b"NOTICE:"):
+                    continue
+                else:
+                    raise RuntimeError(stderr.decode("utf-8"))
         rows_imported = int(stdout.replace(b"COPY ", b"").strip())
 
     except FileNotFoundError:
