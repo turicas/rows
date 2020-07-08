@@ -75,6 +75,7 @@ class Field(object):
     """
 
     TYPE = (type(None),)
+    # TODO: add "name" so we can import automatically from schema CSV
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):

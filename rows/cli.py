@@ -692,9 +692,17 @@ def schema(
     import_fields = _get_import_fields(fields, fields_exclude)
 
     if detect_all_types:
-        field_types_names = rows.fields.__all__
+        field_types_names = [
+            field_name
+            for field_name in rows.fields.__all__
+            if field_name != "Field"
+        ]
     else:
-        field_types_names = rows.fields.DEFAULT_TYPES
+        field_types_names = [
+            FieldClass.__name__
+            for FieldClass in rows.fields.DEFAULT_TYPES
+            if FieldClass != rows.fields.Field
+        ]
     field_types = [
         getattr(rows.fields, field_name)
         for field_name in field_types_names
