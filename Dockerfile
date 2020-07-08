@@ -5,7 +5,7 @@ MAINTAINER	Álvaro Justen <https://github.com/turicas>
 RUN apt-get update
 RUN apt-get install --no-install-recommends -y \
                     build-essential git locales python3-dev libsnappy-dev \
-                    libxml2-dev libxslt-dev libz-dev && \
+                    libxml2-dev libxslt-dev libz-dev libmupdf-dev && \
     apt-get clean && \
     pip install --no-cache-dir -U pip
 
