@@ -984,7 +984,7 @@ def pgimport(
                 csv_field_names,
                 itertools.islice(reader, max_samples)
             )
-        create_table_sql = pg_create_table_sql(schema)
+        create_table_sql = pg_create_table_sql(schema, table_name)
         pg_execute_psql(database_uri, create_table_sql)
 
     # Prepare the `psql` command to be executed based on collected metadata
