@@ -819,6 +819,7 @@ def uncompressed_size(filename):
     else:
         raise ValueError('Unrecognized file type for "{}".'.format(filename))
 
+# TODO: move all PostgreSQL-related utils to rows/plugins/postgresql.py
 
 def get_psql_command(
     command,
@@ -900,6 +901,25 @@ def get_psql_copy_command(
     )
 
 
+def pg_create_table_sql(schema, table_name):
+    field_names = list(schema.keys())
+    field_types = list(schema.values())
+
+    columns = [
+        "{} {}".format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
+        for name, type_ in zip(field_names, field_types)
+    ]
+    return SQL_CREATE_TABLE.format(
+        table_name=table_name, field_types=", ".join(columns)
+    )
+
+
+def pg_execute_psql(database_uri, sql):
+    return execute_command(
+        get_psql_command(sql, database_uri=database_uri)
+    )
+
+
 def pgimport(
     filename,
     database_uri,
@@ -964,16 +984,8 @@ def pgimport(
                 csv_field_names,
                 itertools.islice(reader, max_samples)
             )
-        field_types = list(schema.values())
-
-        columns = [
-            "{} {}".format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
-            for name, type_ in zip(field_names, field_types)
-        ]
-        create_table = SQL_CREATE_TABLE.format(
-            table_name=table_name, field_types=", ".join(columns)
-        )
-        execute_command(get_psql_command(create_table, database_uri=database_uri))
+        create_table_sql = pg_create_table_sql(schema)
+        pg_execute_psql(database_uri, create_table_sql)
 
     # Prepare the `psql` command to be executed based on collected metadata
     command = get_psql_copy_command(

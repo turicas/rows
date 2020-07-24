@@ -288,6 +288,14 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_open_compressed_binary(suffix=".bz2", decompress=bz2.decompress)
         self.assert_open_compressed_text(suffix=".bz2", decompress=bz2.decompress)
 
+class PgUtilsTestCase(unittest.TestCase):
+
+    def test_pg_create_table_sql(self):
+        schema = OrderedDict([("id", rows.fields.IntegerField), ("name", rows.fields.TextField)])
+        sql = rows.utils.pg_create_table_sql(schema, "testtable")
+        assert sql == """CREATE TABLE IF NOT EXISTS "testtable" (id BIGINT, name TEXT)"""
+
+
 # TODO: test Source.from_file
 # TODO: test/implement load_schema with file object
 # TODO: test detect_local_source

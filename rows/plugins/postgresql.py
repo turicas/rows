@@ -185,6 +185,8 @@ def export_to_postgresql(
         )
 
     prepared_table = prepare_to_export(table, *args, **kwargs)
+    # TODO: use same code/logic of CREATE TABLE as
+    # rows.utils.pg_create_table_sql
     field_names = next(prepared_table)
     field_types = list(map(table.fields.get, field_names))
     columns = [
