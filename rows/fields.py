@@ -403,7 +403,7 @@ class DateField(Field):
         value = as_string(value)
 
         dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
-        return datetime.date(dt_object.year, dt_object.month, dt_object.day)
+        return dt_object.date()
 
 
 class DatetimeField(Field):
