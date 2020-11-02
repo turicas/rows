@@ -58,10 +58,12 @@ from rows.utils import (
 )
 
 
+DEFAULT_BUFFER_SIZE = 8 * 1024 * 1024
 DEFAULT_INPUT_ENCODING = "utf-8"
 DEFAULT_INPUT_LOCALE = "C"
 DEFAULT_OUTPUT_ENCODING = "utf-8"
 DEFAULT_OUTPUT_LOCALE = "C"
+DEFAULT_SAMPLE_SIZE = 1024 * 1024
 HOME_PATH = pathlib.Path.home()
 CACHE_PATH = HOME_PATH / ".cache" / "rows" / "http"
 
@@ -868,83 +870,81 @@ def command_pdf_to_text(input_option, output_encoding, quiet, backend, pages, so
 @click.option("--output-encoding", default="utf-8")
 @click.option("--no-strip", is_flag=True)
 @click.option("--no-remove-empty-lines", is_flag=True)
+@click.option("--sample-size", default=DEFAULT_SAMPLE_SIZE)
+@click.option("--buffer-size", default=DEFAULT_BUFFER_SIZE)
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("destination")
-def csv_merge(input_encoding, output_encoding, no_strip, no_remove_empty_lines, sources, destination):
+def csv_merge(
+    input_encoding, output_encoding, no_strip, no_remove_empty_lines, sample_size, buffer_size, sources, destination
+):
 
     # TODO: add option to preserve original key names
     # TODO: detect input_encoding for all sources
-    # TODO: add input option for sample_size
     # TODO: add --quiet
 
     strip = not no_strip
     remove_empty_lines = not no_remove_empty_lines
-
     input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
-    sample_size = 1024 * 1024
-    dialects, keys, keys_per_file = {}, [], defaultdict(dict)
+
+    metadata = defaultdict(dict)
+    final_header = []
     for filename in tqdm(sources, desc="Detecting dialects and headers"):
         # Detect dialect
-        fobj = open_compressed(filename, mode="rb")
-        sample = fobj.read(sample_size)
-        fobj.close()
+        with open_compressed(filename, mode="rb") as fobj:
+            sample = fobj.read(sample_size)
         dialect = rows.plugins.csv.discover_dialect(sample, input_encoding)
-        dialects[filename] = dialect
+        metadata[filename]["dialect"] = dialect
 
         # Get header
         # TODO: fix final header in case of empty field names (a command like
         # `rows csv-clean` would fix the problem if run before `csv-merge` for
         # each file).
-        fobj = open_compressed(filename, encoding=input_encoding)
-        reader = csv.DictReader(fobj, dialect=dialect)
-        for field_name in reader.fieldnames:
+        metadata[filename]["fobj"] = open_compressed(filename, encoding=input_encoding, buffering=buffer_size)
+        metadata[filename]["reader"] = csv.reader(metadata[filename]["fobj"], dialect=dialect)
+        metadata[filename]["header"] = next(metadata[filename]["reader"])
+        metadata[filename]["header_map"] = {}
+        for field_name in metadata[filename]["header"]:
             field_name_slug = rows.fields.slug(field_name)
-            keys_per_file[filename][field_name_slug] = field_name
-            if field_name_slug not in keys:
-                keys.append(field_name_slug)
-        fobj.close()
+            metadata[filename]["header_map"][field_name_slug] = field_name
+            if field_name_slug not in final_header:
+                final_header.append(field_name_slug)
     # TODO: is it needed to use make_header here?
 
-    output_fobj = open_compressed(destination, mode="w", encoding=output_encoding)
-    writer = csv.DictWriter(output_fobj, fieldnames=keys)
-    writer.writeheader()
     progress_bar = tqdm(desc="Exporting data")
+    output_fobj = open_compressed(destination, mode="w", encoding=output_encoding, buffering=buffer_size)
+    writer = csv.writer(output_fobj)
+    writer.writerow(final_header)
     for index, filename in enumerate(sources):
         progress_bar.desc = "Exporting data {}/{}".format(index + 1, len(sources))
-        field_names = keys_per_file[filename]
-        fobj = open_compressed(filename, encoding=input_encoding)
-        reader = csv.DictReader(fobj, dialect=dialects[filename])
+        meta = metadata[filename]
+        field_indexes = [
+            meta["header"].index(field_name) if field_name in meta["header"] else None for field_name in final_header
+        ]
         if strip:
-            for row in reader:
-                new_row = {
-                    key: (row[field_names[key]] or "").strip() if key in field_names else ""
-                    for key in keys
-                }
-                if remove_empty_lines and not any(new_row.values()):
-                    continue
-                writer.writerow(new_row)
-                progress_bar.update()
+            create_new_row = lambda row: [row[index].strip() if index is not None else None for index in field_indexes]
         else:
-            for row in reader:
-                new_row = {
-                    key: (row[field_names[key]] or "") if key in field_names else ""
-                    for key in keys
-                }
-                if remove_empty_lines and not any(new_row.values()):
-                    continue
-                writer.writerow(new_row)
-                progress_bar.update()
-        fobj.close()
+            create_new_row = lambda row: [row[index] if index is not None else None for index in field_indexes]
+
+        for row in meta["reader"]:
+            new_row = create_new_row(row)
+            if remove_empty_lines and not any(new_row):
+                continue
+            writer.writerow(new_row)
+            progress_bar.update()
+        meta["fobj"].close()
     output_fobj.close()
+    progress_bar.close()
 
 
 @cli.command(name="csv-clean")
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
+@click.option("--sample-size", default=DEFAULT_SAMPLE_SIZE)
+@click.option("--buffer-size", default=DEFAULT_BUFFER_SIZE)
 @click.option("--in-place", is_flag=True)
 @click.argument("source", required=True)
 @click.argument("destination", required=False)
-def csv_clean(input_encoding, output_encoding, in_place, source, destination):
+def csv_clean(input_encoding, output_encoding, sample_size, buffer_size, in_place, source, destination):
     """Create a consistent and clean version of a CSV file
 
     The tasks this command executes are:
@@ -959,53 +959,51 @@ def csv_clean(input_encoding, output_encoding, in_place, source, destination):
 
     # TODO: add option to preserve original key names
     # TODO: detect input_encoding for source
-    # TODO: add input option for sample_size
     # TODO: add --quiet
 
     input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
 
     # Detect dialect
-    sample_size = 1024 * 1024
-    fobj = open_compressed(source, mode="rb")
-    sample = fobj.read(sample_size)
-    fobj.close()
+    with open_compressed(source, mode="rb", buffering=buffer_size) as fobj:
+        sample = fobj.read(sample_size)
     dialect = rows.plugins.csv.discover_dialect(sample, input_encoding)
 
     # Get header
-    fobj = open_compressed(source, encoding=input_encoding)
-    reader = csv.DictReader(fobj, dialect=dialect)
-    header = make_header(reader.fieldnames)
-    fobj.close()
+    with open_compressed(source, encoding=input_encoding, buffering=buffer_size) as fobj:
+        reader = csv.reader(fobj, dialect=dialect)
+        header = make_header(next(reader))
 
-    fobj = open_compressed(source, encoding=input_encoding)
-    reader = csv.reader(fobj, dialect=dialect)
-    _ = next(reader)
-    empty_columns = list(header)
-    for row in tqdm(reader, desc="Detecting empty columns"):
-        row = dict(zip(header, [value.strip() for value in row]))
-        if not any(row.values()):  # Empty row
-            continue
-        for key, value in row.items():
-            if value and key in empty_columns:
-                empty_columns.remove(key)
-        if not empty_columns:
-            break
-    fobj.close()
+    # Detect empty columns
+    with open_compressed(source, encoding=input_encoding, buffering=buffer_size) as fobj:
+        reader = csv.reader(fobj, dialect=dialect)
+        _ = next(reader)  # Skip header
+        empty_columns = list(header)
+        for row in tqdm(reader, desc="Detecting empty columns"):
+            row = dict(zip(header, [value.strip() for value in row]))
+            if not any(row.values()):  # Empty row
+                continue
+            for key, value in row.items():
+                if value and key in empty_columns:
+                    empty_columns.remove(key)
+            if not empty_columns:
+                break
 
     if in_place:
         temp_path = Path(tempfile.mkdtemp())
         destination = temp_path / Path(source).name
 
-    fobj = open_compressed(source, encoding=input_encoding)
-    output_fobj = open_compressed(destination, mode="w", encoding=output_encoding)
+    fobj = open_compressed(source, encoding=input_encoding, buffering=buffer_size)
     reader = csv.reader(fobj, dialect=dialect)
-    _ = next(reader)
-    final_header = [field_name for field_name in header if field_name not in empty_columns]
-    writer = csv.DictWriter(output_fobj, fieldnames=final_header)
-    writer.writeheader()
+    _ = next(reader)  # Skip header
+    field_indexes = [header.index(field_name) for field_name in header if field_name not in empty_columns]
+    create_new_row = lambda row: [row[index].strip() for index in field_indexes]
+
+    output_fobj = open_compressed(destination, mode="w", encoding=output_encoding, buffering=buffer_size)
+    writer = csv.writer(output_fobj)
+    writer.writerow([field_name for field_name in header if field_name not in empty_columns])
     for row in tqdm(reader, desc="Converting file"):
-        row = {key: value for key, value in zip(header, [value.strip() for value in row]) if key not in empty_columns}
-        if not any(row.values()):  # Empty row
+        row = create_new_row(row)
+        if not any(row):  # Empty row
             continue
         writer.writerow(row)
     fobj.close()
@@ -1018,14 +1016,21 @@ def csv_clean(input_encoding, output_encoding, in_place, source, destination):
 
 @cli.command(name="csv-row-count", help="Lazily count CSV rows")
 @click.option("--input-encoding", default=None)
+@click.option("--buffer-size", default=DEFAULT_BUFFER_SIZE)
+@click.option("--dialect")
+@click.option("--sample-size", default=DEFAULT_SAMPLE_SIZE)
 @click.argument("source")
-def csv_row_count(input_encoding, source):
-    # TODO: detect dialect
-    # TODO: add option to force dialect
+def csv_row_count(input_encoding, buffer_size, dialect, sample_size, source):
     input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
 
-    fobj = open_compressed(source, encoding=input_encoding)
-    reader = csv.DictReader(fobj)
+    if dialect is None:  # Detect dialect
+        with open_compressed(source, mode="rb") as fobj:
+            sample = fobj.read(sample_size)
+        dialect = rows.plugins.csv.discover_dialect(sample, input_encoding)
+
+    fobj = open_compressed(source, encoding=input_encoding, buffering=buffer_size)
+    reader = csv.reader(fobj, dialect=dialect)
+    next(reader)  # Read header
     count = sum(1 for _ in reader)
     fobj.close()
 
@@ -1035,13 +1040,14 @@ def csv_row_count(input_encoding, source):
 @cli.command(name="csv-split")
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
+@click.option("--buffer-size", default=DEFAULT_BUFFER_SIZE)
 @click.option("--quiet", "-q", is_flag=True)
 @click.option(
     "--destination-pattern", default=None, help="Template name for destination files, like: `myfile-{part:03d}.csv`"
 )
 @click.argument("source")
 @click.argument("lines", type=int)
-def csv_split(input_encoding, output_encoding, quiet, destination_pattern, source, lines):
+def csv_split(input_encoding, output_encoding, buffer_size, quiet, destination_pattern, source, lines):
     """Split CSV into equal parts (by number of lines).
 
     Input and output files can be compressed.
@@ -1058,7 +1064,7 @@ def csv_split(input_encoding, output_encoding, quiet, destination_pattern, sourc
     part = 0
     output_fobj = None
     writer = None
-    input_fobj = open_compressed(source, encoding=input_encoding)
+    input_fobj = open_compressed(source, encoding=input_encoding, buffering=buffer_size)
     reader = csv.reader(input_fobj)
     header = next(reader)
     if not quiet:
@@ -1069,7 +1075,7 @@ def csv_split(input_encoding, output_encoding, quiet, destination_pattern, sourc
                 output_fobj.close()
             part += 1
             output_fobj = open_compressed(
-                destination_pattern.format(part=part), mode="w", encoding=output_encoding, buffering=8 * 1024 * 1024,
+                destination_pattern.format(part=part), mode="w", encoding=output_encoding, buffering=buffer_size,
             )
             writer = csv.writer(output_fobj)
             writer.writerow(header)
