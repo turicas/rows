@@ -73,7 +73,7 @@ def parse_options(options):
         if equal_position == -1:
             raise ValueError("Equal sign not found for {}".format(repr(option)))
         else:
-            options_dict[option[:equal_position]] = option[equal_position + 1:]
+            options_dict[option[:equal_position]] = option[equal_position + 1 :]
     return options_dict
 
 
@@ -92,9 +92,7 @@ def _import_table(source, encoding, verify_ssl=True, progress=True, *args, **kwa
         )
     except requests.exceptions.SSLError:
         click.echo(
-            "ERROR: SSL verification failed! "
-            "Use `--verify-ssl=no` if you want to ignore.",
-            err=True,
+            "ERROR: SSL verification failed! " "Use `--verify-ssl=no` if you want to ignore.", err=True,
         )
         sys.exit(2)
     else:
@@ -106,9 +104,7 @@ def _get_field_names(field_names, table_field_names, permit_not=False):
     if not permit_not:
         diff = set(new_field_names) - set(table_field_names)
     else:
-        diff = set(field_name.replace("^", "") for field_name in new_field_names) - set(
-            table_field_names
-        )
+        diff = set(field_name.replace("^", "") for field_name in new_field_names) - set(table_field_names)
 
     if diff:
         missing = ", ".join(['"{}"'.format(field) for field in diff])
@@ -131,11 +127,7 @@ def _get_import_fields(fields, fields_exclude):
 def _get_export_fields(table_field_names, fields_exclude):
     if fields_exclude is not None:
         fields_exclude = _get_field_names(fields_exclude, table_field_names)
-        return [
-            field_name
-            for field_name in table_field_names
-            if field_name not in fields_exclude
-        ]
+        return [field_name for field_name in table_field_names if field_name not in fields_exclude]
     else:
         return None
 
@@ -189,8 +181,18 @@ def cli(http_cache, http_cache_path):
 @click.option("--order-by")
 @click.option("--fields", help="A comma-separated list of fields to import")
 @click.option("--fields-exclude", help="A comma-separated list of fields to exclude")
-@click.option("--input-option", "-i", multiple=True, help="Custom (import) plugin key=value custom option (can be specified multiple times)")
-@click.option("--output-option", "-o", multiple=True, help="Custom (export) plugin key=value custom option (can be specified multiple times)")
+@click.option(
+    "--input-option",
+    "-i",
+    multiple=True,
+    help="Custom (import) plugin key=value custom option (can be specified multiple times)",
+)
+@click.option(
+    "--output-option",
+    "-o",
+    multiple=True,
+    help="Custom (export) plugin key=value custom option (can be specified multiple times)",
+)
 @click.option("--quiet", "-q", is_flag=True)
 @click.argument("source")
 @click.argument("destination")
@@ -252,24 +254,15 @@ def convert(
     if output_locale is not None:
         with rows.locale_context(output_locale):
             export_to_uri(
-                table,
-                destination,
-                encoding=output_encoding,
-                export_fields=export_fields,
-                **output_options,
+                table, destination, encoding=output_encoding, export_fields=export_fields, **output_options,
             )
     else:
         export_to_uri(
-            table, destination, encoding=output_encoding,
-            export_fields=export_fields,
-            **output_options,
+            table, destination, encoding=output_encoding, export_fields=export_fields, **output_options,
         )
 
 
-@cli.command(
-    help="Join tables from `source` URIs using `key(s)` to group "
-    "rows and save into `destination`"
-)
+@cli.command(help="Join tables from `source` URIs using `key(s)` to group " "rows and save into `destination`")
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
@@ -278,8 +271,7 @@ def convert(
 @click.option("--order-by")
 @click.option("--fields", help="A comma-separated list of fields to export")
 @click.option(
-    "--fields-exclude",
-    help="A comma-separated list of fields to exclude when exporting",
+    "--fields-exclude", help="A comma-separated list of fields to exclude when exporting",
 )
 @click.argument("keys")
 @click.argument("sources", nargs=-1, required=True)
@@ -306,15 +298,9 @@ def join(
 
     if input_locale is not None:
         with rows.locale_context(input_locale):
-            tables = [
-                _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl)
-                for source in sources
-            ]
+            tables = [_import_table(source, encoding=input_encoding, verify_ssl=verify_ssl) for source in sources]
     else:
-        tables = [
-            _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl)
-            for source in sources
-        ]
+        tables = [_import_table(source, encoding=input_encoding, verify_ssl=verify_ssl) for source in sources]
 
     result = rows.join(keys, tables)
     if order_by is not None:
@@ -329,20 +315,13 @@ def join(
     if output_locale is not None:
         with rows.locale_context(output_locale):
             export_to_uri(
-                result,
-                destination,
-                encoding=output_encoding,
-                export_fields=export_fields,
+                result, destination, encoding=output_encoding, export_fields=export_fields,
             )
     else:
-        export_to_uri(
-            result, destination, encoding=output_encoding, export_fields=export_fields
-        )
+        export_to_uri(result, destination, encoding=output_encoding, export_fields=export_fields)
 
 
-@cli.command(
-    name="sum", help="Sum tables from `source` URIs and save into `destination`"
-)
+@cli.command(name="sum", help="Sum tables from `source` URIs and save into `destination`")
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
@@ -373,22 +352,12 @@ def sum_(
     if input_locale is not None:
         with rows.locale_context(input_locale):
             tables = [
-                _import_table(
-                    source,
-                    encoding=input_encoding,
-                    verify_ssl=verify_ssl,
-                    import_fields=import_fields,
-                )
+                _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl, import_fields=import_fields,)
                 for source in sources
             ]
     else:
         tables = [
-            _import_table(
-                source,
-                encoding=input_encoding,
-                verify_ssl=verify_ssl,
-                import_fields=import_fields,
-            )
+            _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl, import_fields=import_fields,)
             for source in sources
         ]
 
@@ -404,26 +373,24 @@ def sum_(
     if output_locale is not None:
         with rows.locale_context(output_locale):
             export_to_uri(
-                result,
-                destination,
-                encoding=output_encoding,
-                export_fields=export_fields,
+                result, destination, encoding=output_encoding, export_fields=export_fields,
             )
     else:
-        export_to_uri(
-            result, destination, encoding=output_encoding, export_fields=export_fields
-        )
+        export_to_uri(result, destination, encoding=output_encoding, export_fields=export_fields)
 
 
 @cli.command(name="print", help="Print a table")
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
-@click.option("--input-option", "-i", multiple=True, help="Custom (import) plugin key=value custom option (can be specified multiple times)")
-@click.option("--output-locale")
 @click.option(
-    "--frame-style", default="ascii", help="Options: ascii, single, double, none"
+    "--input-option",
+    "-i",
+    multiple=True,
+    help="Custom (import) plugin key=value custom option (can be specified multiple times)",
 )
+@click.option("--output-locale")
+@click.option("--frame-style", default="ascii", help="Options: ascii, single, double, none")
 @click.option("--table-index", default=0)
 @click.option("--verify-ssl", type=bool, default=True)
 @click.option("--fields", help="A comma-separated list of fields to import")
@@ -492,19 +459,11 @@ def print_(
     if output_locale is not None:
         with rows.locale_context(output_locale):
             rows.export_to_txt(
-                table,
-                fobj,
-                encoding=output_encoding,
-                export_fields=export_fields,
-                frame_style=frame_style,
+                table, fobj, encoding=output_encoding, export_fields=export_fields, frame_style=frame_style,
             )
     else:
         rows.export_to_txt(
-            table,
-            fobj,
-            encoding=output_encoding,
-            export_fields=export_fields,
-            frame_style=frame_style,
+            table, fobj, encoding=output_encoding, export_fields=export_fields, frame_style=frame_style,
         )
 
     fobj.seek(0)
@@ -519,16 +478,16 @@ def print_(
 @click.option("--output-locale")
 @click.option("--verify-ssl", type=bool, default=True)
 @click.option(
-    "--samples",
-    type=int,
-    default=5000,
-    help="Number of rows to determine the field types (0 = all)",
+    "--samples", type=int, default=5000, help="Number of rows to determine the field types (0 = all)",
 )
-@click.option("--input-option", "-i", multiple=True, help="Custom (import) plugin key=value custom option (can be specified multiple times)")
-@click.option("--output")
 @click.option(
-    "--frame-style", default="ascii", help="Options: ascii, single, double, none"
+    "--input-option",
+    "-i",
+    multiple=True,
+    help="Custom (import) plugin key=value custom option (can be specified multiple times)",
 )
+@click.option("--output")
+@click.option("--frame-style", default="ascii", help="Options: ascii, single, double, none")
 @click.option("--quiet", "-q", is_flag=True)
 @click.argument("query", required=True)
 @click.argument("sources", nargs=-1, required=True)
@@ -555,9 +514,7 @@ def query(
     samples = samples if samples > 0 else None
 
     if not query.strip().lower().startswith("select"):
-        table_names = ", ".join(
-            ["table{}".format(index) for index in range(1, len(sources) + 1)]
-        )
+        table_names = ", ".join(["table{}".format(index) for index in range(1, len(sources) + 1)])
         query = "SELECT * FROM {} WHERE {}".format(table_names, query)
 
     if len(sources) == 1:
@@ -565,19 +522,13 @@ def query(
 
         if source.plugin_name in ("sqlite", "postgresql"):
             # Optimization: query the db directly
-            result = import_from_source(
-                source, input_encoding, query=query, samples=samples
-            )
+            result = import_from_source(source, input_encoding, query=query, samples=samples)
         else:
             if input_locale is not None:
                 with rows.locale_context(input_locale):
-                    table = import_from_source(
-                        source, input_encoding, samples=samples
-                    )
+                    table = import_from_source(source, input_encoding, samples=samples)
             else:
-                table = import_from_source(
-                    source, input_encoding, samples=samples
-                )
+                table = import_from_source(source, input_encoding, samples=samples)
 
             sqlite_connection = sqlite3.Connection(":memory:")
             rows.export_to_sqlite(table, sqlite_connection, table_name="table1")
@@ -589,31 +540,21 @@ def query(
             with rows.locale_context(input_locale):
                 tables = [
                     _import_table(
-                        source,
-                        encoding=input_encoding,
-                        verify_ssl=verify_ssl,
-                        samples=samples,
-                        progress=progress,
+                        source, encoding=input_encoding, verify_ssl=verify_ssl, samples=samples, progress=progress,
                     )
                     for source in sources
                 ]
         else:
             tables = [
                 _import_table(
-                    source,
-                    encoding=input_encoding,
-                    verify_ssl=verify_ssl,
-                    samples=samples,
-                    progress=progress,
+                    source, encoding=input_encoding, verify_ssl=verify_ssl, samples=samples, progress=progress,
                 )
                 for source in sources
             ]
 
         sqlite_connection = sqlite3.Connection(":memory:")
         for index, table in enumerate(tables, start=1):
-            rows.export_to_sqlite(
-                table, sqlite_connection, table_name="table{}".format(index)
-            )
+            rows.export_to_sqlite(table, sqlite_connection, table_name="table{}".format(index))
 
         result = rows.import_from_sqlite(sqlite_connection, query=query)
 
@@ -623,13 +564,9 @@ def query(
         fobj = BytesIO()
         if output_locale is not None:
             with rows.locale_context(output_locale):
-                rows.export_to_txt(
-                    result, fobj, encoding=output_encoding, frame_style=frame_style
-                )
+                rows.export_to_txt(result, fobj, encoding=output_encoding, frame_style=frame_style)
         else:
-            rows.export_to_txt(
-                result, fobj, encoding=output_encoding, frame_style=frame_style
-            )
+            rows.export_to_txt(result, fobj, encoding=output_encoding, frame_style=frame_style)
         fobj.seek(0)
         click.echo(fobj.read())
     else:
@@ -645,24 +582,21 @@ def query(
 @click.option("--input-locale")
 @click.option("--verify-ssl", type=bool, default=True)
 @click.option("--detect-all-types", is_flag=True)
-@click.option("--input-option", "-i", multiple=True, help="Custom (import) plugin key=value custom option (can be specified multiple times)")
 @click.option(
-    "-f",
-    "--format",
-    "output_format",
-    default="txt",
-    type=click.Choice(("csv", "django", "sql", "txt")),
+    "--input-option",
+    "-i",
+    multiple=True,
+    help="Custom (import) plugin key=value custom option (can be specified multiple times)",
+)
+@click.option(
+    "-f", "--format", "output_format", default="txt", type=click.Choice(("csv", "django", "sql", "txt")),
 )
 @click.option("--fields", help="A comma-separated list of fields to inspect")
 @click.option(
-    "--fields-exclude",
-    help="A comma-separated list of fields to exclude from inspection",
+    "--fields-exclude", help="A comma-separated list of fields to exclude from inspection",
 )
 @click.option(
-    "--samples",
-    type=int,
-    default=5000,
-    help="Number of rows to determine the field types (0 = all)",
+    "--samples", type=int, default=5000, help="Number of rows to determine the field types (0 = all)",
 )
 @click.option("--quiet", "-q", is_flag=True)
 @click.argument("source", required=True)
@@ -692,21 +626,12 @@ def schema(
     import_fields = _get_import_fields(fields, fields_exclude)
 
     if detect_all_types:
-        field_types_names = [
-            field_name
-            for field_name in rows.fields.__all__
-            if field_name != "Field"
-        ]
+        field_types_names = [field_name for field_name in rows.fields.__all__ if field_name != "Field"]
     else:
         field_types_names = [
-            FieldClass.__name__
-            for FieldClass in rows.fields.DEFAULT_TYPES
-            if FieldClass != rows.fields.Field
+            FieldClass.__name__ for FieldClass in rows.fields.DEFAULT_TYPES if FieldClass != rows.fields.Field
         ]
-    field_types = [
-        getattr(rows.fields, field_name)
-        for field_name in field_types_names
-    ]
+    field_types = [getattr(rows.fields, field_name) for field_name in field_types_names]
 
     if input_locale is not None:
         with rows.locale_context(input_locale):
@@ -744,19 +669,14 @@ def schema(
 @cli.command(name="csv-to-sqlite", help="Convert one or more CSV files to SQLite")
 @click.option("--batch-size", default=10000)
 @click.option(
-    "--samples",
-    type=int,
-    default=5000,
-    help="Number of rows to determine the field types (0 = all)",
+    "--samples", type=int, default=5000, help="Number of rows to determine the field types (0 = all)",
 )
 @click.option("--input-encoding", default=None)
 @click.option("--dialect", default=None)
 @click.option("--schemas", default=None)
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("output", required=True)
-def command_csv_to_sqlite(
-    batch_size, samples, input_encoding, dialect, schemas, sources, output
-):
+def command_csv_to_sqlite(batch_size, samples, input_encoding, dialect, schemas, sources, output):
 
     # TODO: add --quiet
 
@@ -805,9 +725,7 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
     input_filename = pathlib.Path(source)
     output_filename = pathlib.Path(output)
     prefix = "[{db_filename}#{tablename} -> {filename}]".format(
-        db_filename=input_filename.name,
-        tablename=table_name,
-        filename=output_filename.name,
+        db_filename=input_filename.name, tablename=table_name, filename=output_filename.name,
     )
     progress_bar = ProgressBar(prefix=prefix, pre_prefix="")
     sqlite_to_csv(
@@ -829,17 +747,13 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
 @click.argument("source", required=True)
 @click.argument("database_uri", required=True)
 @click.argument("table_name", required=True)
-def command_pgimport(
-    input_encoding, no_create_table, dialect, schema, source, database_uri, table_name
-):
+def command_pgimport(input_encoding, no_create_table, dialect, schema, source, database_uri, table_name):
 
     # TODO: add --quiet
     # TODO: may detect encoding here (instead of inside rows.utils.pgimport)
 
     # First, detect file size
-    progress_bar = ProgressBar(
-        prefix="Importing data", pre_prefix="Detecting file size", unit="bytes"
-    )
+    progress_bar = ProgressBar(prefix="Importing data", pre_prefix="Detecting file size", unit="bytes")
     try:
         total_size = uncompressed_size(source)
     except (RuntimeError, ValueError):
@@ -877,9 +791,7 @@ def command_pgimport(
 @click.argument("database_uri", required=True)
 @click.argument("table_name", required=True)
 @click.argument("destination", required=True)
-def command_pgexport(
-    is_query, output_encoding, dialect, database_uri, table_name, destination
-):
+def command_pgexport(is_query, output_encoding, dialect, database_uri, table_name, destination):
     # TODO: add --quiet
 
     updater = ProgressBar(prefix="Exporting data", unit="bytes")
@@ -896,7 +808,12 @@ def command_pgexport(
 
 
 @cli.command(name="pdf-to-text", help="Extract text from a PDF")
-@click.option("--input-option", "-i", multiple=True, help="Custom (import) plugin key=value custom option (can be specified multiple times)")
+@click.option(
+    "--input-option",
+    "-i",
+    multiple=True,
+    help="Custom (import) plugin key=value custom option (can be specified multiple times)",
+)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--quiet", "-q", is_flag=True)
 @click.option("--backend", default=None)
@@ -1087,11 +1004,7 @@ def csv_clean(input_encoding, output_encoding, in_place, source, destination):
     writer = csv.DictWriter(output_fobj, fieldnames=final_header)
     writer.writeheader()
     for row in tqdm(reader, desc="Converting file"):
-        row = {
-            key: value
-            for key, value in zip(header, [value.strip() for value in row])
-            if key not in empty_columns
-        }
+        row = {key: value for key, value in zip(header, [value.strip() for value in row]) if key not in empty_columns}
         if not any(row.values()):  # Empty row
             continue
         writer.writerow(row)
@@ -1123,7 +1036,9 @@ def csv_row_count(input_encoding, source):
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--quiet", "-q", is_flag=True)
-@click.option("--destination-pattern", default=None, help="Template name for destination files, like: `myfile-{part:03d}.csv`")
+@click.option(
+    "--destination-pattern", default=None, help="Template name for destination files, like: `myfile-{part:03d}.csv`"
+)
 @click.argument("source")
 @click.argument("lines", type=int)
 def csv_split(input_encoding, output_encoding, quiet, destination_pattern, source, lines):
@@ -1154,10 +1069,7 @@ def csv_split(input_encoding, output_encoding, quiet, destination_pattern, sourc
                 output_fobj.close()
             part += 1
             output_fobj = open_compressed(
-                destination_pattern.format(part=part),
-                mode="w",
-                encoding=output_encoding,
-                buffering=8 * 1024 * 1024,
+                destination_pattern.format(part=part), mode="w", encoding=output_encoding, buffering=8 * 1024 * 1024,
             )
             writer = csv.writer(output_fobj)
             writer.writerow(header)
@@ -1168,7 +1080,7 @@ def csv_split(input_encoding, output_encoding, quiet, destination_pattern, sourc
 @cli.command(name="list-sheets", help="List sheets")
 @click.argument("source")
 def list_sheets(source):
-    extension = source[source.rfind(".") + 1:].lower()
+    extension = source[source.rfind(".") + 1 :].lower()
     if extension not in ("xls", "xlsx", "ods"):
         # TODO: support for 'sheet_names' should be introspected from plugins
         click.echo("ERROR: file type '{}' not supported.".format(extension), err=True)
