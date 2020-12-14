@@ -276,9 +276,12 @@ Options:
 - `--no-create-table=BOOLEAN`: should rows create the table or leave it to
   PostgreSQL? (default: false, ie: create the table)
 - `--dialect=TEXT`: CSV dialect to be used (default: will detect automatically)
-- `--schemas=TEXT`: schema filename to be used (default: will detect schema
+- `--schema=TEXT`: schema filename to be used (default: will detect schema
   automatically) - this file must have the columns `field_name` and
   `field_type` (you can see and example by running [`rows schema`][cli-schema])
+- `--unlogged`: if specified, create an [unlogged table][pg-unlogged] (which is
+  faster than logged ones, but will not be recoverable in case of data
+  corruption and will not be sent to replicas)
 
 Example:
 
@@ -515,3 +518,4 @@ rows sum \
 [cli-sum]: #rows-sum
 [issue-archives]: https://github.com/turicas/rows/issues/236
 [rows-cli]: https://github.com/turicas/rows/blob/master/rows/cli.py
+[pg-unlogged]: https://www.postgresql.org/docs/9.1/sql-createtable.html

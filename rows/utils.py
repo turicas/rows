@@ -144,7 +144,7 @@ POSTGRESQL_TYPES = {
     rows.fields.UUIDField: "UUID",
 }
 DEFAULT_POSTGRESQL_TYPE = "BYTEA"
-SQL_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " '"{table_name}" ({field_types})'
+SQL_CREATE_TABLE = "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types})'
 
 
 class ProgressBar:
@@ -901,7 +901,7 @@ def get_psql_copy_command(
     )
 
 
-def pg_create_table_sql(schema, table_name):
+def pg_create_table_sql(schema, table_name, unlogged=False):
     field_names = list(schema.keys())
     field_types = list(schema.values())
 
@@ -910,7 +910,9 @@ def pg_create_table_sql(schema, table_name):
         for name, type_ in zip(field_names, field_types)
     ]
     return SQL_CREATE_TABLE.format(
-        table_name=table_name, field_types=", ".join(columns)
+        pre_table="" if not unlogged else "UNLOGGED ",
+        post_table=" IF NOT EXISTS",
+        table_name=table_name, field_types=", ".join(columns),
     )
 
 
@@ -932,6 +934,7 @@ def pgimport(
     timeout=0.1,
     chunk_size=8388608,
     max_samples=10000,
+    unlogged=False,
 ):
     """Import data from CSV into PostgreSQL using the fastest method
 
@@ -984,7 +987,7 @@ def pgimport(
                 csv_field_names,
                 itertools.islice(reader, max_samples)
             )
-        create_table_sql = pg_create_table_sql(schema, table_name)
+        create_table_sql = pg_create_table_sql(schema, table_name, unlogged=unlogged)
         pg_execute_psql(database_uri, create_table_sql)
 
     # Prepare the `psql` command to be executed based on collected metadata
