@@ -17,7 +17,15 @@
 
 from __future__ import unicode_literals
 
+from distutils.util import convert_path
 from setuptools import find_packages, setup
+
+
+version_filename = convert_path("rows/__init__.py")
+with open(version_filename, mode="r", encoding="utf-8") as fobj:
+    for line in fobj:
+        if "__version__ =" in line:
+            version = line.strip().split("=")[-1].strip()
 
 utils_requirements = ["requests", "requests-cache", "tqdm"]
 EXTRA_REQUIREMENTS = {
@@ -37,7 +45,7 @@ EXTRA_REQUIREMENTS = {
     "xpath": ["lxml"],
 }
 EXTRA_REQUIREMENTS["all"] = sum(EXTRA_REQUIREMENTS.values(), [])
-INSTALL_REQUIREMENTS = ["dataclasses", "pathlib", "six"] + EXTRA_REQUIREMENTS["csv"]
+INSTALL_REQUIREMENTS = ["dataclasses", "pathlib", "six", "requests"] + EXTRA_REQUIREMENTS["csv"]
 LONG_DESCRIPTION = """
 No matter in which format your tabular data is: rows will import it,
 automatically detect types and give you high-level Python objects so you can
@@ -54,7 +62,7 @@ setup(
         "A common, beautiful interface to tabular data, " "no matter the format"
     ),
     long_description=LONG_DESCRIPTION,
-    version="0.4.2dev0",
+    version=version,
     author="Álvaro Justen",
     author_email="alvarojusten@gmail.com",
     url="https://github.com/turicas/rows/",
