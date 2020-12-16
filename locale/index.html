@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Locale - rows 0.4.1 documentation</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Locale";
+    var mkdocs_page_input_path = "locale.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> rows 0.4.1 documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <p class="caption"><span class="caption-text">First Steps</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../basic-usage/">Basic Usage</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../quick-start/">Quick Start Guide</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../license/">License</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Basic Concepts</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../plugins/">Plugins</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../operations/">Operations</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../cli/">Command-Line</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Locale</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#locale-dependency">Locale dependency</a>
+    </li>
+    </ul>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../links/">Going deeper</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../changelog/">Release notes</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">rows 0.4.1 documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Basic Concepts &raquo;</li>
+        
+      
+    
+    <li>Locale</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/turicas/rows/edit/develop/docs/locale.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="locale">Locale</h2>
+<p>Many fields inside <code>rows.fields</code> are locale-aware. If you have some data using
+Brazilian Portuguese number formatting, for example (<code>,</code> as decimal separators
+and <code>.</code> as thousands separator) you can configure this into the library and
+<code>rows</code> will automatically understand these numbers!</p>
+<p>Let's see it working by extracting the population of cities in Rio de Janeiro
+state:</p>
+<pre><code class="python">import locale
+import requests
+import rows
+from io import BytesIO
+
+url = &quot;http://cidades.ibge.gov.br/comparamun/compara.php?idtema=1&amp;codv=v01&amp;coduf=33&quot;
+html = requests.get(url).content
+with rows.locale_context(name=&quot;pt_BR.UTF-8&quot;, category=locale.LC_NUMERIC):
+    rio = rows.import_from_html(BytesIO(html))
+
+total_population = sum(city.pessoas for city in rio)
+# 'pessoas' is the fieldname related to the number of people in each city
+print(f&quot;Rio de Janeiro has {total_population} inhabitants&quot;)
+</code></pre>
+
+<p>The column <code>pessoas</code> will be imported as an <code>IntegerField</code> and the result is:</p>
+<pre><code class="text">Rio de Janeiro has 15989929 inhabitants
+</code></pre>
+
+<h3 id="locale-dependency">Locale dependency</h3>
+<p><code>rows.locale_context</code> depends on your operational system locales to work. In
+order to successfully use this context manager make sure the desired locale is
+available in a system level.</p>
+<p>For example, for Debian based systems:</p>
+<ol>
+<li>Make sure the desired locale is present and uncommented <code>/etc/locale.gen</code></li>
+<li>Run <code>locale-gen</code></li>
+</ol>
+<p>For more information <a href="../reference/localization.html">see the code reference</a>.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../links/" class="btn btn-neutral float-right" title="Going deeper">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../cli/" class="btn btn-neutral" title="Command-Line"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/turicas/rows/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../cli/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../links/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,26 @@
+.TH "ROWS CSV-SPLIT" "1" "2020-12-16" "-0.4.2-dev-eaa8b1ac-" "rows csv-split Manual"
+.SH NAME
+rows\-csv-split \- Split CSV into equal parts (by number of...
+.SH SYNOPSIS
+.B rows csv-split
+[OPTIONS] SOURCE LINES
+.SH DESCRIPTION
+Split CSV into equal parts (by number of lines).
+.PP
+Input and output files can be compressed.
+.SH OPTIONS
+.TP
+\fB\-\-input\-encoding\fP TEXT
+.PP
+.TP
+\fB\-\-output\-encoding\fP TEXT
+.PP
+.TP
+\fB\-\-buffer\-size\fP INTEGER
+.PP
+.TP
+\fB\-q,\fP \-\-quiet
+.PP
+.TP
+\fB\-\-destination\-pattern\fP TEXT
+Template name for destination files, like: `myfile-{part:03d}.csv`

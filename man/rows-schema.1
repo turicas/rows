@@ -1,0 +1,39 @@
+.TH "ROWS SCHEMA" "1" "2020-12-16" "-0.4.2-dev-eaa8b1ac-" "rows schema Manual"
+.SH NAME
+rows\-schema \- Identifies table schema
+.SH SYNOPSIS
+.B rows schema
+[OPTIONS] SOURCE [OUTPUT]
+.SH DESCRIPTION
+Identifies table schema
+.SH OPTIONS
+.TP
+\fB\-\-input\-encoding\fP TEXT
+.PP
+.TP
+\fB\-\-input\-locale\fP TEXT
+.PP
+.TP
+\fB\-\-verify\-ssl\fP BOOLEAN
+.PP
+.TP
+\fB\-\-detect\-all\-types\fP
+.PP
+.TP
+\fB\-i,\fP \-\-input\-option TEXT
+Custom (import) plugin key=value custom option (can be specified multiple times)
+.TP
+\fB\-f,\fP \-\-format [csv|django|sql|txt]
+.PP
+.TP
+\fB\-\-fields\fP TEXT
+A comma-separated list of fields to inspect
+.TP
+\fB\-\-fields\-exclude\fP TEXT
+A comma-separated list of fields to exclude from inspection
+.TP
+\fB\-\-samples\fP INTEGER
+Number of rows to determine the field types (0 = all)
+.TP
+\fB\-q,\fP \-\-quiet
+.PP

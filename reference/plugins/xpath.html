@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>xpath.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>xpath.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Copyright 2014-2019 Álvaro Justen <a href="https://github.com/turicas/rows/">https://github.com/turicas/rows/</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="kn">from</span> <span class="nn">lxml.html</span> <span class="kn">import</span> <span class="n">fromstring</span> <span class="k">as</span> <span class="n">tree_from_string</span>
+
+<span class="kn">from</span> <span class="nn">rows.plugins.utils</span> <span class="kn">import</span> <span class="n">create_table</span>
+<span class="kn">from</span> <span class="nn">rows.utils</span> <span class="kn">import</span> <span class="n">Source</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">HTMLParser</span> <span class="kn">import</span> <span class="n">HTMLParser</span>  <span class="c1"># Python 2</span>
+    <span class="n">unescape</span> <span class="o">=</span> <span class="n">HTMLParser</span><span class="p">()</span><span class="o">.</span><span class="n">unescape</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">html</span>  <span class="c1"># Python 3</span>
+    <span class="n">unescape</span> <span class="o">=</span> <span class="n">html</span><span class="o">.</span><span class="n">unescape</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_get_row_data</span><span class="p">(</span><span class="n">fields_xpath</span><span class="p">):</span>
+
+    <span class="n">fields</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">fields_xpath</span><span class="o">.</span><span class="n">items</span><span class="p">())</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_xpath</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">xpath</span><span class="p">(</span><span class="n">field_xpath</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">text</span>
+                    <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span>
+                        <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="o">.</span><span class="n">strip</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="n">unescape</span><span class="p">,</span> <span class="n">result</span><span class="p">))</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">text</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">return</span> <span class="n">get_data</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">import_from_xpath</span><span class="p">(</span>
+    <span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">rows_xpath</span><span class="p">,</span> <span class="n">fields_xpath</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+
+    <span class="n">types</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="nb">type</span><span class="p">(</span><span class="n">rows_xpath</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="nb">type</span><span class="p">(</span><span class="n">xpath</span><span class="p">)</span> <span class="k">for</span> <span class="n">xpath</span> <span class="ow">in</span> <span class="n">fields_xpath</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
+    <span class="k">if</span> <span class="n">types</span> <span class="o">!=</span> <span class="nb">set</span><span class="p">([</span><span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;XPath must be </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+
+    <span class="n">source</span> <span class="o">=</span> <span class="n">Source</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">plugin_name</span><span class="o">=</span><span class="s2">&quot;xpath&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+    <span class="n">xml</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">tree_from_string</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span>
+    <span class="n">row_elements</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">xpath</span><span class="p">(</span><span class="n">rows_xpath</span><span class="p">)</span>
+
+    <span class="n">header</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">fields_xpath</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">row_data</span> <span class="o">=</span> <span class="n">_get_row_data</span><span class="p">(</span><span class="n">fields_xpath</span><span class="p">)</span>
+    <span class="n">result_rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">row_data</span><span class="p">,</span> <span class="n">row_elements</span><span class="p">))</span>
+
+    <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;imported_from&quot;</span><span class="p">:</span> <span class="s2">&quot;xpath&quot;</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">create_table</span><span class="p">([</span><span class="n">header</span><span class="p">]</span> <span class="o">+</span> <span class="n">result_rows</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

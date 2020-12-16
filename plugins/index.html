@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Plugins - rows 0.4.1 documentation</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Plugins";
+    var mkdocs_page_input_path = "plugins.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> rows 0.4.1 documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <p class="caption"><span class="caption-text">First Steps</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../basic-usage/">Basic Usage</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../quick-start/">Quick Start Guide</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../license/">License</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Basic Concepts</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Plugins</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#csv">CSV</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#list-of-dicts">List of dicts</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#html">HTML</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#json">JSON</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ods">ODS</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#parquet">Parquet</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pdf">PDF</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#pdf-parser-backend">PDF Parser Backend</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#specify-table-boundaries">Specify Table Boundaries</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#specify-detection-algorithms">Specify Detection Algorithms</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#helper-functions">Helper Functions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#examples">Examples</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#postgresql">PostgreSQL</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#helper-functions_1">Helper Functions</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#sqlite">SQLite</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#txt">TXT</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#xls">XLS</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#xlsx">XLSX</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#xpath">XPath</a>
+    </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../operations/">Operations</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../cli/">Command-Line</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../locale/">Locale</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../links/">Going deeper</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../changelog/">Release notes</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">rows 0.4.1 documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Basic Concepts &raquo;</li>
+        
+      
+    
+    <li>Plugins</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/turicas/rows/edit/develop/docs/plugins.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="supported-plugins">Supported Plugins</h2>
+<p>The idea behing plugins is very simple: it's a piece of code which extracts
+data from/exports to some specific format and interfaces with the core library
+functions, which will know how to detect and convert data types, export to
+other formats etc. If you don't find the plugin for the format you need, feel
+free <a href="../contributing/">to contribute</a>. :-)</p>
+<p>Each <code>import_from_X</code> function receive specific parameters (depending on the
+format you're working) but also general parameters such as <code>skip_header</code> and
+<code>fields</code> (they are passed to the <a href="https://github.com/turicas/rows/blob/master/rows/utils.py">rows.plugins.utils.create_table
+function</a>).</p>
+<p>Some plugins also provide helper functions to work with the specific format,
+which can help a lot extracting non-tabular data (like
+<code>rows.plugins.html.extract_links</code> and <code>rows.plugins.pdf.pdf_to_text</code>).</p>
+<p>This documentation is still in progress - please look into <a href="https://github.com/turicas/rows/tree/master/rows/plugins">the plugins' source
+code</a> to see all available parameters. Contributions on the
+documentation are very welcome. Look into the <a href="https://github.com/turicas/rows/tree/master/examples/library">examples folder</a> to
+see the plugins in action. :)</p>
+<p>Current implemented plugins:</p>
+<ul>
+<li><a href="#csv">CSV</a></li>
+<li><a href="#list-of-dicts">List of dicts</a></li>
+<li><a href="#html">HTML</a></li>
+<li><a href="#json">JSON</a></li>
+<li><a href="#ods">ODS</a></li>
+<li><a href="#parquet">Parquet</a></li>
+<li><a href="#pdf">PDF</a></li>
+<li><a href="#postgresql">PostgreSQL</a></li>
+<li><a href="#sqlite">SQLite</a></li>
+<li><a href="#txt">TXT</a></li>
+<li><a href="#xls">XLS</a></li>
+<li><a href="#xlsx">XLSX</a></li>
+<li><a href="#xpath">XPath</a></li>
+</ul>
+<blockquote>
+<p>Note: <code>rows</code> is still not lazy by default, except for some operations like
+<code>csv2sqlite</code>, <code>sqlite2csv</code>, <code>pgimport</code> and <code>pgexport</code> (so using
+<code>rows.import_from_X</code> will put everything in memory), <a href="https://github.com/turicas/rows/issues/45">we're working on
+this</a>.</p>
+</blockquote>
+<h3 id="csv">CSV</h3>
+<p><a href="../reference/plugins/plugin_csv.html">See code reference</a></p>
+<p>Use <code>rows.import_from_csv</code> and <code>rows.export_to_csv</code> (dependencies are installed
+by default). The CSV dialect is <strong>detected automatically</strong> but you can specify
+it by passing the <code>dialect</code> parameter.</p>
+<p>Helper functions:</p>
+<ul>
+<li><code>rows.plugins.csv.discover_dialect</code>: tries to figure out the CSV dialect
+  based on a sample (in bytes).</li>
+<li><code>rows.utils.csv2sqlite</code>: lazily convert a CSV into a SQLite table (the
+  command-line version of this function is pretty useful -- see more by running
+  <code>rows csv2sqlite --help</code>). The CSV can be optionally compressed (<code>.csv</code>,
+  <code>.csv.gz</code> and <code>.csv.xz</code>).</li>
+</ul>
+<p>Learn by example:</p>
+<ul>
+<li><a href="https://github.com/turicas/rows/blob/master/examples/library/usa_legislators.py"><code>examples/library/usa_legislators.py</code></a></li>
+</ul>
+<h3 id="list-of-dicts">List of dicts</h3>
+<p><a href="../reference/plugins/dicts.html">See code reference</a></p>
+<p>Use <code>rows.import_from_dicts</code> and <code>rows.export_to_dicts</code> (no dependencies).
+Useful when you have the data in memory and would like to detect/convert data
+types and/or export to a supported format.</p>
+<p>Learn by example:</p>
+<ul>
+<li><a href="https://github.com/turicas/rows/blob/master/examples/library/organizaciones.py"><code>examples/library/organizaciones.py</code></a></li>
+</ul>
+<h3 id="html">HTML</h3>
+<p><a href="../reference/plugins/plugin_html.html">See code reference</a></p>
+<p>Use <code>rows.import_from_html</code> and <code>rows.export_to_html</code> (dependencies must be
+installed with <code>pip install rows[html]</code>). You can specify the table index in
+case there's more than one <code>&lt;table&gt;</code> inside the HTML, decide whether to keep
+the HTML code inside the <code>&lt;td&gt;</code> tags (useful to extract links and "hidden"
+data) and other options. Very useful in Web scraping.</p>
+<p>Learn by example:</p>
+<ul>
+<li><a href="https://github.com/turicas/rows/blob/master/examples/library/airports.py"><code>examples/library/airports.py</code></a></li>
+<li><a href="https://github.com/turicas/rows/blob/master/examples/library/extract_links.py"><code>examples/library/extract_links.py</code></a></li>
+<li><a href="https://github.com/turicas/rows/blob/master/examples/library/slip_opinions.py"><code>examples/library/slip_opinions.py</code></a></li>
+</ul>
+<p>Helper functions:</p>
+<ul>
+<li><code>rows.plugins.html.count_tables</code>: return the number of tables for a given
+  HTML;</li>
+<li><code>rows.plugins.html.tag_to_dict</code>: extract tag's attributes into a <code>dict</code>;</li>
+<li><code>rows.plugins.html.extract_text</code>: extract the text content from a given HTML;</li>
+<li><code>rows.plugins.html.extract_links</code>: extract the <code>href</code> attributes from a given
+  HTML (returns a list of strings).</li>
+</ul>
+<h3 id="json">JSON</h3>
+<p><a href="../reference/plugins/plugin_json.html">See code reference</a></p>
+<p>Use <code>rows.import_from_json</code> and <code>rows.export_to_json</code> (no dependencies). Each
+table is converted to an array of objects (where each row is represented by an
+object).</p>
+<h3 id="ods">ODS</h3>
+<p><a href="../reference/plugins/ods.html">See code reference</a></p>
+<p>Use <code>rows.import_from_ods</code> (dependencies must be installed with <code>pip install
+rows[ods]</code>).</p>
+<h3 id="parquet">Parquet</h3>
+<p><a href="../reference/plugins/plugin_parquet.html">See code reference</a></p>
+<p>Use <code>rows.import_from_parquet</code> passing the filename (dependencies must be
+installed with <code>pip install rows[parquet]</code> and if the data is compressed using
+snappy you'll also need to <code>pip install rows[parquet-snappy]</code> and the
+<code>libsnappy-dev</code> system library) -- read <a href="http://blog.justen.eng.br/2016/03/reading-parquet-files-in-python-with-rows.html">this blog post</a> for
+more details and one example.</p>
+<h3 id="pdf">PDF</h3>
+<p><a href="../reference/plugins/plugin_pdf.html">See code reference</a></p>
+<p>Use <code>rows.import_from_pdf</code> (dependencies must be installed with <code>pip install
+rows[pdf]</code>).</p>
+<h4 id="pdf-parser-backend">PDF Parser Backend</h4>
+<p>There are two available backends (under-the-hood libraries to parse the PDF),
+which you can select by passing the <code>backend</code> parameter (results may differ
+depending on the backend):</p>
+<ul>
+<li><code>'pymupdf'</code>: use if possible, is much faster than the other option;</li>
+<li><code>'pdfminer'</code>: 100% Python implementation, very slow.</li>
+</ul>
+<p>Get this list programatically with <code>rows.plugins.pdf.backends()</code>. You can also
+subclass <code>rows.plugins.pdf.PDFBackend</code> and implement your own PDF parser, if
+needed.</p>
+<h4 id="specify-table-boundaries">Specify Table Boundaries</h4>
+<p>You can specify some parameters to delimit where the table is located in the
+PDF, like:</p>
+<ul>
+<li><code>starts_after</code> and <code>ends_before</code>: delimits the objects before/after the
+  table. Can be: regular strings (exact match); regular expressions objects; or
+  functions (receives the object and must return <code>True</code> for the object which
+  define if the table starts/ends there).</li>
+<li><code>page_numbers</code>: sequence with desired page numbers (starts from <code>1</code>).</li>
+</ul>
+<h4 id="specify-detection-algorithms">Specify Detection Algorithms</h4>
+<p>There are 3 available algorithms to identify text objects and define where the
+table is located inside each page - you can subclass them and overwrite some
+methods to have custom behaviour (like the <code>get_lines</code>, where you can access
+objects' positions, for example). The algorithms available are (get the list
+programatically with <code>rows.plugins.pdf.algorithms()</code>):</p>
+<ul>
+<li><code>rows.plugins.pdf.YGroupsAlgorithm</code>: default, group text objects by y
+  position and identify table lines based on these groups.</li>
+<li><code>rows.plugins.pdf.HeaderPositionAlgorithm</code>: use the table header to identify
+  cell positions and then fill the table with found objects (useful in sparse
+  tables).</li>
+<li><code>rows.plugins.pdf.RectsBoundariesAlgorithm</code>: detect the table boundaries by
+  the rectangles on the page (currently only available using the <code>'pdfminer'</code>
+  backend, which is very slow).</li>
+</ul>
+<h4 id="helper-functions">Helper Functions</h4>
+<ul>
+<li><code>rows.plugins.pdf.number_of_pages</code>: returns an integer representing the
+  number of pages of a specific PDF file/stream;</li>
+<li><code>rows.plugins.pdf.pdf_to_text</code>: generator: each iteration will return the
+  text for a specific page (can specify <code>page_numbers</code> to delimit which pages
+  will be returned);</li>
+<li><code>rows.plugins.pdf.pdf_table_lines</code>: almost the same as
+  <code>rows.import_from_pdf</code>, but returns a list of strings instead of a
+  <code>rows.Table</code> object. Useful if the PDF is not well structured and needs some
+  tweaking before importing as a <code>rows.Table</code> (so you can export to another
+  format).</li>
+</ul>
+<h4 id="examples">Examples</h4>
+<ul>
+<li><a href="https://github.com/Correio24horas/balneabilidade-bahia"><code>balneabilidade-brasil</code></a>: downloads thousands of
+  PDFs from Brazilian organizations which monitors water quality, then extract
+  the tables in each PDF and put all rows together in one CSV;</li>
+<li><a href="https://github.com/turicas/rows/blob/master/examples/cli/extract-pdf.sh"><code>examples/cli/extract-pdf.sh</code></a>: PDF extraction using the
+  command-line interface (the parameters cannot be customized using this method
+  by now -- more improvements in next versions).</li>
+</ul>
+<h3 id="postgresql">PostgreSQL</h3>
+<p><a href="../reference/plugins/postgresql.html">See code reference</a></p>
+<p>Use <code>rows.import_from_postgresql</code> and <code>rows.export_to_postgresql</code> (dependencies
+must be installed with <code>pip install rows[postgresql]</code>).</p>
+<h4 id="parameters">Parameters</h4>
+<p>On both <code>rows.import_from_postgresql</code> and <code>rows.export_to_postgresql</code> you can pass
+either a connection string or a <code>psycopg2</code> connection object.</p>
+<p>On <code>rows.import_from_postgresql</code> you can pass a <code>query</code> parameter instead of a
+<code>table_name</code>.</p>
+<h4 id="helper-functions_1">Helper Functions</h4>
+<ul>
+<li><code>rows.utils.pgimport</code>: import data from CSV into PostgreSQL using the fastest
+  possible method - requires the <code>psql</code> command available on your system (the
+  command-line version of this function is pretty useful -- see more by running
+  <code>rows pgimport --help</code>). The CSV can be optionally compressed (<code>.csv</code>,
+  <code>.csv.gz</code> and <code>.csv.xz</code>);</li>
+<li><code>rows.utils.pgexport</code>: export data from PostgreSQL into a CSV file using the
+  fastest possible method - requires the <code>psql</code> command available on your
+  system (the command-line version of this function is pretty useful -- see
+  more by running <code>rows pgexport --help</code>). The CSV can be optionally compressed
+  (<code>.csv</code>, <code>.csv.gz</code> and <code>.csv.xz</code>).</li>
+</ul>
+<h3 id="sqlite">SQLite</h3>
+<p><a href="../reference/plugins/sqlite.html">See code reference</a></p>
+<p>Use <code>rows.import_from_sqlite</code> and <code>rows.export_to_sqlite</code> (no dependencies).</p>
+<p>Helper functions:</p>
+<ul>
+<li><code>rows.utils.sqlite2csv</code>: lazily SQLite tables into CSV files (the
+  command-line version of this function is pretty useful -- see more by running
+  <code>rows sqlite2csv --help</code>). The CSV can be optionally compressed (<code>.csv</code>,
+  <code>.csv.gz</code> and <code>.csv.xz</code>).</li>
+</ul>
+<h3 id="txt">TXT</h3>
+<p><a href="../reference/plugins/txt.html">See code reference</a></p>
+<p>Use <code>rows.import_from_txt</code> and <code>rows.export_to_txt</code> (no dependencies). You can
+customize the border style.</p>
+<h3 id="xls">XLS</h3>
+<p><a href="../reference/plugins/xls.html">See code reference</a></p>
+<p>Use <code>rows.import_from_xls</code> and <code>rows.export_to_xls</code> (dependencies must be
+installed with <code>pip install rows[xls]</code>). You can customize things like
+<code>sheet_name</code>, <code>sheet_index</code>, <code>start_row</code>, <code>end_row</code>, <code>start_column</code> and
+<code>end_column</code> (the last 5 options are indexes and starts from 0).</p>
+<p>On <code>rows.export_to_xls</code> you can define the <code>sheet_name</code>.</p>
+<h3 id="xlsx">XLSX</h3>
+<p><a href="../reference/plugins/xlsx.html">See code reference</a></p>
+<p>use <code>rows.import_from_xlsx</code> and <code>rows.export_to_xlsx</code> (dependencies must be
+installed with <code>pip install rows[xlsx]</code>). You can customize things like
+<code>sheet_name</code>, <code>sheet_index</code>, <code>start_row</code>, <code>end_row</code>, <code>start_column</code> and
+<code>end_column</code> (the last 5 options are indexes and starts from 0).</p>
+<p>On <code>rows.export_to_xlsx</code> you can define the <code>sheet_name</code>.</p>
+<h3 id="xpath">XPath</h3>
+<p><a href="../reference/plugins/xpath.html">See code reference</a></p>
+<p>Dependencies must be installed with <code>pip install rows[xpath]</code>). Very useful in
+Web scraping. Use <code>rows.import_from_xpath</code> passing the following arguments:</p>
+<ul>
+<li><code>filename_or_fobj</code>: source XML/HTML;</li>
+<li><code>rows_xpath</code>: XPath to find the elements which will be transformed into rows;</li>
+<li><code>fields_xpath</code>: <code>collections.OrderedDict</code> containing XPaths for each of the
+  fields (key: field name, value: XPath string) - you'll probrably want to use
+  <code>./</code> so it'll search inside the row found by <code>rows_xpath</code>).</li>
+</ul>
+<p>Learn by example:</p>
+<ul>
+<li><a href="https://github.com/turicas/rows/blob/master/examples/library/ecuador_radiodifusoras.py"><code>examples/library/ecuador_radiodifusoras.py</code></a></li>
+<li><a href="https://github.com/turicas/rows/blob/master/examples/library/brazilian_cities_wikipedia.py"><code>examples/library/brazilian_cities_wikipedia.py</code></a></li>
+</ul>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../operations/" class="btn btn-neutral float-right" title="Operations">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../architecture/" class="btn btn-neutral" title="Architecture"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/turicas/rows/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../architecture/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../operations/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

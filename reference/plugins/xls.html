@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>xls.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>xls.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Copyright 2014-2019 Álvaro Justen <a href="https://github.com/turicas/rows/">https://github.com/turicas/rows/</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="kn">import</span> <span class="nn">xlrd</span>
+<span class="kn">import</span> <span class="nn">xlwt</span>
+
+<span class="kn">import</span> <span class="nn">rows.fields</span> <span class="k">as</span> <span class="nn">fields</span>
+<span class="kn">from</span> <span class="nn">rows.plugins.utils</span> <span class="kn">import</span> <span class="n">create_table</span><span class="p">,</span> <span class="n">prepare_to_export</span>
+<span class="kn">from</span> <span class="nn">rows.utils</span> <span class="kn">import</span> <span class="n">Source</span>
+
+
+<span class="n">CELL_TYPES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">xlrd</span><span class="o">.</span><span class="n">XL_CELL_BLANK</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">TextField</span><span class="p">,</span>
+    <span class="n">xlrd</span><span class="o">.</span><span class="n">XL_CELL_DATE</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">DatetimeField</span><span class="p">,</span>
+    <span class="n">xlrd</span><span class="o">.</span><span class="n">XL_CELL_ERROR</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">xlrd</span><span class="o">.</span><span class="n">XL_CELL_TEXT</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">TextField</span><span class="p">,</span>
+    <span class="n">xlrd</span><span class="o">.</span><span class="n">XL_CELL_BOOLEAN</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">BoolField</span><span class="p">,</span>
+    <span class="n">xlrd</span><span class="o">.</span><span class="n">XL_CELL_EMPTY</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">xlrd</span><span class="o">.</span><span class="n">XL_CELL_NUMBER</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">FloatField</span><span class="p">,</span>
+<span class="p">}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>TODO: add more formatting styles for other types such as currency
+TODO: styles may be influenced by locale</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">FORMATTING_STYLES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">fields</span><span class="o">.</span><span class="n">DateField</span><span class="p">:</span> <span class="n">xlwt</span><span class="o">.</span><span class="n">easyxf</span><span class="p">(</span><span class="n">num_format_str</span><span class="o">=</span><span class="s2">&quot;yyyy-mm-dd&quot;</span><span class="p">),</span>
+    <span class="n">fields</span><span class="o">.</span><span class="n">DatetimeField</span><span class="p">:</span> <span class="n">xlwt</span><span class="o">.</span><span class="n">easyxf</span><span class="p">(</span><span class="n">num_format_str</span><span class="o">=</span><span class="s2">&quot;yyyy-mm-dd hh:mm:ss&quot;</span><span class="p">),</span>
+    <span class="n">fields</span><span class="o">.</span><span class="n">PercentField</span><span class="p">:</span> <span class="n">xlwt</span><span class="o">.</span><span class="n">easyxf</span><span class="p">(</span><span class="n">num_format_str</span><span class="o">=</span><span class="s2">&quot;0.00%&quot;</span><span class="p">),</span>
+<span class="p">}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_python_to_xls</span><span class="p">(</span><span class="n">field_types</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">convert_value</span><span class="p">(</span><span class="n">field_type</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">field_type</span> <span class="ow">in</span> <span class="n">FORMATTING_STYLES</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FORMATTING_STYLES</span><span class="p">[</span><span class="n">field_type</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">field_type</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">BinaryField</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">BoolField</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">DateField</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">DatetimeField</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">DecimalField</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">FloatField</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">PercentField</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">TextField</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span><span class="p">,</span> <span class="n">data</span>
+
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># don&#39;t know this field</span>
+            <span class="k">return</span> <span class="n">field_type</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">data</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">convert_row</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">convert_value</span><span class="p">(</span><span class="n">field_type</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">field_type</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">field_types</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
+        <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">convert_row</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>Return the cell value of the table passed by argument, based in row and column.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">cell_value</span><span class="p">(</span><span class="n">sheet</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">cell</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span>
+    <span class="n">field_type</span> <span class="o">=</span> <span class="n">CELL_TYPES</span><span class="p">[</span><span class="n">cell</span><span class="o">.</span><span class="n">ctype</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      <p>TODO: this approach will not work if using locale</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">value</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="k">if</span> <span class="n">field_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">elif</span> <span class="n">field_type</span> <span class="ow">is</span> <span class="n">fields</span><span class="o">.</span><span class="n">TextField</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cell</span><span class="o">.</span><span class="n">ctype</span> <span class="o">!=</span> <span class="n">xlrd</span><span class="o">.</span><span class="n">XL_CELL_BLANK</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">elif</span> <span class="n">field_type</span> <span class="ow">is</span> <span class="n">fields</span><span class="o">.</span><span class="n">DatetimeField</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">time_tuple</span> <span class="o">=</span> <span class="n">xlrd</span><span class="o">.</span><span class="n">xldate_as_tuple</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">sheet</span><span class="o">.</span><span class="n">book</span><span class="o">.</span><span class="n">datemode</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">xlrd</span><span class="o">.</span><span class="n">xldate</span><span class="o">.</span><span class="n">XLDateTooLarge</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">field_type</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="o">*</span><span class="n">time_tuple</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;T00:00:00&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">elif</span> <span class="n">field_type</span> <span class="ow">is</span> <span class="n">fields</span><span class="o">.</span><span class="n">BoolField</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">elif</span> <span class="n">cell</span><span class="o">.</span><span class="n">xf_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">value</span>  <span class="c1"># TODO: test</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">book</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="n">book</span>
+        <span class="n">xf</span> <span class="o">=</span> <span class="n">book</span><span class="o">.</span><span class="n">xf_list</span><span class="p">[</span><span class="n">cell</span><span class="o">.</span><span class="n">xf_index</span><span class="p">]</span>
+        <span class="n">fmt</span> <span class="o">=</span> <span class="n">book</span><span class="o">.</span><span class="n">format_map</span><span class="p">[</span><span class="n">xf</span><span class="o">.</span><span class="n">format_key</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format_str</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>TODO: we may optimize this approach: we&rsquo;re converting to string
+and the library is detecting the type when we could just say to
+the library this value is PercentField</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">decimal_places</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">format_str</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                    <span class="n">decimal_places</span> <span class="o">=</span> <span class="mi">2</span>
+                <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">value</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span> <span class="n">decimal_places</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="nb">float</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="n">value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">get_table_start</span><span class="p">(</span><span class="n">sheet</span><span class="p">):</span>
+    <span class="n">empty_cell_type</span> <span class="o">=</span> <span class="n">xlrd</span><span class="o">.</span><span class="n">empty_cell</span><span class="o">.</span><span class="n">ctype</span>
+    <span class="n">start_column</span><span class="p">,</span> <span class="n">start_row</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sheet</span><span class="o">.</span><span class="n">ncols</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">cell</span> <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">sheet</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="k">if</span> <span class="n">cell</span><span class="o">.</span><span class="n">ctype</span> <span class="o">!=</span> <span class="n">empty_cell_type</span><span class="p">):</span>
+            <span class="n">start_column</span> <span class="o">=</span> <span class="n">col</span>
+            <span class="k">break</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sheet</span><span class="o">.</span><span class="n">nrows</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">cell</span> <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">sheet</span><span class="o">.</span><span class="n">row</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">if</span> <span class="n">cell</span><span class="o">.</span><span class="n">ctype</span> <span class="o">!=</span> <span class="n">empty_cell_type</span><span class="p">):</span>
+            <span class="n">start_row</span> <span class="o">=</span> <span class="n">row</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">start_row</span><span class="p">,</span> <span class="n">start_column</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">sheet_names</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      <p>TODO: setup/teardown must be methods of a class so we can reuse them</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">source</span> <span class="o">=</span> <span class="n">Source</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">plugin_name</span><span class="o">=</span><span class="s2">&quot;xls&quot;</span><span class="p">)</span>
+    <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">devnull</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span>
+    <span class="n">book</span> <span class="o">=</span> <span class="n">xlrd</span><span class="o">.</span><span class="n">open_workbook</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">formatting_info</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">logfile</span><span class="o">=</span><span class="n">devnull</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">book</span><span class="o">.</span><span class="n">sheet_names</span><span class="p">()</span>
+    <span class="k">del</span> <span class="n">book</span>
+    <span class="n">devnull</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">result</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <p>Return a rows.Table created from imported XLS file.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">import_from_xls</span><span class="p">(</span>
+    <span class="n">filename_or_fobj</span><span class="p">,</span>
+    <span class="n">sheet_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">sheet_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">start_row</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">start_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">end_row</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">end_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">source</span> <span class="o">=</span> <span class="n">Source</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">plugin_name</span><span class="o">=</span><span class="s2">&quot;xls&quot;</span><span class="p">)</span>
+    <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">devnull</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span>
+    <span class="n">book</span> <span class="o">=</span> <span class="n">xlrd</span><span class="o">.</span><span class="n">open_workbook</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">formatting_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">logfile</span><span class="o">=</span><span class="n">devnull</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">sheet_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">sheet</span> <span class="o">=</span> <span class="n">book</span><span class="o">.</span><span class="n">sheet_by_name</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">sheet</span> <span class="o">=</span> <span class="n">book</span><span class="o">.</span><span class="n">sheet_by_index</span><span class="p">(</span><span class="n">sheet_index</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <p>TODO: may re-use Excel data types</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      <p>Get header and rows
+xlrd library reads rows and columns starting from 0 and ending on
+sheet.nrows/ncols - 1. rows accepts the same pattern
+The xlrd library reads rows and columns starting from 0 and ending on
+sheet.nrows/ncols - 1. rows also uses 0-based indexes, so no
+transformation is needed</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">min_row</span><span class="p">,</span> <span class="n">min_column</span> <span class="o">=</span> <span class="n">get_table_start</span><span class="p">(</span><span class="n">sheet</span><span class="p">)</span>
+    <span class="n">max_row</span><span class="p">,</span> <span class="n">max_column</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="n">nrows</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sheet</span><span class="o">.</span><span class="n">ncols</span> <span class="o">-</span> <span class="mi">1</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      <p>TODO: consider adding a parameter <code>ignore_padding=True</code> and when it&rsquo;s
+True, consider <code>start_row</code> starting from <code>min_row</code> and <code>start_column</code>
+starting from <code>min_col</code>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">start_row</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">start_row</span> <span class="k">if</span> <span class="n">start_row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">min_row</span><span class="p">,</span> <span class="n">min_row</span><span class="p">)</span>
+    <span class="n">end_row</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">end_row</span> <span class="k">if</span> <span class="n">end_row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">max_row</span><span class="p">,</span> <span class="n">max_row</span><span class="p">)</span>
+    <span class="n">start_column</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+        <span class="n">start_column</span> <span class="k">if</span> <span class="n">start_column</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">min_column</span><span class="p">,</span> <span class="n">min_column</span>
+    <span class="p">)</span>
+    <span class="n">end_column</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">end_column</span> <span class="k">if</span> <span class="n">end_column</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">max_column</span><span class="p">,</span> <span class="n">max_column</span><span class="p">)</span>
+
+    <span class="n">table_rows</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">[</span>
+            <span class="n">cell_value</span><span class="p">(</span><span class="n">sheet</span><span class="p">,</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">column_index</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">column_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_column</span><span class="p">,</span> <span class="n">end_column</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">row_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_row</span><span class="p">,</span> <span class="n">end_row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="n">devnull</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;imported_from&quot;</span><span class="p">:</span> <span class="s2">&quot;xls&quot;</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">sheet</span><span class="o">.</span><span class="n">name</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">create_table</span><span class="p">(</span><span class="n">table_rows</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      <p>Export the rows.Table to XLS file and return the saved file.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">export_to_xls</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">filename_or_fobj</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="s2">&quot;Sheet1&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">workbook</span> <span class="o">=</span> <span class="n">xlwt</span><span class="o">.</span><span class="n">Workbook</span><span class="p">()</span>
+    <span class="n">sheet</span> <span class="o">=</span> <span class="n">workbook</span><span class="o">.</span><span class="n">add_sheet</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">)</span>
+
+    <span class="n">prepared_table</span> <span class="o">=</span> <span class="n">prepare_to_export</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">field_names</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">prepared_table</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">column_index</span><span class="p">,</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">field_names</span><span class="p">):</span>
+        <span class="n">sheet</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">column_index</span><span class="p">,</span> <span class="n">field_name</span><span class="p">)</span>
+
+    <span class="n">_convert_row</span> <span class="o">=</span> <span class="n">_python_to_xls</span><span class="p">([</span><span class="n">table</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">)</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">field_names</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">prepared_table</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">column_index</span><span class="p">,</span> <span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">_convert_row</span><span class="p">(</span><span class="n">row</span><span class="p">)):</span>
+            <span class="n">sheet</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">row_index</span><span class="p">,</span> <span class="n">column_index</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="n">return_result</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">filename_or_fobj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">filename_or_fobj</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">()</span>
+        <span class="n">return_result</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">source</span> <span class="o">=</span> <span class="n">Source</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">,</span> <span class="n">plugin_name</span><span class="o">=</span><span class="s2">&quot;xls&quot;</span><span class="p">)</span>
+    <span class="n">workbook</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="p">)</span>
+    <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">return_result</span><span class="p">:</span>
+        <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">fobj</span>
+
+    <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">should_close</span><span class="p">:</span>
+        <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">result</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

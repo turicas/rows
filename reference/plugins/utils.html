@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>utils.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>utils.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Copyright 2014-2019 Álvaro Justen <a href="https://github.com/turicas/rows/">https://github.com/turicas/rows/</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">islice</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">unlink</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span> <span class="nn">six</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>&lsquo;slug&rsquo; and &lsquo;make_unique_name&rsquo; are required here to maintain backwards compatibility</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">rows.fields</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TextField</span><span class="p">,</span>
+    <span class="n">detect_types</span><span class="p">,</span>
+    <span class="n">get_items</span><span class="p">,</span>  <span class="c1"># NOQA</span>
+    <span class="n">make_header</span><span class="p">,</span>
+    <span class="n">make_unique_name</span><span class="p">,</span>
+    <span class="n">slug</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">rows.table</span> <span class="kn">import</span> <span class="n">FlexibleTable</span><span class="p">,</span> <span class="n">Table</span>
+<span class="kn">from</span> <span class="nn">rows.utils</span> <span class="kn">import</span> <span class="n">Source</span>
+
+<span class="k">if</span> <span class="n">six</span><span class="o">.</span><span class="n">PY2</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Iterator</span>
+<span class="k">elif</span> <span class="n">six</span><span class="o">.</span><span class="n">PY3</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterator</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">ipartition</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">partition_size</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">):</span>
+        <span class="n">iterator</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">iterator</span> <span class="o">=</span> <span class="n">iterable</span>
+
+    <span class="n">finished</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">finished</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">partition_size</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">iterator</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                <span class="n">finished</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">data</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>Create a rows.Table object based on data rows and some configurations</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">create_table</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">fields</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">skip_header</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">import_fields</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">samples</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">force_types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_rows</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      <ul>
+<li><code>skip_header</code> is only used if <code>fields</code> is set</li>
+<li><code>samples</code> is only used if <code>fields</code> is <code>None</code>. If samples=None, all data
+  is filled in memory - use with caution.</li>
+<li><code>force_types</code> is only used if <code>fields</code> is <code>None</code></li>
+<li><code>import_fields</code> can be used either if <code>fields</code> is set or not, the
+  resulting fields will seek its order</li>
+<li><code>fields</code> must always be in the same order as the data</li>
+</ul>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">table_rows</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">force_types</span> <span class="o">=</span> <span class="n">force_types</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">import_fields</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">import_fields</span> <span class="o">=</span> <span class="n">make_header</span><span class="p">(</span><span class="n">import_fields</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>TODO: test max_rows</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">fields</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># autodetect field types</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>TODO: may add <code>type_hints</code> parameter so autodetection can be easier
+      (plugins may specify some possible field types).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">header</span> <span class="o">=</span> <span class="n">make_header</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">table_rows</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">samples</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sample_rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">islice</span><span class="p">(</span><span class="n">table_rows</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">samples</span><span class="p">))</span>
+            <span class="n">table_rows</span> <span class="o">=</span> <span class="n">chain</span><span class="p">(</span><span class="n">sample_rows</span><span class="p">,</span> <span class="n">table_rows</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">max_rows</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">max_rows</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">sample_rows</span> <span class="o">=</span> <span class="n">table_rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">islice</span><span class="p">(</span><span class="n">table_rows</span><span class="p">,</span> <span class="n">max_rows</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sample_rows</span> <span class="o">=</span> <span class="n">table_rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">table_rows</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      <p>Detect field types using only the desired columns</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">detected_fields</span> <span class="o">=</span> <span class="n">detect_types</span><span class="p">(</span>
+            <span class="n">header</span><span class="p">,</span>
+            <span class="n">sample_rows</span><span class="p">,</span>
+            <span class="n">skip_indexes</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">index</span>
+                <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">force_types</span> <span class="ow">or</span> <span class="n">field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">import_fields</span> <span class="ow">or</span> <span class="n">header</span><span class="p">)</span>
+            <span class="p">],</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>Check if any field was added during detecting process</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">new_fields</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">field_name</span>
+            <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">detected_fields</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">header</span>
+        <span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      <p>Finally create the <code>fields</code> with both header and new field names,
+based on detected fields <code>and force_types</code></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">fields</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">detected_fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">TextField</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">header</span> <span class="o">+</span> <span class="n">new_fields</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">fields</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">force_types</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      <p>Update <code>header</code> and <code>import_fields</code> based on new <code>fields</code></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">header</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">fields</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">import_fields</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">import_fields</span> <span class="o">=</span> <span class="n">header</span>
+
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># using provided field types</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fields</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`fields` must be an `OrderedDict`&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">skip_header</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      <p>If we&rsquo;re skipping the header probably this row is not trustable
+(can be data or garbage).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="nb">next</span><span class="p">(</span><span class="n">table_rows</span><span class="p">)</span>
+
+        <span class="n">header</span> <span class="o">=</span> <span class="n">make_header</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">fields</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="n">import_fields</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">import_fields</span> <span class="o">=</span> <span class="n">header</span>
+
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
+            <span class="p">[(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">fields</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">fields</span><span class="p">)]</span>
+        <span class="p">)</span>
+
+    <span class="n">diff</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">import_fields</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">diff</span><span class="p">:</span>
+        <span class="n">field_names</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;&quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">field</span><span class="p">)</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">diff</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid field names: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">field_names</span><span class="p">))</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
+        <span class="p">[(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">fields</span><span class="p">[</span><span class="n">field_name</span><span class="p">])</span> <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">import_fields</span><span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="n">get_row</span> <span class="o">=</span> <span class="n">get_items</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="n">header</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">import_fields</span><span class="p">))</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">max_rows</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">max_rows</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">table_rows</span> <span class="o">=</span> <span class="n">islice</span><span class="p">(</span><span class="n">table_rows</span><span class="p">,</span> <span class="n">max_rows</span><span class="p">)</span>
+    <span class="n">table</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">import_fields</span><span class="p">,</span> <span class="n">get_row</span><span class="p">(</span><span class="n">row</span><span class="p">)))</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">table_rows</span><span class="p">)</span>
+
+    <span class="n">source</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">source</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">should_close</span><span class="p">:</span>
+            <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">should_delete</span> <span class="ow">and</span> <span class="n">Path</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">uri</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">unlink</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">uri</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">table</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">prepare_to_export</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">export_fields</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      <p>TODO: optimize for more used cases (export_fields=None)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">table_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">table_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">FlexibleTable</span><span class="p">,</span> <span class="n">Table</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Table type not recognized&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">export_fields</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <p>we use already slugged-fieldnames</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">export_fields</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">field_names</span>
+    <span class="k">else</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      <p>we need to slug all the field names</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">export_fields</span> <span class="o">=</span> <span class="n">make_header</span><span class="p">(</span><span class="n">export_fields</span><span class="p">)</span>
+
+    <span class="n">table_field_names</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">field_names</span>
+    <span class="n">diff</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">export_fields</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">table_field_names</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">diff</span><span class="p">:</span>
+        <span class="n">field_names</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;&quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">field</span><span class="p">)</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">diff</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid field names: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">field_names</span><span class="p">))</span>
+
+    <span class="k">yield</span> <span class="n">export_fields</span>
+
+    <span class="k">if</span> <span class="n">table_type</span> <span class="ow">is</span> <span class="n">Table</span><span class="p">:</span>
+        <span class="n">field_indexes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">table_field_names</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">export_fields</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">_rows</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="n">field_index</span><span class="p">]</span> <span class="k">for</span> <span class="n">field_index</span> <span class="ow">in</span> <span class="n">field_indexes</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">table_type</span> <span class="ow">is</span> <span class="n">FlexibleTable</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">_rows</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">export_fields</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">prepared_table</span> <span class="o">=</span> <span class="n">prepare_to_export</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">field_names</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">prepared_table</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">field_names</span>
+
+    <span class="n">field_types</span> <span class="o">=</span> <span class="p">[</span><span class="n">table</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">field_names</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">prepared_table</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="p">[</span>
+            <span class="n">field_type</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">value</span><span class="p">,</span> <span class="n">field_type</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">field_types</span><span class="p">)</span>
+        <span class="p">]</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

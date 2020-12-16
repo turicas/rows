@@ -1,0 +1,42 @@
+.TH "ROWS CONVERT" "1" "2020-12-16" "-0.4.2-dev-eaa8b1ac-" "rows convert Manual"
+.SH NAME
+rows\-convert \- Convert table on `source` URI to...
+.SH SYNOPSIS
+.B rows convert
+[OPTIONS] SOURCE DESTINATION
+.SH DESCRIPTION
+Convert table on `source` URI to `destination`
+.SH OPTIONS
+.TP
+\fB\-\-input\-encoding\fP TEXT
+.PP
+.TP
+\fB\-\-output\-encoding\fP TEXT
+.PP
+.TP
+\fB\-\-input\-locale\fP TEXT
+.PP
+.TP
+\fB\-\-output\-locale\fP TEXT
+.PP
+.TP
+\fB\-\-verify\-ssl\fP BOOLEAN
+.PP
+.TP
+\fB\-\-order\-by\fP TEXT
+.PP
+.TP
+\fB\-\-fields\fP TEXT
+A comma-separated list of fields to import
+.TP
+\fB\-\-fields\-exclude\fP TEXT
+A comma-separated list of fields to exclude
+.TP
+\fB\-i,\fP \-\-input\-option TEXT
+Custom (import) plugin key=value custom option (can be specified multiple times)
+.TP
+\fB\-o,\fP \-\-output\-option TEXT
+Custom (export) plugin key=value custom option (can be specified multiple times)
+.TP
+\fB\-q,\fP \-\-quiet
+.PP

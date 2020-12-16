@@ -1,0 +1,33 @@
+.TH "ROWS CSV-CLEAN" "1" "2020-12-16" "-0.4.2-dev-eaa8b1ac-" "rows csv-clean Manual"
+.SH NAME
+rows\-csv-clean \- Create a consistent and clean version of a...
+.SH SYNOPSIS
+.B rows csv-clean
+[OPTIONS] SOURCE [DESTINATION]
+.SH DESCRIPTION
+Create a consistent and clean version of a CSV file
+.PP
+The tasks this command executes are:
+.PP
+- Slugify column names
+- Rename columns with empty name to "field_N"
+- Remove empty rows
+- Remove empty columns
+- Output dialect: excel
+- Output encoding: UTF-8
+.SH OPTIONS
+.TP
+\fB\-\-input\-encoding\fP TEXT
+.PP
+.TP
+\fB\-\-output\-encoding\fP TEXT
+.PP
+.TP
+\fB\-\-sample\-size\fP INTEGER
+.PP
+.TP
+\fB\-\-buffer\-size\fP INTEGER
+.PP
+.TP
+\fB\-\-in\-place\fP
+.PP

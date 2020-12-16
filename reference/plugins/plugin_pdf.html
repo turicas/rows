@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>plugin_pdf.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>plugin_pdf.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Copyright 2014-2019 Álvaro Justen <a href="https://github.com/turicas/rows/">https://github.com/turicas/rows/</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="kn">from</span> <span class="nn">cached_property</span> <span class="kn">import</span> <span class="n">cached_property</span>
+
+<span class="kn">from</span> <span class="nn">rows.plugins.utils</span> <span class="kn">import</span> <span class="n">create_table</span>
+<span class="kn">from</span> <span class="nn">rows.utils</span> <span class="kn">import</span> <span class="n">Source</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">fitz</span> <span class="k">as</span> <span class="nn">pymupdf</span>
+    <span class="n">pymupdf</span><span class="o">.</span><span class="n">TOOLS</span><span class="o">.</span><span class="n">mupdf_display_errors</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">pymupdf_imported</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">pymupdf_imported</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pdfminer.converter</span> <span class="kn">import</span> <span class="n">PDFPageAggregator</span><span class="p">,</span> <span class="n">TextConverter</span>
+    <span class="kn">from</span> <span class="nn">pdfminer.layout</span> <span class="kn">import</span> <span class="n">LAParams</span><span class="p">,</span> <span class="n">LTTextBox</span><span class="p">,</span> <span class="n">LTTextLine</span><span class="p">,</span> <span class="n">LTChar</span><span class="p">,</span> <span class="n">LTRect</span>
+    <span class="kn">from</span> <span class="nn">pdfminer.pdfdocument</span> <span class="kn">import</span> <span class="n">PDFDocument</span>
+    <span class="kn">from</span> <span class="nn">pdfminer.pdfinterp</span> <span class="kn">import</span> <span class="n">PDFResourceManager</span><span class="p">,</span> <span class="n">PDFPageInterpreter</span><span class="p">,</span> <span class="n">resolve1</span>
+    <span class="kn">from</span> <span class="nn">pdfminer.pdfpage</span> <span class="kn">import</span> <span class="n">PDFPage</span>
+    <span class="kn">from</span> <span class="nn">pdfminer.pdfparser</span> <span class="kn">import</span> <span class="n">PDFParser</span>
+    <span class="kn">import</span> <span class="nn">logging</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;pdfminer&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
+    <span class="n">PDFMINER_TEXT_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">LTTextBox</span><span class="p">,</span> <span class="n">LTTextLine</span><span class="p">,</span> <span class="n">LTChar</span><span class="p">)</span>
+    <span class="n">PDFMINER_ALL_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">LTTextBox</span><span class="p">,</span> <span class="n">LTTextLine</span><span class="p">,</span> <span class="n">LTChar</span><span class="p">,</span> <span class="n">LTRect</span><span class="p">)</span>
+    <span class="n">pdfminer_imported</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">pdfminer_imported</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">PDFMINER_TEXT_TYPES</span><span class="p">,</span> <span class="n">PDFMINER_ALL_TYPES</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <blockquote>
+<blockquote>
+<blockquote>
+<p>extract_intervals(&ldquo;1,2,3&rdquo;)
+[1, 2, 3]
+extract_intervals(&ldquo;1,2,5-10&rdquo;)
+[1, 2, 5, 6, 7, 8, 9, 10]
+extract_intervals(&ldquo;1,2,5-10,3&rdquo;)
+[1, 2, 3, 5, 6, 7, 8, 9, 10]
+extract_intervals(&ldquo;1,2,5-10,6,7&rdquo;)
+[1, 2, 5, 6, 7, 8, 9, 10]</p>
+</blockquote>
+</blockquote>
+</blockquote>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">extract_intervals</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s2">&quot;-&quot;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+            <span class="n">start_value</span><span class="p">,</span> <span class="n">end_value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)</span>
+            <span class="n">start_value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">start_value</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="n">end_value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">end_value</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">start_value</span><span class="p">,</span> <span class="n">end_value</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">repeat</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">sort</span><span class="p">:</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">result</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">default_backend</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">pymupdf_imported</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;pymupdf&quot;</span>
+    <span class="k">elif</span> <span class="n">pdfminer_imported</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;pdfminer.six&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+            <span class="s2">&quot;No PDF backend found. Did you install the dependencies (pymupdf or pdfminer.six)?&quot;</span>
+        <span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">number_of_pages</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">backend</span> <span class="ow">or</span> <span class="n">default_backend</span><span class="p">()</span>
+    <span class="n">Backend</span> <span class="o">=</span> <span class="n">get_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+    <span class="n">pdf_doc</span> <span class="o">=</span> <span class="n">Backend</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pdf_doc</span><span class="o">.</span><span class="n">number_of_pages</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">pdf_to_text</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">page_numbers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">page_numbers</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">):</span>
+        <span class="n">page_numbers</span> <span class="o">=</span> <span class="n">extract_intervals</span><span class="p">(</span><span class="n">page_numbers</span><span class="p">)</span>
+
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">backend</span> <span class="ow">or</span> <span class="n">default_backend</span><span class="p">()</span>
+    <span class="n">Backend</span> <span class="o">=</span> <span class="n">get_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+    <span class="n">pdf_doc</span> <span class="o">=</span> <span class="n">Backend</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">pdf_doc</span><span class="o">.</span><span class="n">extract_text</span><span class="p">(</span><span class="n">page_numbers</span><span class="o">=</span><span class="n">page_numbers</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">page</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>Base Backend class to parse PDF files</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">PDFBackend</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">x_order</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">y_order</span> <span class="o">=</span> <span class="mi">1</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">Source</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">plugin_name</span><span class="o">=</span><span class="s2">&quot;pdf&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      <p>Filter out objects outside table boundaries</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">number_of_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Number of pages in the document&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">extract_text</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return a string for each page in the document (generator)&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">objects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return a list of objects for each page in the document (generator)&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">text_objects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return a list of text objects for each page in the document (generator)&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">text</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extract_text</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">get_cell_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cell</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cell</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">cell</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">y0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cell</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="o">-</span><span class="n">obj</span><span class="o">.</span><span class="n">y0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">cell</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">source</span><span class="o">.</span><span class="n">should_close</span>
+            <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="p">,</span> <span class="s2">&quot;closed&quot;</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">closed</span>
+        <span class="p">):</span>
+            <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">PDFMinerBackend</span><span class="p">(</span><span class="n">PDFBackend</span><span class="p">):</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;pdfminer.six&quot;</span>
+    <span class="n">y_order</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">document</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">PDFParser</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="p">)</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="n">PDFDocument</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">set_document</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">doc</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">number_of_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">resolve1</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">catalog</span><span class="p">[</span><span class="s2">&quot;Pages&quot;</span><span class="p">])[</span><span class="s2">&quot;Count&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">extract_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_numbers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">page_number</span><span class="p">,</span> <span class="n">page</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+            <span class="n">PDFPage</span><span class="o">.</span><span class="n">create_pages</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">document</span><span class="p">),</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">page_numbers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">page_number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">page_numbers</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">rsrcmgr</span> <span class="o">=</span> <span class="n">PDFResourceManager</span><span class="p">()</span>
+            <span class="n">laparams</span> <span class="o">=</span> <span class="n">LAParams</span><span class="p">()</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()</span>
+            <span class="n">device</span> <span class="o">=</span> <span class="n">TextConverter</span><span class="p">(</span><span class="n">rsrcmgr</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">laparams</span><span class="o">=</span><span class="n">laparams</span><span class="p">)</span>
+            <span class="n">interpreter</span> <span class="o">=</span> <span class="n">PDFPageInterpreter</span><span class="p">(</span><span class="n">rsrcmgr</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+            <span class="n">interpreter</span><span class="o">.</span><span class="n">process_page</span><span class="p">(</span><span class="n">page</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">result</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">convert_object</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">PDFMINER_TEXT_TYPES</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">TextObject</span><span class="p">(</span>
+                <span class="n">x0</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">y1</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">get_text</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">LTRect</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">RectObject</span><span class="p">(</span><span class="n">x0</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">y1</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">fill</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">objects</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">page_numbers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">starts_after</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">ends_before</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">desired_types</span><span class="o">=</span><span class="n">PDFMINER_ALL_TYPES</span><span class="p">,</span>
+    <span class="p">):</span>
+
+        <span class="n">doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">document</span>
+        <span class="n">rsrcmgr</span> <span class="o">=</span> <span class="n">PDFResourceManager</span><span class="p">()</span>
+        <span class="n">laparams</span> <span class="o">=</span> <span class="n">LAParams</span><span class="p">()</span>
+        <span class="n">device</span> <span class="o">=</span> <span class="n">PDFPageAggregator</span><span class="p">(</span><span class="n">rsrcmgr</span><span class="p">,</span> <span class="n">laparams</span><span class="o">=</span><span class="n">laparams</span><span class="p">)</span>
+        <span class="n">interpreter</span> <span class="o">=</span> <span class="n">PDFPageInterpreter</span><span class="p">(</span><span class="n">rsrcmgr</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+
+        <span class="n">started</span><span class="p">,</span> <span class="n">finished</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">starts_after</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">started</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">starts_after</span> <span class="o">=</span> <span class="n">get_delimiter_function</span><span class="p">(</span><span class="n">starts_after</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ends_before</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ends_before</span> <span class="o">=</span> <span class="n">get_delimiter_function</span><span class="p">(</span><span class="n">ends_before</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">page_number</span><span class="p">,</span> <span class="n">page</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">PDFPage</span><span class="o">.</span><span class="n">create_pages</span><span class="p">(</span><span class="n">doc</span><span class="p">),</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">page_numbers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">page_number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">page_numbers</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">interpreter</span><span class="o">.</span><span class="n">process_page</span><span class="p">(</span><span class="n">page</span><span class="p">)</span>
+            <span class="n">layout</span> <span class="o">=</span> <span class="n">device</span><span class="o">.</span><span class="n">get_result</span><span class="p">()</span>
+            <span class="n">objs</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">PDFMinerBackend</span><span class="o">.</span><span class="n">convert_object</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">layout</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">desired_types</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="n">objs</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="o">-</span><span class="n">obj</span><span class="o">.</span><span class="n">y0</span><span class="p">)</span>
+            <span class="n">objects_in_page</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">started</span> <span class="ow">and</span> <span class="n">starts_after</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">starts_after</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                    <span class="n">started</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="n">started</span> <span class="ow">and</span> <span class="n">ends_before</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ends_before</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                    <span class="n">finished</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">started</span><span class="p">:</span>
+                    <span class="n">objects_in_page</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">objects_in_page</span>
+
+            <span class="k">if</span> <span class="n">finished</span><span class="p">:</span>
+                <span class="k">break</span>
+
+    <span class="k">def</span> <span class="nf">text_objects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_numbers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">starts_after</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ends_before</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span>
+            <span class="n">page_numbers</span><span class="o">=</span><span class="n">page_numbers</span><span class="p">,</span>
+            <span class="n">starts_after</span><span class="o">=</span><span class="n">starts_after</span><span class="p">,</span>
+            <span class="n">ends_before</span><span class="o">=</span><span class="n">ends_before</span><span class="p">,</span>
+            <span class="n">desired_types</span><span class="o">=</span><span class="n">PDFMINER_TEXT_TYPES</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">PyMuPDFBackend</span><span class="p">(</span><span class="n">PDFBackend</span><span class="p">):</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;pymupdf&quot;</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">document</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">uri</span><span class="p">:</span>
+            <span class="n">doc</span> <span class="o">=</span> <span class="n">pymupdf</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">filetype</span><span class="o">=</span><span class="s2">&quot;pdf&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>  <span class="c1"># TODO: may use a lot of memory</span>
+            <span class="n">doc</span> <span class="o">=</span> <span class="n">pymupdf</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">filetype</span><span class="o">=</span><span class="s2">&quot;pdf&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">doc</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">number_of_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">document</span><span class="o">.</span><span class="n">pageCount</span>
+
+    <span class="k">def</span> <span class="nf">extract_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_numbers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">document</span>
+        <span class="k">for</span> <span class="n">page_number</span><span class="p">,</span> <span class="n">page_index</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">pageCount</span><span class="p">),</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">page_numbers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">page_number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">page_numbers</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">page</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">loadPage</span><span class="p">(</span><span class="n">page_index</span><span class="p">)</span>
+            <span class="n">page_text</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">block</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">page</span><span class="o">.</span><span class="n">getTextBlocks</span><span class="p">())</span>
+            <span class="k">yield</span> <span class="n">page_text</span>
+
+    <span class="k">def</span> <span class="nf">objects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_numbers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">starts_after</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ends_before</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">document</span>
+
+        <span class="n">started</span><span class="p">,</span> <span class="n">finished</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">starts_after</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">started</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">starts_after</span> <span class="o">=</span> <span class="n">get_delimiter_function</span><span class="p">(</span><span class="n">starts_after</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ends_before</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ends_before</span> <span class="o">=</span> <span class="n">get_delimiter_function</span><span class="p">(</span><span class="n">ends_before</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">page_number</span><span class="p">,</span> <span class="n">page_index</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">pageCount</span><span class="p">),</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">page_numbers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">page_number</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">page_numbers</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">page</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">loadPage</span><span class="p">(</span><span class="n">page_index</span><span class="p">)</span>
+            <span class="n">text_objs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">page</span><span class="o">.</span><span class="n">getText</span><span class="p">(</span><span class="s2">&quot;dict&quot;</span><span class="p">)[</span><span class="s2">&quot;blocks&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;lines&quot;</span><span class="p">]:</span>
+                    <span class="n">line_text</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">span</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">line</span><span class="p">[</span><span class="s2">&quot;spans&quot;</span><span class="p">])</span>
+                    <span class="n">text_objs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">])</span> <span class="o">+</span> <span class="p">[</span><span class="n">line_text</span><span class="p">])</span>
+            <span class="n">objs</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">TextObject</span><span class="p">(</span><span class="n">x0</span><span class="o">=</span><span class="n">obj</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y0</span><span class="o">=</span><span class="n">obj</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x1</span><span class="o">=</span><span class="n">obj</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">y1</span><span class="o">=</span><span class="n">obj</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">text</span><span class="o">=</span><span class="n">obj</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">text_objs</span>
+            <span class="p">]</span>
+            <span class="n">objs</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y0</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">x0</span><span class="p">))</span>
+            <span class="n">objects_in_page</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">started</span> <span class="ow">and</span> <span class="n">starts_after</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">starts_after</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                    <span class="n">started</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="n">started</span> <span class="ow">and</span> <span class="n">ends_before</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ends_before</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                    <span class="n">finished</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">started</span><span class="p">:</span>
+                    <span class="n">objects_in_page</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+            <span class="k">yield</span> <span class="n">objects_in_page</span>
+
+            <span class="k">if</span> <span class="n">finished</span><span class="p">:</span>
+                <span class="k">break</span>
+
+    <span class="n">text_objects</span> <span class="o">=</span> <span class="n">objects</span>
+
+
+<span class="k">def</span> <span class="nf">get_delimiter_function</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>  <span class="c1"># regular string, match exactly</span>
+        <span class="k">return</span> <span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">TextObject</span><span class="p">)</span> <span class="ow">and</span> <span class="n">obj</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;search&quot;</span><span class="p">):</span>  <span class="c1"># regular expression</span>
+        <span class="k">return</span> <span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">TextObject</span><span class="p">)</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+        <span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">callable</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>  <span class="c1"># function</span>
+        <span class="k">return</span> <span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+
+
+<span class="k">class</span> <span class="nc">TextObject</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x0</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x1</span> <span class="o">=</span> <span class="n">x1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y0</span> <span class="o">=</span> <span class="n">y0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y1</span> <span class="o">=</span> <span class="n">y1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">bbox</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">[:</span><span class="mi">45</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;[...]&quot;</span><span class="p">)</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bbox</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;TextObject (</span><span class="si">{}</span><span class="s2">) </span><span class="si">{}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bbox</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">RectObject</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">fill</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x0</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x1</span> <span class="o">=</span> <span class="n">x1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y0</span> <span class="o">=</span> <span class="n">y0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y1</span> <span class="o">=</span> <span class="n">y1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fill</span> <span class="o">=</span> <span class="n">fill</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">bbox</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bbox</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;RectObject (</span><span class="si">{}</span><span class="s2">) fill=</span><span class="si">{}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bbox</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fill</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Group</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="s2">&quot;Helper class to group objects based on its positions and sizes&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">),</span> <span class="n">maximum</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">),</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span> <span class="o">=</span> <span class="n">minimum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maximum</span> <span class="o">=</span> <span class="n">maximum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">objects</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">maximum</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span>
+
+    <span class="k">def</span> <span class="nf">contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="n">d0</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimension_0</span><span class="p">)</span>
+        <span class="n">d1</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimension_1</span><span class="p">)</span>
+        <span class="n">middle</span> <span class="o">=</span> <span class="n">d0</span> <span class="o">+</span> <span class="p">(</span><span class="n">d1</span> <span class="o">-</span> <span class="n">d0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span> <span class="o">&lt;=</span> <span class="n">middle</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max</span>
+
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="n">d0</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimension_0</span><span class="p">)</span>
+        <span class="n">d1</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimension_1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">d0</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span> <span class="o">=</span> <span class="n">d0</span>
+        <span class="k">if</span> <span class="n">d1</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">maximum</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">maximum</span> <span class="o">=</span> <span class="n">d1</span>
+
+
+<span class="k">class</span> <span class="nc">HorizontalGroup</span><span class="p">(</span><span class="n">Group</span><span class="p">):</span>
+    <span class="n">dimension_0</span> <span class="o">=</span> <span class="s2">&quot;y0&quot;</span>
+    <span class="n">dimension_1</span> <span class="o">=</span> <span class="s2">&quot;y1&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">VerticalGroup</span><span class="p">(</span><span class="n">Group</span><span class="p">):</span>
+    <span class="n">dimension_0</span> <span class="o">=</span> <span class="s2">&quot;x0&quot;</span>
+    <span class="n">dimension_1</span> <span class="o">=</span> <span class="s2">&quot;x1&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">group_objects</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">axis</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
+        <span class="n">GroupClass</span> <span class="o">=</span> <span class="n">VerticalGroup</span>
+    <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span>
+        <span class="n">GroupClass</span> <span class="o">=</span> <span class="n">HorizontalGroup</span>
+
+    <span class="n">groups</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">group</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                <span class="n">group</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+            <span class="n">group</span> <span class="o">=</span> <span class="n">GroupClass</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">)</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="n">groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">group</span><span class="o">.</span><span class="n">minimum</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">objects</span> <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">contains_or_overlap</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="n">x1min</span><span class="p">,</span> <span class="n">y1min</span><span class="p">,</span> <span class="n">x1max</span><span class="p">,</span> <span class="n">y1max</span> <span class="o">=</span> <span class="n">a</span>
+    <span class="n">x2min</span><span class="p">,</span> <span class="n">y2min</span><span class="p">,</span> <span class="n">x2max</span><span class="p">,</span> <span class="n">y2max</span> <span class="o">=</span> <span class="n">b</span>
+
+    <span class="n">contains</span> <span class="o">=</span> <span class="n">x2min</span> <span class="o">&gt;=</span> <span class="n">x1min</span> <span class="ow">and</span> <span class="n">x2max</span> <span class="o">&lt;=</span> <span class="n">x1max</span> <span class="ow">and</span> <span class="n">y2min</span> <span class="o">&gt;=</span> <span class="n">y1min</span> <span class="ow">and</span> <span class="n">y2max</span> <span class="o">&lt;=</span> <span class="n">y1max</span>
+    <span class="n">overlaps</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="n">x1min</span> <span class="o">&lt;=</span> <span class="n">x2min</span> <span class="o">&lt;=</span> <span class="n">x1max</span> <span class="ow">and</span> <span class="n">y1min</span> <span class="o">&lt;=</span> <span class="n">y2min</span> <span class="o">&lt;=</span> <span class="n">y1max</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="p">(</span><span class="n">x1min</span> <span class="o">&lt;=</span> <span class="n">x2min</span> <span class="o">&lt;=</span> <span class="n">x1max</span> <span class="ow">and</span> <span class="n">y1min</span> <span class="o">&lt;=</span> <span class="n">y2max</span> <span class="o">&lt;=</span> <span class="n">y1max</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="p">(</span><span class="n">x1min</span> <span class="o">&lt;=</span> <span class="n">x2max</span> <span class="o">&lt;=</span> <span class="n">x1max</span> <span class="ow">and</span> <span class="n">y1min</span> <span class="o">&lt;=</span> <span class="n">y2min</span> <span class="o">&lt;=</span> <span class="n">y1max</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="p">(</span><span class="n">x1min</span> <span class="o">&lt;=</span> <span class="n">x2max</span> <span class="o">&lt;=</span> <span class="n">x1max</span> <span class="ow">and</span> <span class="n">y1min</span> <span class="o">&lt;=</span> <span class="n">y2max</span> <span class="o">&lt;=</span> <span class="n">y1max</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">contains</span> <span class="ow">or</span> <span class="n">overlaps</span>
+
+
+<span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">a</span><span class="o">.</span><span class="n">x0</span> <span class="o">-</span> <span class="n">b</span><span class="o">.</span><span class="n">x0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">y0</span> <span class="o">-</span> <span class="n">b</span><span class="o">.</span><span class="n">y0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">closest_from_text</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">strip</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">strip</span><span class="p">:</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">desired_obj</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span> <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="n">text</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">desired_obj</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span> <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="n">text</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">distance</span><span class="p">(</span><span class="n">desired_obj</span><span class="p">,</span> <span class="n">row</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="n">text</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obj</span>
+
+
+<span class="k">def</span> <span class="nf">closest_same_line</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">line_objs</span> <span class="ow">in</span> <span class="n">group_objects</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">desired_y0</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">line_objs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="n">text</span><span class="p">:</span>
+                <span class="n">desired_y0</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">y0</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">desired_y0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">line_objs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="o">-</span><span class="n">row</span><span class="o">.</span><span class="n">x0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># Not found</span>
+
+
+<span class="k">def</span> <span class="nf">same_column</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+    <span class="n">object_groups</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">key</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">group_objects</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="n">desired_x0</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">x0</span><span class="p">,</span> <span class="n">column_objs</span> <span class="ow">in</span> <span class="n">object_groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">column_objs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="n">text</span><span class="p">:</span>
+                <span class="n">desired_x0</span> <span class="o">=</span> <span class="n">x0</span>
+                <span class="k">break</span>
+    <span class="k">if</span> <span class="n">desired_x0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Text not found</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">object_groups</span><span class="p">[</span><span class="n">desired_x0</span><span class="p">],</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="o">-</span><span class="n">row</span><span class="o">.</span><span class="n">y0</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">ExtractionAlgorithm</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">objects</span><span class="p">,</span> <span class="n">text_objects</span><span class="p">,</span> <span class="n">x_threshold</span><span class="p">,</span> <span class="n">y_threshold</span><span class="p">,</span> <span class="n">x_order</span><span class="p">,</span> <span class="n">y_order</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">objects</span> <span class="o">=</span> <span class="n">objects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text_objects</span> <span class="o">=</span> <span class="n">text_objects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_threshold</span> <span class="o">=</span> <span class="n">x_threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_threshold</span> <span class="o">=</span> <span class="n">y_threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_order</span> <span class="o">=</span> <span class="n">x_order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_order</span> <span class="o">=</span> <span class="n">y_order</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">table_bbox</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">x_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">y_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">selected_objects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">obj</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_objects</span>
+            <span class="k">if</span> <span class="n">contains_or_overlap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_bbox</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">bbox</span><span class="p">)</span>
+        <span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">x_intervals</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_intervals</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_order</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">x_intervals</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">x_intervals</span><span class="p">))</span>
+        <span class="n">y_intervals</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_intervals</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_order</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">y_intervals</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">y_intervals</span><span class="p">))</span>
+        <span class="n">objs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_objects</span><span class="p">)</span>
+
+        <span class="n">matrix</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">y0</span><span class="p">,</span> <span class="n">y1</span> <span class="ow">in</span> <span class="n">y_intervals</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">x0</span><span class="p">,</span> <span class="n">x1</span> <span class="ow">in</span> <span class="n">x_intervals</span><span class="p">:</span>
+                <span class="n">cell</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span> <span class="k">if</span> <span class="n">x0</span> <span class="o">&lt;=</span> <span class="n">obj</span><span class="o">.</span><span class="n">x0</span> <span class="o">&lt;=</span> <span class="n">x1</span> <span class="ow">and</span> <span class="n">y0</span> <span class="o">&lt;=</span> <span class="n">obj</span><span class="o">.</span><span class="n">y0</span> <span class="o">&lt;=</span> <span class="n">y1</span>
+                <span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">cell</span><span class="p">:</span>
+                    <span class="n">line</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">line</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">cell</span><span class="p">:</span>
+                        <span class="n">objs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="n">matrix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">matrix</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <p>Extraction algorithm based on objects&rsquo; y values</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">YGroupsAlgorithm</span><span class="p">(</span><span class="n">ExtractionAlgorithm</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;y-groups&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <p>TODO: filter out objects with empty text before grouping by y0 (but
+consider them if inside table&rsquo;s bbox)
+TODO: get y0 groups bbox and merge overlapping ones (overlapping only on
+y, not on x). ex: imgs-33281.pdf/06.png should not remove bigger cells</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">table_bbox</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="n">group_objects</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text_objects</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_threshold</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">)</span>
+        <span class="n">desired_objs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">group_objs</span> <span class="ow">in</span> <span class="n">groups</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">group_objs</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># Ignore floating text objects</span>
+                <span class="k">continue</span>
+            <span class="n">desired_objs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">group_objs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">desired_objs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">x_min</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">x0</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">desired_objs</span><span class="p">)</span>
+        <span class="n">x_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">x1</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">desired_objs</span><span class="p">)</span>
+        <span class="n">y_min</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y0</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">desired_objs</span><span class="p">)</span>
+        <span class="n">y_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y1</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">desired_objs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">x_min</span><span class="p">,</span> <span class="n">y_min</span><span class="p">,</span> <span class="n">x_max</span><span class="p">,</span> <span class="n">y_max</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_define_intervals</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="n">min_attr</span><span class="p">,</span> <span class="n">max_attr</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">axis</span><span class="p">):</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="n">group_objects</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+
+        <span class="n">intervals</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">max_attr</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">max_attr</span><span class="p">)))</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">groups</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="n">intervals</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">intervals</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      <p>Merge overlapping intervals</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">intervals</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">current</span> <span class="ow">in</span> <span class="n">intervals</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">previous</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">current</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">previous</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">or</span> <span class="n">current</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">previous</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">previous</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">max</span><span class="p">((</span><span class="n">previous</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">current</span><span class="p">[</span><span class="mi">1</span><span class="p">]))))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">((</span><span class="n">previous</span><span class="p">,</span> <span class="n">current</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">result</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">x_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">objects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_objects</span>
+        <span class="n">objects</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">x0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_define_intervals</span><span class="p">(</span>
+            <span class="n">objects</span><span class="p">,</span>
+            <span class="n">min_attr</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span>
+            <span class="n">max_attr</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span>
+            <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_threshold</span><span class="p">,</span>
+            <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">y_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">objects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_objects</span>
+        <span class="n">objects</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="o">-</span><span class="n">obj</span><span class="o">.</span><span class="n">y1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_define_intervals</span><span class="p">(</span>
+            <span class="n">objects</span><span class="p">,</span>
+            <span class="n">min_attr</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">y0</span><span class="p">,</span>
+            <span class="n">max_attr</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">y1</span><span class="p">,</span>
+            <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_threshold</span><span class="p">,</span>
+            <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">HeaderPositionAlgorithm</span><span class="p">(</span><span class="n">YGroupsAlgorithm</span><span class="p">):</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;header-position&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">x_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">def</span> <span class="nf">get_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">objects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_objects</span>
+        <span class="n">objects</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">x0</span><span class="p">)</span>
+        <span class="n">y_intervals</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_intervals</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_order</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">y_intervals</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">y_intervals</span><span class="p">))</span>
+        <span class="n">used</span><span class="p">,</span> <span class="n">lines</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+
+        <span class="n">header_interval</span> <span class="o">=</span> <span class="n">y_intervals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">header_objs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objects</span> <span class="k">if</span> <span class="n">header_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">obj</span><span class="o">.</span><span class="n">y0</span> <span class="o">&lt;=</span> <span class="n">header_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="n">used</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">header_objs</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">([[</span><span class="n">obj</span><span class="p">]</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">header_objs</span><span class="p">])</span>
+
+        <span class="k">def</span> <span class="nf">x_intersects</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">a</span><span class="o">.</span><span class="n">x0</span> <span class="o">&lt;</span> <span class="n">b</span><span class="o">.</span><span class="n">x1</span> <span class="ow">and</span> <span class="n">a</span><span class="o">.</span><span class="n">x1</span> <span class="o">&gt;</span> <span class="n">b</span><span class="o">.</span><span class="n">x0</span>
+
+        <span class="k">for</span> <span class="n">y0</span><span class="p">,</span> <span class="n">y1</span> <span class="ow">in</span> <span class="n">y_intervals</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">line_objs</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objects</span> <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">used</span> <span class="ow">and</span> <span class="n">y0</span> <span class="o">&lt;=</span> <span class="n">obj</span><span class="o">.</span><span class="n">y0</span> <span class="o">&lt;=</span> <span class="n">y1</span>
+            <span class="p">]</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">header_objs</span><span class="p">:</span>
+                <span class="n">y_objs</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">obj</span>
+                    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">line_objs</span>
+                    <span class="k">if</span> <span class="n">obj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">used</span> <span class="ow">and</span> <span class="n">x_intersects</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+                <span class="p">]</span>
+                <span class="n">used</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">y_objs</span><span class="p">)</span>
+                <span class="n">line</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_objs</span><span class="p">)</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
+      </div>
+      <p>TODO: may check if one of objects in line_objs is not in used and
+raise an exception</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="n">lines</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-23'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-23'>#</a>
+      </div>
+      <p>Extraction algorithm based on rectangles present in the page</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">RectsBoundariesAlgorithm</span><span class="p">(</span><span class="n">ExtractionAlgorithm</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-24'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-24'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;rects-boundaries&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-25'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-25'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RectsBoundariesAlgorithm</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rects</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">RectObject</span><span class="p">)</span> <span class="ow">and</span> <span class="n">obj</span><span class="o">.</span><span class="n">fill</span>
+        <span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-26'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-26'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">table_bbox</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y0</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rects</span><span class="p">)</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y1</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rects</span><span class="p">)</span>
+        <span class="n">x0</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">x0</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rects</span><span class="p">)</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">x1</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rects</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_clean_intersections</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">other_line_contains</span><span class="p">(</span><span class="n">all_lines</span><span class="p">,</span> <span class="n">search_line</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">line2</span> <span class="ow">in</span> <span class="n">all_lines</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">search_line</span> <span class="o">==</span> <span class="n">line2</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">search_line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">line2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">search_line</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">line2</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">final</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">other_line_contains</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+                <span class="n">final</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">final</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">x_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">x_intervals</span> <span class="o">=</span> <span class="nb">set</span><span class="p">((</span><span class="n">obj</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">x1</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rects</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_clean_intersections</span><span class="p">(</span><span class="n">x_intervals</span><span class="p">))</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">y_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">y_intervals</span> <span class="o">=</span> <span class="nb">set</span><span class="p">((</span><span class="n">obj</span><span class="o">.</span><span class="n">y0</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">y1</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rects</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_clean_intersections</span><span class="p">(</span><span class="n">y_intervals</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">subclasses</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="n">children</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__subclasses__</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">children</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">(</span>
+        <span class="nb">set</span><span class="p">(</span><span class="n">grandchild</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span> <span class="k">for</span> <span class="n">grandchild</span> <span class="ow">in</span> <span class="n">subclasses</span><span class="p">(</span><span class="n">child</span><span class="p">))</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">algorithms</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">Class</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">Class</span> <span class="k">for</span> <span class="n">Class</span> <span class="ow">in</span> <span class="n">subclasses</span><span class="p">(</span><span class="n">ExtractionAlgorithm</span><span class="p">)}</span>
+
+
+<span class="k">def</span> <span class="nf">get_algorithm</span><span class="p">(</span><span class="n">algorithm</span><span class="p">):</span>
+    <span class="n">available_algorithms</span> <span class="o">=</span> <span class="n">algorithms</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">algorithm</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">algorithm</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">available_algorithms</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Unknown algorithm &quot;</span><span class="si">{}</span><span class="s1">&quot; (options are: </span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">algorithm</span><span class="p">,</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">available_algorithms</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">available_algorithms</span><span class="p">[</span><span class="n">algorithm</span><span class="p">]</span>
+
+    <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">algorithm</span><span class="p">,</span> <span class="n">ExtractionAlgorithm</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">algorithm</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s1">&#39;Unknown algorithm &quot;</span><span class="si">{}</span><span class="s1">&quot; (options are: </span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">algorithm</span><span class="p">,</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">available_algorithms</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">backends</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">Class</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">Class</span> <span class="k">for</span> <span class="n">Class</span> <span class="ow">in</span> <span class="n">subclasses</span><span class="p">(</span><span class="n">PDFBackend</span><span class="p">)}</span>
+
+
+<span class="k">def</span> <span class="nf">get_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">):</span>
+    <span class="n">available_backends</span> <span class="o">=</span> <span class="n">backends</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">backend</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">available_backends</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Unknown PDF backend &quot;</span><span class="si">{}</span><span class="s1">&quot; (options are: </span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">backend</span><span class="p">,</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">available_backends</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">available_backends</span><span class="p">[</span><span class="n">backend</span><span class="p">]</span>
+
+    <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">PDFBackend</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">backend</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s1">&#39;Unknown PDF backend &quot;</span><span class="si">{}</span><span class="s1">&quot; (options are: </span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">backend</span><span class="p">,</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">available_backends</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">pdf_table_lines</span><span class="p">(</span>
+    <span class="n">source</span><span class="p">,</span>
+    <span class="n">page_numbers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">algorithm</span><span class="o">=</span><span class="s2">&quot;y-groups&quot;</span><span class="p">,</span>
+    <span class="n">starts_after</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">ends_before</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">x_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">y_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">backend</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">page_numbers</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">):</span>
+        <span class="n">page_numbers</span> <span class="o">=</span> <span class="n">extract_intervals</span><span class="p">(</span><span class="n">page_numbers</span><span class="p">)</span>
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">backend</span> <span class="ow">or</span> <span class="n">default_backend</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-27'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-27'>#</a>
+      </div>
+      <p>TODO: check if both backends accepts filename or fobj</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">Backend</span> <span class="o">=</span> <span class="n">get_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+    <span class="n">Algorithm</span> <span class="o">=</span> <span class="n">get_algorithm</span><span class="p">(</span><span class="n">algorithm</span><span class="p">)</span>
+    <span class="n">pdf_doc</span> <span class="o">=</span> <span class="n">Backend</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+
+    <span class="n">pages</span> <span class="o">=</span> <span class="n">pdf_doc</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span>
+        <span class="n">page_numbers</span><span class="o">=</span><span class="n">page_numbers</span><span class="p">,</span> <span class="n">starts_after</span><span class="o">=</span><span class="n">starts_after</span><span class="p">,</span> <span class="n">ends_before</span><span class="o">=</span><span class="n">ends_before</span>
+    <span class="p">)</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">line_size</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">page_index</span><span class="p">,</span> <span class="n">page</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pages</span><span class="p">):</span>
+        <span class="n">objs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">page</span><span class="p">)</span>
+        <span class="n">text_objs</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">TextObject</span><span class="p">)]</span>
+        <span class="n">extractor</span> <span class="o">=</span> <span class="n">Algorithm</span><span class="p">(</span>
+            <span class="n">objs</span><span class="p">,</span> <span class="n">text_objs</span><span class="p">,</span> <span class="n">x_threshold</span><span class="p">,</span> <span class="n">y_threshold</span><span class="p">,</span> <span class="n">pdf_doc</span><span class="o">.</span><span class="n">x_order</span><span class="p">,</span> <span class="n">pdf_doc</span><span class="o">.</span><span class="n">y_order</span>
+        <span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="n">pdf_doc</span><span class="o">.</span><span class="n">get_cell_text</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span> <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">extractor</span><span class="o">.</span><span class="n">get_lines</span><span class="p">()</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">line_index</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">line_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">page_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">header</span> <span class="o">=</span> <span class="n">line</span>
+                <span class="k">elif</span> <span class="n">page_index</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">line</span> <span class="o">==</span> <span class="n">header</span><span class="p">:</span>  <span class="c1"># skip header repetition</span>
+                    <span class="k">continue</span>
+            <span class="k">yield</span> <span class="n">line</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-28'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-28'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">import_from_pdf</span><span class="p">(</span>
+    <span class="n">filename_or_fobj</span><span class="p">,</span>
+    <span class="n">page_numbers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">starts_after</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">ends_before</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">backend</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">algorithm</span><span class="o">=</span><span class="s2">&quot;y-groups&quot;</span><span class="p">,</span>
+    <span class="n">x_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">y_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">page_numbers</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">):</span>
+        <span class="n">page_numbers</span> <span class="o">=</span> <span class="n">extract_intervals</span><span class="p">(</span><span class="n">page_numbers</span><span class="p">)</span>
+
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">backend</span> <span class="ow">or</span> <span class="n">default_backend</span><span class="p">()</span>
+    <span class="n">source</span> <span class="o">=</span> <span class="n">Source</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">plugin_name</span><span class="o">=</span><span class="s2">&quot;pdf&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+    <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;imported_from&quot;</span><span class="p">:</span> <span class="s2">&quot;pdf&quot;</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">}</span>
+    <span class="n">table_rows</span> <span class="o">=</span> <span class="n">pdf_table_lines</span><span class="p">(</span>
+        <span class="n">source</span><span class="p">,</span>
+        <span class="n">page_numbers</span><span class="p">,</span>
+        <span class="n">starts_after</span><span class="o">=</span><span class="n">starts_after</span><span class="p">,</span>
+        <span class="n">ends_before</span><span class="o">=</span><span class="n">ends_before</span><span class="p">,</span>
+        <span class="n">algorithm</span><span class="o">=</span><span class="n">algorithm</span><span class="p">,</span>
+        <span class="n">x_threshold</span><span class="o">=</span><span class="n">x_threshold</span><span class="p">,</span>
+        <span class="n">y_threshold</span><span class="o">=</span><span class="n">y_threshold</span><span class="p">,</span>
+        <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">create_table</span><span class="p">(</span><span class="n">table_rows</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-29'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-29'>#</a>
+      </div>
+      <p>Call the function so it&rsquo;ll raise ImportError if no backend is available</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">default_backend</span><span class="p">()</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

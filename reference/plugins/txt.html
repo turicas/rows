@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>txt.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>txt.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Copyright 2014-2019 Álvaro Justen <a href="https://github.com/turicas/rows/">https://github.com/turicas/rows/</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">unicodedata</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="kn">from</span> <span class="nn">rows.plugins.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">create_table</span><span class="p">,</span>
+    <span class="n">serialize</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">rows.utils</span> <span class="kn">import</span> <span class="n">Source</span>
+
+<span class="n">single_frame_prefix</span> <span class="o">=</span> <span class="s2">&quot;BOX DRAWINGS LIGHT&quot;</span>
+<span class="n">double_frame_prefix</span> <span class="o">=</span> <span class="s2">&quot;BOX DRAWINGS DOUBLE&quot;</span>
+<span class="n">frame_parts</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    VERTICAL, HORIZONTAL, DOWN AND RIGHT, DOWN AND LEFT,</span>
+<span class="s2">    UP AND RIGHT, UP AND LEFT, VERTICAL AND LEFT, VERTICAL AND RIGHT,</span>
+<span class="s2">    DOWN AND HORIZONTAL, UP AND HORIZONTAL,</span>
+<span class="s2">    VERTICAL AND HORIZONTAL&quot;&quot;&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
+        <span class="s2">&quot;,&quot;</span>
+    <span class="p">)</span>
+<span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>Rendered characters inserted in comments
+for grepping/visualization purposes.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <p>[&lsquo;│&rsquo;, &lsquo;─&rsquo;, &lsquo;┌&rsquo;, &lsquo;┐&rsquo;, &lsquo;└&rsquo;, &lsquo;┘&rsquo;, &lsquo;┤&rsquo;, &lsquo;├&rsquo;, &lsquo;┬&rsquo;, &lsquo;┴&rsquo;, &lsquo;┼&rsquo;]</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">SINGLE_FRAME</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="n">single_frame_prefix</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">())))</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">frame_parts</span>
+<span class="p">}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>[&lsquo;║&rsquo;, &lsquo;═&rsquo;, &lsquo;╔&rsquo;, &lsquo;╗&rsquo;, &lsquo;╚&rsquo;, &lsquo;╝&rsquo;, &lsquo;╣&rsquo;, &lsquo;╠&rsquo;, &lsquo;╦&rsquo;, &lsquo;╩&rsquo;, &lsquo;╬&rsquo;]</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">DOUBLE_FRAME</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="n">double_frame_prefix</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">())))</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">frame_parts</span>
+<span class="p">}</span>
+
+<span class="n">ASCII_FRAME</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;+&quot;</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">frame_parts</span><span class="p">}</span>
+<span class="n">ASCII_FRAME</span><span class="p">[</span><span class="s2">&quot;HORIZONTAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
+<span class="n">ASCII_FRAME</span><span class="p">[</span><span class="s2">&quot;VERTICAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span>
+
+<span class="n">NONE_FRAME</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+
+<span class="n">FRAMES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;none&quot;</span><span class="p">:</span> <span class="n">NONE_FRAME</span><span class="p">,</span>
+    <span class="s2">&quot;ascii&quot;</span><span class="p">:</span> <span class="n">ASCII_FRAME</span><span class="p">,</span>
+    <span class="s2">&quot;single&quot;</span><span class="p">:</span> <span class="n">SINGLE_FRAME</span><span class="p">,</span>
+    <span class="s2">&quot;double&quot;</span><span class="p">:</span> <span class="n">DOUBLE_FRAME</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">del</span> <span class="n">single_frame_prefix</span><span class="p">,</span> <span class="n">double_frame_prefix</span><span class="p">,</span> <span class="n">frame_parts</span>
+<span class="k">del</span> <span class="n">NONE_FRAME</span><span class="p">,</span> <span class="n">ASCII_FRAME</span><span class="p">,</span> <span class="n">SINGLE_FRAME</span><span class="p">,</span> <span class="n">DOUBLE_FRAME</span>
+
+<span class="n">FRAME_SENTINEL</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_parse_frame_style</span><span class="p">(</span><span class="n">frame_style</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">frame_style</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">frame_style</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">FRAMES</span><span class="p">[</span><span class="n">frame_style</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Invalid frame style &#39;</span><span class="si">{}</span><span class="s2">&#39;. Use one of &#39;None&#39;, &quot;</span>
+            <span class="s2">&quot;&#39;ASCII&#39;, &#39;single&#39; or &#39;double&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">frame_style</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">frame_style</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_guess_frame_style</span><span class="p">(</span><span class="n">contents</span><span class="p">):</span>
+    <span class="n">first_line_chars</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">contents</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+    <span class="k">for</span> <span class="n">frame_style</span><span class="p">,</span> <span class="n">frame_dict</span> <span class="ow">in</span> <span class="n">FRAMES</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">first_line_chars</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">frame_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="k">return</span> <span class="n">frame_style</span>
+    <span class="k">return</span> <span class="s2">&quot;None&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>separator = re.escape(FRAMES[frame_style.lower()][&ldquo;VERTICAL&rdquo;])</p>
+<p>if frame_style == &ldquo;None&rdquo;:
+    separator = r&rdquo;[\s]{2}[^\s]&rdquo;
+    # Matches two whitespaces followed by a non-whitespace.
+    # Our column headers are serated by 3 spaces by default.</p>
+<p>col_positions = []</p>
+<h1>Abuse regexp engine to anotate vertical-separator positions:</h1>
+<p>re.sub(separator, lambda group: col_positions.append(group.start()), header_line)
+if frame_style == &ldquo;None&rdquo;:
+    col_positions.append(len(header_line) - 1)
+return col_positions</p>
+<p>def _max_column_sizes(field_names, table_rows):
+columns = zip(*([field_names] + table_rows))
+return {
+    field_name: max(len(value) for value in column)
+    for field_name, column in zip(field_names, columns)
+}</p>
+<p>def import_from_txt(
+filename_or_fobj, encoding=&rdquo;utf-8&rdquo;, frame_style=FRAME_SENTINEL, <em>args, </em>*kwargs
+):
+Return a rows.Table created from imported TXT file.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_parse_col_positions</span><span class="p">(</span><span class="n">frame_style</span><span class="p">,</span> <span class="n">header_line</span><span class="p">):</span>
+    <span class="s2">&quot;&quot;&quot;Find the position for each column separator in the given line</span>
+
+<span class="s2">    If frame_style is &#39;None&#39;, this won work</span>
+<span class="s2">    for column names that _start_ with whitespace</span>
+<span class="s2">    (which includes non-lefthand aligned column titles)</span>
+<span class="s2">#DIVIDER</span>
+
+<span class="s2">#DIVIDER</span>
+
+<span class="s2">    source = Source.from_file(filename_or_fobj, mode=&quot;rb&quot;, plugin_name=&quot;txt&quot;, encoding=encoding)</span>
+<span class="s2">    raw_contents = source.fobj.read().decode(encoding).rstrip(&quot;</span><span class="se">\n</span><span class="s2">&quot;)</span>
+
+<span class="s2">    if frame_style is FRAME_SENTINEL:</span>
+<span class="s2">        frame_style = _guess_frame_style(raw_contents)</span>
+<span class="s2">    else:</span>
+<span class="s2">        frame_style = _parse_frame_style(frame_style)</span>
+
+<span class="s2">    contents = raw_contents.splitlines()</span>
+<span class="s2">    del raw_contents</span>
+
+<span class="s2">    if frame_style != &quot;None&quot;:</span>
+<span class="s2">        contents = contents[1:-1]</span>
+<span class="s2">        del contents[1]</span>
+<span class="s2">    else:</span>
+<span class="s2">#DIVIDER</span>
+<span class="s2">        if not contents[1].strip():</span>
+<span class="s2">            del contents[1]</span>
+<span class="s2">    col_positions = _parse_col_positions(frame_style, contents[0])</span>
+
+<span class="s2">    table_rows = [</span>
+<span class="s2">        [</span>
+<span class="s2">            row[start + 1 : end].strip()</span>
+<span class="s2">            for start, end in zip(col_positions, col_positions[1:])</span>
+<span class="s2">        ]</span>
+<span class="s2">        for row in contents</span>
+<span class="s2">    ]</span>
+
+<span class="s2">    meta = {</span>
+<span class="s2">        &quot;imported_from&quot;: &quot;txt&quot;,</span>
+<span class="s2">        &quot;source&quot;: source,</span>
+<span class="s2">        &quot;frame_style&quot;: frame_style,</span>
+<span class="s2">    }</span>
+<span class="s2">    return create_table(table_rows, meta=meta, *args, **kwargs)</span>
+<span class="s2">#DIVIDER</span>
+<span class="s2">def export_to_txt(</span>
+<span class="s2">    table,</span>
+<span class="s2">    filename_or_fobj=None,</span>
+<span class="s2">    encoding=None,</span>
+<span class="s2">    frame_style=&quot;ASCII&quot;,</span>
+<span class="s2">    safe_none_frame=True,</span>
+<span class="s2">    *args,</span>
+<span class="s2">    **kwargs</span>
+<span class="s2">):</span>
+<span class="s2">#DIVIDER</span>
+
+<span class="s2">    return_data, should_close = False, None</span>
+<span class="s2">    if filename_or_fobj is None:</span>
+<span class="s2">        filename_or_fobj = BytesIO()</span>
+<span class="s2">        return_data = should_close = True</span>
+
+<span class="s2">    source = Source.from_file(</span>
+<span class="s2">        filename_or_fobj,</span>
+<span class="s2">        plugin_name=&quot;txt&quot;,</span>
+<span class="s2">        mode=&quot;wb&quot;,</span>
+<span class="s2">        encoding=encoding,</span>
+<span class="s2">        should_close=should_close,</span>
+<span class="s2">    )</span>
+
+<span class="s2">    frame_style = _parse_frame_style(frame_style)</span>
+<span class="s2">    frame = FRAMES[frame_style.lower()]</span>
+<span class="s2">#DIVIDER</span>
+<span class="s2">    serialized_table = serialize(table, *args, **kwargs)</span>
+<span class="s2">    field_names = next(serialized_table)</span>
+<span class="s2">    table_rows = list(serialized_table)</span>
+<span class="s2">    max_sizes = _max_column_sizes(field_names, table_rows)</span>
+
+<span class="s2">    dashes = [frame[&quot;HORIZONTAL&quot;] * (max_sizes[field] + 2) for field in field_names]</span>
+
+<span class="s2">    if frame_style != &quot;None&quot; or not safe_none_frame:</span>
+<span class="s2">        header = [field.center(max_sizes[field]) for field in field_names]</span>
+<span class="s2">    else:</span>
+<span class="s2">        header = [</span>
+<span class="s2">            field.replace(&quot; &quot;, &quot;_&quot;).ljust(max_sizes[field]) for field in field_names</span>
+<span class="s2">        ]</span>
+<span class="s2">    header = &quot;</span><span class="si">{0}</span><span class="s2"> </span><span class="si">{1}</span><span class="s2"> </span><span class="si">{0}</span><span class="s2">&quot;.format(</span>
+<span class="s2">        frame[&quot;VERTICAL&quot;], &quot; </span><span class="si">{}</span><span class="s2"> &quot;.format(frame[&quot;VERTICAL&quot;]).join(header)</span>
+<span class="s2">    )</span>
+<span class="s2">    top_split_line = (</span>
+<span class="s2">        frame[&quot;DOWN AND RIGHT&quot;]</span>
+<span class="s2">        + frame[&quot;DOWN AND HORIZONTAL&quot;].join(dashes)</span>
+<span class="s2">        + frame[&quot;DOWN AND LEFT&quot;]</span>
+<span class="s2">    )</span>
+
+<span class="s2">    body_split_line = (</span>
+<span class="s2">        frame[&quot;VERTICAL AND RIGHT&quot;]</span>
+<span class="s2">        + frame[&quot;VERTICAL AND HORIZONTAL&quot;].join(dashes)</span>
+<span class="s2">        + frame[&quot;VERTICAL AND LEFT&quot;]</span>
+<span class="s2">    )</span>
+
+<span class="s2">    botton_split_line = (</span>
+<span class="s2">        frame[&quot;UP AND RIGHT&quot;]</span>
+<span class="s2">        + frame[&quot;UP AND HORIZONTAL&quot;].join(dashes)</span>
+<span class="s2">        + frame[&quot;UP AND LEFT&quot;]</span>
+<span class="s2">    )</span>
+
+<span class="s2">    result = []</span>
+<span class="s2">    if frame_style != &quot;None&quot;:</span>
+<span class="s2">        result += [top_split_line]</span>
+<span class="s2">    result += [header, body_split_line]</span>
+
+<span class="s2">    for row in table_rows:</span>
+<span class="s2">        values = [</span>
+<span class="s2">            value.rjust(max_sizes[field_name])</span>
+<span class="s2">            for field_name, value in zip(field_names, row)</span>
+<span class="s2">        ]</span>
+<span class="s2">        row_data = &quot; </span><span class="si">{}</span><span class="s2"> &quot;.format(frame[&quot;VERTICAL&quot;]).join(values)</span>
+<span class="s2">        result.append(&quot;</span><span class="si">{0}</span><span class="s2"> </span><span class="si">{1}</span><span class="s2"> </span><span class="si">{0}</span><span class="s2">&quot;.format(frame[&quot;VERTICAL&quot;], row_data))</span>
+
+<span class="s2">    if frame_style != &quot;None&quot;:</span>
+<span class="s2">        result.append(botton_split_line)</span>
+<span class="s2">    result.append(&quot;&quot;)</span>
+<span class="s2">    data = &quot;</span><span class="se">\n</span><span class="s2">&quot;.join(result)</span>
+
+<span class="s2">    if encoding is not None:</span>
+<span class="s2">        data = data.encode(encoding)</span>
+
+<span class="s2">    if return_data:</span>
+<span class="s2">        result = data</span>
+<span class="s2">    else:</span>
+<span class="s2">        result = source.fobj</span>
+<span class="s2">        source.fobj.write(data)</span>
+<span class="s2">        source.fobj.flush()</span>
+
+<span class="s2">    if source.should_close:</span>
+<span class="s2">        source.fobj.close()</span>
+
+<span class="s2">    return result</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>TODO: (maybe)
+enable parsing of non-fixed-width-columns
+with old algorithm - that would just split columns
+at the vertical separator character for the frame.
+(if doing so, include an optional parameter)
+Also, this fixes an outstanding unreported issue:
+trying to parse tables which fields values
+included a Pipe char - &ldquo;|&rdquo; - would silently
+yield bad results.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      <p>the table is possibly generated from other source.
+check if the line we reserve as a separator is realy empty.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      <p>Export a <code>rows.Table</code> to text.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      <p>This function can return the result as a string or save into a file (via
+filename or file-like object).</p>
+<p><code>encoding</code> could be <code>None</code> if no filename/file-like object is specified,
+then the return type will be <code>six.text_type</code>.
+<code>frame_style</code>: will select the frame style to be printed around data.
+Valid values are: (&lsquo;None&rsquo;, &lsquo;ASCII&rsquo;, &lsquo;single&rsquo;, &lsquo;double&rsquo;) - ASCII is default.
+Warning: no checks are made to check the desired encoding allows the
+characters needed by single and double frame styles.</p>
+<p><code>safe_none_frame</code>: bool, defaults to True. Affects only output with
+frame_style == &ldquo;None&rdquo;:
+column titles are left-aligned and have
+whitespace replaced for &ldquo;_&rdquo;.  This enables
+the output to be parseable. Otherwise, the generated table will look
+prettier but can not be imported back.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <p>TODO: will work only if table.fields is OrderedDict</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

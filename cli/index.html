@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Command-Line - rows 0.4.1 documentation</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Command-Line";
+    var mkdocs_page_input_path = "cli.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> rows 0.4.1 documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <p class="caption"><span class="caption-text">First Steps</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../basic-usage/">Basic Usage</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../quick-start/">Quick Start Guide</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../license/">License</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Basic Concepts</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../plugins/">Plugins</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../operations/">Operations</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Command-Line</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting started</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#commands">Commands</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#global-and-common-parameters">Global and Common Parameters</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-convert">rows convert</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-csv-merge">rows csv-merge</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-csv2sqlite">rows csv2sqlite</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-join">rows join</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-pdf-to-text">rows pdf-to-text</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-pgexport">rows pgexport</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-pgimport">rows pgimport</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-print">rows print</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-query">rows query</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-schema">rows schema</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-sqlite2csv">rows sqlite2csv</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#rows-sum">rows sum</a>
+    </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../locale/">Locale</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../links/">Going deeper</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../changelog/">Release notes</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">rows 0.4.1 documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Basic Concepts &raquo;</li>
+        
+      
+    
+    <li>Command-Line</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/turicas/rows/edit/develop/docs/cli.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="command-line-interface">Command-Line Interface</h2>
+<p><code>rows</code> exposes a command-line interface with common operations such as
+converting and querying data.</p>
+<blockquote>
+<p>Note: we still need to improve this documentation. Please run <code>rows --help</code>
+to see all the available commands, <a href="../reference/cli.html">see the code reference</a> or
+take a look at <a href="https://github.com/turicas/rows/blob/master/rows/cli.py">rows/cli.py</a>. <a href="../man/rows.1">Man pages are also
+available</a>.</p>
+</blockquote>
+<h3 id="getting-started">Getting started</h3>
+<p>Before using the command-line interface, you must first install the
+dependencies required by the module:</p>
+<pre><code class="bash">pip install rows[cli]
+</code></pre>
+
+<h3 id="commands">Commands</h3>
+<p>All the commands accepts any of the formats supported by the library (unless
+in some specific/optimized cases, like <code>csv2sqlite</code>, <code>sqlite2csv</code>, <code>pgimport</code>
+and <code>pgexport</code>) and for all input data you can specify an URL instead of a
+local filename (example: <code>rows convert https://website/file.html file.csv</code>).</p>
+<blockquote>
+<p>Note: you must install the specific dependencies for each format you want
+support (example: to extract tables from HTML the Python library <code>lxml</code> is
+required).</p>
+</blockquote>
+<ul>
+<li><a href="#rows-convert"><code>rows convert</code></a>: convert a table from one format to another.</li>
+<li><a href="#rows-csv2sqlite"><code>rows csv2sqlite</code></a>: convert one or more CSV files
+  (compressed or not) to SQLite in an optimized way (if source is CSV and
+  destination is SQLite, use this rather than <code>rows convert</code>).</li>
+<li><a href="#rows-csv-merge"><code>rows csv-merge</code></a>: lazily merge CSV files (compressed or
+  not), even if they don't have a common schema, generating a new one
+  (compressed or not).</li>
+<li><a href="#rows-join"><code>rows join</code></a>: equivalent to SQL's <code>JOIN</code> - get rows from each
+  table and join them.</li>
+<li><a href="#rows-pdf-to-text"><code>rows pdf-to-text</code></a>: extract text from a PDF file and save
+  into a file or print to standard output;</li>
+<li><a href="#rows-pgexport"><code>rows pgexport</code></a>: export a PostgreSQL table into a CSV file
+  (compressed or not) in the most optimized way: using <code>psql</code>'s <code>COPY</code> command.</li>
+<li><a href="#rows-pgimport"><code>rows pgimport</code></a>: import a CSV file (compressed or not) into a
+  PostgreSQL table in the most optimized way: using <code>psql</code>'s <code>COPY</code> command.</li>
+<li><a href="#rows-print"><code>rows print</code></a>: print a table to the standard output (you can
+  choose between some frame styles).</li>
+<li><a href="#rows-query"><code>rows query</code></a>: query a table using SQL (converts the table to an
+  in-memory SQLite database) and output to the standard output or a file.</li>
+<li><a href="#rows-schema"><code>rows schema</code></a>: inspects a table and defines its schema. Can
+  output in many formats, like text, SQL or even Django models.</li>
+<li><a href="#rows-sqlite2csv"><code>rows sqlite2csv</code></a>: convert a SQLite table into a CSV file
+  (compressed or not).</li>
+<li><a href="#rows-sum"><code>rows sum</code></a>: aggreate the rows of two equivalent tables (must have
+  same field names and types), equivalent to SQL's <code>UNION</code>.</li>
+</ul>
+<blockquote>
+<p>Note: everytime we specify "compressed or not" means you can use the file as
+is or a compressed version of it. The supported compression formats are:
+gzip (<code>.gz</code>), lzma (<code>.xz</code>) and bzip2 (<code>.bz2</code>). <a href="https://github.com/turicas/rows/issues/236">Support for archive
+formats such as zip, tar and rar will be implemented in the
+future</a>.</p>
+</blockquote>
+<h3 id="global-and-common-parameters">Global and Common Parameters</h3>
+<p>Some parameters are global to the command-line interface and the sub-commands
+also have specific options. The global options are:</p>
+<ul>
+<li><code>--http-cache=BOOLEAN</code>: Enable/disable HTTP cache (default: <code>true</code>)</li>
+<li><code>--http-cache-path=TEXT</code>: Set HTTP cache path (default:
+  <code>USER_HOME_PATH/.cache/rows/http</code></li>
+</ul>
+<h3 id="rows-convert"><code>rows convert</code></h3>
+<p>Convert a table from a <code>source</code> URI to <code>destination</code>. Useful to convert files
+between formats, like extracting data from a HTML table and converting to CSV.</p>
+<blockquote>
+<p>Note: if you'd like to convert from/to CSV, SQLite or PostgreSQL, see the
+more optimized commands <a href="#rows-csv2sqlite"><code>csv2sqlite</code></a>,
+<a href="#rows-sqlite2csv"><code>sqlite2csv</code></a>, <a href="#rows-pgimport"><code>pgimport</code></a> and
+<a href="#rows-pgexport"><code>pgexport</code></a>.</p>
+</blockquote>
+<p>Usage: <code>rows convert [OPTIONS] SOURCE DESTINATION</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--input-encoding=TEXT</code>: Encoding of input tables (default: <code>utf-8</code>)</li>
+<li><code>--output-encoding=TEXT</code>: Encoding of output tables (default: <code>utf-8</code>)</li>
+<li><code>--input-locale=TEXT</code>: Locale of input tables. Used to parse integers, floats
+  etc. (default: <code>C</code>)</li>
+<li><code>--output-locale=TEXT</code>: Locale of output tables. Used to parse integers,
+  floats etc. (default: <code>C</code>)</li>
+<li><code>--verify-ssl=BOOLEAN</code>: Verify SSL certificate, if source is downloaded via
+  HTTPS (default: <code>true</code>)</li>
+<li><code>--order-by=TEXT</code>: Order result by this field (default: same order as input
+  data)</li>
+<li><code>--fields=TEXT</code>: A comma-separated list of fields to import (default: all
+  fields)</li>
+<li><code>--fields-exclude=TEXT</code>: A comma-separated list of fields to exclude when
+  exporting (default: none)</li>
+</ul>
+<p>Examples:</p>
+<pre><code class="bash"># needs: pip install rows[html]
+rows convert \
+    http://www.sports-reference.com/olympics/countries/BRA/summer/2016/ \
+    brazil-2016.csv
+
+rows convert \
+    http://www.worldometers.info/world-population/population-by-country/ \
+    population.csv
+</code></pre>
+
+<h3 id="rows-csv-merge"><code>rows csv-merge</code></h3>
+<p>Lazily merge CSV files (compressed or not), even if they don't have a common
+schema, generating a new one (compressed or not). The final header is
+slugified. Sources and destination could be compressed, the supported
+compression formats are: gzip (<code>.gz</code>), lzma (<code>.xz</code>) and bzip2 (<code>.bz2</code>).</p>
+<p>This command is splited in two main steps:</p>
+<ul>
+<li>Identify dialect and headers for each source file, defining the final header
+  (it's a union of all field names slugged);</li>
+<li>Lazily read all sources and write a new CSV using the defined header.</li>
+</ul>
+<p>Usage: <code>rows csv-merge [OPTIONS] SOURCES... OUTPUT</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--input-encoding=TEXT</code>: input encoding for all CSV files (default: <code>utf-8</code>)</li>
+<li><code>--output-encoding=TEXT</code>: encoding of output CSV (default: <code>utf-8</code>)</li>
+<li><code>--strip</code>: remove spaces from CSV cells</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash">rows csv-merge \
+     file1.csv file2.csv.bz2 file3.csv.xz \
+     result.csv.gz
+</code></pre>
+
+<h3 id="rows-csv2sqlite"><code>rows csv2sqlite</code></h3>
+<p>Convert one or more CSV files (compressed or not) to SQLite in an optimized way
+(if source is CSV and destination is SQLite, use this rather than <code>rows
+convert</code>). The supported compression formats are: gzip (<code>.gz</code>), lzma (<code>.xz</code>)
+and bzip2 (<code>.bz2</code>).</p>
+<p>Usage: <code>rows csv2sqlite [OPTIONS] SOURCES... OUTPUT</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--batch-size=INTEGER</code>: number of rows to batch insert into SQLite (default:
+  <code>10000</code>)</li>
+<li><code>--samples=INTEGER</code>: number of sample rows to detect schema (default: <code>5000</code>)</li>
+<li><code>--input-encoding=TEXT</code>: input encoding (default: <code>utf-8</code>)</li>
+<li><code>--dialect=TEXT</code>: CSV dialect to be used (default: will detect automatically)</li>
+<li><code>--schemas=TEXT</code>: comma-separated list of schema files (default: will detect
+  automatically) - these files must have the columns <code>field_name</code> and
+  <code>field_type</code> (you can see and example by running <a href="#rows-schema"><code>rows schema</code></a>)</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash">rows csv2sqlite \
+     --dialect=excel \
+     --input-encoding=latin1 \
+     file1.csv file2.csv \
+     result.sqlite
+</code></pre>
+
+<h3 id="rows-join"><code>rows join</code></h3>
+<p>Join tables from <code>source</code> URIs using <code>key(s)</code> to group rows and save into
+<code>destination</code>. <strong>This command is not optimized and its use is discouraged</strong>
+(<a href="#rows-query">rows query</a> may be more effective).</p>
+<p>Usage: <code>rows join [OPTIONS] KEYS SOURCES... DESTINATION</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--input-encoding=TEXT</code>: Encoding of input tables (default: <code>utf-8</code>)</li>
+<li><code>--output-encoding=TEXT</code>: Encoding of output tables (default: <code>utf-8</code>)</li>
+<li><code>--input-locale=TEXT</code>: Locale of input tables. Used to parse integers, floats
+  etc. (default: <code>C</code>)</li>
+<li><code>--output-locale=TEXT</code>: Locale of output tables. Used to parse integers,
+  floats etc. (default: <code>C</code>)</li>
+<li><code>--verify-ssl=BOOLEAN</code>: Verify SSL certificate, if source is downloaded via
+  HTTPS (default: <code>true</code>)</li>
+<li><code>--order-by=TEXT</code>: Order result by this field (default: same order as input
+  data)</li>
+<li><code>--fields=TEXT</code>: A comma-separated list of fields to import (default: all
+  fields)</li>
+<li><code>--fields-exclude=TEXT</code>: A comma-separated list of fields to exclude when
+  exporting (default: none)</li>
+</ul>
+<p>Example: join <code>a.csv</code> and <code>b.csv</code> into a new file called <code>c.csv</code> using the
+field <code>id</code> as a key (both <code>a.csv</code> and <code>b.csv</code> must have the field <code>id</code>):</p>
+<pre><code class="bash">rows join id a.csv b.csv c.csv
+</code></pre>
+
+<h3 id="rows-pdf-to-text"><code>rows pdf-to-text</code></h3>
+<p>Extract text from a PDF file and save into a file or print to standard output.</p>
+<p>Usage: <code>rows pdf-to-text [OPTIONS] SOURCE [OUTPUT]</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--output-encoding=TEXT</code>: encoding to be used on output file (default:
+  <code>utf-8</code>) - valid only when <code>output</code> is specified (if not, uses the default
+  standard output's encoding)</li>
+<li><code>--quiet</code>: do not show progress bars when downloading and extracting. This
+  option is automatically disabled if <code>output</code> is empty (default: show progress
+  bars)</li>
+<li><code>--backend=TEXT</code>: PDF library to use as backend (default: <code>pymupdf</code>)</li>
+<li><code>--pages=TEXT</code>: page ranges</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash"># needs: pip install rows[pdf]
+URL=&quot;http://www.imprensaoficial.rr.gov.br/app/_edicoes/2018/01/doe-20180131.pdf&quot;
+rows pdf-to-text $URL result.txt  # Save to file, show progress bars
+rows pdf-to-text --quiet $URL result.txt  # Save to file, no progress bars
+rows pdf-to-text --pages=1,2,3 $URL # Print first 3 pages to stdout
+rows pdf-to-text --pages=1-3 $URL # Print first 3 pages to stdout (using ranges)
+</code></pre>
+
+<h3 id="rows-pgexport"><code>rows pgexport</code></h3>
+<p>Export a PostgreSQL table into a CSV file (compressed or not) in the most
+optimized way: using <code>psql</code>'s <code>COPY</code> command. The supported compression formats
+are: gzip (<code>.gz</code>), lzma (<code>.xz</code>) and bzip2 (<code>.bz2</code>).</p>
+<p>Usage: <code>rows pgexport [OPTIONS] DATABASE_URI TABLE_NAME DESTINATION</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--output-encoding=TEXT</code>: encoding to be used on output file (default:
+  <code>utf-8</code>)</li>
+<li><code>--dialect=TEXT</code>: CSV dialect to be used on output file (default: <code>excel</code>)</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash"># needs: pip install rows[postgresql]
+rows pgexport \
+    postgres://postgres:postgres@127.0.0.1:42001/rows \
+    my_table \
+    my_table.csv.gz
+</code></pre>
+
+<h3 id="rows-pgimport"><code>rows pgimport</code></h3>
+<p>Import a CSV file (compressed or not) into a PostgreSQL table in the most
+optimized way: using <code>psql</code>'s <code>COPY</code> command. The supported compression formats
+are: gzip (<code>.gz</code>), lzma (<code>.xz</code>) and bzip2 (<code>.bz2</code>).</p>
+<p>Usage: <code>rows pgimport [OPTIONS] SOURCE DATABASE_URI TABLE_NAME</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--input-encoding=TEXT</code>: Encoding of input CSV file (default: <code>utf-8</code>)</li>
+<li><code>--no-create-table=BOOLEAN</code>: should rows create the table or leave it to
+  PostgreSQL? (default: false, ie: create the table)</li>
+<li><code>--dialect=TEXT</code>: CSV dialect to be used (default: will detect automatically)</li>
+<li><code>--schema=TEXT</code>: schema filename to be used (default: will detect schema
+  automatically) - this file must have the columns <code>field_name</code> and
+  <code>field_type</code> (you can see and example by running <a href="#rows-schema"><code>rows schema</code></a>)</li>
+<li><code>--unlogged</code>: if specified, create an <a href="https://www.postgresql.org/docs/9.1/sql-createtable.html">unlogged table</a> (which is
+  faster than logged ones, but will not be recoverable in case of data
+  corruption and will not be sent to replicas)</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash"># needs: pip install rows[postgresql]
+rows pgimport \
+    my_data.csv.xz \
+    postgres://postgres:postgres@127.0.0.1:42001/rows \
+    my_table
+</code></pre>
+
+<p><strong>Tip</strong>: whenever possible, specify <code>--schema</code>, <code>--dialect</code> and
+<code>--input-encoding</code> so the library won't try to guess it (the guessing process
+could take a while).</p>
+<blockquote>
+<p><strong>Note</strong>: if you're importing a gzip-compressed CSV which has the
+uncompressed size greater than 4GB, then the progress bar total won't have
+the correct value at first; once the progress bar reaches 100%, it'll check
+if this value is the correct one and then either finish the process (if
+correct) or update with a new possible total. <code>rows</code> cannot do any better
+than this, since there's a limitation on the gzip format: it stores the
+uncompressed size modulo 2^32, so if the size is bigger than 4GB (2^32), the
+best thing <code>rows</code> can do is to try to guess the leftmost bits truncated from
+the uncompressed size number.</p>
+</blockquote>
+<h3 id="rows-print"><code>rows print</code></h3>
+<p>Print the selected <code>source</code> table</p>
+<p>Usage: <code>rows print [OPTIONS] SOURCE</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--input-encoding=TEXT</code>: Encoding of input tables (default: <code>utf-8</code>)</li>
+<li><code>--output-encoding=TEXT</code>: Encoding of output tables (default: <code>utf-8</code>)</li>
+<li><code>--input-locale=TEXT</code>: Locale of input tables. Used to parse integers, floats
+  etc. (default: <code>C</code>)</li>
+<li><code>--output-locale=TEXT</code>: Locale of output tables. Used to parse integers,
+  floats etc. (default: <code>C</code>)</li>
+<li><code>--verify-ssl=BOOLEAN</code>: Verify SSL certificate, if source is downloaded via
+  HTTPS (default: <code>true</code>)</li>
+<li><code>--order-by=TEXT</code>: Order result by this field (default: same order as input
+  data)</li>
+<li><code>--fields=TEXT</code>: A comma-separated list of fields to import (default: all
+  fields)</li>
+<li><code>--fields-exclude=TEXT</code>: A comma-separated list of fields to exclude when
+  exporting (default: none)</li>
+<li><code>--frame-style=TEXT</code>: frame style to "draw" the table; options: <code>ascii</code>,
+  <code>single</code>, <code>double</code>, <code>none</code> (default: <code>ascii</code>)</li>
+<li><code>--table-index=INTEGER</code>: if source is HTML, specify the table index to
+  extract (default: <code>0</code>, ie: first <code>&lt;table&gt;</code> inside the HTML file)</li>
+</ul>
+<p>Examples:</p>
+<pre><code class="bash">rows print \
+    --fields=state,city \
+    --order-by=city \
+    data/brazilian-cities.csv
+</code></pre>
+
+<blockquote>
+<p>Note: download <a href="https://gist.github.com/turicas/ec0abcfe0d7abf7a97ef7a0c1d72c7f7">brazilian-cities.csv</a>.</p>
+</blockquote>
+<pre><code class="bash"># needs: pip install rows[html]
+rows print \
+    --table-index=1 \  # extracts second table
+    some-html-file.html
+</code></pre>
+
+<h3 id="rows-query"><code>rows query</code></h3>
+<p>Yep, you can SQL-query any supported file format! Each of the source files will
+be a table inside an in-memory SQLite database, called <code>table1</code>, ..., <code>tableN</code>.
+If the <code>--output</code> is not specified, <code>rows</code> will print a table to the standard
+output.</p>
+<p>Usage: <code>rows query [OPTIONS] QUERY SOURCES...</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--input-encoding=TEXT</code>: Encoding of input tables (default: <code>utf-8</code>)</li>
+<li><code>--output-encoding=TEXT</code>: Encoding of output tables (default: <code>utf-8</code>)</li>
+<li><code>--input-locale=TEXT</code>: Locale of input tables. Used to parse integers, floats
+  etc. (default: <code>C</code>)</li>
+<li><code>--output-locale=TEXT</code>: Locale of output tables. Used to parse integers,
+  floats etc. (default: <code>C</code>)</li>
+<li><code>--verify-ssl=BOOLEAN</code>: Verify SSL certificate, if source is downloaded via
+  HTTPS (default: <code>true</code>)</li>
+<li><code>--samples=INTEGER</code>: number of sample rows to detect schema (default: <code>5000</code>)</li>
+<li><code>--output=TEXT</code>: filename to outputs - will use file extension to define
+  which plugin to use (default: standard output, plugin text)</li>
+<li><code>--frame-style=TEXT</code>: frame style to "draw" the table; options: <code>ascii</code>,
+  <code>single</code>, <code>double</code>, <code>none</code> (default: <code>ascii</code>)</li>
+</ul>
+<p>Examples:</p>
+<pre><code class="bash"># needs: pip install rows[html]
+rows query \
+    &quot;SELECT * FROM table1 WHERE inhabitants &gt; 1000000&quot; \
+    data/brazilian-cities.csv \
+    --output=data/result.html
+</code></pre>
+
+<blockquote>
+<p>Note: download <a href="https://gist.github.com/turicas/ec0abcfe0d7abf7a97ef7a0c1d72c7f7">brazilian-cities.csv</a>.</p>
+</blockquote>
+<pre><code class="bash"># needs: pip install rows[pdf]
+rows query \
+    'SELECT * FROM table1 WHERE categoria = &quot;Imprópria&quot;' \
+    http://balneabilidade.inema.ba.gov.br/index.php/relatoriodebalneabilidade/geraBoletim?idcampanha=36381 \
+    --output=bathing-conditions.xls
+</code></pre>
+
+<p>In the last example <code>rows</code> will:</p>
+<ul>
+<li>Download a file using HTTP</li>
+<li>Identify its format (PDF)</li>
+<li>Automatically extract a table based on objects' positions</li>
+<li>Create an in-memory database with extracted data</li>
+<li>Run the SQL query</li>
+<li>Export the result to XLS</li>
+</ul>
+<p>In just one command, automatically. How crazy is that?</p>
+<h3 id="rows-schema"><code>rows schema</code></h3>
+<p>Identifies the table schema by inspecting data. The files generated by this
+command (<code>txt</code> format) can be used in <code>--schema</code> and <code>--schemas</code> options (a CSV
+version of these files can also be used).</p>
+<p>Usage: <code>rows schema [OPTIONS] SOURCE [OUTPUT]</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--input-encoding=TEXT</code>: Encoding of input tables (default: <code>utf-8</code>)</li>
+<li><code>--input-locale=TEXT</code>: Locale of input tables. Used to parse integers, floats
+  etc. (default: <code>C</code>)</li>
+<li><code>--verify-ssl=BOOLEAN</code>: Verify SSL certificate, if source is downloaded via
+  HTTPS (default: <code>true</code>)</li>
+<li><code>-f TEXT</code>, <code>--format=TEXT</code>: output format; options: <code>txt</code>, <code>sql</code>, <code>django</code>
+  (default: <code>txt</code>)</li>
+<li><code>--fields=TEXT</code>: A comma-separated list of fields to import (default: all
+  fields)</li>
+<li><code>--fields-exclude=TEXT</code>: A comma-separated list of fields to exclude when
+  exporting (default: none)</li>
+<li><code>--samples=INTEGER</code>: number of sample rows to detect schema (default: <code>5000</code>)</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash">rows schema --samples=100 data/brazilian-cities.csv
+</code></pre>
+
+<blockquote>
+<p>Note: download <a href="https://gist.github.com/turicas/ec0abcfe0d7abf7a97ef7a0c1d72c7f7">brazilian-cities.csv</a>.</p>
+</blockquote>
+<p>Output:</p>
+<pre><code>+-------------+------------+
+|  field_name | field_type |
++-------------+------------+
+|       state |       text |
+|        city |       text |
+| inhabitants |    integer |
+|        area |      float |
++-------------+------------+
+</code></pre>
+
+<h3 id="rows-sqlite2csv"><code>rows sqlite2csv</code></h3>
+<p>Convert a SQLite table into a CSV file (compressed or not). The supported
+compression formats are: gzip (<code>.gz</code>), lzma (<code>.xz</code>) and bzip2 (<code>.bz2</code>).</p>
+<p>Usage: <code>rows sqlite2csv [OPTIONS] SOURCE TABLE_NAME OUTPUT</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--batch-size=INTEGER</code>: number of rows to batch insert into SQLite (default:
+  <code>10000</code>)</li>
+<li><code>--dialect=TEXT</code>: CSV dialect to be used on output file (default: <code>excel</code>)</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash">rows sqlite2csv my_db.sqlite my_table my_table.csv.bz2
+</code></pre>
+
+<h3 id="rows-sum"><code>rows sum</code></h3>
+<p>Sum tables (append rows from one to the other) from <code>source</code> URIs and save into
+<code>destination</code>. The tables must have the same fields. <strong>This command is not
+optimized and its use is discouraged</strong> (<a href="#rows-query">rows query</a> may be more
+effective).</p>
+<p>Usage: <code>rows sum [OPTIONS] SOURCES... DESTINATION</code></p>
+<p>Options:</p>
+<ul>
+<li><code>--input-encoding=TEXT</code>: Encoding of input tables (default: <code>utf-8</code>)</li>
+<li><code>--output-encoding=TEXT</code>: Encoding of output tables (default: <code>utf-8</code>)</li>
+<li><code>--input-locale=TEXT</code>: Locale of input tables. Used to parse integers, floats
+  etc. (default: <code>C</code>)</li>
+<li><code>--output-locale=TEXT</code>: Locale of output tables. Used to parse integers,
+  floats etc. (default: <code>C</code>)</li>
+<li><code>--verify-ssl=BOOLEAN</code>: Verify SSL certificate, if source is downloaded via
+  HTTPS (default: <code>true</code>)</li>
+<li><code>--order-by=TEXT</code>: Order result by this field (default: same order as input
+  data)</li>
+<li><code>--fields=TEXT</code>: A comma-separated list of fields to import (default: all
+  fields)</li>
+<li><code>--fields-exclude=TEXT</code>: A comma-separated list of fields to exclude when
+  exporting (default: none)</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash">rows sum \
+    --fields=id,name,phone \
+    people.csv \  # This file has `id`, `name` and other fields
+    phones.csv \  # This file has `id`, `phone` and other fields
+    contacts.csv  # Will have `id`, `name` and `phone` fields
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../locale/" class="btn btn-neutral float-right" title="Locale">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../operations/" class="btn btn-neutral" title="Operations"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/turicas/rows/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../operations/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../locale/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

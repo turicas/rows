@@ -1,0 +1,81 @@
+.TH "ROWS" "1" "2020-12-16" "-0.4.2-dev-eaa8b1ac-" "rows Manual"
+.SH NAME
+rows \- 
+.SH SYNOPSIS
+.B rows
+[OPTIONS] COMMAND [ARGS]...
+.SH OPTIONS
+.TP
+\fB\-\-http\-cache\fP BOOLEAN
+.PP
+.TP
+\fB\-\-http\-cache\-path\fP TEXT
+.PP
+.TP
+\fB\-\-version\fP
+Show the version and exit.
+.SH COMMANDS
+.PP
+\fBconvert\fP
+  Convert table on `source` URI to...
+  See \fBrows-convert(1)\fP for full documentation on the \fBconvert\fP command.
+.PP
+\fBjoin\fP
+  Join tables from `source` URIs using `key(s)`...
+  See \fBrows-join(1)\fP for full documentation on the \fBjoin\fP command.
+.PP
+\fBsum\fP
+  Sum tables from `source` URIs and save into...
+  See \fBrows-sum(1)\fP for full documentation on the \fBsum\fP command.
+.PP
+\fBprint\fP
+  Print a table
+  See \fBrows-print(1)\fP for full documentation on the \fBprint\fP command.
+.PP
+\fBquery\fP
+  Query a table using SQL
+  See \fBrows-query(1)\fP for full documentation on the \fBquery\fP command.
+.PP
+\fBschema\fP
+  Identifies table schema
+  See \fBrows-schema(1)\fP for full documentation on the \fBschema\fP command.
+.PP
+\fBcsv-to-sqlite\fP
+  Convert one or more CSV files to SQLite
+  See \fBrows-csv-to-sqlite(1)\fP for full documentation on the \fBcsv-to-sqlite\fP command.
+.PP
+\fBsqlite-to-csv\fP
+  Convert a SQLite table into CSV
+  See \fBrows-sqlite-to-csv(1)\fP for full documentation on the \fBsqlite-to-csv\fP command.
+.PP
+\fBpgimport\fP
+  Import a CSV file into a PostgreSQL table
+  See \fBrows-pgimport(1)\fP for full documentation on the \fBpgimport\fP command.
+.PP
+\fBpgexport\fP
+  Export a PostgreSQL table into a CSV file
+  See \fBrows-pgexport(1)\fP for full documentation on the \fBpgexport\fP command.
+.PP
+\fBpdf-to-text\fP
+  Extract text from a PDF
+  See \fBrows-pdf-to-text(1)\fP for full documentation on the \fBpdf-to-text\fP command.
+.PP
+\fBcsv-merge\fP
+  Lazily merge CSVs (even if the schemas...
+  See \fBrows-csv-merge(1)\fP for full documentation on the \fBcsv-merge\fP command.
+.PP
+\fBcsv-clean\fP
+  Create a consistent and clean version of a...
+  See \fBrows-csv-clean(1)\fP for full documentation on the \fBcsv-clean\fP command.
+.PP
+\fBcsv-row-count\fP
+  Lazily count CSV rows
+  See \fBrows-csv-row-count(1)\fP for full documentation on the \fBcsv-row-count\fP command.
+.PP
+\fBcsv-split\fP
+  Split CSV into equal parts (by number of...
+  See \fBrows-csv-split(1)\fP for full documentation on the \fBcsv-split\fP command.
+.PP
+\fBlist-sheets\fP
+  List sheets
+  See \fBrows-list-sheets(1)\fP for full documentation on the \fBlist-sheets\fP command.

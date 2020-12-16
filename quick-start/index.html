@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Quick Start Guide - rows 0.4.1 documentation</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Quick Start Guide";
+    var mkdocs_page_input_path = "quick-start.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> rows 0.4.1 documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <p class="caption"><span class="caption-text">First Steps</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../basic-usage/">Basic Usage</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Quick Start Guide</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#programatically-creating-a-table-object">Programatically creating a Table object</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#using-tableappend">Using Table.append</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#from-a-list-of-dicts">From a list of dicts</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#importing-from-other-formats">Importing from other formats</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#common-parameters">Common Parameters</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#exporting-data">Exporting Data</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#exporting-to-memory">Exporting to memory</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#using-file-and-connection-objects">Using file and connection objects</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#learn-more">Learn more</a>
+    </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../license/">License</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Basic Concepts</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../plugins/">Plugins</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../operations/">Operations</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../cli/">Command-Line</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../locale/">Locale</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../links/">Going deeper</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../changelog/">Release notes</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">rows 0.4.1 documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>First Steps &raquo;</li>
+        
+      
+    
+    <li>Quick Start Guide</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/turicas/rows/edit/develop/docs/quick-start.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="quick-start-guide">Quick Start Guide</h2>
+<h3 id="programatically-creating-a-table-object">Programatically creating a <code>Table</code> object</h3>
+<p><code>rows</code> can import data from any of the supported formats (using
+<code>rows.import_from_X</code> functions) and will return a <code>Table</code> object for you, but
+you can also create a <code>Table</code> object by hand.</p>
+<h4 id="using-tableappend">Using <code>Table.append</code></h4>
+<pre><code class="python">from collections import OrderedDict
+from rows import fields, Table
+
+# Create a schema for the new table (check also all the available field types
+# inside `rows.fields`).
+country_fields = OrderedDict([
+    (&quot;name&quot;, fields.TextField),
+    (&quot;population&quot;, fields.IntegerField),
+])
+
+# Data from: &lt;http://www.worldometers.info/world-population/population-by-country/&gt;
+countries = Table(fields=country_fields)
+countries.append({&quot;name&quot;: &quot;Argentina&quot;, &quot;population&quot;: &quot;45101781&quot;})
+countries.append({&quot;name&quot;: &quot;Brazil&quot;, &quot;population&quot;: &quot;212392717&quot;})
+countries.append({&quot;name&quot;: &quot;Colombia&quot;, &quot;population&quot;: &quot;49849818&quot;})
+countries.append({&quot;name&quot;: &quot;Ecuador&quot;, &quot;population&quot;: &quot;17100444&quot;})
+countries.append({&quot;name&quot;: &quot;Peru&quot;, &quot;population&quot;: &quot;32933835&quot;})
+</code></pre>
+
+<p>Then you can iterate over it:</p>
+<pre><code class="python">for country in countries:
+    print(country)
+# Result:
+#     Row(name='Argentina', population=45101781)
+#     Row(name='Brazil', population=212392717)
+#     Row(name='Colombia', population=49849818)
+#     Row(name='Ecuador', population=17100444)
+#     Row(name='Peru', population=32933835)
+# &quot;Row&quot; is a namedtuple created from `country_fields`
+
+# We've added population as a string, the library automatically converted to
+# integer so we can also sum:
+countries_population = sum(country.population for country in countries)
+print(countries_population)  # prints 357378595
+</code></pre>
+
+<p>You could also export this table to CSV or any other supported format:</p>
+<pre><code class="python">import rows
+rows.export_to_csv(countries, &quot;some-LA-countries.csv&quot;)
+</code></pre>
+
+<p>If you had this file before, you could:</p>
+<pre><code class="python">import rows
+
+countries = rows.import_from_csv(&quot;some-LA-countries.csv&quot;)
+for country in countries:
+    print(country)
+# And the result will be the same.
+
+# Since the library has an automatic type detector, the &quot;population&quot; column
+# will be detected and converted to integer. Let's see the detected types:
+print(countries.fields)
+# Result:
+#    OrderedDict([
+#        ('name', &lt;class 'rows.fields.TextField'&gt;),
+#        ('population', &lt;class 'rows.fields.IntegerField'&gt;)
+#    ])
+</code></pre>
+
+<h4 id="from-a-list-of-dicts">From a <code>list</code> of <code>dict</code>s</h4>
+<p>If you have the data in a list of dictionaries already you can simply use
+<code>rows.import_from_dicts</code>:</p>
+<pre><code class="python">import rows
+
+data = [
+    {&quot;name&quot;: &quot;Argentina&quot;, &quot;population&quot;: &quot;45101781&quot;},
+    {&quot;name&quot;: &quot;Brazil&quot;, &quot;population&quot;: &quot;212392717&quot;},
+    {&quot;name&quot;: &quot;Colombia&quot;, &quot;population&quot;: &quot;49849818&quot;},
+    {&quot;name&quot;: &quot;Ecuador&quot;, &quot;population&quot;: &quot;17100444&quot;},
+    {&quot;name&quot;: &quot;Peru&quot;, &quot;population&quot;: &quot;32933835&quot;},
+    {&quot;name&quot;: &quot;Guyana&quot;, },  # Missing &quot;population&quot;, will fill with `None`
+]
+table = rows.import_from_dicts(data)
+print(table[-1])  # Can use indexes
+# Result:
+#     Row(name='Guyana', population=None)
+</code></pre>
+
+<h3 id="importing-from-other-formats">Importing from other formats</h3>
+<p><code>rows</code>' ability to import data is amazing: its plugins will do the hard job of
+parsing the file format so you don't need to. They can help you exporting data
+also. For example, let's download a CSV from the Web and import it:</p>
+<pre><code class="python">import requests
+import rows
+from io import BytesIO
+
+url = &quot;http://unitedstates.sunlightfoundation.com/legislators/legislators.csv&quot;
+csv = requests.get(url).content  # Download CSV data
+legislators = rows.import_from_csv(BytesIO(csv))  # already imported!
+
+print(&quot;rows automatically identified the types:&quot;)
+for field_name, field_type in legislators.fields.items():
+    print(f&quot;{field_name} is {field_type}&quot;)
+</code></pre>
+
+<p>And you'll see something like this:</p>
+<pre><code class="text">[...]
+gender is &lt;class 'rows.fields.TextField'&gt;
+[...]
+govtrack_id is &lt;class 'rows.fields.IntegerField'&gt;
+[...]
+birthdate is &lt;class 'rows.fields.DateField'&gt;
+[...]
+</code></pre>
+
+<blockquote>
+<p>Note that <strong>native Python objects</strong> are returned for each row inside a
+<code>namedtuple</code>! The library recognizes each field type and converts it
+<em>automagically</em> no matter which plugin you're using to import the data.</p>
+</blockquote>
+<p>We can then work on this data:</p>
+<pre><code class="python">women = sum(1 for row in legislators if row.in_office and row.gender == 'F')
+men = sum(1 for row in legislators if row.in_office and row.gender == 'M')
+print(f&quot;Women vs Men (in office): {women} vs {men}.&quot;)
+# Result:
+#     Women vs Men: 108 vs 432.
+</code></pre>
+
+<p>Since <code>birthdate</code> is automatically detected and converted to a
+<code>rows.fields.DateField</code> we can do some quick analysis:</p>
+<pre><code class="python">legislators.order_by(&quot;birthdate&quot;)
+older, younger = legislators[-1], legislators[0]
+print(f&quot;{older.lastname}, {older.firstname} is older than {younger.lastname}, {younger.firstname}.&quot;)
+# Result:
+#     Stefanik, Elise is older than Byrd, Robert.
+</code></pre>
+
+<p>You can also get a whole column, like this:</p>
+<pre><code class="python">print(legislators[&quot;gender&quot;])
+# Result (a list of strings):
+#     ['M', 'M', 'M', 'M', 'M', 'M', ..., 'M', 'M', 'F']
+</code></pre>
+
+<p>And change the whole column (or add a new one):</p>
+<pre><code class="python">legislators[&quot;gender&quot;] = [
+    &quot;male&quot; if gender == &quot;M&quot; else &quot;female&quot;
+    for gender in legislators[&quot;gender&quot;]
+]
+print(legislators[&quot;gender&quot;])
+# Result:
+#     ['male', 'male', 'male', ..., 'male', 'female']
+</code></pre>
+
+<p>Or delete it:</p>
+<pre><code class="python">print(&quot;gender&quot; in legislators.field_names)
+# Result: True
+del legislators[&quot;gender&quot;]
+print(&quot;gender&quot; in legislators.field_names)
+# Result: False
+print(legislators[0].gender)
+# Raises the exception:
+#     AttributeError: 'Row' object has no attribute 'gender'
+</code></pre>
+
+<p>Exercise: use <code>rows.import_from_html</code> to import <a href="http://www.worldometers.info/world-population/population-by-country/">population data from
+worldometers.com</a> (tip: you must run
+<code>pip install rows[html]</code> first to install the needed dependencies).</p>
+<h4 id="common-parameters">Common Parameters</h4>
+<p>Each plugin has its own parameters (like <code>index</code> in <code>import_from_html</code> and
+<code>sheet_name</code> in <code>import_from_xls</code>) but all plugins create a <code>rows.Table</code> object
+so they also have some common parameters you can pass to <code>import_from_X</code>. They
+are:</p>
+<ul>
+<li><code>fields</code>: an <code>OrderedDict</code> with field names and types (disable automatic
+  detection of types).</li>
+<li><code>force_types</code>: a <code>dict</code> mapping field names to field types you'd like to
+  force, so <code>rows</code> won't try to detect it. Example:
+  <code>{"population": rows.fields.IntegerField}</code>.</li>
+<li><code>skip_header</code>: Ignore header row. Only used if <code>fields</code> is not <code>None</code>.
+  Default: <code>True</code>.</li>
+<li><code>import_fields</code>: a <code>list</code> with field names to import (other fields will be
+  ignored) -- fields will be imported in this order.</li>
+<li><code>export_fields</code>: a <code>list</code> with field names to export (other fields will be
+  ignored) -- fields will be exported in this order.</li>
+<li><code>samples</code>: number of sample rows to use on field type autodetect algorithm.
+  Default: <code>None</code> (use all rows).</li>
+</ul>
+<h3 id="exporting-data">Exporting Data</h3>
+<p>If you have a <code>Table</code> object you can export it to all available plugins which
+have the "export" feature. Let's use the HTML plugin:</p>
+<pre><code class="python">rows.export_to_html(legislators, &quot;legislators.html&quot;)
+</code></pre>
+
+<p>And you'll get a file with the following contents:</p>
+<pre><code class="html">&lt;table&gt;
+
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt; title &lt;/th&gt;
+      &lt;th&gt; firstname &lt;/th&gt;
+      &lt;th&gt; middlename &lt;/th&gt;
+      &lt;th&gt; lastname &lt;/th&gt;
+      &lt;th&gt; name_suffix &lt;/th&gt;
+      &lt;th&gt; nickname &lt;/th&gt;
+[...]
+
+  &lt;/tbody&gt;
+
+&lt;/table&gt;
+</code></pre>
+
+<h4 id="exporting-to-memory">Exporting to memory</h4>
+<p>Some plugins don't require a filename to export to, so you can get the result
+as a string, for example:</p>
+<pre><code class="python">fields_to_export = (&quot;title&quot;, &quot;firstname&quot;, &quot;lastname&quot;, &quot;party&quot;)
+content = rows.export_to_txt(legislators, export_fields=fields_to_export)
+print(content)
+</code></pre>
+
+<p>The result will be:</p>
+<pre><code class="text">+-------+-------------+--------------------+-------+
+| title |  firstname  |      lastname      | party |
++-------+-------------+--------------------+-------+
+|   Sen |      Robert |               Byrd |     D |
+|   Rep |       Ralph |               Hall |     R |
+|   Sen |         Ted |            Stevens |     R |
+|   Sen |       Frank |         Lautenberg |     D |
+[...]
+|   Rep |       Aaron |             Schock |     R |
+|   Rep |        Matt |              Gaetz |     R |
+|   Rep |        Trey |      Hollingsworth |     R |
+|   Rep |        Mike |          Gallagher |     R |
+|   Rep |       Elise |           Stefanik |     R |
++-------+-------------+--------------------+-------+
+</code></pre>
+
+<p>The plugins <code>csv</code>, <code>json</code> and <code>html</code> have this behaviour.</p>
+<p>It makes sense on file-oriented formats to returned the data as output, but
+some plugins return different objects; on <code>sqlite</code> the returned object is
+a <code>sqlite3.Connection</code>, see:</p>
+<pre><code class="python">connection = rows.export_to_sqlite(legislators, &quot;:memory:&quot;)
+query = &quot;SELECT firstname, lastname FROM table1 WHERE birthdate &gt; 1980-01-01&quot;
+connection = rows.export_to_sqlite(legislators, &quot;:memory:&quot;)
+print(list(connection.execute(query).fetchall()))
+</code></pre>
+
+<p>You'll get the following output:</p>
+<pre><code class="text">[('Darren', 'Soto'), ('Adam', 'Kinzinger'), ('Ron', 'DeSantis'), (...)]
+</code></pre>
+
+<h5 id="using-file-and-connection-objects">Using file and connection objects</h5>
+<p>The majority of plugins also accept file-objects instead of filenames (for
+importing and also for exporting), for example:</p>
+<pre><code class="python">from io import BytesIO
+
+fobj = BytesIO()
+rows.export_to_csv(legislators, fobj)
+fobj.seek(0)  # You need to point the file cursor to the first position.
+print(fobj.read())
+</code></pre>
+
+<p>The following text will be printed:</p>
+<pre><code class="text">b&quot;title,firstname,lastname,party\r\nSen,Robert,Byrd,D\r\nRep,Ralph,Hall,R[...]&quot;
+</code></pre>
+
+<p>The same happens for <code>sqlite3.Connection</code> objects when importing:</p>
+<pre><code class="python"># Reuses the `connection` and `query` variables from the last sections' example
+table = rows.import_from_sqlite(connection, query=query)
+print(rows.export_to_txt(table))
+</code></pre>
+
+<p>The following output will be printed:</p>
+<pre><code class="text">+-----------+-----------------+
+| firstname |     lastname    |
++-----------+-----------------+
+|    Darren |            Soto |
+|      Adam |       Kinzinger |
+|       Ron |        DeSantis |
+| Stephanie |          Murphy |
+|      Seth |         Moulton |
+|     Jaime | Herrera Beutler |
+|      Pete |         Aguilar |
+|     Scott |          Taylor |
+|       Jim |           Banks |
+|     Ruben |         Gallego |
+|       Lee |          Zeldin |
+|    Carlos |         Curbelo |
+|    Justin |           Amash |
+|     Ruben |          Kihuen |
+|     Jason |           Smith |
+|     Brian |            Mast |
+|    Joseph |         Kennedy |
+|      Eric |        Swalwell |
+|     Tulsi |         Gabbard |
+|     Aaron |          Schock |
+|      Matt |           Gaetz |
+|      Trey |   Hollingsworth |
+|      Mike |       Gallagher |
+|     Elise |        Stefanik |
++-----------+-----------------+
+</code></pre>
+
+<h3 id="learn-more">Learn more</h3>
+<p>Now you have finished the quickstart guide. See the <a href="https://github.com/turicas/rows/tree/master/examples">examples</a>
+folder for more examples.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../installation/" class="btn btn-neutral float-right" title="Installation">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../basic-usage/" class="btn btn-neutral" title="Basic Usage"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/turicas/rows/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../basic-usage/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../installation/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

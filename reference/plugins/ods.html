@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>ods.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>ods.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Copyright 2014-2019 Álvaro Justen <a href="https://github.com/turicas/rows/">https://github.com/turicas/rows/</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">zipfile</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="kn">import</span> <span class="n">Decimal</span>
+
+<span class="kn">from</span> <span class="nn">lxml.etree</span> <span class="kn">import</span> <span class="n">fromstring</span> <span class="k">as</span> <span class="n">xml_from_string</span>
+<span class="kn">from</span> <span class="nn">lxml.etree</span> <span class="kn">import</span> <span class="n">tostring</span> <span class="k">as</span> <span class="n">xml_to_string</span>
+
+<span class="kn">from</span> <span class="nn">rows.plugins.utils</span> <span class="kn">import</span> <span class="n">create_table</span>
+<span class="kn">from</span> <span class="nn">rows.utils</span> <span class="kn">import</span> <span class="n">Source</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">xpath</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">xpath</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">xml_from_string</span><span class="p">(</span><span class="n">xml_to_string</span><span class="p">(</span><span class="n">element</span><span class="p">))</span><span class="o">.</span><span class="n">xpath</span><span class="p">(</span><span class="n">xpath</span><span class="p">,</span> <span class="n">namespaces</span><span class="o">=</span><span class="n">namespaces</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">attrib</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">cell</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="s2">&quot;{{</span><span class="si">{}</span><span class="s2">}}</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">name</span><span class="p">)]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">complete_with_None</span><span class="p">(</span><span class="n">lists</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">lists</span><span class="p">:</span>
+        <span class="n">element</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">size</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">element</span><span class="p">)))</span>
+        <span class="k">yield</span> <span class="n">element</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">sheet_names</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>TODO: setup/teardown must be methods of a class so we can reuse them</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">source</span> <span class="o">=</span> <span class="n">Source</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">plugin_name</span><span class="o">=</span><span class="s2">&quot;ods&quot;</span><span class="p">)</span>
+    <span class="n">ods_file</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="p">)</span>
+    <span class="n">content_fobj</span> <span class="o">=</span> <span class="n">ods_file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;content.xml&quot;</span><span class="p">)</span>
+    <span class="n">xml</span> <span class="o">=</span> <span class="n">content_fobj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>  <span class="c1"># will return bytes</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>TODO: read XML lazily?</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">content_fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">ods_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="n">document</span> <span class="o">=</span> <span class="n">xml_from_string</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span>
+    <span class="n">namespaces</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">nsmap</span>
+    <span class="n">spreadsheet</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">xpath</span><span class="p">(</span><span class="s2">&quot;//office:spreadsheet&quot;</span><span class="p">,</span> <span class="n">namespaces</span><span class="o">=</span><span class="n">namespaces</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">tables</span> <span class="o">=</span> <span class="n">xpath</span><span class="p">(</span><span class="n">spreadsheet</span><span class="p">,</span> <span class="s2">&quot;//table:table&quot;</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">)</span>
+    <span class="n">name_attribute</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="si">{</span><span class="n">namespaces</span><span class="p">[</span><span class="s1">&#39;table&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">}}</span><span class="s2">name&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      <p>TODO: unescape values</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">table</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="n">name_attribute</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">tables</span>
+    <span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">import_from_ods</span><span class="p">(</span>
+    <span class="n">filename_or_fobj</span><span class="p">,</span>
+    <span class="n">index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">start_row</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">start_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">end_row</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">end_column</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      <p>TODO: unescape values</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">source</span> <span class="o">=</span> <span class="n">Source</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">plugin_name</span><span class="o">=</span><span class="s2">&quot;ods&quot;</span><span class="p">)</span>
+
+    <span class="n">start_row</span> <span class="o">=</span> <span class="n">start_row</span> <span class="k">if</span> <span class="n">start_row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+    <span class="n">end_row</span> <span class="o">=</span> <span class="n">end_row</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">end_row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">start_column</span> <span class="o">=</span> <span class="n">start_column</span> <span class="k">if</span> <span class="n">start_column</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+    <span class="n">end_column</span> <span class="o">=</span> <span class="n">end_column</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">end_column</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="n">ods_file</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="p">)</span>
+    <span class="n">content_fobj</span> <span class="o">=</span> <span class="n">ods_file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;content.xml&quot;</span><span class="p">)</span>
+    <span class="n">xml</span> <span class="o">=</span> <span class="n">content_fobj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>  <span class="c1"># will return bytes</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      <p>TODO: read XML lazily?</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">content_fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">ods_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="n">document</span> <span class="o">=</span> <span class="n">xml_from_string</span><span class="p">(</span><span class="n">xml</span><span class="p">)</span>
+    <span class="n">namespaces</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">nsmap</span>
+    <span class="n">spreadsheet</span> <span class="o">=</span> <span class="n">document</span><span class="o">.</span><span class="n">xpath</span><span class="p">(</span><span class="s2">&quot;//office:spreadsheet&quot;</span><span class="p">,</span> <span class="n">namespaces</span><span class="o">=</span><span class="n">namespaces</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">tables</span> <span class="o">=</span> <span class="n">xpath</span><span class="p">(</span><span class="n">spreadsheet</span><span class="p">,</span> <span class="s2">&quot;//table:table&quot;</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">)</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">tables</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>  <span class="c1"># TODO: import spreadsheet by name</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">table_name</span> <span class="o">=</span> <span class="n">attrib</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">[</span><span class="s2">&quot;table&quot;</span><span class="p">],</span> <span class="s2">&quot;name&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">table_name</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">table_rows_obj</span> <span class="o">=</span> <span class="n">xpath</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="s2">&quot;//table:table-row&quot;</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">)</span>
+    <span class="n">table_rows</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">row_obj</span> <span class="ow">in</span> <span class="n">table_rows_obj</span><span class="p">:</span>
+        <span class="n">cells</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">xpath</span><span class="p">(</span><span class="n">row_obj</span><span class="p">,</span> <span class="s2">&quot;//table:table-cell&quot;</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">cells</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">getchildren</span><span class="p">():</span>
+            <span class="k">continue</span>  <span class="c1"># Empty line(s), ignore</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">row_started</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">:</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">getchildren</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">children</span><span class="p">:</span>
+                <span class="n">cell_value</span> <span class="o">=</span> <span class="kc">None</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      <p>TODO: check repeat</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">else</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <p>TODO: evalute &lsquo;boolean&rsquo; and &lsquo;time&rsquo; types</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                <span class="n">value_type</span> <span class="o">=</span> <span class="n">attrib</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">[</span><span class="s2">&quot;office&quot;</span><span class="p">],</span> <span class="s2">&quot;value-type&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">value_type</span> <span class="o">==</span> <span class="s2">&quot;date&quot;</span><span class="p">:</span>
+                    <span class="n">cell_value</span> <span class="o">=</span> <span class="n">attrib</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">[</span><span class="s2">&quot;office&quot;</span><span class="p">],</span> <span class="s2">&quot;date-value&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">value_type</span> <span class="o">==</span> <span class="s2">&quot;float&quot;</span><span class="p">:</span>
+                    <span class="n">cell_value</span> <span class="o">=</span> <span class="n">attrib</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">[</span><span class="s2">&quot;office&quot;</span><span class="p">],</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">value_type</span> <span class="o">==</span> <span class="s2">&quot;percentage&quot;</span><span class="p">:</span>
+                    <span class="n">cell_value</span> <span class="o">=</span> <span class="n">attrib</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">[</span><span class="s2">&quot;office&quot;</span><span class="p">],</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span>
+                    <span class="n">cell_value</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">cell_value</span><span class="p">)</span>
+                    <span class="n">cell_value</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{:%}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cell_value</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">value_type</span> <span class="o">==</span> <span class="s2">&quot;string&quot;</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      <p>get computed string (from formula, for example)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                        <span class="n">cell_value</span> <span class="o">=</span> <span class="n">attrib</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">[</span><span class="s2">&quot;office&quot;</span><span class="p">],</span> <span class="s2">&quot;string-value&quot;</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <p>computed string not present =&gt; get from <p>&hellip;</p></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                        <span class="n">cell_value</span> <span class="o">=</span> <span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># value_type == some type we don&#39;t know</span>
+                    <span class="n">cell_value</span> <span class="o">=</span> <span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">repeat</span> <span class="o">=</span> <span class="n">attrib</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">namespaces</span><span class="p">[</span><span class="s2">&quot;table&quot;</span><span class="p">],</span> <span class="s2">&quot;number-columns-repeated&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cell_value</span><span class="p">)</span>
+                <span class="n">row_started</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cell_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">cell_value</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">repeat</span><span class="p">))]</span>
+                <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">cell_data</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">set</span><span class="p">([</span><span class="kc">None</span><span class="p">])</span> <span class="ow">or</span> <span class="n">row_started</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      <p>This check will remove empty cells from the end</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                    <span class="n">row</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">cell_data</span><span class="p">)</span>
+                    <span class="n">row_started</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">row</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">row</span><span class="p">))[</span><span class="n">start_column</span><span class="p">:</span><span class="n">end_column</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">row</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">set</span><span class="p">([</span><span class="kc">None</span><span class="p">]):</span>
+            <span class="n">table_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+    <span class="n">table_rows</span> <span class="o">=</span> <span class="n">table_rows</span><span class="p">[</span><span class="n">start_row</span><span class="p">:</span><span class="n">end_row</span><span class="p">]</span>
+    <span class="n">max_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">table_rows</span><span class="p">)</span>
+    <span class="n">full_rows</span> <span class="o">=</span> <span class="n">complete_with_None</span><span class="p">(</span><span class="n">table_rows</span><span class="p">,</span> <span class="n">max_length</span><span class="p">)</span>
+    <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;imported_from&quot;</span><span class="p">:</span> <span class="s2">&quot;ods&quot;</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">table_name</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">create_table</span><span class="p">(</span><span class="n">full_rows</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

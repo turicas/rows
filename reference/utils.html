@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>utils.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>utils.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Copyright 2014-2020 Álvaro Justen <a href="https://github.com/turicas/rows/">https://github.com/turicas/rows/</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">cgi</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">mimetypes</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">shlex</span>
+<span class="kn">import</span> <span class="nn">sqlite3</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">islice</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">textwrap</span> <span class="kn">import</span> <span class="n">dedent</span>
+
+<span class="kn">import</span> <span class="nn">six</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">requests</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">requests</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">tqdm</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="kn">import</span> <span class="nn">rows</span>
+<span class="kn">from</span> <span class="nn">rows.plugins.utils</span> <span class="kn">import</span> <span class="n">make_header</span><span class="p">,</span> <span class="n">slug</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">lzma</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">lzma</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">bz2</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">bz2</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">urlparse</span> <span class="kn">import</span> <span class="n">urlparse</span>  <span class="c1"># Python 2</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">urlparse</span>  <span class="c1"># Python 3</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">magic</span>
+<span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+    <span class="n">magic</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">magic</span><span class="p">,</span> <span class="s2">&quot;detect_from_content&quot;</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>This is not the file-magic library</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">magic</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">if</span> <span class="n">requests</span><span class="p">:</span>
+    <span class="n">chardet</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">chardet</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">chardet</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">urllib3</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">requests.packages</span> <span class="kn">import</span> <span class="n">urllib3</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">urllib3</span><span class="o">.</span><span class="n">disable_warnings</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <p>old versions of urllib3 or requests</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">pass</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>TODO: should get this information from the plugins</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">COMPRESSED_EXTENSIONS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;gz&quot;</span><span class="p">,</span> <span class="s2">&quot;xz&quot;</span><span class="p">,</span> <span class="s2">&quot;bz2&quot;</span><span class="p">)</span>
+<span class="n">TEXT_PLAIN</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;txt&quot;</span><span class="p">:</span> <span class="s2">&quot;text/txt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;text/txt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;csv&quot;</span><span class="p">:</span> <span class="s2">&quot;text/csv&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;json&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">OCTET_STREAM</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;microsoft ooxml&quot;</span><span class="p">:</span> <span class="s2">&quot;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;par archive data&quot;</span><span class="p">:</span> <span class="s2">&quot;application/parquet&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">FILE_EXTENSIONS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;csv&quot;</span><span class="p">:</span> <span class="s2">&quot;text/csv&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-sqlite3&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;htm&quot;</span><span class="p">:</span> <span class="s2">&quot;text/html&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;html&quot;</span><span class="p">:</span> <span class="s2">&quot;text/html&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;json&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ods&quot;</span><span class="p">:</span> <span class="s2">&quot;application/vnd.oasis.opendocument.spreadsheet&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;parquet&quot;</span><span class="p">:</span> <span class="s2">&quot;application/parquet&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sqlite&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-sqlite3&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;text/txt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tsv&quot;</span><span class="p">:</span> <span class="s2">&quot;text/csv&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;txt&quot;</span><span class="p">:</span> <span class="s2">&quot;text/txt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;xls&quot;</span><span class="p">:</span> <span class="s2">&quot;application/vnd.ms-excel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;xlsx&quot;</span><span class="p">:</span> <span class="s2">&quot;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pdf&quot;</span><span class="p">:</span> <span class="s2">&quot;application/pdf&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">MIME_TYPE_TO_PLUGIN_NAME</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;application/json&quot;</span><span class="p">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;application/parquet&quot;</span><span class="p">:</span> <span class="s2">&quot;parquet&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;application/vnd.ms-excel&quot;</span><span class="p">:</span> <span class="s2">&quot;xls&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;application/vnd.oasis.opendocument.spreadsheet&quot;</span><span class="p">:</span> <span class="s2">&quot;ods&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet&quot;</span><span class="p">:</span> <span class="s2">&quot;xlsx&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;application/x-sqlite3&quot;</span><span class="p">:</span> <span class="s2">&quot;sqlite&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;text/csv&quot;</span><span class="p">:</span> <span class="s2">&quot;csv&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;text/html&quot;</span><span class="p">:</span> <span class="s2">&quot;html&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;text/txt&quot;</span><span class="p">:</span> <span class="s2">&quot;txt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;application/pdf&quot;</span><span class="p">:</span> <span class="s2">&quot;pdf&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">regexp_sizes</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;([0-9,.]+ [a-zA-Z]+B)&quot;</span><span class="p">)</span>
+<span class="n">MULTIPLIERS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;B&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;KiB&quot;</span><span class="p">:</span> <span class="mi">1024</span><span class="p">,</span> <span class="s2">&quot;MiB&quot;</span><span class="p">:</span> <span class="mi">1024</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;GiB&quot;</span><span class="p">:</span> <span class="mi">1024</span> <span class="o">**</span> <span class="mi">3</span><span class="p">}</span>
+<span class="n">POSTGRESQL_TYPES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">BinaryField</span><span class="p">:</span> <span class="s2">&quot;BYTEA&quot;</span><span class="p">,</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">BoolField</span><span class="p">:</span> <span class="s2">&quot;BOOLEAN&quot;</span><span class="p">,</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">DateField</span><span class="p">:</span> <span class="s2">&quot;DATE&quot;</span><span class="p">,</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">DatetimeField</span><span class="p">:</span> <span class="s2">&quot;TIMESTAMP(0) WITHOUT TIME ZONE&quot;</span><span class="p">,</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">DecimalField</span><span class="p">:</span> <span class="s2">&quot;NUMERIC&quot;</span><span class="p">,</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">FloatField</span><span class="p">:</span> <span class="s2">&quot;REAL&quot;</span><span class="p">,</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">:</span> <span class="s2">&quot;BIGINT&quot;</span><span class="p">,</span>  <span class="c1"># TODO: detect when it&#39;s really needed</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">JSONField</span><span class="p">:</span> <span class="s2">&quot;JSONB&quot;</span><span class="p">,</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">PercentField</span><span class="p">:</span> <span class="s2">&quot;REAL&quot;</span><span class="p">,</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">TextField</span><span class="p">:</span> <span class="s2">&quot;TEXT&quot;</span><span class="p">,</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">UUIDField</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">DEFAULT_POSTGRESQL_TYPE</span> <span class="o">=</span> <span class="s2">&quot;BYTEA&quot;</span>
+<span class="n">SQL_CREATE_TABLE</span> <span class="o">=</span> <span class="s2">&quot;CREATE </span><span class="si">{pre_table}</span><span class="s2">TABLE</span><span class="si">{post_table}</span><span class="s2"> &quot;</span> <span class="s1">&#39;&quot;</span><span class="si">{table_name}</span><span class="s1">&quot; (</span><span class="si">{field_types}</span><span class="s1">)&#39;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">ProgressBar</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">pre_prefix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot; rows&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="n">prefix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span>
+            <span class="n">desc</span><span class="o">=</span><span class="n">pre_prefix</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">total</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span> <span class="n">unit_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dynamic_ncols</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">started</span> <span class="o">=</span> <span class="kc">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>Create a <code>Source</code> from a filename or fobj</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">desc</span>
+
+    <span class="nd">@description</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">desc</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">total</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">total</span>
+
+    <span class="nd">@total</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">total</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">total</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">last_done</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">total_done</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">last_done</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">total_done</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either last_done or total_done must be specified&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">started</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">started</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">desc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">unpause</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">last_done</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">n</span> <span class="o">+=</span> <span class="n">last_done</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">total_done</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Source</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="s2">&quot;Define a source to import a `rows.Table`&quot;</span>
+
+    <span class="n">uri</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">)</span>
+    <span class="n">plugin_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">fobj</span><span class="p">:</span> <span class="nb">object</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">compressed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">should_delete</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">should_close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">is_file</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">local</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">filename_or_fobj</span><span class="p">,</span>
+        <span class="n">plugin_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span>
+        <span class="n">compressed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">should_delete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">should_close</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">is_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">local</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">Source</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">filename_or_fobj</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">binary_type</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">,</span> <span class="n">Path</span><span class="p">)):</span>
+            <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">filename_or_fobj</span>
+            <span class="n">should_close</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">should_close</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">should_close</span>
+
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Don&#39;t know exactly what is, assume file-like object</span>
+            <span class="n">fobj</span> <span class="o">=</span> <span class="n">filename_or_fobj</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">fobj</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">filename</span><span class="p">,</span> <span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">binary_type</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">)</span>
+            <span class="p">):</span>  <span class="c1"># BytesIO object</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">should_close</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="n">should_close</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">should_close</span>
+
+        <span class="k">if</span> <span class="n">is_file</span> <span class="ow">and</span> <span class="n">local</span> <span class="ow">and</span> <span class="n">filename</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">Path</span><span class="p">):</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Source</span><span class="p">(</span>
+            <span class="n">compressed</span><span class="o">=</span><span class="n">compressed</span><span class="p">,</span>
+            <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
+            <span class="n">fobj</span><span class="o">=</span><span class="n">fobj</span><span class="p">,</span>
+            <span class="n">is_file</span><span class="o">=</span><span class="n">is_file</span><span class="p">,</span>
+            <span class="n">local</span><span class="o">=</span><span class="n">local</span><span class="p">,</span>
+            <span class="n">plugin_name</span><span class="o">=</span><span class="n">plugin_name</span><span class="p">,</span>
+            <span class="n">should_close</span><span class="o">=</span><span class="n">should_close</span><span class="p">,</span>
+            <span class="n">should_delete</span><span class="o">=</span><span class="n">should_delete</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span>
+        <span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">plugin_name_by_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">):</span>
+    <span class="s2">&quot;Return the plugin name based on the URI&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      <p>TODO: parse URIs like &lsquo;sqlite://&rsquo; also
+TODO: integrate this function with detect_source</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">parsed</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">parsed</span><span class="o">.</span><span class="n">scheme</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">parsed</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="s2">&quot;sqlite&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;sqlite&quot;</span>
+        <span class="k">elif</span> <span class="n">parsed</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="s2">&quot;postgres&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;postgresql&quot;</span>
+
+    <span class="n">basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">parsed</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">basename</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Could not identify file format.&quot;</span><span class="p">)</span>
+
+    <span class="n">extension</span> <span class="o">=</span> <span class="n">basename</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">COMPRESSED_EXTENSIONS</span><span class="p">:</span>
+        <span class="n">extension</span> <span class="o">=</span> <span class="n">basename</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="n">plugin_name</span> <span class="o">=</span> <span class="n">extension</span>
+    <span class="k">if</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">FILE_EXTENSIONS</span><span class="p">:</span>
+        <span class="n">plugin_name</span> <span class="o">=</span> <span class="n">MIME_TYPE_TO_PLUGIN_NAME</span><span class="p">[</span><span class="n">FILE_EXTENSIONS</span><span class="p">[</span><span class="n">plugin_name</span><span class="p">]]</span>
+
+    <span class="k">return</span> <span class="n">plugin_name</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">extension_by_source</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">):</span>
+    <span class="s2">&quot;Return the file extension used by this plugin&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      <p>TODO: should get this information from the plugin</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">extension</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">plugin_name</span>
+    <span class="k">if</span> <span class="n">extension</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">extension</span>
+
+    <span class="k">if</span> <span class="n">mime_type</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mime_type</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">normalize_mime_type</span><span class="p">(</span><span class="n">mime_type</span><span class="p">,</span> <span class="n">mime_name</span><span class="p">,</span> <span class="n">file_extension</span><span class="p">):</span>
+
+    <span class="n">file_extension</span> <span class="o">=</span> <span class="n">file_extension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="n">file_extension</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">mime_name</span> <span class="o">=</span> <span class="n">mime_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="n">mime_name</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">mime_type</span> <span class="o">=</span> <span class="n">mime_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="n">mime_type</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">mime_type</span> <span class="o">==</span> <span class="s2">&quot;text/plain&quot;</span> <span class="ow">and</span> <span class="n">file_extension</span> <span class="ow">in</span> <span class="n">TEXT_PLAIN</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">TEXT_PLAIN</span><span class="p">[</span><span class="n">file_extension</span><span class="p">]</span>
+
+    <span class="k">elif</span> <span class="n">mime_type</span> <span class="o">==</span> <span class="s2">&quot;application/octet-stream&quot;</span> <span class="ow">and</span> <span class="n">mime_name</span> <span class="ow">in</span> <span class="n">OCTET_STREAM</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">OCTET_STREAM</span><span class="p">[</span><span class="n">mime_name</span><span class="p">]</span>
+
+    <span class="k">elif</span> <span class="n">file_extension</span> <span class="ow">in</span> <span class="n">FILE_EXTENSIONS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">FILE_EXTENSIONS</span><span class="p">[</span><span class="n">file_extension</span><span class="p">]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mime_type</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">plugin_name_by_mime_type</span><span class="p">(</span><span class="n">mime_type</span><span class="p">,</span> <span class="n">mime_name</span><span class="p">,</span> <span class="n">file_extension</span><span class="p">):</span>
+    <span class="s2">&quot;Return the plugin name based on the MIME type&quot;</span>
+
+    <span class="k">return</span> <span class="n">MIME_TYPE_TO_PLUGIN_NAME</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="n">normalize_mime_type</span><span class="p">(</span><span class="n">mime_type</span><span class="p">,</span> <span class="n">mime_name</span><span class="p">,</span> <span class="n">file_extension</span><span class="p">),</span> <span class="kc">None</span>
+    <span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">detect_local_source</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">mime_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      <p>TODO: may add sample_size</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+    <span class="n">extension</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">COMPRESSED_EXTENSIONS</span><span class="p">:</span>
+        <span class="n">extension</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">magic</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">detected</span> <span class="o">=</span> <span class="n">magic</span><span class="o">.</span><span class="n">detect_from_content</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">detected</span><span class="o">.</span><span class="n">encoding</span> <span class="ow">or</span> <span class="n">encoding</span>
+        <span class="n">mime_name</span> <span class="o">=</span> <span class="n">detected</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">mime_type</span> <span class="o">=</span> <span class="n">detected</span><span class="o">.</span><span class="n">mime_type</span> <span class="ow">or</span> <span class="n">mime_type</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">chardet</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">encoding</span><span class="p">:</span>
+            <span class="n">encoding</span> <span class="o">=</span> <span class="n">chardet</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">content</span><span class="p">)[</span><span class="s2">&quot;encoding&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">encoding</span>
+        <span class="n">mime_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">mime_type</span> <span class="o">=</span> <span class="n">mime_type</span> <span class="ow">or</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">guess_type</span><span class="p">(</span><span class="n">filename</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">plugin_name</span> <span class="o">=</span> <span class="n">plugin_name_by_mime_type</span><span class="p">(</span><span class="n">mime_type</span><span class="p">,</span> <span class="n">mime_name</span><span class="p">,</span> <span class="n">extension</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">encoding</span> <span class="o">==</span> <span class="s2">&quot;binary&quot;</span><span class="p">:</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">Source</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">plugin_name</span><span class="o">=</span><span class="n">plugin_name</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">local_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">sample_size</span><span class="o">=</span><span class="mi">1048576</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-23'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-23'>#</a>
+      </div>
+      <p>TODO: may change sample_size</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">COMPRESSED_EXTENSIONS</span><span class="p">:</span>
+        <span class="n">compressed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">sample_size</span><span class="p">)</span>
+        <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">compressed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fobj</span><span class="p">:</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">sample_size</span><span class="p">)</span>
+
+    <span class="n">source</span> <span class="o">=</span> <span class="n">detect_local_source</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">mime_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Source</span><span class="p">(</span>
+        <span class="n">uri</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+        <span class="n">plugin_name</span><span class="o">=</span><span class="n">source</span><span class="o">.</span><span class="n">plugin_name</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="o">=</span><span class="n">source</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span>
+        <span class="n">compressed</span><span class="o">=</span><span class="n">compressed</span><span class="p">,</span>
+        <span class="n">should_delete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">local</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-24'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-24'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">download_file</span><span class="p">(</span>
+    <span class="n">uri</span><span class="p">,</span>
+    <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">verify_ssl</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">detect</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span>
+    <span class="n">sample_size</span><span class="o">=</span><span class="mi">1048576</span><span class="p">,</span>
+<span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-25'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-25'>#</a>
+      </div>
+      <p>TODO: add ability to continue download</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="n">uri</span><span class="p">,</span>
+        <span class="n">verify</span><span class="o">=</span><span class="n">verify_ssl</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+        <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;user-agent&quot;</span><span class="p">:</span> <span class="s2">&quot;rows-</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rows</span><span class="o">.</span><span class="n">__version__</span><span class="p">)},</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">response</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;HTTP response: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-26'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-26'>#</a>
+      </div>
+      <p>Get data from headers (if available) to help plugin + encoding detection</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">real_filename</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">mime_type</span> <span class="o">=</span> <span class="n">uri</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span>
+    <span class="k">if</span> <span class="s2">&quot;content-type&quot;</span> <span class="ow">in</span> <span class="n">headers</span><span class="p">:</span>
+        <span class="n">mime_type</span><span class="p">,</span> <span class="n">options</span> <span class="o">=</span> <span class="n">cgi</span><span class="o">.</span><span class="n">parse_header</span><span class="p">(</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;content-type&quot;</span><span class="p">])</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;charset&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;content-disposition&quot;</span> <span class="ow">in</span> <span class="n">headers</span><span class="p">:</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">options</span> <span class="o">=</span> <span class="n">cgi</span><span class="o">.</span><span class="n">parse_header</span><span class="p">(</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;content-disposition&quot;</span><span class="p">])</span>
+        <span class="n">real_filename</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filename&quot;</span><span class="p">,</span> <span class="n">real_filename</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content-length&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">total</span><span class="p">)</span> <span class="k">if</span> <span class="n">total</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;Downloading file&quot;</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">total</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;bytes&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span>
+    <span class="n">sample_data</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">iter_content</span><span class="p">(</span><span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">):</span>
+        <span class="n">fobj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">detect</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_data</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">sample_size</span><span class="p">:</span>
+            <span class="n">sample_data</span> <span class="o">+=</span> <span class="n">data</span>
+        <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
+            <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
+        <span class="n">progress_bar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-27'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-27'>#</a>
+      </div>
+      <p>Detect file type and rename temporary file to have the correct extension</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">detect</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-28'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-28'>#</a>
+      </div>
+      <p>TODO: check if will work for compressed files</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">source</span> <span class="o">=</span> <span class="n">detect_local_source</span><span class="p">(</span><span class="n">real_filename</span><span class="p">,</span> <span class="n">sample_data</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
+        <span class="n">extension</span> <span class="o">=</span> <span class="n">extension_by_source</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">)</span>
+        <span class="n">plugin_name</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">plugin_name</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">encoding</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">extension</span><span class="p">,</span> <span class="n">plugin_name</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">mime_type</span><span class="p">:</span>
+            <span class="n">extension</span> <span class="o">=</span> <span class="n">mime_type</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">if</span> <span class="n">extension</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">+=</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">extension</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Source</span><span class="p">(</span>
+        <span class="n">uri</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span>
+        <span class="n">plugin_name</span><span class="o">=</span><span class="n">plugin_name</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
+        <span class="n">should_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">is_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">local</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-29'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-29'>#</a>
+      </div>
+      <p>Return a <code>rows.Source</code> with information for a given URI</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">detect_source</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span> <span class="n">verify_ssl</span><span class="p">,</span> <span class="n">progress</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-30'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-30'>#</a>
+      </div>
+      <p>If URI starts with &ldquo;http&rdquo; or &ldquo;https&rdquo; the file will be downloaded.</p>
+<p>This function should only be used if the URI already exists because it&rsquo;s
+going to download/open the file to detect its encoding and MIME type.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-31'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-31'>#</a>
+      </div>
+      <p>TODO: should also supporte other schemes, like file://, sqlite:// etc.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">uri</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;http://&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">uri</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;https://&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">download_file</span><span class="p">(</span>
+            <span class="n">uri</span><span class="p">,</span> <span class="n">verify_ssl</span><span class="o">=</span><span class="n">verify_ssl</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">,</span> <span class="n">detect</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">uri</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;postgres://&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Source</span><span class="p">(</span>
+            <span class="n">should_delete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">plugin_name</span><span class="o">=</span><span class="s2">&quot;postgresql&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">uri</span><span class="p">,</span>
+            <span class="n">is_file</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">local</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">local_file</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-32'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-32'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">import_from_source</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">default_encoding</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="s2">&quot;Import data described in a `rows.Source` into a `rows.Table`&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-33'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-33'>#</a>
+      </div>
+      <p>TODO: test open_compressed</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">plugin_name</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">plugin_name</span>
+    <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;encoding&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;encoding&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">source</span><span class="o">.</span><span class="n">encoding</span> <span class="ow">or</span> <span class="n">default_encoding</span>
+    <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">import_function</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="s2">&quot;import_from_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">plugin_name</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Plugin (import) &quot;</span><span class="si">{}</span><span class="s1">&quot; not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">plugin_name</span><span class="p">))</span>
+
+    <span class="n">table</span> <span class="o">=</span> <span class="n">import_function</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">table</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-34'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-34'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">import_from_uri</span><span class="p">(</span>
+    <span class="n">uri</span><span class="p">,</span> <span class="n">default_encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">verify_ssl</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+    <span class="s2">&quot;Given an URI, detects plugin and encoding and imports into a `rows.Table`&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-35'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-35'>#</a>
+      </div>
+      <p>TODO: support &lsquo;-&lsquo; also
+TODO: (optimization) if <code>kwargs.get('encoding', None) is not None</code> we can
+      skip encoding detection.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">source</span> <span class="o">=</span> <span class="n">detect_source</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span> <span class="n">verify_ssl</span><span class="o">=</span><span class="n">verify_ssl</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">import_from_source</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">default_encoding</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-36'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-36'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">export_to_uri</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="s2">&quot;Given a `rows.Table` and an URI, detects plugin (from URI) and exports&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-37'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-37'>#</a>
+      </div>
+      <p>TODO: support &lsquo;-&lsquo; also</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">plugin_name</span> <span class="o">=</span> <span class="n">plugin_name_by_uri</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">export_function</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="s2">&quot;export_to_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">plugin_name</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Plugin (export) &quot;</span><span class="si">{}</span><span class="s1">&quot; not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">plugin_name</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">export_function</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">uri</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-38'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-38'>#</a>
+      </div>
+      <p>Return a text-based file object from a filename, even if compressed</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">open_compressed</span><span class="p">(</span>
+    <span class="n">filename</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span>
+    <span class="n">buffering</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">errors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">newline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">closefd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">opener</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-39'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-39'>#</a>
+      </div>
+      <p>NOTE: if the file is compressed, options like <code>buffering</code> are valid to the
+compressed file-object (not the uncompressed file-object returned).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">binary_mode</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span> <span class="ow">in</span> <span class="n">mode</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">binary_mode</span> <span class="ow">and</span> <span class="s2">&quot;t&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mode</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-40'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-40'>#</a>
+      </div>
+      <p>For some reason, passing only mode=&rsquo;r&rsquo; to bzip2 is equivalent
+to &lsquo;rb&rsquo;, not &lsquo;rt&rsquo;, so we force it here.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">mode</span> <span class="o">+=</span> <span class="s2">&quot;t&quot;</span>
+    <span class="k">if</span> <span class="n">binary_mode</span> <span class="ow">and</span> <span class="n">encoding</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;encoding should not be specified in binary mode&quot;</span><span class="p">)</span>
+
+    <span class="n">extension</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">mode_binary</span> <span class="o">=</span> <span class="n">mode</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span>
+    <span class="n">get_fobj_binary</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="nb">open</span><span class="p">(</span>
+        <span class="n">filename</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="n">mode_binary</span><span class="p">,</span>
+        <span class="n">buffering</span><span class="o">=</span><span class="n">buffering</span><span class="p">,</span>
+        <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">,</span>
+        <span class="n">newline</span><span class="o">=</span><span class="n">newline</span><span class="p">,</span>
+        <span class="n">closefd</span><span class="o">=</span><span class="n">closefd</span><span class="p">,</span>
+        <span class="n">opener</span><span class="o">=</span><span class="n">opener</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">get_fobj_text</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="nb">open</span><span class="p">(</span>
+        <span class="n">filename</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+        <span class="n">buffering</span><span class="o">=</span><span class="n">buffering</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
+        <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">,</span>
+        <span class="n">newline</span><span class="o">=</span><span class="n">newline</span><span class="p">,</span>
+        <span class="n">closefd</span><span class="o">=</span><span class="n">closefd</span><span class="p">,</span>
+        <span class="n">opener</span><span class="o">=</span><span class="n">opener</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">known_extensions</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;xz&quot;</span><span class="p">,</span> <span class="s2">&quot;gz&quot;</span><span class="p">,</span> <span class="s2">&quot;bz2&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">extension</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known_extensions</span><span class="p">:</span>  <span class="c1"># No compression</span>
+        <span class="k">if</span> <span class="n">binary_mode</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">get_fobj_binary</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">get_fobj_text</span><span class="p">()</span>
+
+    <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;xz&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">lzma</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;lzma support is not installed&quot;</span><span class="p">)</span>
+        <span class="n">fobj_binary</span> <span class="o">=</span> <span class="n">lzma</span><span class="o">.</span><span class="n">LZMAFile</span><span class="p">(</span><span class="n">get_fobj_binary</span><span class="p">(),</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode_binary</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;gz&quot;</span><span class="p">:</span>
+        <span class="n">fobj_binary</span> <span class="o">=</span> <span class="n">gzip</span><span class="o">.</span><span class="n">GzipFile</span><span class="p">(</span><span class="n">fileobj</span><span class="o">=</span><span class="n">get_fobj_binary</span><span class="p">())</span>
+
+    <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;bz2&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">bz2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;bzip2 support is not installed&quot;</span><span class="p">)</span>
+        <span class="n">fobj_binary</span> <span class="o">=</span> <span class="n">bz2</span><span class="o">.</span><span class="n">BZ2File</span><span class="p">(</span><span class="n">get_fobj_binary</span><span class="p">(),</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode_binary</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">binary_mode</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">fobj_binary</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">io</span><span class="o">.</span><span class="n">TextIOWrapper</span><span class="p">(</span><span class="n">fobj_binary</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-41'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-41'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">csv_to_sqlite</span><span class="p">(</span>
+    <span class="n">input_filename</span><span class="p">,</span>
+    <span class="n">output_filename</span><span class="p">,</span>
+    <span class="n">samples</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">dialect</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+    <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">force_types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="o">=</span><span class="mi">8388608</span><span class="p">,</span>
+    <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;table1&quot;</span><span class="p">,</span>
+    <span class="n">schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="s2">&quot;Export a CSV file to SQLite, based on field type detection from samples&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-42'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-42'>#</a>
+      </div>
+      <p>TODO: automatically detect encoding if encoding == <code>None</code>
+TODO: should be able to specify fields
+TODO: if schema is provided and the names are in uppercase, this function
+      will fail</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">dialect</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Get a sample to detect dialect</span>
+        <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">input_filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+        <span class="n">sample</span> <span class="o">=</span> <span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
+        <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">dialect</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">plugins</span><span class="o">.</span><span class="n">csv</span><span class="o">.</span><span class="n">discover_dialect</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dialect</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">):</span>
+        <span class="n">dialect</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">get_dialect</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">schema</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Identify data types</span>
+        <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">input_filename</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">islice</span><span class="p">(</span><span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="n">fobj</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">),</span> <span class="n">samples</span><span class="p">))</span>
+        <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">import_from_dicts</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">fields</span>
+        <span class="k">if</span> <span class="n">force_types</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">schema</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">force_types</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-43'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-43'>#</a>
+      </div>
+      <p>Create lazy table object to be converted
+TODO: this lazyness feature will be incorported into the library soon so
+      we can call here <code>rows.import_from_csv</code> instead of <code>csv.reader</code>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">input_filename</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+    <span class="n">csv_reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">fobj</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">make_header</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">csv_reader</span><span class="p">))</span>  <span class="c1"># skip header</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">Table</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">([(</span><span class="n">field</span><span class="p">,</span> <span class="n">schema</span><span class="p">[</span><span class="n">field</span><span class="p">])</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">header</span><span class="p">]))</span>
+    <span class="n">table</span><span class="o">.</span><span class="n">_rows</span> <span class="o">=</span> <span class="n">csv_reader</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-44'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-44'>#</a>
+      </div>
+      <p>Export to SQLite</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">result</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">export_to_sqlite</span><span class="p">(</span>
+        <span class="n">table</span><span class="p">,</span>
+        <span class="n">output_filename</span><span class="p">,</span>
+        <span class="n">table_name</span><span class="o">=</span><span class="n">table_name</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+        <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">result</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-45'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-45'>#</a>
+      </div>
+      <p>Export a table inside a SQLite database to CSV</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">sqlite_to_csv</span><span class="p">(</span>
+    <span class="n">input_filename</span><span class="p">,</span>
+    <span class="n">table_name</span><span class="p">,</span>
+    <span class="n">output_filename</span><span class="p">,</span>
+    <span class="n">dialect</span><span class="o">=</span><span class="n">csv</span><span class="o">.</span><span class="n">excel</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+    <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">query</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-46'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-46'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-47'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-47'>#</a>
+      </div>
+      <p>TODO: should be able to specify fields
+TODO: should be able to specify custom query</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dialect</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">):</span>
+        <span class="n">dialect</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">get_dialect</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">query</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;SELECT * FROM </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">table_name</span><span class="p">)</span>
+    <span class="n">connection</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">input_filename</span><span class="p">)</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">cursor</span><span class="o">.</span><span class="n">description</span><span class="p">]</span>
+    <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">output_filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">fobj</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+    <span class="n">total_written</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">rows</span><span class="o">.</span><span class="n">plugins</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">ipartition</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">writerows</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+        <span class="n">written</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+        <span class="n">total_written</span> <span class="o">+=</span> <span class="n">written</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">written</span><span class="p">,</span> <span class="n">total_written</span><span class="p">)</span>
+    <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-48'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-48'>#</a>
+      </div>
+      <p>Lazy CSV dict writer, with compressed output option</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">CsvLazyDictWriter</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-49'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-49'>#</a>
+      </div>
+      <p>This class is almost the same as <code>csv.DictWriter</code> with the following
+differences:</p>
+<ul>
+<li>You don&rsquo;t need to pass <code>fieldnames</code> (it&rsquo;s extracted on the first
+  <code>.writerow</code> call);</li>
+<li>You can pass either a filename or a fobj (like <code>sys.stdout</code>);</li>
+<li>If passing a filename, it can end with <code>.gz</code>, <code>.xz</code> or <code>.bz2</code> and the
+  output file will be automatically compressed.</li>
+</ul>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-50'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-50'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename_or_fobj</span> <span class="o">=</span> <span class="n">filename_or_fobj</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">encoding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fobj</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer_args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer_kwargs</span><span class="p">[</span><span class="s2">&quot;lineterminator&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lineterminator&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-51'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-51'>#</a>
+      </div>
+      <p>TODO: check if it should be the same in other OSes</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-52'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-52'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-53'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-53'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-54'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-54'>#</a>
+      </div>
+      <p>Execute a command and return its output</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fobj</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fobj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fobj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename_or_fobj</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">encoding</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fobj</span>
+
+    <span class="k">def</span> <span class="nf">writerow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictWriter</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fobj</span><span class="p">,</span>
+                <span class="n">fieldnames</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+                <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">writer_args</span><span class="p">,</span>
+                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">writer_kwargs</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">writeheader</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">writerow</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">writerow</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fobj</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fobj</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">execute_command</span><span class="p">(</span><span class="n">command</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-55'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-55'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">command</span> <span class="o">=</span> <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+            <span class="n">command</span><span class="p">,</span>
+            <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+            <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+            <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Command not found: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">command</span><span class="p">)))</span>
+    <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-56'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-56'>#</a>
+      </div>
+      <p>TODO: may use another codec to decode</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">returncode</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">stderr</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Error executing command: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">stderr</span><span class="p">)))</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="n">process</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">process</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">data</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-57'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-57'>#</a>
+      </div>
+      <p>Return the uncompressed size for a file by executing commands</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">uncompressed_size</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-58'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-58'>#</a>
+      </div>
+      <p>Note: due to a limitation in gzip format, uncompressed files greather than
+4GiB will have a wrong value.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">quoted_filename</span> <span class="o">=</span> <span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-59'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-59'>#</a>
+      </div>
+      <p>TODO: get filetype from file-magic, if available</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.xz&quot;</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">execute_command</span><span class="p">(</span><span class="s1">&#39;xz --list &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">quoted_filename</span><span class="p">))</span>
+        <span class="n">compressed</span><span class="p">,</span> <span class="n">uncompressed</span> <span class="o">=</span> <span class="n">regexp_sizes</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="n">value</span><span class="p">,</span> <span class="n">unit</span> <span class="o">=</span> <span class="n">uncompressed</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span> <span class="o">*</span> <span class="n">MULTIPLIERS</span><span class="p">[</span><span class="n">unit</span><span class="p">])</span>
+
+    <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.gz&quot;</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-60'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-60'>#</a>
+      </div>
+      <p>XXX: gzip only uses 32 bits to store uncompressed size, so if the
+uncompressed size is greater than 4GiB, the value returned will be
+incorrect.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">output</span> <span class="o">=</span> <span class="n">execute_command</span><span class="p">(</span><span class="s1">&#39;gzip --list &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">quoted_filename</span><span class="p">))</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()]</span>
+        <span class="n">header</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">gzip_data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">gzip_data</span><span class="p">[</span><span class="s2">&quot;uncompressed&quot;</span><span class="p">])</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unrecognized file type for &quot;</span><span class="si">{}</span><span class="s1">&quot;.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-61'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-61'>#</a>
+      </div>
+      <p>TODO: move all PostgreSQL-related utils to rows/plugins/postgresql.py</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-62'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-62'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">get_psql_command</span><span class="p">(</span>
+    <span class="n">command</span><span class="p">,</span>
+    <span class="n">user</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">host</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">database_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">database_uri</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">database_uri</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">database_name</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Need to specify either `database_uri` or the complete information&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">database_uri</span> <span class="o">=</span> <span class="s2">&quot;postgres://</span><span class="si">{user}</span><span class="s2">:</span><span class="si">{password}</span><span class="s2">@</span><span class="si">{host}</span><span class="s2">:</span><span class="si">{port}</span><span class="s2">/</span><span class="si">{name}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">database_name</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="s2">&quot;psql -c </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">command</span><span class="p">),</span> <span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">database_uri</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-63'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-63'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">get_psql_copy_command</span><span class="p">(</span>
+    <span class="n">table_name_or_query</span><span class="p">,</span>
+    <span class="n">header</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+    <span class="n">user</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">host</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">database_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">database_uri</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">is_query</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">dialect</span><span class="o">=</span><span class="n">csv</span><span class="o">.</span><span class="n">excel</span><span class="p">,</span>
+    <span class="n">direction</span><span class="o">=</span><span class="s2">&quot;FROM&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+
+    <span class="n">direction</span> <span class="o">=</span> <span class="n">direction</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">direction</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;FROM&quot;</span><span class="p">,</span> <span class="s2">&quot;TO&quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;`direction` must be &quot;FROM&quot; or &quot;TO&quot;&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_query</span><span class="p">:</span>  <span class="c1"># Table name</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">table_name_or_query</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="n">table_name_or_query</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+    <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">slug</span><span class="p">(</span><span class="n">field_name</span><span class="p">)</span> <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">header</span><span class="p">)</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="s2">&quot;(</span><span class="si">{header}</span><span class="s2">) &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="n">header</span><span class="p">)</span>
+    <span class="n">copy</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">r</span><span class="s2">&quot;\copy </span><span class="si">{source}</span><span class="s2"> </span><span class="si">{header}{direction}</span><span class="s2"> STDIN WITH(&quot;</span>
+        <span class="s2">&quot;DELIMITER &#39;</span><span class="si">{delimiter}</span><span class="s2">&#39;, &quot;</span>
+        <span class="s2">&quot;QUOTE &#39;</span><span class="si">{quote}</span><span class="s2">&#39;, &quot;</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;FROM&quot;</span><span class="p">:</span>
+        <span class="n">copy</span> <span class="o">+=</span> <span class="s2">&quot;FORCE_NULL </span><span class="si">{header}</span><span class="s2">, &quot;</span>
+    <span class="n">copy</span> <span class="o">+=</span> <span class="s2">&quot;ENCODING &#39;</span><span class="si">{encoding}</span><span class="s2">&#39;, &quot;</span> <span class="s2">&quot;FORMAT CSV, HEADER);&quot;</span>
+
+    <span class="n">copy_command</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+        <span class="n">header</span><span class="o">=</span><span class="n">header</span><span class="p">,</span>
+        <span class="n">direction</span><span class="o">=</span><span class="n">direction</span><span class="p">,</span>
+        <span class="n">delimiter</span><span class="o">=</span><span class="n">dialect</span><span class="o">.</span><span class="n">delimiter</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&#39;&quot;</span><span class="p">),</span>
+        <span class="n">quote</span><span class="o">=</span><span class="n">dialect</span><span class="o">.</span><span class="n">quotechar</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&#39;&quot;</span><span class="p">),</span>
+        <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">get_psql_command</span><span class="p">(</span>
+        <span class="n">copy_command</span><span class="p">,</span>
+        <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
+        <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span>
+        <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
+        <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
+        <span class="n">database_name</span><span class="o">=</span><span class="n">database_name</span><span class="p">,</span>
+        <span class="n">database_uri</span><span class="o">=</span><span class="n">database_uri</span><span class="p">,</span>
+    <span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-64'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-64'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">pg_create_table_sql</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">table_name</span><span class="p">,</span> <span class="n">unlogged</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">field_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">field_types</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">POSTGRESQL_TYPES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">type_</span><span class="p">,</span> <span class="n">DEFAULT_POSTGRESQL_TYPE</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">type_</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">field_names</span><span class="p">,</span> <span class="n">field_types</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">SQL_CREATE_TABLE</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">pre_table</span><span class="o">=</span><span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">unlogged</span> <span class="k">else</span> <span class="s2">&quot;UNLOGGED &quot;</span><span class="p">,</span>
+        <span class="n">post_table</span><span class="o">=</span><span class="s2">&quot; IF NOT EXISTS&quot;</span><span class="p">,</span>
+        <span class="n">table_name</span><span class="o">=</span><span class="n">table_name</span><span class="p">,</span> <span class="n">field_types</span><span class="o">=</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">columns</span><span class="p">),</span>
+    <span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-65'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-65'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">pg_execute_psql</span><span class="p">(</span><span class="n">database_uri</span><span class="p">,</span> <span class="n">sql</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">execute_command</span><span class="p">(</span>
+        <span class="n">get_psql_command</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">database_uri</span><span class="o">=</span><span class="n">database_uri</span><span class="p">)</span>
+    <span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-66'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-66'>#</a>
+      </div>
+      <p>Import data from CSV into PostgreSQL using the fastest method</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">pgimport</span><span class="p">(</span>
+    <span class="n">filename</span><span class="p">,</span>
+    <span class="n">database_uri</span><span class="p">,</span>
+    <span class="n">table_name</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">dialect</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">create_table</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="o">=</span><span class="mi">8388608</span><span class="p">,</span>
+    <span class="n">max_samples</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">unlogged</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-67'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-67'>#</a>
+      </div>
+      <p>Required: psql command</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-68'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-68'>#</a>
+      </div>
+      <p>TODO: add option to run parallel COPY processes
+TODO: add logging to the process
+TODO: detect when error ocurred and interrupt the process immediatly</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">encoding</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+        <span class="n">sample_bytes</span> <span class="o">=</span> <span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
+        <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">detect_local_source</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">sample_bytes</span><span class="p">)</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">encoding</span>
+
+    <span class="n">pg_encoding</span> <span class="o">=</span> <span class="n">encoding</span>
+    <span class="k">if</span> <span class="n">pg_encoding</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;us-ascii&quot;</span><span class="p">,</span> <span class="s2">&quot;ascii&quot;</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-69'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-69'>#</a>
+      </div>
+      <p>TODO: convert all possible encodings</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">pg_encoding</span> <span class="o">=</span> <span class="s2">&quot;SQL_ASCII&quot;</span>
+
+    <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+    <span class="n">sample</span> <span class="o">=</span> <span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
+    <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">dialect</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Detect dialect</span>
+        <span class="n">dialect</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">plugins</span><span class="o">.</span><span class="n">csv</span><span class="o">.</span><span class="n">discover_dialect</span><span class="p">(</span>
+            <span class="n">sample</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dialect</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">):</span>
+        <span class="n">dialect</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">get_dialect</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-70'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-70'>#</a>
+      </div>
+      <p>TODO: add <code>else</code> to check if <code>dialect</code> is instace of correct class</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="n">sample</span><span class="p">),</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
+    <span class="n">csv_field_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">slug</span><span class="p">(</span><span class="n">field_name</span><span class="p">)</span> <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="nb">next</span><span class="p">(</span><span class="n">reader</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">schema</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">field_names</span> <span class="o">=</span> <span class="n">csv_field_names</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">field_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">csv_field_names</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">field_names</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;CSV field names are not a subset of schema field names&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">create_table</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-71'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-71'>#</a>
+      </div>
+      <p>If we need to create the table, it creates based on schema
+(automatically identified or forced), not on CSV directly (field
+order will be schema&rsquo;s field order).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="n">schema</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">detect_types</span><span class="p">(</span>
+                <span class="n">csv_field_names</span><span class="p">,</span>
+                <span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">max_samples</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">create_table_sql</span> <span class="o">=</span> <span class="n">pg_create_table_sql</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">table_name</span><span class="p">,</span> <span class="n">unlogged</span><span class="o">=</span><span class="n">unlogged</span><span class="p">)</span>
+        <span class="n">pg_execute_psql</span><span class="p">(</span><span class="n">database_uri</span><span class="p">,</span> <span class="n">create_table_sql</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-72'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-72'>#</a>
+      </div>
+      <p>Prepare the <code>psql</code> command to be executed based on collected metadata</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">command</span> <span class="o">=</span> <span class="n">get_psql_copy_command</span><span class="p">(</span>
+        <span class="n">database_uri</span><span class="o">=</span><span class="n">database_uri</span><span class="p">,</span>
+        <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span>
+        <span class="n">direction</span><span class="o">=</span><span class="s2">&quot;FROM&quot;</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="o">=</span><span class="n">pg_encoding</span><span class="p">,</span>
+        <span class="n">header</span><span class="o">=</span><span class="n">csv_field_names</span><span class="p">,</span>
+        <span class="n">table_name_or_query</span><span class="o">=</span><span class="n">table_name</span><span class="p">,</span>
+        <span class="n">is_query</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">rows_imported</span><span class="p">,</span> <span class="n">error</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+            <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">command</span><span class="p">),</span>
+            <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+            <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+            <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
+        <span class="n">total_written</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">data</span> <span class="o">!=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="n">written</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">total_written</span> <span class="o">+=</span> <span class="n">written</span>
+            <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">written</span><span class="p">,</span> <span class="n">total_written</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
+        <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">stderr</span> <span class="o">!=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stderr</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;NOTICE:&quot;</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">stderr</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+        <span class="n">rows_imported</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">stdout</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;COPY &quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Command `psql` not found&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">BrokenPipeError</span><span class="p">:</span>
+        <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">process</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;bytes_written&quot;</span><span class="p">:</span> <span class="n">total_written</span><span class="p">,</span> <span class="s2">&quot;rows_imported&quot;</span><span class="p">:</span> <span class="n">rows_imported</span><span class="p">}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-73'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-73'>#</a>
+      </div>
+      <p>Export data from PostgreSQL into a CSV file using the fastest method</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">pgexport</span><span class="p">(</span>
+    <span class="n">database_uri</span><span class="p">,</span>
+    <span class="n">table_name_or_query</span><span class="p">,</span>
+    <span class="n">filename</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+    <span class="n">dialect</span><span class="o">=</span><span class="n">csv</span><span class="o">.</span><span class="n">excel</span><span class="p">,</span>
+    <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">is_query</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="o">=</span><span class="mi">8388608</span><span class="p">,</span>
+<span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-74'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-74'>#</a>
+      </div>
+      <p>Required: psql command</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-75'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-75'>#</a>
+      </div>
+      <p>TODO: add logging to the process</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dialect</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">):</span>
+        <span class="n">dialect</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">get_dialect</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-76'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-76'>#</a>
+      </div>
+      <p>Prepare the <code>psql</code> command to be executed to export data</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">command</span> <span class="o">=</span> <span class="n">get_psql_copy_command</span><span class="p">(</span>
+        <span class="n">database_uri</span><span class="o">=</span><span class="n">database_uri</span><span class="p">,</span>
+        <span class="n">direction</span><span class="o">=</span><span class="s2">&quot;TO&quot;</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
+        <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Needed when direction = &#39;TO&#39;</span>
+        <span class="n">table_name_or_query</span><span class="o">=</span><span class="n">table_name_or_query</span><span class="p">,</span>
+        <span class="n">is_query</span><span class="o">=</span><span class="n">is_query</span><span class="p">,</span>
+        <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">fobj</span> <span class="o">=</span> <span class="n">open_compressed</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+            <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">command</span><span class="p">),</span>
+            <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+            <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+            <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">total_written</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">data</span> <span class="o">!=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="n">written</span> <span class="o">=</span> <span class="n">fobj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">total_written</span> <span class="o">+=</span> <span class="n">written</span>
+            <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">written</span><span class="p">,</span> <span class="n">total_written</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
+        <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">stderr</span> <span class="o">!=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">stderr</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Command `psql` not found&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">BrokenPipeError</span><span class="p">:</span>
+        <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">process</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;bytes_written&quot;</span><span class="p">:</span> <span class="n">total_written</span><span class="p">}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-77'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-77'>#</a>
+      </div>
+      <p>Generate table schema for a specific output format and write</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">generate_schema</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">export_fields</span><span class="p">,</span> <span class="n">output_format</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-78'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-78'>#</a>
+      </div>
+      <p>Current supported output formats: &lsquo;txt&rsquo;, &lsquo;sql&rsquo; and &lsquo;django&rsquo;.
+The table name and all fields names pass for a slugifying process (table
+name is taken from file name).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">output_format</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="s2">&quot;txt&quot;</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">rows</span> <span class="kn">import</span> <span class="n">plugins</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;field_name&quot;</span><span class="p">:</span> <span class="n">fieldname</span><span class="p">,</span>
+                <span class="s2">&quot;field_type&quot;</span><span class="p">:</span> <span class="n">fieldtype</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Field&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">fieldname</span><span class="p">,</span> <span class="n">fieldtype</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">fieldname</span> <span class="ow">in</span> <span class="n">export_fields</span>
+        <span class="p">]</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">dicts</span><span class="o">.</span><span class="n">import_from_dicts</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span> <span class="n">import_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;field_name&quot;</span><span class="p">,</span> <span class="s2">&quot;field_type&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">output_format</span> <span class="o">==</span> <span class="s2">&quot;txt&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">plugins</span><span class="o">.</span><span class="n">txt</span><span class="o">.</span><span class="n">export_to_txt</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">output_format</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">plugins</span><span class="o">.</span><span class="n">csv</span><span class="o">.</span><span class="n">export_to_csv</span><span class="p">(</span><span class="n">table</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">output_format</span> <span class="o">==</span> <span class="s2">&quot;sql&quot;</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-79'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-79'>#</a>
+      </div>
+      <p>TODO: may use dict from rows.plugins.sqlite or postgresql</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">sql_fields</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">BinaryField</span><span class="p">:</span> <span class="s2">&quot;BLOB&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">BoolField</span><span class="p">:</span> <span class="s2">&quot;BOOL&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">:</span> <span class="s2">&quot;INT&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">FloatField</span><span class="p">:</span> <span class="s2">&quot;FLOAT&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">PercentField</span><span class="p">:</span> <span class="s2">&quot;FLOAT&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">DateField</span><span class="p">:</span> <span class="s2">&quot;DATE&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">DatetimeField</span><span class="p">:</span> <span class="s2">&quot;DATETIME&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">TextField</span><span class="p">:</span> <span class="s2">&quot;TEXT&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">DecimalField</span><span class="p">:</span> <span class="s2">&quot;FLOAT&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">EmailField</span><span class="p">:</span> <span class="s2">&quot;TEXT&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">JSONField</span><span class="p">:</span> <span class="s2">&quot;TEXT&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;    </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">sql_fields</span><span class="p">[</span><span class="n">field_type</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_type</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">export_fields</span>
+        <span class="p">]</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dedent</span><span class="p">(</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-80'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-80'>#</a>
+      </div>
+      <p>CREATE TABLE IF NOT EXISTS {name} (
+{fields}
+);</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="p">)</span>
+            <span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">table</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="s2">&quot;,</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fields</span><span class="p">))</span>
+            <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">sql</span>
+
+    <span class="k">elif</span> <span class="n">output_format</span> <span class="o">==</span> <span class="s2">&quot;django&quot;</span><span class="p">:</span>
+        <span class="n">django_fields</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">BinaryField</span><span class="p">:</span> <span class="s2">&quot;BinaryField&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">BoolField</span><span class="p">:</span> <span class="s2">&quot;BooleanField&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">:</span> <span class="s2">&quot;IntegerField&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">FloatField</span><span class="p">:</span> <span class="s2">&quot;FloatField&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">PercentField</span><span class="p">:</span> <span class="s2">&quot;DecimalField&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">DateField</span><span class="p">:</span> <span class="s2">&quot;DateField&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">DatetimeField</span><span class="p">:</span> <span class="s2">&quot;DateTimeField&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">TextField</span><span class="p">:</span> <span class="s2">&quot;TextField&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">DecimalField</span><span class="p">:</span> <span class="s2">&quot;DecimalField&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">EmailField</span><span class="p">:</span> <span class="s2">&quot;EmailField&quot;</span><span class="p">,</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">JSONField</span><span class="p">:</span> <span class="s2">&quot;JSONField&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">table_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">))</span>
+
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;from django.db import models&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">JSONField</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">export_fields</span>
+        <span class="p">]:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;from django.contrib.postgres.fields import JSONField&quot;</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;class </span><span class="si">{}</span><span class="s2">(models.Model):&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">table_name</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_type</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">export_fields</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">field_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">JSONField</span><span class="p">:</span>
+                <span class="n">django_type</span> <span class="o">=</span> <span class="s2">&quot;models.</span><span class="si">{}</span><span class="s2">()&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">django_fields</span><span class="p">[</span><span class="n">field_type</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">django_type</span> <span class="o">=</span> <span class="s2">&quot;JSONField()&quot;</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">{}</span><span class="s2"> = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">django_type</span><span class="p">))</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">result</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-81'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-81'>#</a>
+      </div>
+      <p>Load schema from file in any of the supported formats</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">load_schema</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-82'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-82'>#</a>
+      </div>
+      <p>The table must have at least the fields <code>field_name</code> and <code>field_type</code>.
+<code>context</code> is a <code>dict</code> with field_type as key pointing to field class, like:
+    {&ldquo;text&rdquo;: rows.fields.TextField, &ldquo;value&rdquo;: MyCustomField}</p>
+<p>TODO: load_schema must support Path objects</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">table</span> <span class="o">=</span> <span class="n">import_from_uri</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">field_names</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">field_names</span>
+    <span class="k">assert</span> <span class="s2">&quot;field_name&quot;</span> <span class="ow">in</span> <span class="n">field_names</span>
+    <span class="k">assert</span> <span class="s2">&quot;field_type&quot;</span> <span class="ow">in</span> <span class="n">field_names</span>
+
+    <span class="n">context</span> <span class="o">=</span> <span class="n">context</span> <span class="ow">or</span> <span class="p">{</span>
+        <span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Field&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">rows</span><span class="o">.</span><span class="n">fields</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;Field&quot;</span> <span class="ow">in</span> <span class="n">key</span> <span class="ow">and</span> <span class="n">key</span> <span class="o">!=</span> <span class="s2">&quot;Field&quot;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="n">row</span><span class="o">.</span><span class="n">field_name</span><span class="p">,</span> <span class="n">context</span><span class="p">[</span><span class="n">row</span><span class="o">.</span><span class="n">field_type</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">table</span><span class="p">])</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-83'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-83'>#</a>
+      </div>
+      <p>Shortcuts</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">csv2sqlite</span> <span class="o">=</span> <span class="n">csv_to_sqlite</span>
+<span class="n">sqlite2csv</span> <span class="o">=</span> <span class="n">sqlite_to_csv</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

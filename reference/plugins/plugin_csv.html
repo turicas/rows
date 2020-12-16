@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>plugin_csv.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>plugin_csv.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Copyright 2014-2019 Álvaro Justen <a href="https://github.com/turicas/rows/">https://github.com/turicas/rows/</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="kn">import</span> <span class="nn">unicodecsv</span>
+
+<span class="kn">from</span> <span class="nn">rows.plugins.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">create_table</span><span class="p">,</span>
+    <span class="n">ipartition</span><span class="p">,</span>
+    <span class="n">serialize</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">rows.utils</span> <span class="kn">import</span> <span class="n">Source</span>
+
+<span class="n">sniffer</span> <span class="o">=</span> <span class="n">unicodecsv</span><span class="o">.</span><span class="n">Sniffer</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>Some CSV files have more than 128kB of data in a cell, so we force this value
+to be greater (16MB).
+TODO: check if it impacts in memory usage.
+TODO: may add option to change it by passing a parameter to import/export.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">unicodecsv</span><span class="o">.</span><span class="n">field_size_limit</span><span class="p">(</span><span class="mi">16777216</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">fix_dialect</span><span class="p">(</span><span class="n">dialect</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">dialect</span><span class="o">.</span><span class="n">doublequote</span> <span class="ow">and</span> <span class="n">dialect</span><span class="o">.</span><span class="n">escapechar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dialect</span><span class="o">.</span><span class="n">doublequote</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="n">dialect</span><span class="o">.</span><span class="n">quoting</span> <span class="o">==</span> <span class="n">unicodecsv</span><span class="o">.</span><span class="n">QUOTE_MINIMAL</span> <span class="ow">and</span> <span class="n">dialect</span><span class="o">.</span><span class="n">quotechar</span> <span class="o">==</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>Python csv&rsquo;s Sniffer seems to detect a wrong quotechar when
+quoting is minimal</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">dialect</span><span class="o">.</span><span class="n">quotechar</span> <span class="o">=</span> <span class="s1">&#39;&quot;&#39;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">excel_semicolon</span><span class="p">(</span><span class="n">unicodecsv</span><span class="o">.</span><span class="n">excel</span><span class="p">):</span>
+    <span class="n">delimiter</span> <span class="o">=</span> <span class="s1">&#39;;&#39;</span>
+
+<span class="n">unicodecsv</span><span class="o">.</span><span class="n">register_dialect</span><span class="p">(</span><span class="s2">&quot;excel-semicolon&quot;</span><span class="p">,</span> <span class="n">excel_semicolon</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="n">six</span><span class="o">.</span><span class="n">PY2</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>Discover a CSV dialect based on a sample size.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">discover_dialect</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">delimiters</span><span class="o">=</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;;&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;|&quot;</span><span class="p">)):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p><code>encoding</code> is not used (Python 2)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dialect</span> <span class="o">=</span> <span class="n">sniffer</span><span class="o">.</span><span class="n">sniff</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">delimiters</span><span class="o">=</span><span class="n">delimiters</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">unicodecsv</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>  <span class="c1"># Couldn&#39;t detect: fall back to &#39;excel&#39;</span>
+            <span class="n">dialect</span> <span class="o">=</span> <span class="n">unicodecsv</span><span class="o">.</span><span class="n">excel</span>
+
+        <span class="n">fix_dialect</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dialect</span>
+
+
+<span class="k">elif</span> <span class="n">six</span><span class="o">.</span><span class="n">PY3</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      <p>Discover a CSV dialect based on a sample size.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">discover_dialect</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">delimiters</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;;&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;|&quot;</span><span class="p">)):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p><code>sample</code> must be <code>bytes</code> and an `encoding must be provided (Python 3)</p>
+<p><code>csv.Sniffer.sniff</code> on Python 3 requires a <code>str</code> object. If we take a
+sample from the <code>bytes</code> object and it happens to end in the middle of
+a character which has more than one byte, we&rsquo;re going to have an
+<code>UnicodeDecodeError</code>. This <code>while</code> avoid this problem by removing the
+last byte until this error stops.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">finished</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">finished</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">decoded</span> <span class="o">=</span> <span class="n">sample</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">UnicodeDecodeError</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">error</span> <span class="o">=</span> <span class="n">exception</span><span class="o">.</span><span class="n">args</span>
+                <span class="k">if</span> <span class="n">error</span> <span class="o">==</span> <span class="s2">&quot;unexpected end of data&quot;</span> <span class="ow">and</span> <span class="n">pos</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">):</span>
+                    <span class="n">sample</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">finished</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dialect</span> <span class="o">=</span> <span class="n">sniffer</span><span class="o">.</span><span class="n">sniff</span><span class="p">(</span><span class="n">decoded</span><span class="p">,</span> <span class="n">delimiters</span><span class="o">=</span><span class="n">delimiters</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">unicodecsv</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>  <span class="c1"># Couldn&#39;t detect: fall back to &#39;excel&#39;</span>
+            <span class="n">dialect</span> <span class="o">=</span> <span class="n">unicodecsv</span><span class="o">.</span><span class="n">excel</span>
+
+        <span class="n">fix_dialect</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dialect</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      <p>Read <code>sample</code> bytes from <code>fobj</code> and return the cursor to where it was.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">read_sample</span><span class="p">(</span><span class="n">fobj</span><span class="p">,</span> <span class="n">sample</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">cursor</span> <span class="o">=</span> <span class="n">fobj</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+    <span class="n">fobj</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      <p>Import data from a CSV file (automatically detects dialect).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">import_from_csv</span><span class="p">(</span>
+    <span class="n">filename_or_fobj</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+    <span class="n">dialect</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">sample_size</span><span class="o">=</span><span class="mi">262144</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <p>If a file-like object is provided it MUST be in binary mode, like in
+<code>open(filename, mode='rb')</code>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">source</span> <span class="o">=</span> <span class="n">Source</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span>
+        <span class="n">filename_or_fobj</span><span class="p">,</span> <span class="n">plugin_name</span><span class="o">=</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">dialect</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dialect</span> <span class="o">=</span> <span class="n">discover_dialect</span><span class="p">(</span>
+            <span class="n">sample</span><span class="o">=</span><span class="n">read_sample</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="p">,</span> <span class="n">sample_size</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="n">source</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="p">)</span>
+
+    <span class="n">reader</span> <span class="o">=</span> <span class="n">unicodecsv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
+
+    <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;imported_from&quot;</span><span class="p">:</span> <span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">create_table</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      <p>Export a <code>rows.Table</code> to a CSV file.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">export_to_csv</span><span class="p">(</span>
+    <span class="n">table</span><span class="p">,</span>
+    <span class="n">filename_or_fobj</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+    <span class="n">dialect</span><span class="o">=</span><span class="n">unicodecsv</span><span class="o">.</span><span class="n">excel</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <p>If a file-like object is provided it MUST be in binary mode, like in
+<code>open(filename, mode='wb')</code>.
+If not filename/fobj is provided, the function returns a string with CSV
+contents.</p>
+<p>TODO: will work only if table.fields is OrderedDict
+TODO: should use fobj? What about creating a method like json.dumps?</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">return_data</span><span class="p">,</span> <span class="n">should_close</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">filename_or_fobj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">filename_or_fobj</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">()</span>
+        <span class="n">return_data</span> <span class="o">=</span> <span class="n">should_close</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">source</span> <span class="o">=</span> <span class="n">Source</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span>
+        <span class="n">filename_or_fobj</span><span class="p">,</span>
+        <span class="n">plugin_name</span><span class="o">=</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
+        <span class="n">should_close</span><span class="o">=</span><span class="n">should_close</span><span class="p">,</span>
+    <span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      <p>TODO: may use <code>io.BufferedWriter</code> instead of <code>ipartition</code> so user can
+choose the real size (in Bytes) when to flush to the file system, instead
+number of rows</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">writer</span> <span class="o">=</span> <span class="n">unicodecsv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">ipartition</span><span class="p">(</span><span class="n">serialize</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">writerows</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">serialized</span> <span class="o">=</span> <span class="n">serialize</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">serialized</span><span class="p">))</span>  <span class="c1"># First, write the header</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">ipartition</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">writerows</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+            <span class="n">total</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">total</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">return_data</span><span class="p">:</span>
+        <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">fobj</span>
+        <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">should_close</span><span class="p">:</span>
+        <span class="n">source</span><span class="o">.</span><span class="n">fobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">result</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

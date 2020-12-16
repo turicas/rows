@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Release notes - rows 0.4.1 documentation</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Release notes";
+    var mkdocs_page_input_path = "changelog.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> rows 0.4.1 documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <p class="caption"><span class="caption-text">First Steps</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../basic-usage/">Basic Usage</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../quick-start/">Quick Start Guide</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../license/">License</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Basic Concepts</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../plugins/">Plugins</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../operations/">Operations</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../cli/">Command-Line</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../locale/">Locale</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../links/">Going deeper</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                    </li>
+                </ul>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Release notes</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#semantic-versioning">Semantic Versioning</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-042dev0">Version 0.4.2dev0</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#general-changes-and-enhancements">General Changes and Enhancements</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#plugins">Plugins</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#command-line-interface">Command-Line Interface</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#utils">Utils</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#bug-fixes">Bug Fixes</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-041-bugfix-release">Version 0.4.1 (bugfix release)</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#general-changes-and-enhancements_1">General Changes and Enhancements</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#bug-fixes_1">Bug Fixes</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-040">Version 0.4.0</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#general-changes-and-enhancements_2">General Changes and Enhancements</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#plugins_1">Plugins</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#command-line-interface_1">Command-Line Interface</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#utils_1">Utils</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#bug-fixes_2">Bug Fixes</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-031">Version 0.3.1</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#enhancements">Enhancements</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#bug-fixes_3">Bug Fixes</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-030">Version 0.3.0</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#backwards-incompatible-changes">Backwards Incompatible Changes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#bug-fixes_4">Bug Fixes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#enhancements-and-refactorings">Enhancements and Refactorings</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#new-features">New Features</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-021">Version 0.2.1</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#backwards-incompatible-changes_1">Backwards Incompatible Changes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#bug-fixes_5">Bug Fixes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#enhancements-and-refactorings_1">Enhancements and Refactorings</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-020">Version 0.2.0</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#backwards-incompatible-changes_2">Backwards Incompatible Changes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#bug-fixes_6">Bug Fixes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#general-changes">General Changes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#tests">Tests</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#plugins_2">Plugins</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#utils_2">Utils</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#cli">CLI</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-011">Version 0.1.1</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#version-010">Version 0.1.0</a>
+    </li>
+    </ul>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">rows 0.4.1 documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Release notes</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/turicas/rows/edit/develop/docs/changelog.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="release-notes">Release notes</h2>
+<h3 id="semantic-versioning">Semantic Versioning</h3>
+<p><code>rows</code> uses [semantic versioning][semver]. Note that it means we do not
+guarantee API backwards compatibility on <code>0.x.y</code> versions (but we try the best
+to).</p>
+<h3 id="version-042dev0">Version <code>0.4.2dev0</code></h3>
+<p><strong>Released on: (in development)</strong></p>
+<h4 id="general-changes-and-enhancements">General Changes and Enhancements</h4>
+<ul>
+<li><code>export_to_html</code> is now available even if <code>lxml</code> is not installed</li>
+<li>Add Jupyter Notebook integration (implements <code>_repr_html_</code>, <code>.head</code> and
+  <code>.tail</code>)</li>
+<li>Fix code to remove some warnings</li>
+<li>Add support to read compressed files directly (like in
+  <code>rows.import_from_csv("filename.csv.gz")</code>)</li>
+<li><code>rows.Table</code> now returns a new table when sliced</li>
+<li>Remove functions <code>export_data</code> and <code>get_filename_and_fobj</code> (the new <code>Source</code>
+  implements the features better).</li>
+</ul>
+<h4 id="plugins">Plugins</h4>
+<ul>
+<li>Add param <code>max_rows</code> to <code>create_table</code> (import only part of a table, all
+  plugins are supported)</li>
+<li>Add <code>start_row</code>, <code>end_row</code>, <code>start_column</code> and <code>end_column</code> to ODS plugin</li>
+<li>Prevent <code>xlrd</code> (XLS plugin) from printing wrong sector size warning
+  ("<code>WARNING *** file size (551546) not 512 + multiple of sector size (512)</code>")</li>
+<li>Set <code>rows.Table</code> name (<code>table.meta["name"]</code>) for ODS, XLS and XLSX plugins</li>
+<li>Add option to set <code>&lt;caption&gt;</code> tag in <code>export_to_html</code></li>
+<li>Use correct table name when exporting to PostgreSQL</li>
+<li>Carefully close all fobjs in pgimport/pgexport</li>
+<li>Added CSV dialect "excel-semicolon"</li>
+<li>Improved PostgreSQL import from CSV (pgimport) when dealing with null values</li>
+<li>PDF now supports <code>page_numbers</code> as string (range of numbers)</li>
+<li>Add support to exporto to multiple sheets on the same XLSX file</li>
+</ul>
+<h4 id="command-line-interface">Command-Line Interface</h4>
+<ul>
+<li><code>rows schema</code> is now "lazy" (before it imported the whole file, even if
+  samples were defined)</li>
+<li>Add support for compressed files output on <code>rows pdf-to-text</code> and <code>rows schema</code></li>
+<li>HTTP cache is disabled by default (this may change in the future)</li>
+<li>Accept URI schemes in <code>rows convert</code></li>
+<li><code>rows convert</code> now supports compressed files</li>
+<li><code>rows pgexport</code> now accepts query instead of table name (useful for selecting
+  from a view since <code>\copy</code> cannot use a view but can use a query instead of a
+  table name).</li>
+<li>Detect input encoding whenever possible</li>
+<li>Add <code>--quiet</code> to some commands (fix <code>progress</code>)</li>
+<li>Add plugins' input/output options to <code>convert</code></li>
+<li>Add <code>rows csv-merge</code> (lazily merge CSV files even if they don't share a
+  common schema)</li>
+<li>Add <code>rows csv-clean</code> (lazily clean a CSV file, removing empty columns and
+  creating a consistent output format)</li>
+<li>Add <code>rows list-sheets</code> (prints sheet names for ODS, XLS and XLSX files)</li>
+</ul>
+<h4 id="utils">Utils</h4>
+<ul>
+<li>Add support for CSV format on schema export</li>
+<li>Use dataclasses to describe Source</li>
+<li><code>import_from_source</code> now supports compressed files (and so all CLI commands)</li>
+<li>Add support for passing a <code>context</code> to <code>load_schema</code></li>
+</ul>
+<h4 id="bug-fixes">Bug Fixes</h4>
+<ul>
+<li><a href="https://github.com/turicas/rows/issues/314">#314</a> rows pgimport fails if
+  using --schema</li>
+<li><a href="https://github.com/turicas/rows/issues/309">#309</a> Fix file-magic detection</li>
+<li><a href="https://github.com/turicas/rows/issues/320">#320</a> Get correct data if ODS
+  spreadsheet has empty cells</li>
+<li>Fix slug function (so <code>"a/b"</code> will turn into <code>"a_b"</code>)</li>
+<li>Detect as fallback type if all values are empty</li>
+<li>Fix output on <code>rows schema</code> (was printing to stdout even if output file is
+  provided)</li>
+<li>Fix <code>rows schema</code> (some output formats where not working properly)</li>
+</ul>
+<h3 id="version-041-bugfix-release">Version <code>0.4.1</code> (bugfix release)</h3>
+<p><strong>Released on: 2019-02-14</strong></p>
+<h4 id="general-changes-and-enhancements_1">General Changes and Enhancements</h4>
+<ul>
+<li>Add new way to make docs (remove sphinx and uses mkdocs + click-man + pycco)</li>
+<li>Update Dockerfile</li>
+</ul>
+<h4 id="bug-fixes_1">Bug Fixes</h4>
+<ul>
+<li><a href="https://github.com/turicas/rows/issues/305">#305</a> "0" was not being
+  deserialized by <code>IntegerField</code></li>
+</ul>
+<h3 id="version-040">Version <code>0.4.0</code></h3>
+<p><strong>Released on: 2019-02-09</strong></p>
+<h4 id="general-changes-and-enhancements_2">General Changes and Enhancements</h4>
+<ul>
+<li><a href="https://github.com/turicas/rows/issues/243">#243</a> Change license to LGPL3.0.</li>
+<li>Added official Python 3.6 support.</li>
+<li><code>Table.__add__</code> does not depend on table sizes anymore.</li>
+<li>Implemented <code>Table.__iadd__</code> (<code>table += other</code> will work).</li>
+<li><a href="https://github.com/turicas/rows/issues/234">#234</a> Remove <code>BinaryField</code> from
+  the default list of detection types.</li>
+</ul>
+<h4 id="plugins_1">Plugins</h4>
+<ul>
+<li><a href="https://github.com/turicas/rows/issues/224">#224</a> Add <code>|</code> as possible
+  delimiter (CSV dialect detection).</li>
+<li>Export CSV in batches.</li>
+<li>Change CSV dialect detection sample size to 256KiB.</li>
+<li><a href="https://github.com/turicas/rows/issues/225">#225</a> Create export callbacks
+  (CSV and SQLite plugins).</li>
+<li><a href="https://github.com/turicas/rows/pull/270">#270</a> Added options to export
+  pretty text table frames (TXT plugin).</li>
+<li><a href="https://github.com/turicas/rows/issues/274">#274</a> <code>start_row</code> and
+  <code>start_column</code> now behave the same way in XLS and XLSX (starting from 0).</li>
+<li><a href="https://github.com/turicas/rows/issues/261">#261</a> Add support to <code>end_row</code>
+  and <code>end_column</code> on XLS and XLSX (thanks
+  <a href="https://github.com/Lrcezimbra">@Lrcezimbra</a> for the suggestion).</li>
+<li><a href="https://github.com/turicas/rows/issues/4">#4</a> Add PostgreSQL plugin (thanks
+  to <a href="https://github.com/juliano777">@juliano777</a>).</li>
+<li><a href="https://github.com/turicas/rows/pull/290">#290</a> Fix percent formatting
+  reading on XLSX and ODS file formats (thanks to
+  <a href="https://github.com/jsbueno">@jsbueno</a>).</li>
+<li><a href="https://github.com/turicas/rows/issues/220">#220</a> Do not use
+  non-import_fields and force_types columns on type detection algorithm.</li>
+<li><a href="https://github.com/turicas/rows/issues/50">#50</a> Create PDF extraction plugin
+  with two backend libraries (<code>pymupdf</code> and <code>pdfminer.six</code>) and 3 table
+  extraction algorithms.</li>
+<li><a href="https://github.com/isses/294">#294</a> Decrease XLSX reading time (thanks to
+  <a href="https://github.com/israelst">@israelst</a>).</li>
+<li>Change to pure Python version of Apache Thrift library (parquet plugin)</li>
+<li><a href="https://github.com/turicas/rows/issues/299">@299</a> Change CSV field limit</li>
+</ul>
+<h4 id="command-line-interface_1">Command-Line Interface</h4>
+<ul>
+<li><a href="https://github.com/turicas/rows/issues/242">#242</a> Add
+  <code>--fields</code>/<code>--fields-exclude</code> to <code>convert</code>, <code>join</code> and <code>sum</code> (and rename
+  <code>--fields-exclude</code> on <code>print</code>), also remove <code>--fields</code> from <code>query</code> (is not
+  needed).</li>
+<li><a href="https://github.com/turicas/rows/issues/235">#235</a> Implement <code>--http-cache</code>
+  and <code>--http-cache-path</code>.</li>
+<li><a href="https://github.com/turicas/rows/issues/237">#237</a> Implement <code>rows schema</code>
+  (generates schema in text, SQL and Django models).</li>
+<li>Enable progress bar when downloading files.</li>
+<li>Create <code>pgimport</code> and <code>pgexport</code> commands.</li>
+<li>Create <code>csv-to-sqlite</code> and <code>sqlite-to-csv</code> commands.</li>
+<li>Create <code>pdf-to-text</code> command.</li>
+<li>Add shortcut for all command names: <code>2</code> can be used instead of <code>-to-</code> (so
+  <code>rows pdf2text</code> is a shortcut to <code>rows pdf-to-text</code>).</li>
+</ul>
+<h4 id="utils_1">Utils</h4>
+<ul>
+<li>Create <code>utils.open_compressed</code> helper function: can read/write files,
+  automatically dealing with on-the-fly compression.</li>
+<li>Add progress bar support to <code>utils.download_file</code> (thanks to <code>tqdm</code> library).</li>
+<li>Add helper class <code>utils.CsvLazyDictWriter</code> (write as <code>dict</code>s without needing
+  to pass the keys in advance).</li>
+<li>Add <code>utils.pgimport</code> and <code>utils.pgexport</code> functions.</li>
+<li>Add <code>utils.csv2sqlite</code> and <code>utils.sqlite2csv</code> functions.</li>
+</ul>
+<h4 id="bug-fixes_2">Bug Fixes</h4>
+<ul>
+<li><a href="https://github.com/turicas/rows/issues/223">#223</a> <code>UnicodeDecodeError</code> on
+  dialect detection.</li>
+<li><a href="https://github.com/turicas/rows/issues/214">#214</a> Problem detecting dialect.</li>
+<li><a href="https://github.com/turicas/rows/issues/181">#181</a> Create slugs inside
+  <code>Table.__init__</code>.</li>
+<li><a href="https://github.com/turicas/rows/issues/221">#221</a> Error on <code>pip install rows</code>.</li>
+<li><a href="https://github.com/turicas/rows/issues/238">#238</a> <code>import_from_dicts</code>
+  supports generator as input</li>
+<li><a href="https://github.com/turicas/rows/issues/239">#239</a> Use correct field ordering</li>
+<li><a href="https://github.com/turicas/rows/issues/302">#299</a> Integer field detected for
+  numbers started with zero</li>
+</ul>
+<h3 id="version-031">Version <code>0.3.1</code></h3>
+<p><strong>Released on: 2017-05-08</strong></p>
+<h4 id="enhancements">Enhancements</h4>
+<ul>
+<li>Move information on README to a site, organize and add more examples.
+  Documentation is available at <a href="http://turicas.info/rows">turicas.info/rows</a>.
+  Thanks to <a href="https://github.com/ellisonleao">@ellisonleao</a> for Sphinx
+  implementation and <a href="https://github.com/ramiroluz">@ramiroluz</a> for new
+  examples.</li>
+<li>Little code refactorings.</li>
+</ul>
+<h4 id="bug-fixes_3">Bug Fixes</h4>
+<ul>
+<li><a href="https://github.com/turicas/rows/pull/200">#200</a> Escape output when exporting
+  to HTML (thanks to <a href="https://github.com/arloc">@arloc</a>)</li>
+<li>Fix some tests</li>
+<li><a href="https://github.com/turicas/rows/issues/215">#215</a> DecimalField does not
+  handle negative values correctly if using locale (thanks to
+  <a href="https://github.com/draug3n">@draug3n</a> for reporting)</li>
+</ul>
+<h3 id="version-030">Version <code>0.3.0</code></h3>
+<p><strong>Released on: 2016-09-02</strong></p>
+<h4 id="backwards-incompatible-changes">Backwards Incompatible Changes</h4>
+<h4 id="bug-fixes_4">Bug Fixes</h4>
+<ul>
+<li>Return <code>None</code> on XLS blank cells;</li>
+<li><a href="https://github.com/turicas/rows/issues/188">#188</a> Change <code>sample_size</code> on
+  encoding detection.</li>
+</ul>
+<h4 id="enhancements-and-refactorings">Enhancements and Refactorings</h4>
+<ul>
+<li><code>rows.fields.detect_fields</code> will consider <code>BinaryField</code> if all the values are
+  <code>str</code> (Python 2)/<code>bytes</code> (Python 3) and all other fields will work only with
+  <code>unicode</code> (Python 2)/<code>str</code> (Python 3);</li>
+<li>Plugins HTML and XPath now uses a better way to return inner HTML (when
+  <code>preserve_html=True</code>);</li>
+<li><a href="https://github.com/turicas/rows/issues/189">#189</a> Optimize <code>Table.__add__</code>.</li>
+</ul>
+<h4 id="new-features">New Features</h4>
+<ul>
+<li>Support for Python 3 (finally!);</li>
+<li><code>rows.fields.BinaryField</code> now automatically uses base64 to encode/decode;</li>
+<li>Added <code>encoding</code> information to <code>rows.Table</code> metadata in text plugins;</li>
+<li>Added <code>sheet_name</code> information to <code>rows.Table</code> metadata in XLS and XLSX
+  plugins;</li>
+<li><a href="https://github.com/turicas/rows/issues/190">#190</a> Add <code>query_args</code> to
+  <code>import_from_sqlite</code>;</li>
+<li><a href="https://github.com/turicas/rows/issues/177">#177</a> Add <code>dialect</code> to
+  <code>export_to_csv</code>.</li>
+</ul>
+<h3 id="version-021">Version <code>0.2.1</code></h3>
+<p><strong>Released on: 2016-08-10</strong></p>
+<h4 id="backwards-incompatible-changes_1">Backwards Incompatible Changes</h4>
+<ul>
+<li><code>rows.utils.export_to_uri</code> signature is now like <code>rows.export_to_*</code> (first
+  the <code>rows.Table</code> object, then the URI)</li>
+<li>Changed default table name in <code>import_from_sqlite</code> and <code>export_to_sqlite</code>
+  (from <code>rows</code> and <code>rows_{number}</code> to <code>table{number}</code>)</li>
+</ul>
+<h4 id="bug-fixes_5">Bug Fixes</h4>
+<ul>
+<li><a href="https://github.com/turicas/rows/issues/170">#170</a> (SQLite plugin) Error
+  converting <code>int</code> and <code>float</code> when value is <code>None</code>.</li>
+<li><a href="https://github.com/turicas/rows/issues/168">#168</a> Use <code>Field.serialize</code>
+  if does not know the field type (affecting: XLS, XLSX and SQLite plugins).</li>
+<li><a href="https://github.com/turicas/rows/issues/167">#167</a> Use more data to detect
+  dialect, delimit the possible delimiters and fallback to excel if can't
+  detect.</li>
+<li><a href="https://github.com/turicas/rows/issues/176">#176</a> Problem using quotes on
+  CSV plugin.</li>
+<li><a href="https://github.com/turicas/rows/issues/179">#179</a> Fix double underscore
+  problem on <code>rows.utils.slug</code></li>
+<li><a href="https://github.com/turicas/rows/issues/175">#175</a> Fix <code>None</code>
+  serialization/deserialization in all plugins (and also field types)</li>
+<li><a href="https://github.com/turicas/rows/issues/172">#172</a> Expose all tables in <code>rows
+  query</code> for SQLite databases</li>
+<li>Fix <code>examples/cli/convert.sh</code> (missing <code>-</code>)</li>
+<li>Avoids SQL injection in table name</li>
+</ul>
+<h4 id="enhancements-and-refactorings_1">Enhancements and Refactorings</h4>
+<ul>
+<li>Refactor <code>rows.utils.import_from_uri</code></li>
+<li>Encoding and file type are better detected on <code>rows.utils.import_from_uri</code></li>
+<li>Added helper functions to <code>rows.utils</code> regarding encoding and file
+  type/plugin detection</li>
+<li>There's a better description of plugin metadata (MIME types accepted) on
+  <code>rows.utils</code> (should be refactored to be inside each plugin)</li>
+<li>Moved <code>slug</code> and <code>ipartition</code> functions to <code>rows.plugins.utils</code></li>
+<li>Optimize <code>rows query</code> when using only one SQLite source</li>
+</ul>
+<h3 id="version-020">Version <code>0.2.0</code></h3>
+<p><strong>Released on: 2016-07-15</strong></p>
+<h4 id="backwards-incompatible-changes_2">Backwards Incompatible Changes</h4>
+<ul>
+<li><code>rows.fields.UnicodeField</code> was renamed to <code>rows.fields.TextField</code></li>
+<li><code>rows.fields.BytesField</code> was renamed to <code>rows.fields.BinaryField</code></li>
+</ul>
+<h4 id="bug-fixes_6">Bug Fixes</h4>
+<ul>
+<li>Fix import errors on older versions of urllib3 and Python (thanks to
+  <a href="https://github.com/jeanferri">@jeanferri</a>)</li>
+<li><a href="https://github.com/turicas/rows/issues/156">#156</a> <code>BoolField</code> should not
+  accept "0" and "1" as possible values</li>
+<li><a href="https://github.com/turicas/rows/issues/86">#86</a> Fix <code>Content-Type</code> parsing</li>
+<li>Fix locale-related tests</li>
+<li><a href="https://github.com/turicas/rows/issues/85">#85</a> Fix <code>preserve_html</code> if
+  <code>fields</code> is not provided</li>
+<li>Fix problem with big integers</li>
+<li><a href="https://github.com/turicas/rows/issues/131">#131</a> Fix problem when empty
+  sample data</li>
+<li>Fix problem with <code>unicode</code> and <code>DateField</code></li>
+<li>Fix <code>PercentField.serialize(None)</code></li>
+<li>Fix bug with <code>Decimal</code> receiving <code>''</code></li>
+<li>Fix bug in <code>PercentField.serialize(Decimal('0'))</code></li>
+<li>Fix nested table behaviour on HTML plugin</li>
+</ul>
+<h4 id="general-changes">General Changes</h4>
+<ul>
+<li>(EXPERIMENTAL) Add <code>rows.FlexibleTable</code> class (with help on tests from
+  <a href="https://github.com/maurobaraldi">@maurobaraildi</a>)</li>
+<li>Lots of refactorings</li>
+<li>Add <code>rows.operations.transpose</code></li>
+<li>Add <code>Table.__repr__</code></li>
+<li>Renamte <code>rows.fields.UnicodeField</code> to <code>rows.fields.TextField</code> and
+  <code>rows.fields.ByteField</code> to <code>rows.fields.BinaryField</code></li>
+<li>Add a man page (thanks to <a href="https://github.com/kretcheu">@kretcheu</a>)</li>
+<li><a href="https://github.com/turicas/rows/issues/40">#40</a> The package is available on
+  Debian!</li>
+<li><a href="https://github.com/turicas/rows/issues/120">#120</a> The package is available
+  on Fedora!</li>
+<li>Add some examples</li>
+<li><a href="https://github.com/turicas/rows/issues/138">#138</a> Add
+  <code>rows.fields.JSONField</code></li>
+<li><a href="https://github.com/turicas/rows/issues/146">#146</a> Add
+  <code>rows.fields.EmailField</code></li>
+<li>Enhance encoding detection using
+  <a href="https://pypi.python.org/pypi/file-magic">file-magic</a> library</li>
+<li><a href="https://github.com/turicas/rows/issues/160">#160</a> Add
+  support for column get/set/del in <code>rows.Table</code></li>
+</ul>
+<h4 id="tests">Tests</h4>
+<ul>
+<li>Fix "\r\n" on tests to work on Windows</li>
+<li>Enhance tests with <code>mock</code> to assure some functions are being called</li>
+<li>Improve some tests</li>
+</ul>
+<h4 id="plugins_2">Plugins</h4>
+<ul>
+<li>Add plugin JSON (thanks <a href="https://github.com/sxslex">@sxslex</a>)</li>
+<li><a href="https://github.com/turicas/rows/issues/107">#107</a> Add <code>import_from_txt</code></li>
+<li><a href="https://github.com/turicas/rows/issues/149">#149</a> Add <code>import_from_xpath</code></li>
+<li>(EXPERIMENTAL) Add <code>import_from_ods</code></li>
+<li>(EXPERIMENTAL) Add <code>import_from_parquet</code></li>
+<li>Add <code>import_from_sqlite</code> and <code>export_to_sqlite</code> (implemented by
+  <a href="https://github.com/turicas">@turicas</a> with help from
+  <a href="https://github.com/infog">@infog</a>)</li>
+<li>Add <code>import_from_xlsx</code> and <code>export_to_xlsx</code> (thanks to
+  <a href="https://github.com/turicas/RhenanBartels">@RhenanBartels</a>)</li>
+<li>Autodetect delimiter in CSV files</li>
+<li>Export to TXT, JSON and XLS also support an already opened file and CSV can
+  export to memory (thanks to <a href="https://github.com/jeanferri">@jeanferri</a>)</li>
+<li><a href="https://github.com/turicas/rows/issues/93">#93</a> Add HTML helpers inside
+  <code>rows.plugins.html</code>: <code>count_tables</code>, <code>extract_text</code>, <code>extract_links</code> and
+  <code>tag_to_dict</code></li>
+<li><a href="https://github.com/turicas/rows/issues/162">#162</a> Add <code>import_from_dicts</code>
+  and <code>export_to_dicts</code></li>
+<li>Refactor <code>export_to_txt</code></li>
+</ul>
+<h4 id="utils_2">Utils</h4>
+<ul>
+<li>Create <code>rows.plugins.utils</code></li>
+<li><a href="https://github.com/turicas/rows/issues/119">#119</a> Rename field name if name
+  is duplicated (to "field_2", "field_3", ..., "field_N") or if starts with a
+  number.</li>
+<li>Add option to import only some fields (<code>import_fields</code> parameter inside
+  <code>create_table</code>)</li>
+<li>Add option to export only some fields (<code>export_fields</code> parameter inside
+  <code>prepare_to_export</code>)</li>
+<li>Add option <code>force_types</code> to force field types in some columns (instead of
+  detecting) on <code>create_table</code>.</li>
+<li>Support lazy objects on <code>create_table</code></li>
+<li>Add <code>samples</code> parameter to <code>create_table</code></li>
+</ul>
+<h4 id="cli">CLI</h4>
+<ul>
+<li>Add option to disable SSL verification (<code>--verify-ssl=no</code>)</li>
+<li>Add <code>print</code> command</li>
+<li>Add <code>--version</code></li>
+<li>CLI is not installed by default (should be installed as
+  <code>pip install rows[cli]</code>)</li>
+<li>Automatically detect default encoding (if not specified)</li>
+<li>Add <code>--order-by</code> to some commands and remove <code>sort</code> command. #111</li>
+<li>Do not use locale by default</li>
+<li>Add <code>query</code> command: converts (from many sources) internally to SQLite,
+  execute the query and then export</li>
+</ul>
+<h3 id="version-011">Version <code>0.1.1</code></h3>
+<p><strong>Released on: 2015-09-03</strong></p>
+<ul>
+<li>Fix code to run on Windows (thanks <a href="https://github.com/sxslex">@sxslex</a>)</li>
+<li>Fix locale (name, default name etc.)</li>
+<li>Remove <code>filemagic</code> dependency (waiting for <code>python-magic</code> to be available on
+  PyPI)</li>
+<li>Write log of changes for <code>0.1.0</code> and <code>0.1.1</code></li>
+</ul>
+<h3 id="version-010">Version <code>0.1.0</code></h3>
+<p><strong>Released on: 2015-08-29</strong></p>
+<ul>
+<li>Implement <code>Table</code> and its basic methods</li>
+<li>Implement basic plugin support with many utilities and the following formats:</li>
+<li><code>csv</code> (input/output)</li>
+<li><code>html</code> (input/output)</li>
+<li><code>txt</code> (output)</li>
+<li><code>xls</code> (input/output)</li>
+<li>Implement the following field types - many of them with locale support:</li>
+<li><code>ByteField</code></li>
+<li><code>BoolField</code></li>
+<li><code>IntegerField</code></li>
+<li><code>FloatField</code></li>
+<li><code>DecimalField</code></li>
+<li><code>PercentField</code></li>
+<li><code>DateField</code></li>
+<li><code>DatetimeField</code></li>
+<li><code>UnicodeField</code></li>
+<li>Implement basic <code>Table</code> operations:</li>
+<li><code>sum</code></li>
+<li><code>join</code></li>
+<li><code>transform</code></li>
+<li><code>serialize</code></li>
+<li>Implement a command-line interface with the following commands:</li>
+<li><code>convert</code></li>
+<li><code>join</code></li>
+<li><code>sort</code></li>
+<li><code>sum</code></li>
+<li>Add examples to the repository</li>
+</ul>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="../contributing/" class="btn btn-neutral" title="Contributing"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/turicas/rows/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../contributing/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

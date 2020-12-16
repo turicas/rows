@@ -1,0 +1,39 @@
+.TH "ROWS QUERY" "1" "2020-12-16" "-0.4.2-dev-eaa8b1ac-" "rows query Manual"
+.SH NAME
+rows\-query \- Query a table using SQL
+.SH SYNOPSIS
+.B rows query
+[OPTIONS] QUERY SOURCES...
+.SH DESCRIPTION
+Query a table using SQL
+.SH OPTIONS
+.TP
+\fB\-\-input\-encoding\fP TEXT
+.PP
+.TP
+\fB\-\-output\-encoding\fP TEXT
+.PP
+.TP
+\fB\-\-input\-locale\fP TEXT
+.PP
+.TP
+\fB\-\-output\-locale\fP TEXT
+.PP
+.TP
+\fB\-\-verify\-ssl\fP BOOLEAN
+.PP
+.TP
+\fB\-\-samples\fP INTEGER
+Number of rows to determine the field types (0 = all)
+.TP
+\fB\-i,\fP \-\-input\-option TEXT
+Custom (import) plugin key=value custom option (can be specified multiple times)
+.TP
+\fB\-\-output\fP TEXT
+.PP
+.TP
+\fB\-\-frame\-style\fP TEXT
+Options: ascii, single, double, none
+.TP
+\fB\-q,\fP \-\-quiet
+.PP

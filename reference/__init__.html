@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>__init__.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>__init__.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Copyright 2014-2019 Álvaro Justen <a href="https://github.com/turicas/rows/">https://github.com/turicas/rows/</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>General imports</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">rows.plugins</span> <span class="k">as</span> <span class="nn">plugins</span>
+
+<span class="kn">from</span> <span class="nn">rows.operations</span> <span class="kn">import</span> <span class="n">join</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">transpose</span>  <span class="c1"># NOQA</span>
+<span class="kn">from</span> <span class="nn">rows.table</span> <span class="kn">import</span> <span class="n">Table</span><span class="p">,</span> <span class="n">FlexibleTable</span>  <span class="c1"># NOQA</span>
+<span class="kn">from</span> <span class="nn">rows.localization</span> <span class="kn">import</span> <span class="n">locale_context</span>  <span class="c1"># NOQA</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <p>Don&rsquo;t have dependencies or dependencies installed on <code>install_requires</code></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">import_from_json</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">import_from_json</span>
+<span class="n">export_to_json</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">export_to_json</span>
+
+<span class="n">import_from_dicts</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">dicts</span><span class="o">.</span><span class="n">import_from_dicts</span>
+<span class="n">export_to_dicts</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">dicts</span><span class="o">.</span><span class="n">export_to_dicts</span>
+
+<span class="n">import_from_csv</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">csv</span><span class="o">.</span><span class="n">import_from_csv</span>
+<span class="n">export_to_csv</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">csv</span><span class="o">.</span><span class="n">export_to_csv</span>
+
+<span class="n">import_from_txt</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">txt</span><span class="o">.</span><span class="n">import_from_txt</span>
+<span class="n">export_to_txt</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">txt</span><span class="o">.</span><span class="n">export_to_txt</span>
+
+<span class="n">export_to_html</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">html</span><span class="o">.</span><span class="n">export_to_html</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>Have dependencies</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">if</span> <span class="n">plugins</span><span class="o">.</span><span class="n">html</span><span class="o">.</span><span class="n">has_lxml</span><span class="p">:</span>
+    <span class="n">import_from_html</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">html</span><span class="o">.</span><span class="n">import_from_html</span>
+
+<span class="k">if</span> <span class="n">plugins</span><span class="o">.</span><span class="n">xpath</span><span class="p">:</span>
+    <span class="n">import_from_xpath</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">xpath</span><span class="o">.</span><span class="n">import_from_xpath</span>
+
+<span class="k">if</span> <span class="n">plugins</span><span class="o">.</span><span class="n">ods</span><span class="p">:</span>
+    <span class="n">import_from_ods</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">ods</span><span class="o">.</span><span class="n">import_from_ods</span>
+
+<span class="k">if</span> <span class="n">plugins</span><span class="o">.</span><span class="n">sqlite</span><span class="p">:</span>
+    <span class="n">import_from_sqlite</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">sqlite</span><span class="o">.</span><span class="n">import_from_sqlite</span>
+    <span class="n">export_to_sqlite</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">sqlite</span><span class="o">.</span><span class="n">export_to_sqlite</span>
+
+<span class="k">if</span> <span class="n">plugins</span><span class="o">.</span><span class="n">xls</span><span class="p">:</span>
+    <span class="n">import_from_xls</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">xls</span><span class="o">.</span><span class="n">import_from_xls</span>
+    <span class="n">export_to_xls</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">xls</span><span class="o">.</span><span class="n">export_to_xls</span>
+
+<span class="k">if</span> <span class="n">plugins</span><span class="o">.</span><span class="n">xlsx</span><span class="p">:</span>
+    <span class="n">import_from_xlsx</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">xlsx</span><span class="o">.</span><span class="n">import_from_xlsx</span>
+    <span class="n">export_to_xlsx</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">xlsx</span><span class="o">.</span><span class="n">export_to_xlsx</span>
+
+<span class="k">if</span> <span class="n">plugins</span><span class="o">.</span><span class="n">parquet</span><span class="p">:</span>
+    <span class="n">import_from_parquet</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">parquet</span><span class="o">.</span><span class="n">import_from_parquet</span>
+
+<span class="k">if</span> <span class="n">plugins</span><span class="o">.</span><span class="n">postgresql</span><span class="p">:</span>
+    <span class="n">import_from_postgresql</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">postgresql</span><span class="o">.</span><span class="n">import_from_postgresql</span>
+    <span class="n">export_to_postgresql</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">postgresql</span><span class="o">.</span><span class="n">export_to_postgresql</span>
+
+<span class="k">if</span> <span class="n">plugins</span><span class="o">.</span><span class="n">pdf</span><span class="p">:</span>
+    <span class="n">import_from_pdf</span> <span class="o">=</span> <span class="n">plugins</span><span class="o">.</span><span class="n">pdf</span><span class="o">.</span><span class="n">import_from_pdf</span>
+
+
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;0.4.2-dev+eaa8b1ac&quot;</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

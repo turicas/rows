@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>image.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>image.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rows.plugins.plugin_ocr</span> <span class="kn">import</span> <span class="n">TesseractBackend</span>
+<span class="kn">from</span> <span class="nn">rows.plugins.plugin_pdf</span> <span class="kn">import</span> <span class="n">pdf_table_lines</span><span class="p">,</span> <span class="n">TextObject</span><span class="p">,</span> <span class="n">YGroupsAlgorithm</span>
+<span class="kn">from</span> <span class="nn">rows.plugins.utils</span> <span class="kn">import</span> <span class="n">create_table</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">MyTesseractBackend</span><span class="p">(</span><span class="n">TesseractBackend</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">objects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">started</span><span class="p">,</span> <span class="n">result</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">started</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;DESCONTOS&quot;</span><span class="p">:</span>
+                        <span class="n">started</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">continue</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y0</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">x0</span><span class="p">))</span>
+            <span class="k">yield</span> <span class="n">result</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">MyFakeTesseractBackend</span><span class="p">(</span><span class="n">TesseractBackend</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">objects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">json</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;objs.json&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fobj</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fobj</span><span class="p">):</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">TextObject</span><span class="p">(</span><span class="o">**</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">r</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">r</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">import_from_image</span><span class="p">(</span>
+    <span class="n">filename_or_fobj</span><span class="p">,</span>
+    <span class="n">algorithm</span><span class="o">=</span><span class="s2">&quot;y-groups&quot;</span><span class="p">,</span>
+    <span class="n">x_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">y_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+    <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;imported_from&quot;</span><span class="p">:</span> <span class="s2">&quot;image&quot;</span><span class="p">}</span>
+    <span class="n">table_rows</span> <span class="o">=</span> <span class="n">pdf_table_lines</span><span class="p">(</span>
+        <span class="n">filename_or_fobj</span><span class="p">,</span>
+        <span class="kc">None</span><span class="p">,</span>
+        <span class="n">starts_after</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">ends_before</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">algorithm</span><span class="o">=</span><span class="n">algorithm</span><span class="p">,</span>
+        <span class="n">x_threshold</span><span class="o">=</span><span class="n">x_threshold</span><span class="p">,</span>
+        <span class="n">y_threshold</span><span class="o">=</span><span class="n">y_threshold</span><span class="p">,</span>
+        <span class="n">backend</span><span class="o">=</span><span class="n">MyTesseractBackend</span><span class="p">,</span>  <span class="c1"># TODO: change</span>
+        <span class="n">backend_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;language&quot;</span><span class="p">:</span> <span class="s2">&quot;por&quot;</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">create_table</span><span class="p">(</span><span class="n">table_rows</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">output_filename</span><span class="p">,</span> <span class="n">background_image</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageDraw</span><span class="p">,</span> <span class="n">ImageFont</span>
+
+    <span class="n">pages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">objects</span><span class="p">())</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>TODO: plot all pages</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">max_x</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">x1</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">pages</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">max_y</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y1</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">pages</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">background_image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="s2">&quot;RGB&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">max_x</span><span class="p">,</span> <span class="n">max_y</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">background_image</span><span class="p">)</span>
+    <span class="n">draw</span> <span class="o">=</span> <span class="n">ImageDraw</span><span class="o">.</span><span class="n">Draw</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="n">font</span> <span class="o">=</span> <span class="n">ImageFont</span><span class="o">.</span><span class="n">truetype</span><span class="p">(</span>
+        <span class="s2">&quot;/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf&quot;</span><span class="p">,</span> <span class="mi">30</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">pages</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
+            <span class="n">text</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">y0</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">y1</span>
+            <span class="n">draw</span><span class="o">.</span><span class="n">rectangle</span><span class="p">(((</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">),</span> <span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">)),</span> <span class="n">outline</span><span class="o">=</span><span class="s2">&quot;#FF0000&quot;</span><span class="p">)</span>
+            <span class="n">draw</span><span class="o">.</span><span class="n">rectangle</span><span class="p">(((</span><span class="n">x0</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">y0</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="n">x1</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">y1</span><span class="o">-</span><span class="mi">1</span><span class="p">)),</span> <span class="n">outline</span><span class="o">=</span><span class="s2">&quot;#FF0000&quot;</span><span class="p">)</span>
+            <span class="n">draw</span><span class="o">.</span><span class="n">rectangle</span><span class="p">(((</span><span class="n">x0</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="n">y0</span><span class="o">+</span><span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="n">x1</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="n">y1</span><span class="o">-</span><span class="mi">2</span><span class="p">)),</span> <span class="n">outline</span><span class="o">=</span><span class="s2">&quot;#FF0000&quot;</span><span class="p">)</span>
+            <span class="n">draw</span><span class="o">.</span><span class="n">text</span><span class="p">((</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">),</span> <span class="n">text</span><span class="p">,</span> <span class="n">font</span><span class="o">=</span><span class="n">font</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="s2">&quot;#FF0000&quot;</span><span class="p">)</span>
+
+    <span class="n">image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">output_filename</span><span class="p">,</span> <span class="s2">&quot;PNG&quot;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">save_json</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">output_filename</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">json</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>TODO: support more than one page</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fobj</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">([</span><span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">next</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">objects</span><span class="p">())],</span> <span class="n">fobj</span><span class="p">)</span>
+
+
+<span class="n">input_filename</span> <span class="o">=</span> <span class="s2">&quot;teste.png&quot;</span>
+<span class="n">output_filename</span> <span class="o">=</span> <span class="s2">&quot;teste-detected-objects.png&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>be = MyTesseractBackend(input_filename, language=&rdquo;por&rdquo;)
+save_json(be, &ldquo;objs.json&rdquo;)
+draw(be, output_filename, background_image=input_filename)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">be</span> <span class="o">=</span> <span class="n">MyFakeTesseractBackend</span><span class="p">(</span><span class="n">input_filename</span><span class="p">,</span> <span class="n">language</span><span class="o">=</span><span class="s2">&quot;por&quot;</span><span class="p">)</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">import_from_image</span><span class="p">(</span><span class="n">input_filename</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      <p>objs = list(be.objects())[0]
+extractor = YGroupsAlgorithm(objs, objs, 10, 10,1,1)
+print(extractor.table_bbox)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>
