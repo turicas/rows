@@ -293,6 +293,20 @@ rows pgimport \
     my_table
 ```
 
+**Tip**: whenever possible, specify `--schema`, `--dialect` and
+`--input-encoding` so the library won't try to guess it (the guessing process
+could take a while).
+
+> **Note**: if you're importing a gzip-compressed CSV which has the
+> uncompressed size greater than 4GB, then the progress bar total won't have
+> the correct value at first; once the progress bar reaches 100%, it'll check
+> if this value is the correct one and then either finish the process (if
+> correct) or update with a new possible total. `rows` cannot do any better
+> than this, since there's a limitation on the gzip format: it stores the
+> uncompressed size modulo 2^32, so if the size is bigger than 4GB (2^32), the
+> best thing `rows` can do is to try to guess the leftmost bits truncated from
+> the uncompressed size number.
+
 
 ## `rows print`
 

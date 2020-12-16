@@ -756,13 +756,33 @@ def command_pgimport(input_encoding, no_create_table, dialect, schema, unlogged,
     # TODO: may detect encoding here (instead of inside rows.utils.pgimport)
 
     # First, detect file size
-    progress_bar = ProgressBar(prefix="Importing data", pre_prefix="Detecting file size", unit="bytes")
+    class CustomProgressBar(ProgressBar):
+        def update(self, *args, **kwargs):
+            super().update(*args, **kwargs)
+            if self.progress.total is not None and self.progress.n > self.progress.total:
+                # The total size reached a level above the detected one,
+                # probabaly error on gzip (it has only 32 bits to store
+                # uncompressed size, so if uncompressed size is greater than
+                # 4GB, it will have truncated data). If this happens, we update
+                # the total by adding a bit `1` to left of the original size
+                # (in bits). It may not be the correct uncompressed size (more
+                # than one bit could be truncated, so the process will repeat.
+                n = self.original_total
+                self.bit_updates += 1
+                new_total = (self.bit_updates << len(bin(n).replace("0b", ""))) ^ n
+                self.progress.total = new_total
+                # TODO: update total when finish (total = n)?
+
+    progress_bar = CustomProgressBar(prefix="Importing data", pre_prefix="Detecting file size", unit="bytes")
+    compressed_size = os.stat(source).st_size
     try:
         total_size = uncompressed_size(source)
     except (RuntimeError, ValueError):
-        total_size = None
-    else:
-        progress_bar.total = total_size
+        total_size = compressed_size
+    finally:
+        progress_bar.total = total_size if total_size > compressed_size else compressed_size
+        progress_bar.original_total = total_size
+        progress_bar.bit_updates = 0
 
     # Then, define its schema
     if schema:
