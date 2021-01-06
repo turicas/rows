@@ -291,7 +291,6 @@ def plugin_name_by_uri(uri):
 def extension_by_source(source, mime_type):
     "Return the file extension used by this plugin"
 
-    # TODO: should get this information from the plugin
     extension = source.plugin_name
     if extension:
         return extension
