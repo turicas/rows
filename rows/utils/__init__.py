@@ -1223,7 +1223,7 @@ def load_schema(filename, context=None):
     return OrderedDict([(row.field_name, context[row.field_type]) for row in table])
 
 
-def scale_number(n, divider=1_000, suffix=None, multipliers="KMGTPEZ", decimal_places=2):
+def scale_number(n, divider=1000, suffix=None, multipliers="KMGTPEZ", decimal_places=2):
     suffix = suffix if suffix is not None else ""
     count = -1
     while n >= divider:

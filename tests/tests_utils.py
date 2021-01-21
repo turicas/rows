@@ -301,19 +301,19 @@ def test_scale_number():
     scale_number = rows.utils.scale_number
 
     assert scale_number(100) == "100"
-    assert scale_number(1_000) == "1.00K"
-    assert scale_number(1_500) == "1.50K"
-    assert scale_number(10_000) == "10.00K"
-    assert scale_number(1_000_000) == "1.00M"
-    assert scale_number(1_234_000_000) == "1.23G"
-    assert scale_number(1_234_567_890_000) == "1.23T"
+    assert scale_number(1000) == "1.00K"
+    assert scale_number(1500) == "1.50K"
+    assert scale_number(10000) == "10.00K"
+    assert scale_number(1000000) == "1.00M"
+    assert scale_number(1234000000) == "1.23G"
+    assert scale_number(1234567890000) == "1.23T"
 
-    assert scale_number(1_000, divider=1_024) == "1000"
-    assert scale_number(1_024, divider=1_024) == "1.00K"
-    assert scale_number(1_024, divider=1_024, suffix="iB") == "1.00KiB"
+    assert scale_number(1000, divider=1024) == "1000"
+    assert scale_number(1024, divider=1024) == "1.00K"
+    assert scale_number(1024, divider=1024, suffix="iB") == "1.00KiB"
 
-    assert scale_number(1_234_567_890_000, decimal_places=3) == "1.235T"
-    assert scale_number(1_234_567_890_000, multipliers="KMGtP") == "1.23t"
+    assert scale_number(1234567890000, decimal_places=3) == "1.235T"
+    assert scale_number(1234567890000, multipliers="KMGtP") == "1.23t"
 
 
 # TODO: test Source.from_file
