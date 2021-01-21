@@ -1223,6 +1223,20 @@ def load_schema(filename, context=None):
     return OrderedDict([(row.field_name, context[row.field_type]) for row in table])
 
 
+def scale_number(n, divider=1_000, suffix=None, multipliers="KMGTPEZ", decimal_places=2):
+    suffix = suffix if suffix is not None else ""
+    count = -1
+    while n >= divider:
+        n /= divider
+        count += 1
+    multiplier = multipliers[count] if count > -1 else ""
+    if not multiplier:
+        return str(n) + suffix
+    else:
+        fmt_str = "{{n:.{}f}}{{multiplier}}{{suffix}}".format(decimal_places)
+        return fmt_str.format(n=n, multiplier=multiplier, suffix=suffix)
+
+
 # Shortcuts
 csv2sqlite = csv_to_sqlite
 sqlite2csv = sqlite_to_csv

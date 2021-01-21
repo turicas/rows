@@ -288,12 +288,32 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_open_compressed_binary(suffix=".bz2", decompress=bz2.decompress)
         self.assert_open_compressed_text(suffix=".bz2", decompress=bz2.decompress)
 
+
 class PgUtilsTestCase(unittest.TestCase):
 
     def test_pg_create_table_sql(self):
         schema = OrderedDict([("id", rows.fields.IntegerField), ("name", rows.fields.TextField)])
         sql = rows.utils.pg_create_table_sql(schema, "testtable")
         assert sql == """CREATE TABLE IF NOT EXISTS "testtable" (id BIGINT, name TEXT)"""
+
+
+def test_scale_number():
+    scale_number = rows.utils.scale_number
+
+    assert scale_number(100) == "100"
+    assert scale_number(1_000) == "1.00K"
+    assert scale_number(1_500) == "1.50K"
+    assert scale_number(10_000) == "10.00K"
+    assert scale_number(1_000_000) == "1.00M"
+    assert scale_number(1_234_000_000) == "1.23G"
+    assert scale_number(1_234_567_890_000) == "1.23T"
+
+    assert scale_number(1_000, divider=1_024) == "1000"
+    assert scale_number(1_024, divider=1_024) == "1.00K"
+    assert scale_number(1_024, divider=1_024, suffix="iB") == "1.00KiB"
+
+    assert scale_number(1_234_567_890_000, decimal_places=3) == "1.235T"
+    assert scale_number(1_234_567_890_000, multipliers="KMGtP") == "1.23t"
 
 
 # TODO: test Source.from_file
