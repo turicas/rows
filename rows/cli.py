@@ -24,7 +24,6 @@
 
 import csv
 import os
-import pathlib
 import sqlite3
 import sys
 import tempfile
@@ -64,7 +63,7 @@ DEFAULT_INPUT_LOCALE = "C"
 DEFAULT_OUTPUT_ENCODING = "utf-8"
 DEFAULT_OUTPUT_LOCALE = "C"
 DEFAULT_SAMPLE_SIZE = 1024 * 1024
-HOME_PATH = pathlib.Path.home()
+HOME_PATH = Path.home()
 CACHE_PATH = HOME_PATH / ".cache" / "rows" / "http"
 
 
@@ -165,11 +164,11 @@ def cli(http_cache, http_cache_path):
     if http_cache:
         import requests_cache
 
-        http_cache_path = pathlib.Path(http_cache_path).absolute()
+        http_cache_path = Path(http_cache_path).absolute()
         if not http_cache_path.parent.exists():
             os.makedirs(str(http_cache_path.parent), exist_ok=True)
         if str(http_cache_path).lower().endswith(".sqlite"):
-            http_cache_path = pathlib.Path(str(http_cache_path)[:-7]).absolute()
+            http_cache_path = Path(str(http_cache_path)[:-7]).absolute()
 
         requests_cache.install_cache(str(http_cache_path))
 
@@ -685,8 +684,8 @@ def command_csv_to_sqlite(batch_size, samples, input_encoding, dialect, schemas,
     # TODO: detect input_encoding for all sources
     input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
 
-    inputs = [pathlib.Path(filename) for filename in sources]
-    output = pathlib.Path(output)
+    inputs = [Path(filename) for filename in sources]
+    output = Path(output)
     # TODO: if table_name is "2019" the final name will be "field_2019" - must
     #       be "table_2019"
     table_names = make_header([filename.name.split(".")[0] for filename in inputs])
@@ -724,8 +723,8 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
     # TODO: add --quiet
     # TODO: add output options/encoding
 
-    input_filename = pathlib.Path(source)
-    output_filename = pathlib.Path(output)
+    input_filename = Path(source)
+    output_filename = Path(output)
     prefix = "[{db_filename}#{tablename} -> {filename}]".format(
         db_filename=input_filename.name, tablename=table_name, filename=output_filename.name,
     )
