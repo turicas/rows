@@ -9,8 +9,13 @@ from calendar import isleap
 # datetime.date(2020, 2, 29)
 
 # TODO: test using timezone info
+
 LAST_DAY =      (None, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)  # noqa
 LAST_DAY_LEAP = (None, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)  # noqa
+
+
+def today():
+    return datetime.datetime.now().date()
 
 
 def last_day(date):
