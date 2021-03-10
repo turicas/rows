@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 import io
 import math
+from dataclasses import dataclass
 
 import six
 from cached_property import cached_property
@@ -28,6 +29,7 @@ from rows.utils import Source
 
 try:
     import fitz as pymupdf
+
     pymupdf.TOOLS.mupdf_display_errors(False)
 
     pymupdf_imported = True
@@ -36,13 +38,14 @@ except ImportError:
 
 
 try:
+    import logging
+
     from pdfminer.converter import PDFPageAggregator, TextConverter
-    from pdfminer.layout import LAParams, LTTextBox, LTTextLine, LTChar, LTRect
+    from pdfminer.layout import LAParams, LTChar, LTRect, LTTextBox, LTTextLine
     from pdfminer.pdfdocument import PDFDocument
-    from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter, resolve1
+    from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager, resolve1
     from pdfminer.pdfpage import PDFPage
     from pdfminer.pdfparser import PDFParser
-    import logging
 
     logging.getLogger("pdfminer").setLevel(logging.ERROR)
     PDFMINER_TEXT_TYPES = (LTTextBox, LTTextLine, LTChar)
@@ -90,9 +93,7 @@ def default_backend():
     elif pdfminer_imported:
         return "pdfminer.six"
     else:
-        raise ImportError(
-            "No PDF backend found. Did you install the dependencies (pymupdf or pdfminer.six)?"
-        )
+        raise ImportError("No PDF backend found. Did you install the dependencies (pymupdf or pdfminer.six)?")
 
 
 def number_of_pages(filename_or_fobj, backend=None):
@@ -155,11 +156,7 @@ class PDFBackend(object):
 
     def __del__(self):
         source = self.source
-        if (
-            source.should_close
-            and hasattr(source.fobj, "closed")
-            and not source.fobj.closed
-        ):
+        if source.should_close and hasattr(source.fobj, "closed") and not source.fobj.closed:
             source.fobj.close()
 
 
@@ -180,9 +177,7 @@ class PDFMinerBackend(PDFBackend):
         return resolve1(self.document.catalog["Pages"])["Count"]
 
     def extract_text(self, page_numbers=None):
-        for page_number, page in enumerate(
-            PDFPage.create_pages(self.document), start=1
-        ):
+        for page_number, page in enumerate(PDFPage.create_pages(self.document), start=1):
             if page_numbers is not None and page_number not in page_numbers:
                 continue
 
@@ -197,18 +192,12 @@ class PDFMinerBackend(PDFBackend):
     @staticmethod
     def convert_object(obj):
         if isinstance(obj, PDFMINER_TEXT_TYPES):
-            return TextObject(
-                x0=obj.x0, y0=obj.y0, x1=obj.x1, y1=obj.y1, text=obj.get_text()
-            )
+            return TextObject(x0=obj.x0, y0=obj.y0, x1=obj.x1, y1=obj.y1, text=obj.get_text())
         elif isinstance(obj, LTRect):
             return RectObject(x0=obj.x0, y0=obj.y0, x1=obj.x1, y1=obj.y1, fill=obj.fill)
 
     def objects(
-        self,
-        page_numbers=None,
-        starts_after=None,
-        ends_before=None,
-        desired_types=PDFMINER_ALL_TYPES,
+        self, page_numbers=None, starts_after=None, ends_before=None, desired_types=PDFMINER_ALL_TYPES,
     ):
 
         doc = self.document
@@ -231,11 +220,7 @@ class PDFMinerBackend(PDFBackend):
 
             interpreter.process_page(page)
             layout = device.get_result()
-            objs = [
-                PDFMinerBackend.convert_object(obj)
-                for obj in layout
-                if isinstance(obj, desired_types)
-            ]
+            objs = [PDFMinerBackend.convert_object(obj) for obj in layout if isinstance(obj, desired_types)]
             objs.sort(key=lambda obj: -obj.y0)
             objects_in_page = []
             for obj in objs:
@@ -304,18 +289,29 @@ class PyMuPDFBackend(PDFBackend):
                 continue
 
             page = doc.loadPage(page_index)
-            text_objs = []
+            objs = []
             for block in page.getText("dict")["blocks"]:
                 if block["type"] != 0:
                     continue
 
                 for line in block["lines"]:
-                    line_text = " ".join(span["text"] for span in line["spans"])
-                    text_objs.append(list(line["bbox"]) + [line_text])
-            objs = [
-                TextObject(x0=obj[0], y0=obj[1], x1=obj[2], y1=obj[3], text=obj[4])
-                for obj in text_objs
-            ]
+                    bbox = line["bbox"]
+                    text = " ".join(
+                        ["\n".join(line.strip() for line in span["text"].splitlines()) for span in line["spans"]]
+                    )
+                    objs.append(
+                        TextObject(
+                            x0=bbox[0],
+                            y0=bbox[1],
+                            x1=bbox[2],
+                            y1=bbox[3],
+                            text=text,
+                            fonts=[span["font"] for span in line["spans"]],
+                            sizes=[span["size"] for span in line["spans"]],
+                            flags=[span["flags"] for span in line["spans"]],
+                            colors=[span["color"] for span in line["spans"]],
+                        )
+                    )
             objs.sort(key=lambda obj: (obj.y0, obj.x0))
             objects_in_page = []
             for obj in objs:
@@ -341,21 +337,23 @@ def get_delimiter_function(value):
         return lambda obj: (isinstance(obj, TextObject) and obj.text.strip() == value)
 
     elif hasattr(value, "search"):  # regular expression
-        return lambda obj: bool(
-            isinstance(obj, TextObject) and value.search(obj.text.strip())
-        )
+        return lambda obj: bool(isinstance(obj, TextObject) and value.search(obj.text.strip()))
 
     elif callable(value):  # function
         return lambda obj: bool(value(obj))
 
 
+@dataclass
 class TextObject(object):
-    def __init__(self, x0, y0, x1, y1, text):
-        self.x0 = x0
-        self.x1 = x1
-        self.y0 = y0
-        self.y1 = y1
-        self.text = text
+    x0: float
+    y0: float
+    x1: float
+    y1: float
+    text: str
+    colors: int = None
+    flags: int = None
+    fonts: str = None
+    sizes: int = None
 
     @property
     def bbox(self):
@@ -492,9 +490,7 @@ def closest_same_line(objs, text):
 
 
 def same_column(objs, text):
-    object_groups = {
-        key: list(value) for key, value in group_objects(objs, 0.1, "x").items()
-    }
+    object_groups = {key: list(value) for key, value in group_objects(objs, 0.1, "x").items()}
     desired_x0 = None
     for x0, column_objs in object_groups.items():
         for obj in column_objs:
@@ -507,9 +503,7 @@ def same_column(objs, text):
 
 
 class ExtractionAlgorithm(object):
-    def __init__(
-        self, objects, text_objects, x_threshold, y_threshold, x_order, y_order
-    ):
+    def __init__(self, objects, text_objects, x_threshold, y_threshold, x_order, y_order):
         self.objects = objects
         self.text_objects = text_objects
         self.x_threshold = x_threshold
@@ -533,11 +527,7 @@ class ExtractionAlgorithm(object):
     def selected_objects(self):
         """Filter out objects outside table boundaries"""
 
-        return [
-            obj
-            for obj in self.text_objects
-            if contains_or_overlap(self.table_bbox, obj.bbox)
-        ]
+        return [obj for obj in self.text_objects if contains_or_overlap(self.table_bbox, obj.bbox)]
 
     def get_lines(self):
         x_intervals = list(self.x_intervals)
@@ -552,9 +542,7 @@ class ExtractionAlgorithm(object):
         for y0, y1 in y_intervals:
             line = []
             for x0, x1 in x_intervals:
-                cell = [
-                    obj for obj in objs if x0 <= obj.x0 <= x1 and y0 <= obj.y0 <= y1
-                ]
+                cell = [obj for obj in objs if x0 <= obj.x0 <= x1 and y0 <= obj.y0 <= y1]
                 if not cell:
                     line.append(None)
                 else:
@@ -595,9 +583,7 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
     def _define_intervals(objs, min_attr, max_attr, threshold, axis):
         groups = group_objects(objs, threshold, axis)
 
-        intervals = [
-            (key, max_attr(max(value, key=max_attr))) for key, value in groups.items()
-        ]
+        intervals = [(key, max_attr(max(value, key=max_attr))) for key, value in groups.items()]
         intervals.sort()
         if not intervals:
             return []
@@ -617,11 +603,7 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
         objects = self.selected_objects
         objects.sort(key=lambda obj: obj.x0)
         return self._define_intervals(
-            objects,
-            min_attr=lambda obj: obj.x0,
-            max_attr=lambda obj: obj.x1,
-            threshold=self.x_threshold,
-            axis="x",
+            objects, min_attr=lambda obj: obj.x0, max_attr=lambda obj: obj.x1, threshold=self.x_threshold, axis="x",
         )
 
     @cached_property
@@ -629,11 +611,7 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
         objects = self.selected_objects
         objects.sort(key=lambda obj: -obj.y1)
         return self._define_intervals(
-            objects,
-            min_attr=lambda obj: obj.y0,
-            max_attr=lambda obj: obj.y1,
-            threshold=self.y_threshold,
-            axis="y",
+            objects, min_attr=lambda obj: obj.y0, max_attr=lambda obj: obj.y1, threshold=self.y_threshold, axis="y",
         )
 
 
@@ -654,9 +632,7 @@ class HeaderPositionAlgorithm(YGroupsAlgorithm):
         used, lines = [], []
 
         header_interval = y_intervals[0]
-        header_objs = [
-            obj for obj in objects if header_interval[0] <= obj.y0 <= header_interval[1]
-        ]
+        header_objs = [obj for obj in objects if header_interval[0] <= obj.y0 <= header_interval[1]]
         used.extend(header_objs)
         lines.append([[obj] for obj in header_objs])
 
@@ -664,16 +640,10 @@ class HeaderPositionAlgorithm(YGroupsAlgorithm):
             return a.x0 < b.x1 and a.x1 > b.x0
 
         for y0, y1 in y_intervals[1:]:
-            line_objs = [
-                obj for obj in objects if obj not in used and y0 <= obj.y0 <= y1
-            ]
+            line_objs = [obj for obj in objects if obj not in used and y0 <= obj.y0 <= y1]
             line = []
             for column in header_objs:
-                y_objs = [
-                    obj
-                    for obj in line_objs
-                    if obj not in used and x_intersects(column, obj)
-                ]
+                y_objs = [obj for obj in line_objs if obj not in used and x_intersects(column, obj)]
                 used.extend(y_objs)
                 line.append(y_objs)
             lines.append(line)
@@ -691,9 +661,7 @@ class RectsBoundariesAlgorithm(ExtractionAlgorithm):
 
     def __init__(self, *args, **kwargs):
         super(RectsBoundariesAlgorithm, self).__init__(*args, **kwargs)
-        self.rects = [
-            obj for obj in self.objects if isinstance(obj, RectObject) and obj.fill
-        ]
+        self.rects = [obj for obj in self.objects if isinstance(obj, RectObject) and obj.fill]
 
     @cached_property
     def table_bbox(self):
@@ -732,9 +700,7 @@ class RectsBoundariesAlgorithm(ExtractionAlgorithm):
 
 def subclasses(cls):
     children = cls.__subclasses__()
-    return set(children).union(
-        set(grandchild for child in children for grandchild in subclasses(child))
-    )
+    return set(children).union(set(grandchild for child in children for grandchild in subclasses(child)))
 
 
 def algorithms():
@@ -747,9 +713,7 @@ def get_algorithm(algorithm):
     if isinstance(algorithm, six.text_type):
         if algorithm not in available_algorithms:
             raise ValueError(
-                'Unknown algorithm "{}" (options are: {})'.format(
-                    algorithm, ", ".join(available_algorithms.keys())
-                )
+                'Unknown algorithm "{}" (options are: {})'.format(algorithm, ", ".join(available_algorithms.keys()))
             )
         return available_algorithms[algorithm]
 
@@ -758,9 +722,7 @@ def get_algorithm(algorithm):
 
     else:
         raise ValueError(
-            'Unknown algorithm "{}" (options are: {})'.format(
-                algorithm, ", ".join(available_algorithms.keys())
-            )
+            'Unknown algorithm "{}" (options are: {})'.format(algorithm, ", ".join(available_algorithms.keys()))
         )
 
 
@@ -774,9 +736,7 @@ def get_backend(backend):
     if isinstance(backend, six.text_type):
         if backend not in available_backends:
             raise ValueError(
-                'Unknown PDF backend "{}" (options are: {})'.format(
-                    backend, ", ".join(available_backends.keys())
-                )
+                'Unknown PDF backend "{}" (options are: {})'.format(backend, ", ".join(available_backends.keys()))
             )
         return available_backends[backend]
 
@@ -785,9 +745,7 @@ def get_backend(backend):
 
     else:
         raise ValueError(
-            'Unknown PDF backend "{}" (options are: {})'.format(
-                backend, ", ".join(available_backends.keys())
-            )
+            'Unknown PDF backend "{}" (options are: {})'.format(backend, ", ".join(available_backends.keys()))
         )
 
 
@@ -810,20 +768,13 @@ def pdf_table_lines(
     Algorithm = get_algorithm(algorithm)
     pdf_doc = Backend(source)
 
-    pages = pdf_doc.objects(
-        page_numbers=page_numbers, starts_after=starts_after, ends_before=ends_before
-    )
+    pages = pdf_doc.objects(page_numbers=page_numbers, starts_after=starts_after, ends_before=ends_before)
     header = line_size = None
     for page_index, page in enumerate(pages):
         objs = list(page)
         text_objs = [obj for obj in objs if isinstance(obj, TextObject)]
-        extractor = Algorithm(
-            objs, text_objs, x_threshold, y_threshold, pdf_doc.x_order, pdf_doc.y_order
-        )
-        lines = [
-            [pdf_doc.get_cell_text(cell) for cell in row]
-            for row in extractor.get_lines()
-        ]
+        extractor = Algorithm(objs, text_objs, x_threshold, y_threshold, pdf_doc.x_order, pdf_doc.y_order)
+        lines = [[pdf_doc.get_cell_text(cell) for cell in row] for row in extractor.get_lines()]
 
         for line_index, line in enumerate(lines):
             if line_index == 0:
