@@ -39,6 +39,9 @@ import six
 
 try:
     import requests
+
+    from requests.adapters import HTTPAdapter
+    from requests.packages.urllib3.util.retry import Retry
 except ImportError:
     requests = None
 try:
@@ -74,18 +77,18 @@ else:
 
 if requests:
     chardet = requests.compat.chardet
+    try:
+        import urllib3
+    except ImportError:
+        from requests.packages import urllib3
+    else:
+        try:
+            urllib3.disable_warnings()
+        except AttributeError:
+            # old versions of urllib3 or requests
+            pass
 else:
     chardet = None
-try:
-    import urllib3
-except ImportError:
-    from requests.packages import urllib3
-else:
-    try:
-        urllib3.disable_warnings()
-    except AttributeError:
-        # old versions of urllib3 or requests
-        pass
 
 
 # TODO: should get this information from the plugins
@@ -390,10 +393,16 @@ def download_file(
     detect=False,
     chunk_size=8192,
     sample_size=1048576,
+    retries=3,
 ):
-
     # TODO: add ability to continue download
-    response = requests.get(
+
+    session = requests.Session()
+    retry_adapter = HTTPAdapter(max_retries=Retry(total=retries, backoff_factor=1))
+    session.mount("http://", retry_adapter)
+    session.mount("https://", retry_adapter)
+
+    response = session.get(
         uri,
         verify=verify_ssl,
         timeout=timeout,
