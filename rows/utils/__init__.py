@@ -394,6 +394,7 @@ def download_file(
     chunk_size=8192,
     sample_size=1048576,
     retries=3,
+    progress_pattern="Downloading file"
 ):
     # TODO: add ability to continue download
 
@@ -422,15 +423,26 @@ def download_file(
         _, options = cgi.parse_header(headers["content-disposition"])
         real_filename = options.get("filename", real_filename)
 
-    if progress:
-        total = response.headers.get("content-length", None)
-        total = int(total) if total else None
-        progress_bar = ProgressBar(prefix="Downloading file", total=total, unit="bytes")
     if filename is None:
         tmp = tempfile.NamedTemporaryFile(delete=False)
         fobj = open_compressed(tmp.name, mode="wb")
     else:
         fobj = open_compressed(filename, mode="wb")
+
+    if progress:
+        total = response.headers.get("content-length", None)
+        total = int(total) if total else None
+        progress_bar = ProgressBar(
+            prefix=progress_pattern.format(
+                uri=uri,
+                filename=Path(fobj.name),
+                mime_type=mime_type,
+                encoding=encoding,
+            ),
+            total=total,
+            unit="bytes",
+        )
+
     sample_data = b""
     for data in response.iter_content(chunk_size=chunk_size):
         fobj.write(data)
