@@ -39,7 +39,8 @@ def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
 
     source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="json", encoding=encoding)
 
-    json_obj = json.load(source.fobj, encoding=source.encoding)
+    # JSON should always use UTF-8, UTF-16 or UTF-32 encodings.
+    json_obj = json.load(source.fobj)
     field_names = []
     for row in json_obj:
         for key in row.keys():
