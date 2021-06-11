@@ -43,8 +43,17 @@ SQLITE_TYPES = {
     fields.IntegerField: "INTEGER",
     fields.PercentField: "REAL",
     fields.TextField: "TEXT",
+    "pkey": "INTEGER PRIMARY KEY AUTOINCREMENT",  # TODO: may move to another place
 }
 DEFAULT_TYPE = "BLOB"
+
+
+def create_table_sql(name, field_names, field_types):
+    columns = [
+        "{} {}".format(field_name, SQLITE_TYPES.get(field_type, DEFAULT_TYPE))
+        for field_name, field_type in zip(field_names, field_types)
+    ]
+    return SQL_CREATE_TABLE.format(table_name=name, field_types=", ".join(columns))
 
 
 def _python_to_sqlite(field_types):
@@ -193,13 +202,7 @@ def export_to_sqlite(
 
     field_names = next(prepared_table)
     field_types = list(map(table.fields.get, field_names))
-    columns = [
-        "{} {}".format(field_name, SQLITE_TYPES.get(field_type, DEFAULT_TYPE))
-        for field_name, field_type in zip(field_names, field_types)
-    ]
-    cursor.execute(
-        SQL_CREATE_TABLE.format(table_name=table_name, field_types=", ".join(columns))
-    )
+    cursor.execute(create_table_sql(table_name, field_names, field_types))
 
     insert_sql = SQL_INSERT.format(
         table_name=table_name,
