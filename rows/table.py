@@ -314,3 +314,134 @@ class FlexibleTable(Table):
         """Add a row to the table. Should be a dict"""
 
         self._rows.append(self._make_row(row))
+
+
+class SQLiteTable(BaseTable):
+    def __init__(self, fields, meta=None):
+        super(SQLiteTable, self).__init__(fields=fields, meta=meta)
+
+        import sqlite3
+        from rows.plugins.sqlite import create_table_sql
+        self._connection = sqlite3.connect(":memory:")
+        field_names = ["__id"] + self.field_names
+        field_types = ["pkey"] + self.field_types
+        self._execute(create_table_sql(self.name, field_names, field_types))
+
+    def _execute(self, query, args=None, data_type="dict", many=False):
+        if data_type not in ("dict", "list"):
+            raise ValueError("data_type must be `dict` or `list`")
+
+        cursor = self._connection.cursor()
+        if not many:
+            cursor.execute(query, args or [])
+        else:
+            cursor.executemany(query, args or [])
+        header = [item[0] for item in cursor.description] if cursor.description else None
+        if header is None:  # No results
+            data = []
+        elif data_type == "dict":
+            data = [dict(zip(header, row)) for row in cursor.fetchall()]
+        elif data_type == "list":
+            data = list(cursor.fetchall())
+        self._connection.commit()
+        cursor.close()
+        return data
+
+    @classmethod
+    def copy(cls, table, data):
+        raise NotImplementedError()
+
+    def head(self, n=10):
+        raise NotImplementedError()
+
+    def tail(self, n=10):
+        raise NotImplementedError()
+
+    def append(self, row):
+        """Add a row to the table. Should be a dict"""
+
+        self.extend([row])
+
+    def extend(self, many_rows):
+        """Add rows to the table. Should be a list of dicts"""
+
+        from rows.plugins.sqlite import SQL_INSERT, _python_to_sqlite
+        field_names = self.field_names
+        insert_sql = SQL_INSERT.format(
+            table_name=self.name,
+            field_names=", ".join(field_names),
+            placeholders=", ".join("?" for _ in field_names),
+        )
+        _convert_row = _python_to_sqlite(self.field_types)
+        data = ([row[field_name] for field_name in field_names] for row in many_rows)
+        self._execute(insert_sql, args=map(_convert_row, data), many=True)
+
+    def __len__(self):
+        return self._execute("SELECT COUNT(*) AS total FROM {}".format(self.name))[0]["total"]
+
+    def __getitem__(self, key):
+        key_type = type(key)
+        if key_type == int:
+            query = "SELECT {} FROM {} WHERE __id = ?".format(", ".join(self.field_names), self.name)
+            row = self._execute(query, args=(key + 1,), data_type="dict")[0]
+            return self.Row(**row)
+
+        elif key_type == slice:
+            query = "SELECT {} FROM {}".format(", ".join(self.field_names), self.name)
+            filters, args = [], []
+            if key.start is not None:
+                filters.append("__id >= ?")
+                args.append(key.start + 1)
+            if key.stop is not None:
+                filters.append("__id <= ?")
+                args.append(key.stop)
+            if filters:
+                query = query + " WHERE " + " AND ".join(filters)
+            data = self._execute(query, args=args, data_type="dict")
+            # TODO: must return a copy of this table!
+            return data
+
+        elif key_type is six.text_type:
+            if key not in self.field_names:
+                raise KeyError(key)
+            query = "SELECT {} FROM {}".format(key, self.name)
+            return [item[0] for item in self._execute(query, data_type="list")]
+        else:
+            raise ValueError("Unsupported key type: {}".format(type(key).__name__))
+
+    # TODO: create method to update __id for all subsequent rows
+
+    def __setitem__(self, key, value):
+        raise NotImplementedError()
+
+    def __delitem__(self, key):
+        raise NotImplementedError()
+
+    def insert(self, index, row):
+        raise NotImplementedError()
+
+    def __add__(self, other):
+        raise NotImplementedError()
+
+    def order_by(self, key):
+        reverse = False
+        if key.startswith("-"):
+            key = key[1:]
+            reverse = True
+
+        if key not in self.field_names:
+            raise ValueError('Field "{}" does not exist'.format(key))
+
+        # TODO: use method to re-order __id
+        raise NotImplementedError()
+
+    def save(self, filename):
+        import sqlite3
+
+        conn = sqlite3.connect(filename)
+        self._connection.backup(conn)
+        conn.close()
+
+    @classmethod
+    def load(cls, filename):
+        raise NotImplementedError()
