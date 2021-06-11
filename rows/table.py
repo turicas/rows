@@ -30,7 +30,8 @@ elif six.PY3:
     from collections.abc import MutableSequence, Sized
 
 
-class Table(MutableSequence):
+class BaseTable(MutableSequence):
+
     def __init__(self, fields, meta=None):
         from rows.plugins import utils
 
@@ -47,20 +48,7 @@ class Table(MutableSequence):
         # TODO: should be able to customize row return type (namedtuple, dict
         #       etc.)
         self.Row = namedtuple("Row", self.field_names)
-        self._rows = []
         self.meta = dict(meta) if meta is not None else {}
-
-    @classmethod
-    def copy(cls, table, data):
-        table = cls(fields=table.fields, meta=table.meta)
-        table._rows = list(data)  # TODO: verify data?
-        return table
-
-    def head(self, n=10):
-        return Table.copy(self, self._rows[:n])
-
-    def tail(self, n=10):
-        return Table.copy(self, self._rows[-n:])
 
     def _repr_html_(self):
         import rows.plugins
@@ -136,7 +124,7 @@ class Table(MutableSequence):
         return "table1"
 
     def __repr__(self):
-        length = len(self._rows) if isinstance(self._rows, Sized) else "?"
+        length = len(self) if isinstance(self, Sized) else "?"
 
         imported = ""
         if "imported_from" in self.meta:
@@ -152,6 +140,35 @@ class Table(MutableSequence):
             field_type.deserialize(row.get(field_name, None))
             for field_name, field_type in self.fields.items()
         ]
+
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        raise ValueError()
+
+    def __iadd__(self, other):
+        return self + other
+
+    def __add__(self, other):
+        raise NotImplementedError()
+
+
+class Table(BaseTable):
+    def __init__(self, fields, meta=None):
+        super(Table, self).__init__(fields=fields, meta=meta)
+        self._rows = []
+
+    @classmethod
+    def copy(cls, table, data):
+        table = cls(fields=table.fields, meta=table.meta)
+        table._rows = list(data)  # TODO: verify data?
+        return table
+
+    def head(self, n=10):
+        return Table.copy(self, self._rows[:n])
+
+    def tail(self, n=10):
+        return Table.copy(self, self._rows[-n:])
 
     def append(self, row):
         """Add a row to the table. Should be a dict"""
@@ -230,14 +247,6 @@ class Table(MutableSequence):
 
     def insert(self, index, row):
         self._rows.insert(index, self._make_row(row))
-
-    def __radd__(self, other):
-        if other == 0:
-            return self
-        raise ValueError()
-
-    def __iadd__(self, other):
-        return self + other
 
     def __add__(self, other):
         if other == 0:
