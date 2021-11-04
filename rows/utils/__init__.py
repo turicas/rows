@@ -556,6 +556,7 @@ def export_to_uri(table, uri, *args, **kwargs):
     return export_function(table, uri, *args, **kwargs)
 
 
+# TODO: check https://docs.python.org/3.7/library/fileinput.html
 def open_compressed(
     filename,
     mode="r",

@@ -269,7 +269,7 @@ class PyMuPDFBackend(PDFBackend):
             if page_numbers is not None and page_number not in page_numbers:
                 continue
 
-            page = doc.loadPage(page_index)
+            page = getattr(doc, "load_page", getattr(doc, "loadPage"))(page_index)
             page_text = "\n".join(block[4] for block in page.getTextBlocks())
             yield page_text
 
@@ -288,9 +288,10 @@ class PyMuPDFBackend(PDFBackend):
             if page_numbers is not None and page_number not in page_numbers:
                 continue
 
-            page = doc.loadPage(page_index)
+            page = getattr(doc, "load_page", getattr(doc, "loadPage"))(page_index)
             objs = []
-            for block in page.getText("dict")["blocks"]:
+            blocks = getattr(page, "get_text", getattr(page, "getText"))("dict")["blocks"]
+            for block in blocks:
                 if block["type"] != 0:
                     continue
 
@@ -616,7 +617,6 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
 
 
 class HeaderPositionAlgorithm(YGroupsAlgorithm):
-
     name = "header-position"
 
     @property
