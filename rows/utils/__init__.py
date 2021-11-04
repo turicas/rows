@@ -612,15 +612,15 @@ def open_compressed(
 
     elif extension == "xz":
         if lzma is None:
-            raise RuntimeError("lzma support is not installed")
+            raise ModuleNotFoundError("lzma support is not installed")
         fobj_binary = lzma.LZMAFile(get_fobj_binary(), mode=mode_binary)
 
     elif extension == "gz":
-        fobj_binary = gzip.GzipFile(fileobj=get_fobj_binary())
+        fobj_binary = gzip.GzipFile(fileobj=get_fobj_binary(), mode=mode_binary)
 
     elif extension == "bz2":
         if bz2 is None:
-            raise RuntimeError("bzip2 support is not installed")
+            raise ModuleNotFoundError("bzip2 support is not installed")
         fobj_binary = bz2.BZ2File(get_fobj_binary(), mode=mode_binary)
 
     if binary_mode:
