@@ -1259,6 +1259,16 @@ def scale_number(n, divider=1000, suffix=None, multipliers="KMGTPEZ", decimal_pl
         return fmt_str.format(n=n, multiplier=multiplier, suffix=suffix)
 
 
+class NotNullWrapper(io.BufferedReader):
+    """BufferedReader which removes NUL (`\x00`) from source stream"""
+
+    def read(self, n):
+        return super().read(n).replace(b"\x00", b"")
+
+    def readline(self):
+        return super().readline().replace(b"\x00", b"")
+
+
 # Shortcuts
 csv2sqlite = csv_to_sqlite
 sqlite2csv = sqlite_to_csv
