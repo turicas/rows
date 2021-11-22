@@ -117,18 +117,11 @@ def create_table(
             **kwargs
         )
         # Check if any field was added during detecting process
-        new_fields = [
-            field_name
-            for field_name in detected_fields.keys()
-            if field_name not in header
-        ]
+        new_fields = [field_name for field_name in detected_fields.keys() if field_name not in header]
         # Finally create the `fields` with both header and new field names,
         # based on detected fields `and force_types`
         fields = OrderedDict(
-            [
-                (field_name, detected_fields.get(field_name, TextField))
-                for field_name in header + new_fields
-            ]
+            [(field_name, detected_fields.get(field_name, TextField)) for field_name in header + new_fields]
         )
         fields.update(force_types)
 
@@ -150,17 +143,13 @@ def create_table(
         if import_fields is None:
             import_fields = header
 
-        fields = OrderedDict(
-            [(field_name, fields[key]) for field_name, key in zip(header, fields)]
-        )
+        fields = OrderedDict([(field_name, fields[key]) for field_name, key in zip(header, fields)])
 
     diff = set(import_fields) - set(header)
     if diff:
         field_names = ", ".join('"{}"'.format(field) for field in diff)
         raise ValueError("Invalid field names: {}".format(field_names))
-    fields = OrderedDict(
-        [(field_name, fields[field_name]) for field_name in import_fields]
-    )
+    fields = OrderedDict([(field_name, fields[field_name]) for field_name in import_fields])
 
     get_row = get_items(*map(header.index, import_fields))
     table = Table(fields=fields, meta=meta)
@@ -216,7 +205,4 @@ def serialize(table, *args, **kwargs):
 
     field_types = [table.fields[field_name] for field_name in field_names]
     for row in prepared_table:
-        yield [
-            field_type.serialize(value, *args, **kwargs)
-            for value, field_type in zip(row, field_types)
-        ]
+        yield [field_type.serialize(value, *args, **kwargs) for value, field_type in zip(row, field_types)]

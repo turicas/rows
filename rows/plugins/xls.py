@@ -72,10 +72,7 @@ def _python_to_xls(field_types):
             return field_type.serialize(value), data
 
     def convert_row(row):
-        return [
-            convert_value(field_type, value)
-            for field_type, value in zip(field_types, row)
-        ]
+        return [convert_value(field_type, value) for field_type, value in zip(field_types, row)]
 
     return convert_row
 
@@ -206,16 +203,11 @@ def import_from_xls(
     # starting from `min_col`.
     start_row = max(start_row if start_row is not None else min_row, min_row)
     end_row = min(end_row if end_row is not None else max_row, max_row)
-    start_column = max(
-        start_column if start_column is not None else min_column, min_column
-    )
+    start_column = max(start_column if start_column is not None else min_column, min_column)
     end_column = min(end_column if end_column is not None else max_column, max_column)
 
     table_rows = [
-        [
-            cell_value(sheet, row_index, column_index)
-            for column_index in range(start_column, end_column + 1)
-        ]
+        [cell_value(sheet, row_index, column_index) for column_index in range(start_column, end_column + 1)]
         for row_index in range(start_row, end_row + 1)
     ]
 

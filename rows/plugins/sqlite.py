@@ -80,10 +80,7 @@ def _python_to_sqlite(field_types):
             return field_type.serialize(value)
 
     def convert_row(row):
-        return [
-            convert_value(field_type, value)
-            for field_type, value in zip(field_types, row)
-        ]
+        return [convert_value(field_type, value) for field_type, value in zip(field_types, row)]
 
     return convert_row
 
@@ -128,23 +125,14 @@ def _valid_table_name(name):
     - Letters can be capitalized or not
     - Acceps letters, numbers and _
     """
-    if name[0] not in "_" + string.ascii_letters or not set(name).issubset(
-        "_" + string.ascii_letters + string.digits
-    ):
+    if name[0] not in "_" + string.ascii_letters or not set(name).issubset("_" + string.ascii_letters + string.digits):
         return False
 
     else:
         return True
 
 
-def import_from_sqlite(
-    filename_or_connection,
-    table_name="table1",
-    query=None,
-    query_args=None,
-    *args,
-    **kwargs
-):
+def import_from_sqlite(filename_or_connection, table_name="table1", query=None, query_args=None, *args, **kwargs):
     """Return a rows.Table with data from SQLite database."""
     source = get_source(filename_or_connection)
     connection = source.fobj
@@ -202,9 +190,7 @@ def export_to_sqlite(
         "{} {}".format(field_name, SQLITE_TYPES.get(field_type, DEFAULT_TYPE))
         for field_name, field_type in zip(field_names, field_types)
     ]
-    cursor.execute(
-        SQL_CREATE_TABLE.format(table_name=table_name, field_types=", ".join(columns))
-    )
+    cursor.execute(SQL_CREATE_TABLE.format(table_name=table_name, field_types=", ".join(columns)))
 
     insert_sql = SQL_INSERT.format(
         table_name=table_name,

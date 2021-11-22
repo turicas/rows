@@ -58,9 +58,7 @@ Read the documentation and learn how simple is to use it: http://turicas.info/ro
 
 setup(
     name="rows",
-    description=(
-        "A common, beautiful interface to tabular data, " "no matter the format"
-    ),
+    description=("A common, beautiful interface to tabular data, no matter the format"),
     long_description=LONG_DESCRIPTION,
     version=version,
     author="Álvaro Justen",

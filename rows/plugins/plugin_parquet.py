@@ -32,6 +32,7 @@ class NullHandler(logging.Handler):
 
 logging.getLogger("parquet").addHandler(NullHandler())
 import parquet  # NOQA
+
 PARQUET_TO_ROWS = {
     parquet.parquet_thrift.Type.BOOLEAN: fields.BoolField,
     parquet.parquet_thrift.Type.BYTE_ARRAY: fields.BinaryField,
@@ -60,6 +61,4 @@ def import_from_parquet(filename_or_fobj, *args, **kwargs):
     table_rows = list(parquet.reader(source.fobj))  # TODO: be lazy
 
     meta = {"imported_from": "parquet", "source": source}
-    return create_table(
-        [header] + table_rows, meta=meta, force_types=types, *args, **kwargs
-    )
+    return create_table([header] + table_rows, meta=meta, force_types=types, *args, **kwargs)

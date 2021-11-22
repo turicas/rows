@@ -48,7 +48,8 @@ def fix_dialect(dialect):
 
 
 class excel_semicolon(unicodecsv.excel):
-    delimiter = ';'
+    delimiter = ";"
+
 
 unicodecsv.register_dialect("excel-semicolon", excel_semicolon)
 
@@ -114,27 +115,16 @@ def read_sample(fobj, sample):
     return data
 
 
-def import_from_csv(
-    filename_or_fobj,
-    encoding="utf-8",
-    dialect=None,
-    sample_size=262144,
-    *args,
-    **kwargs
-):
+def import_from_csv(filename_or_fobj, encoding="utf-8", dialect=None, sample_size=262144, *args, **kwargs):
     """Import data from a CSV file (automatically detects dialect).
 
     If a file-like object is provided it MUST be in binary mode, like in
     `open(filename, mode='rb')`.
     """
-    source = Source.from_file(
-        filename_or_fobj, plugin_name="csv", mode="rb", encoding=encoding
-    )
+    source = Source.from_file(filename_or_fobj, plugin_name="csv", mode="rb", encoding=encoding)
 
     if dialect is None:
-        dialect = discover_dialect(
-            sample=read_sample(source.fobj, sample_size), encoding=source.encoding
-        )
+        dialect = discover_dialect(sample=read_sample(source.fobj, sample_size), encoding=source.encoding)
 
     reader = unicodecsv.reader(source.fobj, encoding=encoding, dialect=dialect)
 

@@ -25,9 +25,11 @@ from rows.utils import Source
 
 try:
     from HTMLParser import HTMLParser  # Python 2
+
     unescape = HTMLParser().unescape
 except ImportError:
     import html  # Python 3
+
     unescape = html.unescape
 
 
@@ -41,11 +43,7 @@ def _get_row_data(fields_xpath):
             result = row.xpath(field_xpath)
             if result:
                 result = " ".join(
-                    text
-                    for text in map(
-                        six.text_type.strip, map(six.text_type, map(unescape, result))
-                    )
-                    if text
+                    text for text in map(six.text_type.strip, map(six.text_type, map(unescape, result))) if text
                 )
             else:
                 result = None
@@ -56,9 +54,7 @@ def _get_row_data(fields_xpath):
     return get_data
 
 
-def import_from_xpath(
-    filename_or_fobj, rows_xpath, fields_xpath, encoding="utf-8", *args, **kwargs
-):
+def import_from_xpath(filename_or_fobj, rows_xpath, fields_xpath, encoding="utf-8", *args, **kwargs):
 
     types = set([type(rows_xpath)] + [type(xpath) for xpath in fields_xpath.values()])
     if types != set([six.text_type]):

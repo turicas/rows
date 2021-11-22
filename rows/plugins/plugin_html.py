@@ -82,12 +82,10 @@ def import_from_html(
 ):
     """Return rows.Table from HTML file."""
 
-    source = Source.from_file(
-        filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding
-    )
+    source = Source.from_file(filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding)
 
     html = source.fobj.read()
-    if b"<?xml" not in html[:1024] or b"encoding" not in html[:html.find(b"?>") + 2]:
+    if b"<?xml" not in html[:1024] or b"encoding" not in html[: html.find(b"?>") + 2]:
         html = html.decode(source.encoding)  # Regular HTML, not XHTML/XML
 
     html_tree = document_fromstring(html)
@@ -126,9 +124,7 @@ def import_from_html(
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_html(
-    table, filename_or_fobj=None, encoding="utf-8", caption=False, *args, **kwargs
-):
+def export_to_html(table, filename_or_fobj=None, encoding="utf-8", caption=False, *args, **kwargs):
     """Export and return rows.Table data to HTML file."""
 
     return_data, should_close = False, None
@@ -179,18 +175,14 @@ def export_to_html(
 def _extract_node_text(node):
     """Extract text from a given lxml node."""
 
-    texts = map(
-        six.text_type.strip, map(six.text_type, map(unescape, node.xpath(".//text()")))
-    )
+    texts = map(six.text_type.strip, map(six.text_type, map(unescape, node.xpath(".//text()"))))
     return " ".join(text for text in texts if text)
 
 
 def count_tables(filename_or_fobj, encoding="utf-8", table_tag="table"):
     """Read a file passed by arg and return your table HTML tag count."""
 
-    source = Source.from_file(
-        filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding
-    )
+    source = Source.from_file(filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding)
     html = source.fobj.read().decode(source.encoding)
     html_tree = document_fromstring(html)
     tables = html_tree.xpath("//{}".format(table_tag))

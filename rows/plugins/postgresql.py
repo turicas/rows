@@ -77,10 +77,7 @@ def _python_to_postgresql(field_types):
             return field_type.serialize(value)
 
     def convert_row(row):
-        return [
-            convert_value(field_type, value)
-            for field_type, value in zip(field_types, row)
-        ]
+        return [convert_value(field_type, value) for field_type, value in zip(field_types, row)]
 
     return convert_row
 
@@ -97,7 +94,9 @@ def get_source(connection_or_uri):
         input_is_uri = should_close = False
 
     # TODO: may improve Source for non-fobj cases (when open() is not needed)
-    source = Source.from_file(connection, plugin_name="postgresql", mode=None, is_file=False, local=False, should_close=should_close)
+    source = Source.from_file(
+        connection, plugin_name="postgresql", mode=None, is_file=False, local=False, should_close=should_close
+    )
     source.uri = uri if input_is_uri else None
 
     return source
@@ -112,9 +111,7 @@ def _valid_table_name(name):
     - Accepts letters, numbers and _
     """
 
-    if name[0] not in "_" + string.ascii_letters or not set(name).issubset(
-        "_" + string.ascii_letters + string.digits
-    ):
+    if name[0] not in "_" + string.ascii_letters or not set(name).issubset("_" + string.ascii_letters + string.digits):
         return False
 
     else:
@@ -122,13 +119,7 @@ def _valid_table_name(name):
 
 
 def import_from_postgresql(
-    connection_or_uri,
-    table_name="table1",
-    query=None,
-    query_args=None,
-    close_connection=None,
-    *args,
-    **kwargs
+    connection_or_uri, table_name="table1", query=None, query_args=None, close_connection=None, *args, **kwargs
 ):
 
     if query is None:
@@ -193,9 +184,7 @@ def export_to_postgresql(
         "{} {}".format(field_name, SQL_TYPES.get(field_type, DEFAULT_TYPE))
         for field_name, field_type in zip(field_names, field_types)
     ]
-    cursor.execute(
-        SQL_CREATE_TABLE.format(table_name=table_name, field_types=", ".join(columns))
-    )
+    cursor.execute(SQL_CREATE_TABLE.format(table_name=table_name, field_types=", ".join(columns)))
 
     insert_sql = SQL_INSERT.format(
         table_name=table_name,

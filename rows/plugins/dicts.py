@@ -42,10 +42,7 @@ def import_from_dicts(data, samples=None, *args, **kwargs):
         if samples and index == samples:
             break
 
-    data_rows = (
-        [row.get(header, None) for header in headers]
-        for row in chain(cached_rows, data)
-    )
+    data_rows = ([row.get(header, None) for header in headers] for row in chain(cached_rows, data))
 
     kwargs["samples"] = samples
     meta = {"imported_from": "dicts"}

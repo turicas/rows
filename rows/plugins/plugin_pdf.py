@@ -197,7 +197,11 @@ class PDFMinerBackend(PDFBackend):
             return RectObject(x0=obj.x0, y0=obj.y0, x1=obj.x1, y1=obj.y1, fill=obj.fill)
 
     def objects(
-        self, page_numbers=None, starts_after=None, ends_before=None, desired_types=PDFMINER_ALL_TYPES,
+        self,
+        page_numbers=None,
+        starts_after=None,
+        ends_before=None,
+        desired_types=PDFMINER_ALL_TYPES,
     ):
 
         doc = self.document
@@ -604,7 +608,11 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
         objects = self.selected_objects
         objects.sort(key=lambda obj: obj.x0)
         return self._define_intervals(
-            objects, min_attr=lambda obj: obj.x0, max_attr=lambda obj: obj.x1, threshold=self.x_threshold, axis="x",
+            objects,
+            min_attr=lambda obj: obj.x0,
+            max_attr=lambda obj: obj.x1,
+            threshold=self.x_threshold,
+            axis="x",
         )
 
     @cached_property
@@ -612,7 +620,11 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
         objects = self.selected_objects
         objects.sort(key=lambda obj: -obj.y1)
         return self._define_intervals(
-            objects, min_attr=lambda obj: obj.y0, max_attr=lambda obj: obj.y1, threshold=self.y_threshold, axis="y",
+            objects,
+            min_attr=lambda obj: obj.y0,
+            max_attr=lambda obj: obj.y1,
+            threshold=self.y_threshold,
+            axis="y",
         )
 
 

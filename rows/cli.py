@@ -93,7 +93,8 @@ def _import_table(source, encoding, verify_ssl=True, progress=True, *args, **kwa
         )
     except requests.exceptions.SSLError:
         click.echo(
-            "ERROR: SSL verification failed! " "Use `--verify-ssl=no` if you want to ignore.", err=True,
+            "ERROR: SSL verification failed! " "Use `--verify-ssl=no` if you want to ignore.",
+            err=True,
         )
         sys.exit(2)
     else:
@@ -255,11 +256,19 @@ def convert(
     if output_locale is not None:
         with rows.locale_context(output_locale):
             export_to_uri(
-                table, destination, encoding=output_encoding, export_fields=export_fields, **output_options,
+                table,
+                destination,
+                encoding=output_encoding,
+                export_fields=export_fields,
+                **output_options,
             )
     else:
         export_to_uri(
-            table, destination, encoding=output_encoding, export_fields=export_fields, **output_options,
+            table,
+            destination,
+            encoding=output_encoding,
+            export_fields=export_fields,
+            **output_options,
         )
 
 
@@ -272,7 +281,8 @@ def convert(
 @click.option("--order-by")
 @click.option("--fields", help="A comma-separated list of fields to export")
 @click.option(
-    "--fields-exclude", help="A comma-separated list of fields to exclude when exporting",
+    "--fields-exclude",
+    help="A comma-separated list of fields to exclude when exporting",
 )
 @click.argument("keys")
 @click.argument("sources", nargs=-1, required=True)
@@ -316,7 +326,10 @@ def join(
     if output_locale is not None:
         with rows.locale_context(output_locale):
             export_to_uri(
-                result, destination, encoding=output_encoding, export_fields=export_fields,
+                result,
+                destination,
+                encoding=output_encoding,
+                export_fields=export_fields,
             )
     else:
         export_to_uri(result, destination, encoding=output_encoding, export_fields=export_fields)
@@ -353,12 +366,22 @@ def sum_(
     if input_locale is not None:
         with rows.locale_context(input_locale):
             tables = [
-                _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl, import_fields=import_fields,)
+                _import_table(
+                    source,
+                    encoding=input_encoding,
+                    verify_ssl=verify_ssl,
+                    import_fields=import_fields,
+                )
                 for source in sources
             ]
     else:
         tables = [
-            _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl, import_fields=import_fields,)
+            _import_table(
+                source,
+                encoding=input_encoding,
+                verify_ssl=verify_ssl,
+                import_fields=import_fields,
+            )
             for source in sources
         ]
 
@@ -374,7 +397,10 @@ def sum_(
     if output_locale is not None:
         with rows.locale_context(output_locale):
             export_to_uri(
-                result, destination, encoding=output_encoding, export_fields=export_fields,
+                result,
+                destination,
+                encoding=output_encoding,
+                export_fields=export_fields,
             )
     else:
         export_to_uri(result, destination, encoding=output_encoding, export_fields=export_fields)
@@ -460,11 +486,19 @@ def print_(
     if output_locale is not None:
         with rows.locale_context(output_locale):
             rows.export_to_txt(
-                table, fobj, encoding=output_encoding, export_fields=export_fields, frame_style=frame_style,
+                table,
+                fobj,
+                encoding=output_encoding,
+                export_fields=export_fields,
+                frame_style=frame_style,
             )
     else:
         rows.export_to_txt(
-            table, fobj, encoding=output_encoding, export_fields=export_fields, frame_style=frame_style,
+            table,
+            fobj,
+            encoding=output_encoding,
+            export_fields=export_fields,
+            frame_style=frame_style,
         )
 
     fobj.seek(0)
@@ -479,7 +513,10 @@ def print_(
 @click.option("--output-locale")
 @click.option("--verify-ssl", type=bool, default=True)
 @click.option(
-    "--samples", type=int, default=5000, help="Number of rows to determine the field types (0 = all)",
+    "--samples",
+    type=int,
+    default=5000,
+    help="Number of rows to determine the field types (0 = all)",
 )
 @click.option(
     "--input-option",
@@ -541,14 +578,22 @@ def query(
             with rows.locale_context(input_locale):
                 tables = [
                     _import_table(
-                        source, encoding=input_encoding, verify_ssl=verify_ssl, samples=samples, progress=progress,
+                        source,
+                        encoding=input_encoding,
+                        verify_ssl=verify_ssl,
+                        samples=samples,
+                        progress=progress,
                     )
                     for source in sources
                 ]
         else:
             tables = [
                 _import_table(
-                    source, encoding=input_encoding, verify_ssl=verify_ssl, samples=samples, progress=progress,
+                    source,
+                    encoding=input_encoding,
+                    verify_ssl=verify_ssl,
+                    samples=samples,
+                    progress=progress,
                 )
                 for source in sources
             ]
@@ -590,14 +635,22 @@ def query(
     help="Custom (import) plugin key=value custom option (can be specified multiple times)",
 )
 @click.option(
-    "-f", "--format", "output_format", default="txt", type=click.Choice(("csv", "django", "sql", "txt")),
+    "-f",
+    "--format",
+    "output_format",
+    default="txt",
+    type=click.Choice(("csv", "django", "sql", "txt")),
 )
 @click.option("--fields", help="A comma-separated list of fields to inspect")
 @click.option(
-    "--fields-exclude", help="A comma-separated list of fields to exclude from inspection",
+    "--fields-exclude",
+    help="A comma-separated list of fields to exclude from inspection",
 )
 @click.option(
-    "--samples", type=int, default=5000, help="Number of rows to determine the field types (0 = all)",
+    "--samples",
+    type=int,
+    default=5000,
+    help="Number of rows to determine the field types (0 = all)",
 )
 @click.option("--quiet", "-q", is_flag=True)
 @click.argument("source", required=True)
@@ -670,7 +723,10 @@ def schema(
 @cli.command(name="csv-to-sqlite", help="Convert one or more CSV files to SQLite")
 @click.option("--batch-size", default=10000)
 @click.option(
-    "--samples", type=int, default=5000, help="Number of rows to determine the field types (0 = all)",
+    "--samples",
+    type=int,
+    default=5000,
+    help="Number of rows to determine the field types (0 = all)",
 )
 @click.option("--input-encoding", default=None)
 @click.option("--dialect", default=None)
@@ -726,7 +782,9 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
     input_filename = Path(source)
     output_filename = Path(output)
     prefix = "[{db_filename}#{tablename} -> {filename}]".format(
-        db_filename=input_filename.name, tablename=table_name, filename=output_filename.name,
+        db_filename=input_filename.name,
+        tablename=table_name,
+        filename=output_filename.name,
     )
     progress_bar = ProgressBar(prefix=prefix, pre_prefix="")
     sqlite_to_csv(
@@ -1096,7 +1154,10 @@ def csv_split(input_encoding, output_encoding, buffer_size, quiet, destination_p
                 output_fobj.close()
             part += 1
             output_fobj = open_compressed(
-                destination_pattern.format(part=part), mode="w", encoding=output_encoding, buffering=buffer_size,
+                destination_pattern.format(part=part),
+                mode="w",
+                encoding=output_encoding,
+                buffering=buffer_size,
             )
             writer = csv.writer(output_fobj)
             writer.writerow(header)

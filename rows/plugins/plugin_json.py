@@ -70,9 +70,7 @@ def _convert(value, field_type, *args, **kwargs):
         return field_type.serialize(value, *args, **kwargs)
 
 
-def export_to_json(
-    table, filename_or_fobj=None, encoding="utf-8", indent=None, *args, **kwargs
-):
+def export_to_json(table, filename_or_fobj=None, encoding="utf-8", indent=None, *args, **kwargs):
     """Export a `rows.Table` to a JSON file or file-like object.
 
     If a file-like object is provided it MUST be open in binary mode (like in
