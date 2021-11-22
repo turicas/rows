@@ -17,44 +17,148 @@
 
 from __future__ import unicode_literals
 
+import csv
+import io
+import itertools
+import shlex
 import string
+import subprocess
+from pathlib import Path
 
 import six
 from psycopg2 import connect as pgconnect
 
 import rows.fields as fields
+from rows.plugins.plugin_csv import discover_dialect
+from rows.utils import Source, detect_local_source, execute_command, open_compressed
 from rows.plugins.utils import (
     create_table,
     ipartition,
     make_unique_name,
     prepare_to_export,
 )
-from rows.utils import Source
 
-SQL_TABLE_NAMES = """
-    SELECT
-        tablename
-    FROM pg_tables
-    WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
-"""
-SQL_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " '"{table_name}" ({field_types})'
-SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
-SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) ' "VALUES ({placeholders})"
-SQL_TYPES = {
+
+POSTGRESQL_TYPES = {
     fields.BinaryField: "BYTEA",
     fields.BoolField: "BOOLEAN",
     fields.DateField: "DATE",
     fields.DatetimeField: "TIMESTAMP(0) WITHOUT TIME ZONE",
     fields.DecimalField: "NUMERIC",
     fields.FloatField: "REAL",
-    fields.IntegerField: "INTEGER",
+    fields.IntegerField: "BIGINT",  # TODO: detect when it's really needed
     fields.JSONField: "JSONB",
     fields.PercentField: "REAL",
     fields.TextField: "TEXT",
     fields.UUIDField: "UUID",
 }
+DEFAULT_POSTGRESQL_TYPE = "BYTEA"
+SQL_TABLE_NAMES = """
+    SELECT
+        tablename
+    FROM pg_tables
+    WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+"""
+SQL_CREATE_TABLE = "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types})'
+SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
+SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) ' "VALUES ({placeholders})"
 DEFAULT_TYPE = "BYTEA"
-# TODO: unify this and rows.utils.POSTGRESQL_TYPES
+
+
+def get_psql_command(
+    command,
+    user=None,
+    password=None,
+    host=None,
+    port=None,
+    database_name=None,
+    database_uri=None,
+):
+
+    if database_uri is None:
+        if None in (user, password, host, port, database_name):
+            raise ValueError("Need to specify either `database_uri` or the complete information")
+
+        database_uri = "postgres://{user}:{password}@{host}:{port}/{name}".format(
+            user=user, password=password, host=host, port=port, name=database_name
+        )
+
+    return "psql -c {} {}".format(shlex.quote(command), shlex.quote(database_uri))
+
+
+def get_psql_copy_command(
+    table_name_or_query,
+    header,
+    encoding="utf-8",
+    user=None,
+    password=None,
+    host=None,
+    port=None,
+    database_name=None,
+    database_uri=None,
+    is_query=False,
+    dialect=csv.excel,
+    direction="FROM",
+    skip_header=False,
+):
+
+    direction = direction.upper()
+    if direction not in ("FROM", "TO"):
+        raise ValueError('`direction` must be "FROM" or "TO"')
+
+    if not is_query:  # Table name
+        source = table_name_or_query
+    else:
+        source = "(" + table_name_or_query + ")"
+    if header is None:
+        header = ""
+    else:
+        header = ", ".join(fields.slug(field_name) for field_name in header)
+        header = "({header}) ".format(header=header)
+    copy = r"\copy {source} {header}{direction} STDIN WITH(" "DELIMITER '{delimiter}', " "QUOTE '{quote}', "
+    if direction == "FROM":
+        copy += "FORCE_NULL {header}, "
+    copy += "ENCODING '{encoding}', "
+    copy += "FORMAT CSV{});".format(", HEADER" if not skip_header else "")
+
+    copy_command = copy.format(
+        source=source,
+        header=header,
+        direction=direction,
+        delimiter=dialect.delimiter.replace("'", "''"),
+        quote=dialect.quotechar.replace("'", "''"),
+        encoding=encoding,
+    )
+
+    return get_psql_command(
+        copy_command,
+        user=user,
+        password=password,
+        host=host,
+        port=port,
+        database_name=database_name,
+        database_uri=database_uri,
+    )
+
+
+def pg_create_table_sql(schema, table_name, unlogged=False):
+    field_names = list(schema.keys())
+    field_types = list(schema.values())
+
+    columns = [
+        "{} {}".format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
+        for name, type_ in zip(field_names, field_types)
+    ]
+    return SQL_CREATE_TABLE.format(
+        pre_table="" if not unlogged else "UNLOGGED ",
+        post_table=" IF NOT EXISTS",
+        table_name=table_name,
+        field_types=", ".join(columns),
+    )
+
+
+def pg_execute_psql(database_uri, sql):
+    return execute_command(get_psql_command(sql, database_uri=database_uri))
 
 
 def _python_to_postgresql(field_types):
@@ -176,15 +280,9 @@ def export_to_postgresql(
         )
 
     prepared_table = prepare_to_export(table, *args, **kwargs)
-    # TODO: use same code/logic of CREATE TABLE as
-    # rows.utils.pg_create_table_sql
     field_names = next(prepared_table)
     field_types = list(map(table.fields.get, field_names))
-    columns = [
-        "{} {}".format(field_name, SQL_TYPES.get(field_type, DEFAULT_TYPE))
-        for field_name, field_type in zip(field_names, field_types)
-    ]
-    cursor.execute(SQL_CREATE_TABLE.format(table_name=table_name, field_types=", ".join(columns)))
+    cursor.execute(pg_create_table_sql(table.fields, table_name))
 
     insert_sql = SQL_INSERT.format(
         table_name=table_name,
@@ -200,3 +298,290 @@ def export_to_postgresql(
     if close_connection or (close_connection is None and source.should_close):
         connection.close()
     return connection, table_name
+
+
+class PostgresCopy:
+    """Import data from CSV into PostgreSQL using the fastest method
+
+    Required: psql command
+    """
+
+    # TODO: implement export
+    # TODO: add option to run parallel COPY processes
+    # TODO: add logging to the process
+    # TODO: detect when error ocurred and interrupt the process immediatly
+
+    def __init__(self, database_uri, chunk_size=8388608, max_samples=10000):
+        self.database_uri = database_uri
+        self.chunk_size = chunk_size
+        self.max_samples = max_samples
+
+    def _convert_encoding(self, encoding):
+        pg_encoding = encoding
+        if pg_encoding in ("us-ascii", "ascii"):
+            # TODO: convert all possible encodings
+            pg_encoding = "SQL_ASCII"
+        return pg_encoding
+
+    def _import(self, fobj, encoding, dialect, field_names, table_name, skip_header=False, callback=None):
+        # Prepare the `psql` command to be executed based on collected metadata
+        command = get_psql_copy_command(
+            database_uri=self.database_uri,
+            dialect=dialect,
+            direction="FROM",
+            encoding=self._convert_encoding(encoding),
+            header=field_names,
+            table_name_or_query=table_name,
+            is_query=False,
+            skip_header=skip_header,
+        )
+        rows_imported, error = 0, None
+        try:
+            process = subprocess.Popen(
+                shlex.split(command),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            data = fobj.read(self.chunk_size)
+            total_written = 0
+            while data != b"":
+                written = process.stdin.write(data)
+                total_written += written
+                if callback:
+                    callback(written, total_written)
+                data = fobj.read(self.chunk_size)
+            stdout, stderr = process.communicate()
+            if stderr != b"":
+                for line in stderr.splitlines():
+                    if line.startswith(b"NOTICE:"):
+                        continue
+                    else:
+                        raise RuntimeError(stderr.decode("utf-8"))
+            rows_imported = int(stdout.replace(b"COPY ", b"").strip())
+
+        except FileNotFoundError:
+            fobj.close()
+            raise RuntimeError("Command `psql` not found")
+
+        except BrokenPipeError:
+            fobj.close()
+            raise RuntimeError(process.stderr.read().decode("utf-8"))
+
+        else:
+            fobj.close()
+            return {"bytes_written": total_written, "rows_imported": rows_imported}
+
+    def import_from_filename(
+        self,
+        filename,
+        table_name,
+        encoding=None,
+        dialect=None,
+        create_table=True,
+        schema=None,
+        skip_header=False,
+        callback=None,
+        unlogged=False,
+    ):
+        if encoding is None:
+            fobj = open_compressed(filename, mode="rb")
+            sample_bytes = fobj.read(self.chunk_size)
+            fobj.close()
+            source = detect_local_source(filename, sample_bytes)
+            encoding = source.encoding
+
+        fobj = open_compressed(filename, mode="r", encoding=encoding)
+        sample = fobj.read(self.chunk_size)
+        fobj.close()
+
+        if dialect is None:  # Detect dialect
+            dialect = discover_dialect(sample.encode(encoding), encoding=encoding)
+        elif isinstance(dialect, six.text_type):
+            dialect = csv.get_dialect(dialect)
+        # TODO: add `else` to check if `dialect` is instace of correct class
+
+        if skip_header:
+            field_names = list(schema.keys())
+        else:
+            reader = csv.reader(io.StringIO(sample), dialect=dialect)
+            csv_field_names = [fields.slug(field_name) for field_name in next(reader)]
+            if schema is None:
+                field_names = csv_field_names
+            else:
+                field_names = list(schema.keys())
+                if not set(csv_field_names).issubset(set(field_names)):
+                    raise ValueError("CSV field names are not a subset of schema field names")
+
+        if create_table:
+            # If we need to create the table, it creates based on schema
+            # (automatically identified or forced), not on CSV directly (field
+            # order will be schema's field order).
+            if schema is None:
+                schema = fields.detect_types(csv_field_names, itertools.islice(reader, self.max_samples))
+            create_table_sql = pg_create_table_sql(schema, table_name, unlogged=unlogged)
+            pg_execute_psql(self.database_uri, create_table_sql)
+
+        fobj = open_compressed(filename, mode="rb")
+        return self._import(
+            fobj=fobj,
+            encoding=encoding,
+            dialect=dialect,
+            field_names=field_names,
+            table_name=table_name,
+            skip_header=skip_header,
+            callback=callback,
+        )
+
+    def import_from_fobj(
+        self,
+        fobj,
+        table_name,
+        encoding,
+        dialect,
+        schema,
+        create_table=True,
+        skip_header=False,
+        callback=None,
+        unlogged=False,
+    ):
+        if isinstance(dialect, six.text_type):
+            dialect = csv.get_dialect(dialect)
+        # TODO: add `else` to check if `dialect` is instace of correct class
+
+        if create_table:
+            # If we need to create the table, it creates based on schema, not
+            # on CSV directly (field order will be schema's field order).
+            pg_execute_psql(
+                self.database_uri,
+                pg_create_table_sql(schema, table_name, unlogged=unlogged),
+            )
+
+        return self._import(
+            fobj=fobj,
+            encoding=encoding,
+            dialect=dialect,
+            field_names=list(schema.keys()),
+            table_name=table_name,
+            skip_header=skip_header,
+            callback=callback,
+        )
+
+
+def pgimport(
+    filename_or_fobj,
+    database_uri,
+    table_name,
+    encoding=None,
+    dialect=None,
+    create_table=True,
+    schema=None,
+    callback=None,
+    timeout=0.1,
+    chunk_size=8388608,
+    max_samples=10000,
+    unlogged=False,
+    skip_header=False,
+):
+    """Import data from CSV into PostgreSQL using the fastest method
+
+    Required: `psql` command installed.
+    """
+
+    pgcopy = PostgresCopy(
+        database_uri=database_uri,
+        chunk_size=chunk_size,
+        max_samples=max_samples,
+    )
+
+    if isinstance(filename_or_fobj, (six.binary_type, six.text_type, Path)):
+        return pgcopy.import_from_filename(
+            filename=filename_or_fobj,
+            table_name=table_name,
+            encoding=encoding,
+            dialect=dialect,
+            create_table=create_table,
+            schema=schema,
+            skip_header=skip_header,
+            callback=callback,
+            unlogged=unlogged,
+        )
+    else:
+        # File-object, so some fields are required
+        if schema is None or encoding is None or dialect is None:
+            raise ValueError("File-object pgimport requires schema, encoding and dialect")
+        return pgcopy.import_from_fobj(
+            fobj=filename_or_fobj,
+            table_name=table_name,
+            encoding=encoding,
+            dialect=dialect,
+            schema=schema,
+            create_table=create_table,
+            skip_header=skip_header,
+            callback=callback,
+            unlogged=unlogged,
+        )
+
+
+def pgexport(
+    database_uri,
+    table_name_or_query,
+    filename,
+    encoding="utf-8",
+    dialect=csv.excel,
+    callback=None,
+    is_query=False,
+    timeout=0.1,
+    chunk_size=8388608,
+):
+    """Export data from PostgreSQL into a CSV file using the fastest method
+
+    Required: psql command
+    """
+    # TODO: integrate with PostgresCopy
+
+    # TODO: add logging to the process
+    if isinstance(dialect, six.text_type):
+        dialect = csv.get_dialect(dialect)
+
+    # Prepare the `psql` command to be executed to export data
+    command = get_psql_copy_command(
+        database_uri=database_uri,
+        direction="TO",
+        encoding=encoding,
+        header=None,  # Needed when direction = 'TO'
+        table_name_or_query=table_name_or_query,
+        is_query=is_query,
+        dialect=dialect,
+    )
+    fobj = open_compressed(filename, mode="wb")
+    try:
+        process = subprocess.Popen(
+            shlex.split(command),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        total_written = 0
+        data = process.stdout.read(chunk_size)
+        while data != b"":
+            written = fobj.write(data)
+            total_written += written
+            if callback:
+                callback(written, total_written)
+            data = process.stdout.read(chunk_size)
+        stdout, stderr = process.communicate()
+        if stderr != b"":
+            raise RuntimeError(stderr.decode("utf-8"))
+
+    except FileNotFoundError:
+        fobj.close()
+        raise RuntimeError("Command `psql` not found")
+
+    except BrokenPipeError:
+        fobj.close()
+        raise RuntimeError(process.stderr.read().decode("utf-8"))
+
+    else:
+        fobj.close()
+        return {"bytes_written": total_written}
