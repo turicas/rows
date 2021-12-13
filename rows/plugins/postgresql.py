@@ -59,7 +59,7 @@ SQL_TABLE_NAMES = """
     FROM pg_tables
     WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
 """
-SQL_CREATE_TABLE = "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types})'
+SQL_CREATE_TABLE = "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types}){post_fields}'
 SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
 SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) ' "VALUES ({placeholders})"
 DEFAULT_TYPE = "BYTEA"
@@ -141,12 +141,12 @@ def get_psql_copy_command(
     )
 
 
-def pg_create_table_sql(schema, table_name, unlogged=False):
+def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
     field_names = list(schema.keys())
     field_types = list(schema.values())
 
     columns = [
-        "{} {}".format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
+        '"{}" {}'.format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
         for name, type_ in zip(field_names, field_types)
     ]
     return SQL_CREATE_TABLE.format(
@@ -154,6 +154,7 @@ def pg_create_table_sql(schema, table_name, unlogged=False):
         post_table=" IF NOT EXISTS",
         table_name=table_name,
         field_types=", ".join(columns),
+        post_fields=" USING {}".format(access_method) if access_method is not None else "",
     )
 
 
@@ -378,11 +379,12 @@ class PostgresCopy:
         table_name,
         encoding=None,
         dialect=None,
-        create_table=True,
         schema=None,
         skip_header=False,
-        callback=None,
+        create_table=True,
         unlogged=False,
+        access_method=None,
+        callback=None,
     ):
         if encoding is None:
             fobj = open_compressed(filename, mode="rb")
@@ -419,7 +421,12 @@ class PostgresCopy:
             # order will be schema's field order).
             if schema is None:
                 schema = fields.detect_types(csv_field_names, itertools.islice(reader, self.max_samples))
-            create_table_sql = pg_create_table_sql(schema, table_name, unlogged=unlogged)
+            create_table_sql = pg_create_table_sql(
+                schema,
+                table_name,
+                unlogged=unlogged,
+                access_method=access_method,
+            )
             pg_execute_psql(self.database_uri, create_table_sql)
 
         fobj = open_compressed(filename, mode="rb")
@@ -440,10 +447,11 @@ class PostgresCopy:
         encoding,
         dialect,
         schema,
-        create_table=True,
         skip_header=False,
-        callback=None,
+        create_table=True,
         unlogged=False,
+        access_method=None,
+        callback=None,
     ):
         if isinstance(dialect, six.text_type):
             dialect = csv.get_dialect(dialect)
@@ -454,7 +462,7 @@ class PostgresCopy:
             # on CSV directly (field order will be schema's field order).
             pg_execute_psql(
                 self.database_uri,
-                pg_create_table_sql(schema, table_name, unlogged=unlogged),
+                pg_create_table_sql(schema, table_name, unlogged=unlogged, access_method=access_method),
             )
 
         return self._import(
@@ -474,19 +482,21 @@ def pgimport(
     table_name,
     encoding=None,
     dialect=None,
-    create_table=True,
     schema=None,
-    callback=None,
-    timeout=0.1,
+    skip_header=False,
     chunk_size=8388608,
     max_samples=10000,
+    create_table=True,
     unlogged=False,
-    skip_header=False,
+    access_method=None,
+    callback=None,
 ):
     """Import data from CSV into PostgreSQL using the fastest method
 
     Required: `psql` command installed.
     """
+
+    # TODO: add warning if table already exists and create_table=True
 
     pgcopy = PostgresCopy(
         database_uri=database_uri,
@@ -500,11 +510,12 @@ def pgimport(
             table_name=table_name,
             encoding=encoding,
             dialect=dialect,
-            create_table=create_table,
             schema=schema,
             skip_header=skip_header,
-            callback=callback,
+            create_table=create_table,
             unlogged=unlogged,
+            access_method=access_method,
+            callback=callback,
         )
     else:
         # File-object, so some fields are required
@@ -516,10 +527,11 @@ def pgimport(
             encoding=encoding,
             dialect=dialect,
             schema=schema,
-            create_table=create_table,
             skip_header=skip_header,
-            callback=callback,
+            create_table=create_table,
             unlogged=unlogged,
+            access_method=access_method,
+            callback=callback,
         )
 
 
@@ -531,7 +543,6 @@ def pgexport(
     dialect=csv.excel,
     callback=None,
     is_query=False,
-    timeout=0.1,
     chunk_size=8388608,
 ):
     """Export data from PostgreSQL into a CSV file using the fastest method

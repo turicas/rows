@@ -804,10 +804,11 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
 @click.option("--dialect", default=None)
 @click.option("--schema", default=None)
 @click.option("--unlogged", is_flag=True)
+@click.option("--access-method")
 @click.argument("source", required=True)
 @click.argument("database_uri", required=True)
 @click.argument("table_name", required=True)
-def command_pgimport(input_encoding, no_create_table, dialect, schema, unlogged, source, database_uri, table_name):
+def command_pgimport(input_encoding, no_create_table, dialect, schema, unlogged, access_method, source, database_uri, table_name):
 
     # TODO: add --quiet
     # TODO: may detect encoding here (instead of inside rows.utils.pgimport)
@@ -857,9 +858,10 @@ def command_pgimport(input_encoding, no_create_table, dialect, schema, unlogged,
         database_uri=database_uri,
         create_table=not no_create_table,
         table_name=table_name,
-        callback=progress_bar.update,
         schema=schemas[0],
         unlogged=unlogged,
+        access_method=access_method,
+        callback=progress_bar.update,
     )
     progress_bar.description = "{} rows imported".format(import_meta["rows_imported"])
     progress_bar.close()
