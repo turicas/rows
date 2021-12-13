@@ -980,7 +980,7 @@ def csv_merge(
         # each file).
         metadata[filename]["fobj"] = open_compressed(filename, encoding=input_encoding, buffering=buffer_size)
         metadata[filename]["reader"] = csv.reader(metadata[filename]["fobj"], dialect=dialect)
-        metadata[filename]["header"] = next(metadata[filename]["reader"])
+        metadata[filename]["header"] = make_header(next(metadata[filename]["reader"]))
         metadata[filename]["header_map"] = {}
         for field_name in metadata[filename]["header"]:
             field_name_slug = rows.fields.slug(field_name)
