@@ -414,6 +414,7 @@ class PostgresCopy:
                 field_names = list(schema.keys())
                 if not set(csv_field_names).issubset(set(field_names)):
                     raise ValueError("CSV field names are not a subset of schema field names")
+                field_names = [field for field in csv_field_names if field in field_names]
 
         if create_table:
             # If we need to create the table, it creates based on schema
