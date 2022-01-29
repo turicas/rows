@@ -441,46 +441,72 @@ def define_threshold(axis, objects, proportion=0.3):
 
 
 class Group(object):
-    "Helper class to group objects based on its positions and sizes"
+    "Group objects based on its positions and sizes"
 
-    def __init__(self, minimum=float("inf"), maximum=float("-inf"), threshold=0):
-        self.minimum = minimum
-        self.maximum = maximum
+    def __init__(self, objects=None, threshold=0):
+        self.x0 = float("inf")
+        self.x1 = float("-inf")
+        self.y0 = float("inf")
+        self.y1 = float("-inf")
+        self.objects = objects or []
         self.threshold = threshold
-        self.objects = []
+        if self.objects:
+            self._update_boundaries(self.objects)
 
-    @property
-    def min(self):
-        return self.minimum - self.threshold
+    def __len__(self):
+        return len(self.objects)
 
-    @property
-    def max(self):
-        return self.maximum + self.threshold
+    def __getitem__(self, key):
+        return self.objects[key]
 
-    def contains(self, obj):
-        d0 = getattr(obj, self.dimension_0)
-        d1 = getattr(obj, self.dimension_1)
-        middle = d0 + (d1 - d0) / 2.0
-        return self.min <= middle <= self.max
+    def __repr__(self):
+        return "<Group ({} element{}): [{}]>".format(
+            len(self.objects),
+            "s" if len(self.objects) != 1 else "",
+            ", ".join(repr(obj.text) for obj in self.objects)
+        )
+
+    def _update_boundaries(self, objects):
+        self.x0 = min(self.x0, min(obj.x0 for obj in objects))
+        self.x1 = max(self.x1, max(obj.x1 for obj in objects))
+        self.y0 = min(self.y0, min(obj.y0 for obj in objects))
+        self.y1 = max(self.y1, max(obj.y1 for obj in objects))
 
     def add(self, obj):
         self.objects.append(obj)
-        d0 = getattr(obj, self.dimension_0)
-        d1 = getattr(obj, self.dimension_1)
-        if d0 < self.minimum:
-            self.minimum = d0
-        if d1 > self.maximum:
-            self.maximum = d1
+        self._update_boundaries([obj])
+
+    @property
+    def bbox(self):
+        return (self.x0, self.y0, self.x1, self.y1)
+
+    def object_dimensions(self, obj):
+        if self.axis == "x":
+            return (obj.x0, obj.x1)
+        elif self.axis == "y":
+            return (obj.y0, obj.y1)
+
+    def intercepts(self, axis, obj):
+        """Check whether `obj` intercepts group boundaries (min/max -+ threshold)"""
+
+        d0, d1 = self.object_dimensions(axis, obj)
+        return object_intercepts(d0, d1, self.minimum, self.maximum, self.threshold)
+
+    def contains_center(self, axis, obj):
+        """Check whether `obj`'s center is contained by group boundaries (min/max -+ threshold)"""
+
+        d0, d1 = self.object_dimensions(axis, obj)
+        return object_contains_center(d0, d1, self.minimum, self.maximum, self.threshold)
+
+    def contains(self, axis, obj):
+        """Check whether `obj` is contained by group boundaries (min/max -+ threshold)"""
+
+        d0, d1 = self.object_dimensions(axis, obj)
+        return object_contains(d0, d1, self.minimum, self.maximum, self.threshold)
 
 
-class HorizontalGroup(Group):
-    dimension_0 = "y0"
-    dimension_1 = "y1"
 
 
-class VerticalGroup(Group):
-    dimension_0 = "x0"
-    dimension_1 = "x1"
 
 
 def group_objects(objs, threshold, axis):
