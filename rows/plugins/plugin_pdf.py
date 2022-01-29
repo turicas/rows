@@ -630,7 +630,7 @@ def closest_same_column(objects, value, threshold=None):
 
 
 class ExtractionAlgorithm(object):
-    def __init__(self, objects, text_objects, x_threshold, y_threshold, x_order, y_order):
+    def __init__(self, objects, text_objects, x_threshold=None, y_threshold=None, x_order=1, y_order=1):
         self.objects = objects
         self.text_objects = text_objects
         self.x_threshold = x_threshold
@@ -709,11 +709,11 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
         if axis == "x":
             min_attr = lambda obj: obj.x0
             max_attr = lambda obj: obj.x1
-            threshold = self.x_threshold
+            threshold = self.x_threshold if self.x_threshold is not None else define_threshold(axis, objects)
         elif axis == "y":
             min_attr = lambda obj: obj.y0
             max_attr = lambda obj: obj.y1
-            threshold = self.y_threshold
+            threshold = self.y_threshold if self.y_threshold is not None else define_threshold(axis, objects)
 
         return [
             (min(min_attr(obj) for obj in group), max(max_attr(obj) for obj in group))
@@ -880,8 +880,8 @@ def pdf_table_lines(
     algorithm="y-groups",
     starts_after=None,
     ends_before=None,
-    x_threshold=0.5,
-    y_threshold=0.5,
+    x_threshold=None,
+    y_threshold=None,
     backend=None,
 ):
     if isinstance(page_numbers, six.text_type):
@@ -898,7 +898,14 @@ def pdf_table_lines(
     for page_index, page in enumerate(pages):
         objs = list(page)
         text_objs = [obj for obj in objs if isinstance(obj, TextObject)]
-        extractor = Algorithm(objs, text_objs, x_threshold, y_threshold, pdf_doc.x_order, pdf_doc.y_order)
+        extractor = Algorithm(
+            objects=objs,
+            text_objects=text_objs,
+            x_threshold=x_threshold,
+            y_threshold=y_threshold,
+            x_order=pdf_doc.x_order,
+            y_order=pdf_doc.y_order,
+        )
         lines = [[pdf_doc.get_cell_text(cell) for cell in row] for row in extractor.get_lines()]
 
         for line_index, line in enumerate(lines):
@@ -917,8 +924,8 @@ def import_from_pdf(
     ends_before=None,
     backend=None,
     algorithm="y-groups",
-    x_threshold=0.5,
-    y_threshold=0.5,
+    x_threshold=None,
+    y_threshold=None,
     *args,
     **kwargs
 ):
