@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 import io
 import math
+import statistics
 from dataclasses import dataclass
 
 import six
@@ -505,29 +506,44 @@ class Group(object):
         return object_contains(d0, d1, self.minimum, self.maximum, self.threshold)
 
 
+def group_objects(axis, objects, threshold=None, check_group=object_intercepts):
+    """Group intercepting `objects` based on `axis` and `threshold`
 
+    If `threshold` is `None`, `define_threshold` will be used to define a good
+    one."""
 
+    if threshold is None:
+        threshold = define_threshold(axis, objects)
 
-
-def group_objects(objs, threshold, axis):
     if axis == "x":
-        GroupClass = VerticalGroup
+        get_dimensions = lambda row: (row.x0, row.x1)
+        get_ordering = lambda obj: (obj.x0, obj.x1)
+        get_other_ordering = lambda obj: (obj.y0, obj.y1)
     elif axis == "y":
-        GroupClass = HorizontalGroup
+        get_dimensions = lambda row: (row.y0, row.y1)
+        get_ordering = lambda obj: (obj.y0, obj.y1)
+        get_other_ordering = lambda obj: (obj.x0, obj.x1)
 
-    groups = []
-    for obj in objs:
-        found = False
-        for group in groups:
-            if group.contains(obj):
-                group.add(obj)
-                found = True
+    groups = [Group([obj]) for obj in sorted(objects, key=get_ordering)]
+    index_1, final_index = 0, len(groups) - 1
+    while index_1 < final_index:
+        for index_2 in range(index_1 + 1, final_index + 1):
+            group_1, group_2 = groups[index_1], groups[index_2]
+            group_1_d0, group_1_d1 = get_dimensions(group_1)
+            group_2_d0, group_2_d1 = get_dimensions(group_2)
+            if check_group(group_1_d0, group_1_d1, group_2_d0, group_2_d1, threshold):
+                # Merge groups
+                groups[index_1] = Group(group_1.objects + group_2.objects)
+                del groups[index_2]
+                final_index -= 1
                 break
-        if not found:
-            group = GroupClass(threshold=threshold)
-            group.add(obj)
-            groups.append(group)
-    return {group.minimum: group.objects for group in groups}
+        else:
+            index_1 += 1
+
+    return [
+        Group(sorted((obj for obj in group.objects), key=get_other_ordering))
+        for group in groups
+    ]
 
 
 def contains_or_overlap(a, b):
@@ -647,12 +663,11 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
 
     @cached_property
     def table_bbox(self):
-        groups = group_objects(self.text_objects, self.y_threshold, "y")
         desired_objs = []
-        for group_objs in groups.values():
-            if len(group_objs) < 2:  # Ignore floating text objects
+        for group in group_objects(axis="y", objects=self.text_objects, threshold=self.y_threshold):
+            if len(group) < 2:  # Ignore floating text objects
                 continue
-            desired_objs.extend(group_objs)
+            desired_objs.extend(group)
         if not desired_objs:
             return (0, 0, 0, 0)
         x_min = min(obj.x0 for obj in desired_objs)
@@ -661,48 +676,40 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
         y_max = max(obj.y1 for obj in desired_objs)
         return (x_min, y_min, x_max, y_max)
 
-    @staticmethod
-    def _define_intervals(objs, min_attr, max_attr, threshold, axis):
-        groups = group_objects(objs, threshold, axis)
+    def _define_intervals(self, axis, objects):
+        if axis == "x":
+            min_attr = lambda obj: obj.x0
+            max_attr = lambda obj: obj.x1
+            threshold = self.x_threshold
+        elif axis == "y":
+            min_attr = lambda obj: obj.y0
+            max_attr = lambda obj: obj.y1
+            threshold = self.y_threshold
 
-        intervals = [(key, max_attr(max(value, key=max_attr))) for key, value in groups.items()]
-        intervals.sort()
-        if not intervals:
-            return []
-
-        # Merge overlapping intervals
-        result = [intervals[0]]
-        for current in intervals[1:]:
-            previous = result.pop()
-            if current[0] <= previous[1] or current[1] <= previous[1]:
-                result.append((previous[0], max((previous[1], current[1]))))
-            else:
-                result.extend((previous, current))
-        return result
+        return [
+            (min(min_attr(obj) for obj in group), max(max_attr(obj) for obj in group))
+            for group in group_objects(axis=axis, objects=objects, threshold=threshold)
+        ]
 
     @cached_property
     def x_intervals(self):
         objects = self.selected_objects
-        objects.sort(key=lambda obj: obj.x0)
-        return self._define_intervals(
-            objects,
-            min_attr=lambda obj: obj.x0,
-            max_attr=lambda obj: obj.x1,
-            threshold=self.x_threshold,
+        groups = group_objects(
             axis="x",
+            objects=objects,
+            threshold=self.x_threshold if self.x_threshold is not None else define_threshold("x", objects),
         )
+        return [(group.x0, group.x1) for group in groups]
 
     @cached_property
     def y_intervals(self):
         objects = self.selected_objects
-        objects.sort(key=lambda obj: -obj.y1)
-        return self._define_intervals(
-            objects,
-            min_attr=lambda obj: obj.y0,
-            max_attr=lambda obj: obj.y1,
-            threshold=self.y_threshold,
+        groups = group_objects(
             axis="y",
+            objects=objects,
+            threshold=self.y_threshold if self.y_threshold is not None else define_threshold("y", objects),
         )
+        return [(group.y0, group.y1) for group in groups]
 
 
 class HeaderPositionAlgorithm(YGroupsAlgorithm):

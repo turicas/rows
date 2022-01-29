@@ -131,3 +131,47 @@ class PDFMinerSixTestCase(PDFTestCase, unittest.TestCase):
         )
         expected = rows.import_from_csv(filename + ".csv")
         self.assertEqual(list(expected), list(result))
+
+
+class HelperFunctionsTestCase(unittest.TestCase):
+    def test_group_objects(self):
+        dataset = [
+            pdf.TextObject(x0=0, x1=2, y0=0, y1=2, text="obj1"),
+            pdf.TextObject(x0=0, x1=2, y0=2, y1=3, text="obj2"),
+            pdf.TextObject(x0=6, x1=8, y0=4, y1=5, text="obj3"),
+            pdf.TextObject(x0=1, x1=4, y0=6, y1=7, text="obj4"),
+            pdf.TextObject(x0=3, x1=5, y0=8, y1=9, text="obj5"),
+            pdf.TextObject(x0=7, x1=9, y0=2, y1=3, text="obj6"),
+            pdf.TextObject(x0=8, x1=12, y0=6, y1=7, text="obj7"),
+            pdf.TextObject(x0=11, x1=13, y0=9, y1=10, text="obj8"),
+            pdf.TextObject(x0=11, x1=12, y0=10, y1=11, text="obj9"),
+        ]
+        objects_by_text = {
+            obj.text: obj
+            for obj in dataset
+        }
+        x_groups = pdf.group_objects("x", dataset, threshold=0)
+        groups_text = [
+            sorted([obj.text for obj in group.objects])
+            for group in x_groups
+        ]
+        expected_groups_text = [
+            sorted(["obj1", "obj2", "obj4", "obj5"]),
+            sorted(["obj3", "obj6", "obj7", "obj8", "obj9"]),
+        ]
+        assert groups_text == expected_groups_text
+
+        y_groups = pdf.group_objects("y", dataset, threshold=0)
+        groups_text = [
+            sorted([obj.text for obj in group.objects])
+            for group in y_groups
+        ]
+        expected_groups_text = [
+            ["obj1"],
+            ["obj2", "obj6"],
+            ["obj3"],
+            ["obj4", "obj7"],
+            ["obj5"],
+            ["obj8"], ["obj9"],
+        ]
+        assert groups_text == expected_groups_text
