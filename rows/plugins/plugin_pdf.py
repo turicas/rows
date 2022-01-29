@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2022 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -176,8 +176,12 @@ class PDFMinerBackend(PDFBackend):
     def number_of_pages(self):
         return resolve1(self.document.catalog["Pages"])["Count"]
 
+    @property
+    def pages(self):
+        yield from PDFPage.create_pages(self.document)
+
     def extract_text(self, page_numbers=None):
-        for page_number, page in enumerate(PDFPage.create_pages(self.document), start=1):
+        for page_number, page in enumerate(self.pages, start=1):
             if page_numbers is not None and page_number not in page_numbers:
                 continue
 
@@ -218,7 +222,7 @@ class PDFMinerBackend(PDFBackend):
         if ends_before is not None:
             ends_before = get_delimiter_function(ends_before)
 
-        for page_number, page in enumerate(PDFPage.create_pages(doc), start=1):
+        for page_number, page in enumerate(self.pages, start=1):
             if page_numbers is not None and page_number not in page_numbers:
                 continue
 
@@ -267,15 +271,21 @@ class PyMuPDFBackend(PDFBackend):
     def number_of_pages(self):
         return self.document.pageCount
 
+    @property
+    def pages(self):
+        load_page = getattr(self.document, "load_page") or getattr(self.document, "loadPage")
+        for page_index in range(self.number_of_pages):
+            yield load_page(page_index)
+
     def extract_text(self, page_numbers=None):
-        doc = self.document
-        for page_number, page_index in enumerate(range(doc.pageCount), start=1):
+        for page_number, page in enumerate(self.pages, start=1):
             if page_numbers is not None and page_number not in page_numbers:
                 continue
-
-            page = getattr(doc, "load_page", getattr(doc, "loadPage"))(page_index)
-            page_text = "\n".join(block[4] for block in page.getTextBlocks())
-            yield page_text
+            yield "\n".join(
+                block[4]
+                for block in page.get_text(option="blocks")
+                if block[6] == 0
+            )
 
     def objects(self, page_numbers=None, starts_after=None, ends_before=None):
         doc = self.document
@@ -288,11 +298,9 @@ class PyMuPDFBackend(PDFBackend):
         if ends_before is not None:
             ends_before = get_delimiter_function(ends_before)
 
-        for page_number, page_index in enumerate(range(doc.pageCount), start=1):
+        for page_number, page in enumerate(self.pages, start=1):
             if page_numbers is not None and page_number not in page_numbers:
                 continue
-
-            page = getattr(doc, "load_page", getattr(doc, "loadPage"))(page_index)
             objs = []
             blocks = getattr(page, "get_text", getattr(page, "getText"))("dict")["blocks"]
             for block in blocks:
