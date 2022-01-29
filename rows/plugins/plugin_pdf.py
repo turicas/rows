@@ -629,6 +629,8 @@ def closest_same_column(objects, value, threshold=None):
     return distances[min(distances.keys())]
 
 
+# TODO: create an way to detect how many tables exist and its positions
+
 class ExtractionAlgorithm(object):
     def __init__(self, objects, text_objects, x_threshold=None, y_threshold=None, x_order=1, y_order=1):
         self.objects = objects
@@ -663,6 +665,12 @@ class ExtractionAlgorithm(object):
         y_intervals = list(self.y_intervals)
         if self.y_order == -1:
             y_intervals = list(reversed(y_intervals))
+
+        # Ignore if it found only one column or line (in most cases it's not a
+        # table)
+        if len(x_intervals) < 2 or len(y_intervals) < 2:
+            return []
+
         objs = list(self.selected_objects)
 
         matrix = []
@@ -676,7 +684,15 @@ class ExtractionAlgorithm(object):
                     line.append(cell)
                     for obj in cell:
                         objs.remove(obj)
-            matrix.append(line)
+
+            # Remove empty lines
+            line_text = "".join(
+                "".join(str(obj.text or "") for obj in cell)
+                for cell in line
+                if cell is not None
+            ).strip()
+            if line_text:
+                matrix.append(line)
         return matrix
 
 
@@ -744,6 +760,8 @@ class HeaderPositionAlgorithm(YGroupsAlgorithm):
         raise NotImplementedError
 
     def get_lines(self):
+        # TODO: use new implementations of `group_objects` and `Group` to
+        # enhance this method's code
         objects = self.selected_objects
         objects.sort(key=lambda obj: obj.x0)
         y_intervals = list(self.y_intervals)
@@ -766,7 +784,14 @@ class HeaderPositionAlgorithm(YGroupsAlgorithm):
                 y_objs = [obj for obj in line_objs if obj not in used and x_intersects(column, obj)]
                 used.extend(y_objs)
                 line.append(y_objs)
-            lines.append(line)
+            # Remove empty lines
+            line_text = "".join(
+                "".join(str(obj.text or "") for obj in cell)
+                for cell in line
+                if cell is not None
+            ).strip()
+            if line_text:
+                lines.append(line)
 
             # TODO: may check if one of objects in line_objs is not in used and
             # raise an exception
