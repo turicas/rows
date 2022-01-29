@@ -87,6 +87,17 @@ def extract_intervals(text, repeat=False, sort=True):
     return result
 
 
+def get_check_object_function(value):
+    if isinstance(value, str):  # regular string, match exactly
+        return lambda obj: (isinstance(obj, TextObject) and obj.text.strip() == value.strip())
+
+    elif hasattr(value, "search"):  # regular expression
+        return lambda obj: bool(isinstance(obj, TextObject) and value.search(obj.text.strip()))
+
+    elif callable(value):  # function
+        return lambda obj: bool(value(obj))
+
+
 def default_backend():
     if pymupdf_imported:
         return "pymupdf"
@@ -218,9 +229,9 @@ class PDFMinerBackend(PDFBackend):
         if starts_after is None:
             started = True
         else:
-            starts_after = get_delimiter_function(starts_after)
+            starts_after = get_check_object_function(starts_after)
         if ends_before is not None:
-            ends_before = get_delimiter_function(ends_before)
+            ends_before = get_check_object_function(ends_before)
 
         for page_number, page in enumerate(self.pages, start=1):
             if page_numbers is not None and page_number not in page_numbers:
@@ -233,6 +244,9 @@ class PDFMinerBackend(PDFBackend):
             objects_in_page = []
             for obj in objs:
                 if not started and starts_after is not None and starts_after(obj):
+                    # TODO: starts_after seems to include the specified object
+                    # (it should start on the next object instead). Create a
+                    # test and fix it
                     started = True
                 if started and ends_before is not None and ends_before(obj):
                     finished = True
@@ -294,9 +308,9 @@ class PyMuPDFBackend(PDFBackend):
         if starts_after is None:
             started = True
         else:
-            starts_after = get_delimiter_function(starts_after)
+            starts_after = get_check_object_function(starts_after)
         if ends_before is not None:
-            ends_before = get_delimiter_function(ends_before)
+            ends_before = get_check_object_function(ends_before)
 
         for page_number, page in enumerate(self.pages, start=1):
             if page_numbers is not None and page_number not in page_numbers:
@@ -343,17 +357,6 @@ class PyMuPDFBackend(PDFBackend):
                 break
 
     text_objects = objects
-
-
-def get_delimiter_function(value):
-    if isinstance(value, str):  # regular string, match exactly
-        return lambda obj: (isinstance(obj, TextObject) and obj.text.strip() == value)
-
-    elif hasattr(value, "search"):  # regular expression
-        return lambda obj: bool(isinstance(obj, TextObject) and value.search(obj.text.strip()))
-
-    elif callable(value):  # function
-        return lambda obj: bool(value(obj))
 
 
 @dataclass
