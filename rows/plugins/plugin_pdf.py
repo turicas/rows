@@ -691,34 +691,29 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
     # y, not on x). ex: imgs-33281.pdf/06.png should not remove bigger cells
 
     @cached_property
-    def table_bbox(self):
-        desired_objs = []
-        for group in group_objects(axis="y", objects=self.text_objects, threshold=self.y_threshold):
-            if len(group) < 2:  # Ignore floating text objects
-                continue
-            desired_objs.extend(group)
-        if not desired_objs:
-            return (0, 0, 0, 0)
-        x_min = min(obj.x0 for obj in desired_objs)
-        x_max = max(obj.x1 for obj in desired_objs)
-        y_min = min(obj.y0 for obj in desired_objs)
-        y_max = max(obj.y1 for obj in desired_objs)
-        return (x_min, y_min, x_max, y_max)
+    def selected_objects(self):
+        """Select objects based on y groups and group widths"""
 
-    def _define_intervals(self, axis, objects):
-        if axis == "x":
-            min_attr = lambda obj: obj.x0
-            max_attr = lambda obj: obj.x1
-            threshold = self.x_threshold if self.x_threshold is not None else define_threshold(axis, objects)
-        elif axis == "y":
-            min_attr = lambda obj: obj.y0
-            max_attr = lambda obj: obj.y1
-            threshold = self.y_threshold if self.y_threshold is not None else define_threshold(axis, objects)
+        # First, we group objects by y values (the goal is to have each
+        # possible table line in a group)
+        groups = group_objects("y", self.text_objects, threshold=self.y_threshold)
 
-        return [
-            (min(min_attr(obj) for obj in group), max(max_attr(obj) for obj in group))
-            for group in group_objects(axis=axis, objects=objects, threshold=threshold)
-        ]
+        # Then, calculate each group's width and the widths' mode and stdev
+        groups_width = {
+            index: group.x1 - group.x0
+            for index, group in enumerate(groups)
+        }
+        mode_width = statistics.mode(groups_width.values())
+        stdev_width = statistics.stdev(groups_width.values())
+
+        # To finish, find the groups that match the upper and lower width
+        # limits (mode +- stdev) and get its objects.
+        lower_limit, upper_limit = mode_width - stdev_width, mode_width + stdev_width
+        objects = []
+        for index, value in groups_width.items():
+            if lower_limit <= value <= upper_limit:
+                objects.extend(groups[index])
+        return objects
 
     @cached_property
     def x_intervals(self):
@@ -894,7 +889,7 @@ def pdf_table_lines(
     pdf_doc = Backend(source)
 
     pages = pdf_doc.objects(page_numbers=page_numbers, starts_after=starts_after, ends_before=ends_before)
-    header = line_size = None
+    header = None
     for page_index, page in enumerate(pages):
         objs = list(page)
         text_objs = [obj for obj in objs if isinstance(obj, TextObject)]
