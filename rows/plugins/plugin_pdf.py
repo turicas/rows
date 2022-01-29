@@ -564,40 +564,69 @@ def distance(a, b):
     return math.sqrt((a.x0 - b.x0) ** 2 + (a.y0 - b.y0) ** 2)
 
 
-def closest_from_text(objs, text, strip=True):
-    if strip:
-        text = text.strip()
-        desired_obj = [obj for obj in objs if obj.text.strip() == text][0]
-    else:
-        desired_obj = [obj for obj in objs if obj.text == text][0]
-    for obj in sorted(objs, key=lambda row: distance(desired_obj, row)):
-        if obj.text.strip() != text:
-            return obj
+def closest_object(objects, value):
+    check = get_check_object_function(value)
+    found = [obj for obj in objects if check(obj)]
+    if not found:
+        raise ValueError("Object not found with rule '{}'".format(value))
+
+    desired_object = found[0]
+    distances = {
+        distance(desired_object, other): other
+        for other in objects
+        if other != desired_object
+    }
+    return distances[min(distances.keys())]
 
 
-def closest_same_line(objs, text):
-    for _, line_objs in group_objects(objs, 0.1, "y").items():
-        desired_y0 = None
-        for obj in line_objs:
-            if obj.text == text:
-                desired_y0 = obj.y0
-                break
-        if desired_y0 is not None:
-            return sorted(line_objs, key=lambda row: -row.x0)[0]
-    return None  # Not found
+def objects_same_line(objects, value, threshold=None):
+    if threshold is None:
+        threshold = define_threshold("y", objects)
+
+    check = get_check_object_function(value)
+
+    for group in group_objects(axis="y", objects=objects, threshold=threshold):
+        for obj in group:
+            if check(obj):
+                return group
 
 
-def same_column(objs, text):
-    object_groups = {key: list(value) for key, value in group_objects(objs, 0.1, "x").items()}
-    desired_x0 = None
-    for x0, column_objs in object_groups.items():
-        for obj in column_objs:
-            if obj.text.strip() == text:
-                desired_x0 = x0
-                break
-    if desired_x0 is None:  # Text not found
-        return []
-    return sorted(object_groups[desired_x0], key=lambda row: -row.y0)
+def closest_same_line(objects, value, threshold=None):
+    group = objects_same_line(objects, value, threshold)
+    if group is None:
+        return None
+
+    distances = {
+        min(abs(obj.x0 - other.x1), abs(obj.x1, other.x0)): other
+        for other in group
+        if other != obj
+    }
+    return distances[min(distances.keys())]
+
+
+def objects_same_column(objects, value, threshold=None):
+    if threshold is None:
+        threshold = define_threshold("x", objects)
+
+    check = get_check_object_function(value)
+
+    for group in group_objects(axis="x", objects=objects, threshold=threshold):
+        for obj in group:
+            if check(obj):
+                return group
+
+
+def closest_same_column(objects, value, threshold=None):
+    group = objects_same_column(objects, value, threshold)
+    if group is None:
+        return None
+
+    distances = {
+        min(abs(obj.y0 - other.y1), abs(obj.y1, other.y0)): other
+        for other in group
+        if other != obj
+    }
+    return distances[min(distances.keys())]
 
 
 class ExtractionAlgorithm(object):
