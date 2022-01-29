@@ -400,6 +400,46 @@ class RectObject(object):
         return "<RectObject ({}) fill={}>".format(bbox, self.fill)
 
 
+def object_intercepts(min1, max1, min2, max2, threshold=0):
+    """Check whether first object intercepts second's boundaries
+
+    Each object is passed by its minimum and maximum value for the desired axis.
+    """
+
+    return min1 < (max2 + threshold) and max1 > (min2 - threshold)
+
+
+def object_contains_center(min1, max1, min2, max2, threshold=0):
+    """Check whether first object's center is contained by second's boundaries
+
+    Each object is passed by its minimum and maximum value for the desired axis.
+    """
+
+    return (min2 - threshold) <= (min1 + (max1 - min1) / 2.0) <= (max2 + threshold)
+
+
+def object_contains(min1, max1, min2, max2, threshold=0):
+    """Check whether first object is contained by second's boundaries"""
+
+    return (min2 - threshold) <= min1 and max1 <= (max2 + threshold)
+
+
+def define_threshold(axis, objects, proportion=0.3):
+    """Define threshold based on average length of objects on this axis
+
+    For y axis: uses `proportion` of average height
+    For x axis: uses `proportion` of average character size (`(obj.x1 - obj.x0) / len(obj.text)`).
+    """
+    if axis == "x":
+        values = [
+            (obj.x1 - obj.x0) / len(obj.text) if obj.text else 0
+            for obj in objects
+        ]
+    elif axis == "y":
+        values = [obj.y1 - obj.y0 for obj in objects]
+    return proportion * (sum(values) / len(values))
+
+
 class Group(object):
     "Helper class to group objects based on its positions and sizes"
 
