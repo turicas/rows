@@ -726,7 +726,7 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
             if self.x_threshold is not None
             else define_threshold("x", objects),
         )
-        return [(group.x0, group.x1) for group in groups]
+        return sorted(((group.x0, group.x1) for group in groups))
 
     @cached_property
     def y_intervals(self):
