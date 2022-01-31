@@ -15,11 +15,11 @@
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import plugin_json as json  # NOQA
 from . import dicts as dicts  # NOQA
 from . import plugin_csv as csv  # NOQA
-from . import txt as txt  # NOQA
 from . import plugin_html as html  # NOQA
+from . import plugin_json as json  # NOQA
+from . import txt as txt  # NOQA
 
 try:
     from . import xpath as xpath

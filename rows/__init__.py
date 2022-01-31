@@ -17,13 +17,12 @@
 
 from __future__ import unicode_literals
 
-# General imports
-
 import rows.plugins as plugins
-
-from rows.operations import join, transform, transpose  # NOQA
-from rows.table import Table, FlexibleTable  # NOQA
 from rows.localization import locale_context  # NOQA
+from rows.operations import join, transform, transpose  # NOQA
+from rows.table import FlexibleTable, Table  # NOQA
+
+# General imports
 
 
 # Don't have dependencies or dependencies installed on `install_requires`

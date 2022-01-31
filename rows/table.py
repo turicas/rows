@@ -32,14 +32,14 @@ elif six.PY3:
 
 class Table(MutableSequence):
     def __init__(self, fields, meta=None):
-        from rows.plugins import utils
+        from rows.fields import slug
 
         # TODO: should we really use OrderedDict here?
         # TODO: should use slug on each field name automatically or inside each
         #       plugin?
         self.fields = OrderedDict(
             [
-                (utils.slug(field_name), field_type)
+                (slug(field_name), field_type)
                 for field_name, field_type in OrderedDict(fields).items()
             ]
         )
@@ -79,7 +79,7 @@ class Table(MutableSequence):
                         for field_name in self.field_names
                     ]
                 ),
-                meta={"name": self.name}
+                meta={"name": self.name},
             )
             for row in self.head():
                 representation.append(
@@ -123,7 +123,7 @@ class Table(MutableSequence):
         If `filename` is not available, return `table1`.
         """
 
-        from rows.plugins.utils import slug
+        from rows.fields import slug
 
         name = self.meta.get("name", None)
         if name is not None:
@@ -184,7 +184,6 @@ class Table(MutableSequence):
             self._rows[key] = self._make_row(value)
         elif key_type is six.text_type:
             from rows import fields
-            from rows.plugins import utils
 
             values = list(value)  # I'm not lazy, sorry
             if len(values) != len(self):
@@ -193,7 +192,7 @@ class Table(MutableSequence):
                     "Table length ({})".format(len(values), len(self))
                 )
 
-            field_name = utils.slug(key)
+            field_name = fields.slug(key)
             is_new_field = field_name not in self.field_names
             field_type = fields.detect_types(
                 [field_name], [[value] for value in values]

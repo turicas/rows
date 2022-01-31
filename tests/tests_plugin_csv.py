@@ -51,7 +51,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     encoding = "utf-8"
     expected_meta = {
         "imported_from": "csv",
-        "source": Source(uri=filename, plugin_name=plugin_name, encoding=encoding)
+        "source": Source(uri=filename, plugin_name=plugin_name, encoding=encoding),
     }
 
     def test_imports(self):

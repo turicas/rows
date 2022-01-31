@@ -19,7 +19,6 @@ from __future__ import unicode_literals
 
 import itertools
 import random
-import tempfile
 import types
 import unittest
 from collections import OrderedDict
@@ -34,7 +33,6 @@ from rows import fields
 
 
 class GenericUtilsTestCase(unittest.TestCase):
-
     def test_ipartition(self):
         iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         result = plugins_utils.ipartition(iterable, 3)
@@ -356,21 +354,19 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         existing_names = []
         name_format = "{index}_{name}"
 
-        result = plugins_utils.make_unique_name(name, existing_names, name_format)
+        result = fields.make_unique_name(name, existing_names, name_format)
         self.assertEqual(result, name)
 
         existing_names = ["test"]
-        result = plugins_utils.make_unique_name(name, existing_names, name_format)
+        result = fields.make_unique_name(name, existing_names, name_format)
         self.assertEqual(result, "2_test")
 
         existing_names = ["test", "2_test", "3_test", "5_test"]
-        result = plugins_utils.make_unique_name(name, existing_names, name_format)
+        result = fields.make_unique_name(name, existing_names, name_format)
         self.assertEqual(result, "4_test")
 
         existing_names = ["test", "2_test", "3_test", "5_test"]
-        result = plugins_utils.make_unique_name(
-            name, existing_names, name_format, start=1
-        )
+        result = fields.make_unique_name(name, existing_names, name_format, start=1)
         self.assertEqual(result, "1_test")
 
     # TODO: test make_header

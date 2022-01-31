@@ -321,14 +321,20 @@ class DecimalField(Field):
                 "positive_sign",
                 "thousands_sep",
             )
-            chars = (locale_vars[x].replace(".", r"\.").replace("-", r"\-") for x in interesting_vars)
+            chars = (
+                locale_vars[x].replace(".", r"\.").replace("-", r"\-")
+                for x in interesting_vars
+            )
             interesting_chars = "".join(set(chars))
             regexp = re.compile(r"[^0-9{} ]".format(interesting_chars))
             value = as_string(value)
             if regexp.findall(value):
                 value_error(value, cls)
 
-            parts = [REGEXP_ONLY_NUMBERS.subn("", number)[0] for number in value.split(decimal_separator)]
+            parts = [
+                REGEXP_ONLY_NUMBERS.subn("", number)[0]
+                for number in value.split(decimal_separator)
+            ]
             if len(parts) > 2:
                 raise ValueError("Can't deserialize with this locale.")
             try:
@@ -408,7 +414,9 @@ class DatetimeField(Field):
     """
 
     TYPE = (datetime.datetime,)
-    DATETIME_REGEXP = re.compile("^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]" "([0-9]{2}):([0-9]{2}):([0-9]{2})$")
+    DATETIME_REGEXP = re.compile(
+        "^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]" "([0-9]{2}):([0-9]{2}):([0-9]{2})$"
+    )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -454,7 +462,9 @@ class EmailField(TextField):
     Is not locale-aware (does not need to be)
     """
 
-    EMAIL_REGEXP = re.compile(r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]+$", flags=re.IGNORECASE)
+    EMAIL_REGEXP = re.compile(
+        r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]+$", flags=re.IGNORECASE
+    )
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -532,7 +542,9 @@ def get_items(*indexes):
     Similar to `operator.itemgetter`, but will insert `None` when the object
     does not have the desired index (instead of raising IndexError).
     """
-    return lambda obj: tuple(obj[index] if len(obj) > index else None for index in indexes)
+    return lambda obj: tuple(
+        obj[index] if len(obj) > index else None for index in indexes
+    )
 
 
 def slug(text, separator="_", permitted_chars=SLUG_CHARS):
@@ -560,9 +572,11 @@ def slug(text, separator="_", permitted_chars=SLUG_CHARS):
 
     # Remove double occurrencies of separator
     # Example: u'_alvaro__justen_' -> u'_alvaro_justen_'
-    text = (REGEXP_SEPARATOR if separator == "_" else re.compile("(" + re.escape(separator) + "+)")).sub(
-        separator, text
-    )
+    text = (
+        REGEXP_SEPARATOR
+        if separator == "_"
+        else re.compile("(" + re.escape(separator) + "+)")
+    ).sub(separator, text)
 
     # Strip separators
     # Example: u'_alvaro_justen_' -> u'alvaro_justen'
@@ -584,7 +598,9 @@ def make_header(field_names, permit_not=False):
     """Return unique and slugged field names."""
     slug_chars = SLUG_CHARS if not permit_not else SLUG_CHARS + "^"
 
-    header = [slug(field_name, permitted_chars=slug_chars) for field_name in field_names]
+    header = [
+        slug(field_name, permitted_chars=slug_chars) for field_name in field_names
+    ]
     result = []
     for index, field_name in enumerate(header):
         if not field_name:
@@ -593,7 +609,9 @@ def make_header(field_names, permit_not=False):
             field_name = "field_{}".format(field_name)
 
         if field_name in result:
-            field_name = make_unique_name(name=field_name, existing_names=result, start=2)
+            field_name = make_unique_name(
+                name=field_name, existing_names=result, start=2
+            )
         result.append(field_name)
 
     return result

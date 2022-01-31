@@ -43,7 +43,11 @@ def _get_row_data(fields_xpath):
             result = row.xpath(field_xpath)
             if result:
                 result = " ".join(
-                    text for text in map(six.text_type.strip, map(six.text_type, map(unescape, result))) if text
+                    text
+                    for text in map(
+                        six.text_type.strip, map(six.text_type, map(unescape, result))
+                    )
+                    if text
                 )
             else:
                 result = None
@@ -54,13 +58,17 @@ def _get_row_data(fields_xpath):
     return get_data
 
 
-def import_from_xpath(filename_or_fobj, rows_xpath, fields_xpath, encoding="utf-8", *args, **kwargs):
+def import_from_xpath(
+    filename_or_fobj, rows_xpath, fields_xpath, encoding="utf-8", *args, **kwargs
+):
 
     types = set([type(rows_xpath)] + [type(xpath) for xpath in fields_xpath.values()])
     if types != set([six.text_type]):
         raise TypeError("XPath must be {}".format(six.text_type.__name__))
 
-    source = Source.from_file(filename_or_fobj, plugin_name="xpath", mode="rb", encoding=encoding)
+    source = Source.from_file(
+        filename_or_fobj, plugin_name="xpath", mode="rb", encoding=encoding
+    )
     xml = source.fobj.read().decode(encoding)
     tree = tree_from_string(xml)
     row_elements = tree.xpath(rows_xpath)

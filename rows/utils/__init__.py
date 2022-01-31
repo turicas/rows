@@ -21,7 +21,6 @@ import cgi
 import csv
 import gzip
 import io
-import itertools
 import mimetypes
 import os
 import re
@@ -39,7 +38,6 @@ import six
 
 try:
     import requests
-
     from requests.adapters import HTTPAdapter
     from requests.packages.urllib3.util.retry import Retry
 except ImportError:
@@ -50,7 +48,7 @@ except ImportError:
     tqdm = None
 
 import rows
-from rows.plugins.utils import make_header, slug
+from rows.plugins.utils import make_header
 
 try:
     import lzma
@@ -379,7 +377,7 @@ def download_file(
     chunk_size=8192,
     sample_size=1048576,
     retries=3,
-    progress_pattern="Downloading file"
+    progress_pattern="Downloading file",
 ):
     # TODO: add ability to continue download
 
@@ -976,32 +974,44 @@ class NotNullWrapper(io.BufferedReader):
 csv2sqlite = csv_to_sqlite
 sqlite2csv = sqlite_to_csv
 
+
 def pgimport(filename, *args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
     from rows.plugins.postgresql import pgimport as original_function
+
     return original_function(filename_or_fobj=filename, *args, **kwargs)
+
 
 def pgexport(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
     from rows.plugins.postgresql import pgexport as original_function
+
     return original_function(*args, **kwargs)
+
 
 def get_psql_command(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
     from rows.plugins.postgresql import get_psql_command as original_function
+
     return original_function(*args, **kwargs)
+
 
 def get_psql_copy_command(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
     from rows.plugins.postgresql import get_psql_copy_command as original_function
+
     return original_function(*args, **kwargs)
+
 
 def pg_create_table_sql(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
     from rows.plugins.postgresql import pg_create_table_sql as original_function
+
     return original_function(*args, **kwargs)
+
 
 def pg_execute_sql(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
     from rows.plugins.postgresql import pg_execute_sql as original_function
+
     return original_function(*args, **kwargs)

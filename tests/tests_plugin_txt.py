@@ -41,7 +41,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
     expected_meta = {
         "imported_from": "txt",
         "frame_style": "ascii",
-        "source": Source(uri=filename, plugin_name=plugin_name, encoding=encoding)
+        "source": Source(uri=filename, plugin_name=plugin_name, encoding=encoding),
     }
 
     def test_imports(self):

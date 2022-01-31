@@ -18,8 +18,8 @@
 from __future__ import unicode_literals
 
 import os
-import unittest
 import tempfile
+import unittest
 from textwrap import dedent
 
 import mock
@@ -44,7 +44,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
     uri = os.environ["POSTGRESQL_URI"]
     expected_meta = {
         "imported_from": "postgresql",
-        "source": Source(uri=uri, plugin_name=plugin_name, encoding=None)
+        "source": Source(uri=uri, plugin_name=plugin_name, encoding=None),
     }
 
     def get_table_names(self):
@@ -121,7 +121,6 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         connection.close()
 
         call_args = mocked_create_table.call_args_list[1]
-        expected_meta = self.expected_meta.copy()
         meta = call_args[1].pop("meta")
         call_args[1]["meta"] = {}
         self.assert_create_table_data(call_args, expected_meta={})
@@ -237,13 +236,17 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         temp.close()
         self.files_to_delete.append(filename)
         with open(filename, mode="wb") as fobj:
-            fobj.write(dedent(
-                """
+            fobj.write(
+                dedent(
+                    """
                 field1,field2
                 "","4"
                 ,2
                 """
-            ).strip().encode("utf-8"))
+                )
+                .strip()
+                .encode("utf-8")
+            )
         rows.utils.pgimport(
             filename=filename,
             database_uri=self.uri,

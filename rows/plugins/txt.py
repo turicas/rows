@@ -22,10 +22,7 @@ import unicodedata
 from collections import defaultdict
 from io import BytesIO
 
-from rows.plugins.utils import (
-    create_table,
-    serialize,
-)
+from rows.plugins.utils import create_table, serialize
 from rows.utils import Source
 
 single_frame_prefix = "BOX DRAWINGS LIGHT"
@@ -45,10 +42,16 @@ frame_parts = [
 # for grepping/visualization purposes.
 
 # ['│', '─', '┌', '┐', '└', '┘', '┤', '├', '┬', '┴', '┼']
-SINGLE_FRAME = {name.strip(): unicodedata.lookup(" ".join((single_frame_prefix, name.strip()))) for name in frame_parts}
+SINGLE_FRAME = {
+    name.strip(): unicodedata.lookup(" ".join((single_frame_prefix, name.strip())))
+    for name in frame_parts
+}
 
 # ['║', '═', '╔', '╗', '╚', '╝', '╣', '╠', '╦', '╩', '╬']
-DOUBLE_FRAME = {name.strip(): unicodedata.lookup(" ".join((double_frame_prefix, name.strip()))) for name in frame_parts}
+DOUBLE_FRAME = {
+    name.strip(): unicodedata.lookup(" ".join((double_frame_prefix, name.strip())))
+    for name in frame_parts
+}
 
 ASCII_FRAME = {name: "+" for name in frame_parts}
 ASCII_FRAME["HORIZONTAL"] = "-"
@@ -76,7 +79,8 @@ def _parse_frame_style(frame_style):
         FRAMES[frame_style.lower()]
     except KeyError:
         raise ValueError(
-            "Invalid frame style '{}'. Use one of 'None', " "'ASCII', 'single' or 'double'.".format(frame_style)
+            "Invalid frame style '{}'. Use one of 'None', "
+            "'ASCII', 'single' or 'double'.".format(frame_style)
         )
     return frame_style
 
@@ -114,10 +118,15 @@ def _parse_col_positions(frame_style, header_line):
 
 def _max_column_sizes(field_names, table_rows):
     columns = zip(*([field_names] + table_rows))
-    return {field_name: max(len(value) for value in column) for field_name, column in zip(field_names, columns)}
+    return {
+        field_name: max(len(value) for value in column)
+        for field_name, column in zip(field_names, columns)
+    }
 
 
-def import_from_txt(filename_or_fobj, encoding="utf-8", frame_style=FRAME_SENTINEL, *args, **kwargs):
+def import_from_txt(
+    filename_or_fobj, encoding="utf-8", frame_style=FRAME_SENTINEL, *args, **kwargs
+):
     """Return a rows.Table created from imported TXT file."""
 
     # TODO: (maybe)
@@ -130,7 +139,9 @@ def import_from_txt(filename_or_fobj, encoding="utf-8", frame_style=FRAME_SENTIN
     # included a Pipe char - "|" - would silently
     # yield bad results.
 
-    source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="txt", encoding=encoding)
+    source = Source.from_file(
+        filename_or_fobj, mode="rb", plugin_name="txt", encoding=encoding
+    )
     raw_contents = source.fobj.read().decode(encoding).rstrip("\n")
 
     if frame_style is FRAME_SENTINEL:
@@ -152,7 +163,11 @@ def import_from_txt(filename_or_fobj, encoding="utf-8", frame_style=FRAME_SENTIN
     col_positions = _parse_col_positions(frame_style, contents[0])
 
     table_rows = [
-        [row[start + 1 : end].strip() for start, end in zip(col_positions, col_positions[1:])] for row in contents
+        [
+            row[start + 1 : end].strip()
+            for start, end in zip(col_positions, col_positions[1:])
+        ]
+        for row in contents
     ]
 
     meta = {
@@ -164,7 +179,13 @@ def import_from_txt(filename_or_fobj, encoding="utf-8", frame_style=FRAME_SENTIN
 
 
 def export_to_txt(
-    table, filename_or_fobj=None, encoding=None, frame_style="ASCII", safe_none_frame=True, *args, **kwargs
+    table,
+    filename_or_fobj=None,
+    encoding=None,
+    frame_style="ASCII",
+    safe_none_frame=True,
+    *args,
+    **kwargs
 ):
     """Export a `rows.Table` to text.
 
@@ -213,15 +234,29 @@ def export_to_txt(
     if frame_style != "None" or not safe_none_frame:
         header = [field.center(max_sizes[field]) for field in field_names]
     else:
-        header = [field.replace(" ", "_").ljust(max_sizes[field]) for field in field_names]
-    header = "{0} {1} {0}".format(frame["VERTICAL"], " {} ".format(frame["VERTICAL"]).join(header))
-    top_split_line = frame["DOWN AND RIGHT"] + frame["DOWN AND HORIZONTAL"].join(dashes) + frame["DOWN AND LEFT"]
-
-    body_split_line = (
-        frame["VERTICAL AND RIGHT"] + frame["VERTICAL AND HORIZONTAL"].join(dashes) + frame["VERTICAL AND LEFT"]
+        header = [
+            field.replace(" ", "_").ljust(max_sizes[field]) for field in field_names
+        ]
+    header = "{0} {1} {0}".format(
+        frame["VERTICAL"], " {} ".format(frame["VERTICAL"]).join(header)
+    )
+    top_split_line = (
+        frame["DOWN AND RIGHT"]
+        + frame["DOWN AND HORIZONTAL"].join(dashes)
+        + frame["DOWN AND LEFT"]
     )
 
-    botton_split_line = frame["UP AND RIGHT"] + frame["UP AND HORIZONTAL"].join(dashes) + frame["UP AND LEFT"]
+    body_split_line = (
+        frame["VERTICAL AND RIGHT"]
+        + frame["VERTICAL AND HORIZONTAL"].join(dashes)
+        + frame["VERTICAL AND LEFT"]
+    )
+
+    botton_split_line = (
+        frame["UP AND RIGHT"]
+        + frame["UP AND HORIZONTAL"].join(dashes)
+        + frame["UP AND LEFT"]
+    )
 
     result = []
     if frame_style != "None":
@@ -229,7 +264,10 @@ def export_to_txt(
     result += [header, body_split_line]
 
     for row in table_rows:
-        values = [value.rjust(max_sizes[field_name]) for field_name, value in zip(field_names, row)]
+        values = [
+            value.rjust(max_sizes[field_name])
+            for field_name, value in zip(field_names, row)
+        ]
         row_data = " {} ".format(frame["VERTICAL"]).join(values)
         result.append("{0} {1} {0}".format(frame["VERTICAL"], row_data))
 
