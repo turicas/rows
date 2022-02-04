@@ -163,10 +163,6 @@ class PDFBackend(object):
                 if isinstance(obj, TextObject)
             )
 
-    def objects(self):
-        "Return a list of objects for each page in the document (generator)"
-        raise NotImplementedError()
-
     @property
     def text(self):
         return "\n\n".join(self.extract_text())
@@ -181,6 +177,7 @@ class PDFBackend(object):
         return "\n".join(line.strip() for line in text.splitlines())
 
     def objects(self, page_numbers=None, starts_after=None, ends_before=None):
+        "Return a list of objects for each page in the document (generator)"
         started, finished = False, False
         if starts_after is None:
             started = True
