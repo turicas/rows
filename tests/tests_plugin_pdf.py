@@ -145,14 +145,10 @@ class HelperFunctionsTestCase(unittest.TestCase):
             pdf.TextObject(x0=11, x1=13, y0=9, y1=10, text="obj8"),
             pdf.TextObject(x0=11, x1=12, y0=10, y1=11, text="obj9"),
         ]
-        objects_by_text = {
-            obj.text: obj
-            for obj in dataset
-        }
+        objects_by_text = {obj.text: obj for obj in dataset}
         x_groups = pdf.group_objects("x", dataset, threshold=0)
         groups_text = [
-            sorted([obj.text for obj in group.objects])
-            for group in x_groups
+            sorted([obj.text for obj in group.objects]) for group in x_groups
         ]
         expected_groups_text = [
             sorted(["obj1", "obj2", "obj4", "obj5"]),
@@ -162,8 +158,7 @@ class HelperFunctionsTestCase(unittest.TestCase):
 
         y_groups = pdf.group_objects("y", dataset, threshold=0)
         groups_text = [
-            sorted([obj.text for obj in group.objects])
-            for group in y_groups
+            sorted([obj.text for obj in group.objects]) for group in y_groups
         ]
         expected_groups_text = [
             ["obj1"],
@@ -171,6 +166,7 @@ class HelperFunctionsTestCase(unittest.TestCase):
             ["obj3"],
             ["obj4", "obj7"],
             ["obj5"],
-            ["obj8"], ["obj9"],
+            ["obj8"],
+            ["obj9"],
         ]
         assert groups_text == expected_groups_text

@@ -383,27 +383,39 @@ class RectObject(object):
         return "<RectObject ({}) fill={}>".format(bbox, self.fill)
 
 
-def object_intercepts(min1, max1, min2, max2, threshold=0):
+def object_intercepts(axis, obj1, obj2, threshold=0):
     """Check whether first object intercepts second's boundaries
 
     Each object is passed by its minimum and maximum value for the desired axis.
     """
 
+    if axis == "x":
+        min1, max1, min2, max2 = obj1.x0, obj1.x1, obj2.x0, obj2.x1
+    elif axis == "y":
+        min1, max1, min2, max2 = obj1.y0, obj1.y1, obj2.y0, obj2.y1
     return min1 < (max2 + threshold) and max1 > (min2 - threshold)
 
 
-def object_contains_center(min1, max1, min2, max2, threshold=0):
+def object_contains_center(axis, obj1, obj2, threshold=0):
     """Check whether first object's center is contained by second's boundaries
 
     Each object is passed by its minimum and maximum value for the desired axis.
     """
 
+    if axis == "x":
+        min1, max1, min2, max2 = obj1.x0, obj1.x1, obj2.x0, obj2.x1
+    elif axis == "y":
+        min1, max1, min2, max2 = obj1.y0, obj1.y1, obj2.y0, obj2.y1
     return (min2 - threshold) <= (min1 + (max1 - min1) / 2.0) <= (max2 + threshold)
 
 
-def object_contains(min1, max1, min2, max2, threshold=0):
+def object_contains(axis, obj1, obj2, threshold=0):
     """Check whether first object is contained by second's boundaries"""
 
+    if axis == "x":
+        min1, max1, min2, max2 = obj1.x0, obj1.x1, obj2.x0, obj2.x1
+    elif axis == "y":
+        min1, max1, min2, max2 = obj1.y0, obj1.y1, obj2.y0, obj2.y1
     return (min2 - threshold) <= min1 and max1 <= (max2 + threshold)
 
 
@@ -471,8 +483,7 @@ class Group(object):
     def intercepts(self, axis, obj):
         """Check whether `obj` intercepts group boundaries (min/max -+ threshold)"""
 
-        d0, d1 = self.object_dimensions(axis, obj)
-        return object_intercepts(d0, d1, self.minimum, self.maximum, self.threshold)
+        return object_intercepts(axis, obj, self, self.threshold)
 
     def contains_center(self, axis, obj):
         """Check whether `obj`'s center is contained by group boundaries (min/max -+ threshold)"""
@@ -512,9 +523,7 @@ def group_objects(axis, objects, threshold=None, check_group=object_intercepts):
     while index_1 < final_index:
         for index_2 in range(index_1 + 1, final_index + 1):
             group_1, group_2 = groups[index_1], groups[index_2]
-            group_1_d0, group_1_d1 = get_dimensions(group_1)
-            group_2_d0, group_2_d1 = get_dimensions(group_2)
-            if check_group(group_1_d0, group_1_d1, group_2_d0, group_2_d1, threshold):
+            if check_group(axis, group_1, group_2, threshold):
                 # Merge groups
                 groups[index_1] = Group(group_1.objects + group_2.objects)
                 del groups[index_2]
@@ -612,10 +621,9 @@ def closest_same_column(objects, value, threshold=None):
     return distances[min(distances.keys())]
 
 
-# TODO: create an way to detect how many tables exist and its positions
-
-
 class ExtractionAlgorithm(object):
+    # TODO: create an way to detect how many tables exist and its positions
+
     def __init__(
         self,
         objects,
