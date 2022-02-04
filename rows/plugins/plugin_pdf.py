@@ -343,6 +343,18 @@ class TextObject(object):
     sizes: int = None
 
     @property
+    def center_x(self):
+        return self.x0 + ((self.x1 - self.x0) / 2.0)
+
+    @property
+    def center_y(self):
+        return self.y0 + ((self.y1 - self.y0) / 2.0)
+
+    @property
+    def center(self):
+        return (self.center_x, self.center_y)
+
+    @property
     def bbox(self):
         return (self.x0, self.y0, self.x1, self.y1)
 
@@ -649,12 +661,17 @@ class ExtractionAlgorithm(object):
 
         objs = list(self.selected_objects)
 
+        # TODO: make the "match" method customizable, for example: create a
+        # method to consider using {x,y}_intervals + {x,y}_threshold and the
+        # object's bbox instead of using center of the object.
         matrix = []
         for y0, y1 in y_intervals:
             line = []
             for x0, x1 in x_intervals:
                 cell = [
-                    obj for obj in objs if x0 <= obj.x0 <= x1 and y0 <= obj.y0 <= y1
+                    obj
+                    for obj in objs
+                    if x0 < obj.center_x < x1 and y0 < obj.center_y < y1
                 ]
                 if not cell:
                     line.append(None)
@@ -758,6 +775,7 @@ class HeaderPositionAlgorithm(YGroupsAlgorithm):
 
         used, lines = [], []
         header_interval = y_intervals[0]
+        # TODO: should consider y_intervals on header interval and on match?
         header_objs = [
             obj for obj in objects if header_interval[0] <= obj.y0 <= header_interval[1]
         ]
