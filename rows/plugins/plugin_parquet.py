@@ -61,4 +61,6 @@ def import_from_parquet(filename_or_fobj, *args, **kwargs):
     table_rows = list(parquet.reader(source.fobj))  # TODO: be lazy
 
     meta = {"imported_from": "parquet", "source": source}
-    return create_table([header] + table_rows, meta=meta, force_types=types, *args, **kwargs)
+    return create_table(
+        [header] + table_rows, meta=meta, force_types=types, *args, **kwargs
+    )

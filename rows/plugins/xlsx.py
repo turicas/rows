@@ -154,7 +154,10 @@ def _python_to_cell(field_types):
         return value, number_format
 
     def convert_row(row):
-        return [convert_value(field_type, value) for field_type, value in zip(field_types, row)]
+        return [
+            convert_value(field_type, value)
+            for field_type, value in zip(field_types, row)
+        ]
 
     return convert_row
 

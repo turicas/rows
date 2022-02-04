@@ -19,7 +19,6 @@ from __future__ import unicode_literals
 
 import bz2
 import gzip
-import io
 import lzma
 import pathlib
 import tempfile
@@ -67,7 +66,6 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
 
 class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
-
     def assert_generate_schema(self, fmt, expected, export_fields=None):
         # prepare a consistent table so we can test all formats using it
         table_fields = utils.table.fields.copy()
@@ -189,40 +187,55 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_load_schema(self):
         temp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
         self.files_to_delete.append(temp.name)
-        temp.file.write(dedent(
-        """
+        temp.file.write(
+            dedent(
+                """
         field_name,field_type
         f1,text
         f2,decimal
         f3,float
         f4,integer
-        """).strip().encode("utf-8"))
+        """
+            )
+            .strip()
+            .encode("utf-8")
+        )
         temp.file.close()
         schema = rows.utils.load_schema(temp.name)
-        expected = OrderedDict([
-            ("f1", fields.TextField),
-            ("f2", fields.DecimalField),
-            ("f3", fields.FloatField),
-            ("f4", fields.IntegerField),
-        ])
+        expected = OrderedDict(
+            [
+                ("f1", fields.TextField),
+                ("f2", fields.DecimalField),
+                ("f3", fields.FloatField),
+                ("f4", fields.IntegerField),
+            ]
+        )
         assert schema == expected
 
     def test_load_schema_with_context(self):
         temp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
         self.files_to_delete.append(temp.name)
-        temp.file.write(dedent(
-        """
+        temp.file.write(
+            dedent(
+                """
         field_name,field_type
         f1,text,
         f2,decimal
         f3,custom1
         f4,custom2
-        """).strip().encode("utf-8"))
+        """
+            )
+            .strip()
+            .encode("utf-8")
+        )
         temp.file.close()
+
         class Custom1Field(fields.TextField):
             pass
+
         class Custom2Field(fields.TextField):
             pass
+
         context = {
             "text": fields.IntegerField,
             "decimal": fields.TextField,
@@ -230,12 +243,14 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             "custom2": Custom2Field,
         }
         schema = rows.utils.load_schema(temp.name, context=context)
-        expected = OrderedDict([
-            ("f1", fields.IntegerField),
-            ("f2", fields.TextField),
-            ("f3", Custom1Field),
-            ("f4", Custom2Field),
-        ])
+        expected = OrderedDict(
+            [
+                ("f1", fields.IntegerField),
+                ("f2", fields.TextField),
+                ("f3", Custom1Field),
+                ("f4", Custom2Field),
+            ]
+        )
         assert schema == expected
 
     def test_source_from_path(self):
@@ -260,7 +275,6 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def assert_open_compressed_text(self, suffix, decompress):
         content = "Álvaro"
         encoding = "iso-8859-1"
-        content_encoded = content.encode(encoding)
 
         temp = tempfile.NamedTemporaryFile(delete=False)
         filename = temp.name + (suffix or "")
@@ -290,11 +304,15 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
 
 class PgUtilsTestCase(unittest.TestCase):
-
     def test_pg_create_table_sql(self):
-        schema = OrderedDict([("id", rows.fields.IntegerField), ("name", rows.fields.TextField)])
+        schema = OrderedDict(
+            [("id", rows.fields.IntegerField), ("name", rows.fields.TextField)]
+        )
         sql = rows.utils.pg_create_table_sql(schema, "testtable")
-        assert sql == """CREATE TABLE IF NOT EXISTS "testtable" (id BIGINT, name TEXT)"""
+        assert (
+            sql
+            == """CREATE TABLE IF NOT EXISTS "testtable" ("id" BIGINT, "name" TEXT)"""
+        )
 
 
 def test_scale_number():

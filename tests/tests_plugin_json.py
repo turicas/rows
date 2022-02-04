@@ -39,7 +39,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
     encoding = "utf-8"
     expected_meta = {
         "imported_from": "json",
-        "source": Source(uri=filename, plugin_name=plugin_name, encoding=encoding)
+        "source": Source(uri=filename, plugin_name=plugin_name, encoding=encoding),
     }
 
     def test_imports(self):
@@ -62,13 +62,17 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # import using filename
         rows.import_from_json(self.filename)
         call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(call_args, field_ordering=False, expected_meta=self.expected_meta)
+        self.assert_create_table_data(
+            call_args, field_ordering=False, expected_meta=self.expected_meta
+        )
 
         # import using fobj
         with open(self.filename) as fobj:
             rows.import_from_json(fobj)
             call_args = mocked_create_table.call_args_list[1]
-            self.assert_create_table_data(call_args, field_ordering=False, expected_meta=self.expected_meta)
+            self.assert_create_table_data(
+                call_args, field_ordering=False, expected_meta=self.expected_meta
+            )
 
     @mock.patch("rows.plugins.plugin_json.prepare_to_export")
     def test_export_to_json_uses_prepare_to_export(self, mocked_prepare_to_export):

@@ -30,14 +30,8 @@ from psycopg2 import connect as pgconnect
 
 import rows.fields as fields
 from rows.plugins.plugin_csv import discover_dialect
+from rows.plugins.utils import create_table, ipartition, prepare_to_export
 from rows.utils import Source, detect_local_source, execute_command, open_compressed
-from rows.plugins.utils import (
-    create_table,
-    ipartition,
-    make_unique_name,
-    prepare_to_export,
-)
-
 
 POSTGRESQL_TYPES = {
     fields.BinaryField: "BYTEA",
@@ -59,7 +53,9 @@ SQL_TABLE_NAMES = """
     FROM pg_tables
     WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
 """
-SQL_CREATE_TABLE = "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types}){post_fields}'
+SQL_CREATE_TABLE = (
+    "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types}){post_fields}'
+)
 SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
 SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) ' "VALUES ({placeholders})"
 DEFAULT_TYPE = "BYTEA"
@@ -77,7 +73,9 @@ def get_psql_command(
 
     if database_uri is None:
         if None in (user, password, host, port, database_name):
-            raise ValueError("Need to specify either `database_uri` or the complete information")
+            raise ValueError(
+                "Need to specify either `database_uri` or the complete information"
+            )
 
         database_uri = "postgres://{user}:{password}@{host}:{port}/{name}".format(
             user=user, password=password, host=host, port=port, name=database_name
@@ -115,7 +113,11 @@ def get_psql_copy_command(
     else:
         header = ", ".join(fields.slug(field_name) for field_name in header)
         header = "({header}) ".format(header=header)
-    copy = r"\copy {source} {header}{direction} STDIN WITH(" "DELIMITER '{delimiter}', " "QUOTE '{quote}', "
+    copy = (
+        r"\copy {source} {header}{direction} STDIN WITH("
+        "DELIMITER '{delimiter}', "
+        "QUOTE '{quote}', "
+    )
     if direction == "FROM":
         copy += "FORCE_NULL {header}, "
     copy += "ENCODING '{encoding}', "
@@ -154,7 +156,9 @@ def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
         post_table=" IF NOT EXISTS",
         table_name=table_name,
         field_types=", ".join(columns),
-        post_fields=" USING {}".format(access_method) if access_method is not None else "",
+        post_fields=" USING {}".format(access_method)
+        if access_method is not None
+        else "",
     )
 
 
@@ -182,7 +186,10 @@ def _python_to_postgresql(field_types):
             return field_type.serialize(value)
 
     def convert_row(row):
-        return [convert_value(field_type, value) for field_type, value in zip(field_types, row)]
+        return [
+            convert_value(field_type, value)
+            for field_type, value in zip(field_types, row)
+        ]
 
     return convert_row
 
@@ -200,7 +207,12 @@ def get_source(connection_or_uri):
 
     # TODO: may improve Source for non-fobj cases (when open() is not needed)
     source = Source.from_file(
-        connection, plugin_name="postgresql", mode=None, is_file=False, local=False, should_close=should_close
+        connection,
+        plugin_name="postgresql",
+        mode=None,
+        is_file=False,
+        local=False,
+        should_close=should_close,
     )
     source.uri = uri if input_is_uri else None
 
@@ -216,7 +228,9 @@ def _valid_table_name(name):
     - Accepts letters, numbers and _
     """
 
-    if name[0] not in "_" + string.ascii_letters or not set(name).issubset("_" + string.ascii_letters + string.digits):
+    if name[0] not in "_" + string.ascii_letters or not set(name).issubset(
+        "_" + string.ascii_letters + string.digits
+    ):
         return False
 
     else:
@@ -224,7 +238,13 @@ def _valid_table_name(name):
 
 
 def import_from_postgresql(
-    connection_or_uri, table_name="table1", query=None, query_args=None, close_connection=None, *args, **kwargs
+    connection_or_uri,
+    table_name="table1",
+    query=None,
+    query_args=None,
+    close_connection=None,
+    *args,
+    **kwargs
 ):
 
     if query is None:
@@ -273,7 +293,7 @@ def export_to_postgresql(
     if table_name is None:
         cursor.execute(SQL_TABLE_NAMES)
         table_names = [item[0] for item in cursor.fetchall()]
-        table_name = make_unique_name(
+        table_name = fields.make_unique_name(
             table.name,
             existing_names=table_names,
             name_format=table_name_format,
@@ -324,7 +344,16 @@ class PostgresCopy:
             pg_encoding = "SQL_ASCII"
         return pg_encoding
 
-    def _import(self, fobj, encoding, dialect, field_names, table_name, skip_header=False, callback=None):
+    def _import(
+        self,
+        fobj,
+        encoding,
+        dialect,
+        field_names,
+        table_name,
+        skip_header=False,
+        callback=None,
+    ):
         # Prepare the `psql` command to be executed based on collected metadata
         command = get_psql_copy_command(
             database_uri=self.database_uri,
@@ -338,6 +367,9 @@ class PostgresCopy:
         )
         rows_imported, error = 0, None
         try:
+            # TODO: use env instead of passing full database URI to
+            # command-line? (other system users could see the process and its
+            # parameters)
             process = subprocess.Popen(
                 shlex.split(command),
                 stdin=subprocess.PIPE,
@@ -413,15 +445,21 @@ class PostgresCopy:
             else:
                 field_names = list(schema.keys())
                 if not set(csv_field_names).issubset(set(field_names)):
-                    raise ValueError("CSV field names are not a subset of schema field names")
-                field_names = [field for field in csv_field_names if field in field_names]
+                    raise ValueError(
+                        "CSV field names are not a subset of schema field names"
+                    )
+                field_names = [
+                    field for field in csv_field_names if field in field_names
+                ]
 
         if create_table:
             # If we need to create the table, it creates based on schema
             # (automatically identified or forced), not on CSV directly (field
             # order will be schema's field order).
             if schema is None:
-                schema = fields.detect_types(csv_field_names, itertools.islice(reader, self.max_samples))
+                schema = fields.detect_types(
+                    csv_field_names, itertools.islice(reader, self.max_samples)
+                )
             create_table_sql = pg_create_table_sql(
                 schema,
                 table_name,
@@ -463,7 +501,9 @@ class PostgresCopy:
             # on CSV directly (field order will be schema's field order).
             pg_execute_psql(
                 self.database_uri,
-                pg_create_table_sql(schema, table_name, unlogged=unlogged, access_method=access_method),
+                pg_create_table_sql(
+                    schema, table_name, unlogged=unlogged, access_method=access_method
+                ),
             )
 
         return self._import(
@@ -521,7 +561,9 @@ def pgimport(
     else:
         # File-object, so some fields are required
         if schema is None or encoding is None or dialect is None:
-            raise ValueError("File-object pgimport requires schema, encoding and dialect")
+            raise ValueError(
+                "File-object pgimport requires schema, encoding and dialect"
+            )
         return pgcopy.import_from_fobj(
             fobj=filename_or_fobj,
             table_name=table_name,

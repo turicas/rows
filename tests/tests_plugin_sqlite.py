@@ -47,7 +47,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
     expected_meta = {
         "imported_from": "sqlite",
-        "source": Source(uri=filename, plugin_name=plugin_name, encoding=None)
+        "source": Source(uri=filename, plugin_name=plugin_name, encoding=None),
     }
 
     def test_imports(self):
@@ -219,7 +219,4 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         connection = rows.export_to_sqlite(table, ":memory:")
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM table1")
-        self.assertEqual(
-            list(cursor.fetchall()),
-            [(None,) for _ in range(10)]
-        )
+        self.assertEqual(list(cursor.fetchall()), [(None,) for _ in range(10)])

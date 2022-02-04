@@ -23,10 +23,7 @@ from io import BytesIO
 import six
 
 from rows import fields
-from rows.plugins.utils import (
-    create_table,
-    prepare_to_export,
-)
+from rows.plugins.utils import create_table, prepare_to_export
 from rows.utils import Source
 
 
@@ -37,7 +34,9 @@ def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
     on Python 3 and could be open in both binary or text mode on Python 2.
     """
 
-    source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="json", encoding=encoding)
+    source = Source.from_file(
+        filename_or_fobj, mode="rb", plugin_name="json", encoding=encoding
+    )
 
     # JSON should always use UTF-8, UTF-16 or UTF-32 encodings.
     json_obj = json.load(source.fobj)
@@ -70,7 +69,9 @@ def _convert(value, field_type, *args, **kwargs):
         return field_type.serialize(value, *args, **kwargs)
 
 
-def export_to_json(table, filename_or_fobj=None, encoding="utf-8", indent=None, *args, **kwargs):
+def export_to_json(
+    table, filename_or_fobj=None, encoding="utf-8", indent=None, *args, **kwargs
+):
     """Export a `rows.Table` to a JSON file or file-like object.
 
     If a file-like object is provided it MUST be open in binary mode (like in

@@ -2,7 +2,6 @@ import datetime
 import operator
 from calendar import isleap
 
-
 # TODO: create objects like `one_month`, `one_year` etc. so we can
 # use like:
 # >>> datetime.date(2020, 1, 31) + one_month
@@ -10,7 +9,7 @@ from calendar import isleap
 
 # TODO: test using timezone info
 
-LAST_DAY =      (None, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)  # noqa
+LAST_DAY = (None, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)  # noqa
 LAST_DAY_LEAP = (None, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)  # noqa
 
 
@@ -76,7 +75,9 @@ def last_month(date, semantic=True):
         # "Semantically" remove one month from the date (even if it means the
         # difference between current date and last is not 30-31 days).
         # Works differently from `next_month`.
-        last_day_last_month = LAST_DAY[month] if not isleap(year) else LAST_DAY_LEAP[month]
+        last_day_last_month = (
+            LAST_DAY[month] if not isleap(year) else LAST_DAY_LEAP[month]
+        )
         day = day if day <= last_day_last_month else last_day_last_month
 
         return datetime.date(year=year, month=month, day=day)
@@ -85,6 +86,7 @@ def last_month(date, semantic=True):
         # Just remove the total number of days from the last month
         days = LAST_DAY[month] if not isleap(year) else LAST_DAY_LEAP[month]
         return date - datetime.timedelta(days=days)
+
 
 def next_month(date, semantic=True):
     """
@@ -107,7 +109,9 @@ def next_month(date, semantic=True):
         month = date.month + 1 if date.month < 12 else 1
         day = date.day
 
-        last_day_this_month = LAST_DAY[date.month] if not isleap(date.year) else LAST_DAY_LEAP[date.month]
+        last_day_this_month = (
+            LAST_DAY[date.month] if not isleap(date.year) else LAST_DAY_LEAP[date.month]
+        )
         if date.day == last_day_this_month:
             day = LAST_DAY[month] if not isleap(year) else LAST_DAY_LEAP[month]
 
@@ -115,7 +119,9 @@ def next_month(date, semantic=True):
 
     else:
         # Just add the total number of days the current month has
-        days = LAST_DAY[date.month] if not isleap(date.year) else LAST_DAY_LEAP[date.month]
+        days = (
+            LAST_DAY[date.month] if not isleap(date.year) else LAST_DAY_LEAP[date.month]
+        )
         return date + datetime.timedelta(days=days)
 
 
@@ -152,6 +158,7 @@ DATE_INTERVALS = {
     "yearly": (last_year, next_year),
 }
 
+
 def date_range(start, stop, step="daily"):
     """
     >>> list(date_range(datetime.date(2020, 1, 1), datetime.date(2020, 1, 3), step="daily"))
@@ -174,11 +181,15 @@ def date_range(start, stop, step="daily"):
         if step > datetime.timedelta(days=0):
             check_operation = operator.lt
             if start > stop:
-                raise ValueError("start cannot be greater than stop when step is positive")
+                raise ValueError(
+                    "start cannot be greater than stop when step is positive"
+                )
         else:
             check_operation = operator.gt
             if start < stop:
-                raise ValueError("start cannot be lower than stop when step is negative")
+                raise ValueError(
+                    "start cannot be lower than stop when step is negative"
+                )
 
     current = start
     while check_operation(current, stop):

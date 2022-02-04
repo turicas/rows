@@ -62,7 +62,14 @@ def sheet_names(filename_or_fobj):
 
 
 def import_from_ods(
-    filename_or_fobj, index=0, start_row=None, start_column=None, end_row=None, end_column=None, *args, **kwargs
+    filename_or_fobj,
+    index=0,
+    start_row=None,
+    start_column=None,
+    end_row=None,
+    end_column=None,
+    *args,
+    **kwargs,
 ):
     # TODO: unescape values
 

@@ -84,7 +84,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_import_from_xhtml(self):
         fobj = BytesIO(
             b'<?xml version="1.0" encoding="UTF-8"?>'
-            b'<table> <tr><td>f1</td></tr> <tr><td>42</td></tr> </table>'
+            b"<table> <tr><td>f1</td></tr> <tr><td>42</td></tr> </table>"
         )
         table = rows.import_from_html(fobj, encoding=self.encoding)
         self.assertEqual(table.field_names, ["f1"])
@@ -430,10 +430,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         filename = "tests/data/table-thead-tbody.html"
         table = rows.import_from_html(filename)
         result = rows.export_to_html(table, caption=True)
-        self.assertIn(
-            "<caption>table_thead_tbody</caption>",
-            result.decode("utf-8")
-        )
+        self.assertIn("<caption>table_thead_tbody</caption>", result.decode("utf-8"))
 
 
 class PluginHtmlUtilsTestCase(unittest.TestCase):

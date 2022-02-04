@@ -27,9 +27,8 @@ from pathlib import Path
 import six
 
 import rows.fields as fields
+from rows.fields import slug
 from rows.table import Table
-from rows.utils import slug
-
 
 NONE_VALUES = list(fields.NULL) + ["", None]
 FIELDS = OrderedDict(
@@ -204,7 +203,9 @@ class RowsTestMixIn(object):
         if expected_meta is None:
             expected_meta = {
                 "imported_from": self.plugin_name,
-                "name": slug(os.path.splitext(Path(filename).name)[0]) if filename else "table1",
+                "name": slug(os.path.splitext(Path(filename).name)[0])
+                if filename
+                else "table1",
             }
         else:
             expected_meta = expected_meta.copy()

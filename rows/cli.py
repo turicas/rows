@@ -56,7 +56,6 @@ from rows.utils import (
     uncompressed_size,
 )
 
-
 DEFAULT_BUFFER_SIZE = 8 * 1024 * 1024
 DEFAULT_INPUT_ENCODING = "utf-8"
 DEFAULT_INPUT_LOCALE = "C"
@@ -93,7 +92,8 @@ def _import_table(source, encoding, verify_ssl=True, progress=True, *args, **kwa
         )
     except requests.exceptions.SSLError:
         click.echo(
-            "ERROR: SSL verification failed! " "Use `--verify-ssl=no` if you want to ignore.",
+            "ERROR: SSL verification failed! "
+            "Use `--verify-ssl=no` if you want to ignore.",
             err=True,
         )
         sys.exit(2)
@@ -106,7 +106,9 @@ def _get_field_names(field_names, table_field_names, permit_not=False):
     if not permit_not:
         diff = set(new_field_names) - set(table_field_names)
     else:
-        diff = set(field_name.replace("^", "") for field_name in new_field_names) - set(table_field_names)
+        diff = set(field_name.replace("^", "") for field_name in new_field_names) - set(
+            table_field_names
+        )
 
     if diff:
         missing = ", ".join(['"{}"'.format(field) for field in diff])
@@ -129,7 +131,11 @@ def _get_import_fields(fields, fields_exclude):
 def _get_export_fields(table_field_names, fields_exclude):
     if fields_exclude is not None:
         fields_exclude = _get_field_names(fields_exclude, table_field_names)
-        return [field_name for field_name in table_field_names if field_name not in fields_exclude]
+        return [
+            field_name
+            for field_name in table_field_names
+            if field_name not in fields_exclude
+        ]
     else:
         return None
 
@@ -221,7 +227,9 @@ def convert(
     input_encoding = input_encoding or input_options.get("encoding", None)
     source_info = None
     if input_encoding is None:
-        source_info = detect_source(uri=source, verify_ssl=verify_ssl, progress=progress)
+        source_info = detect_source(
+            uri=source, verify_ssl=verify_ssl, progress=progress
+        )
         input_encoding = source_info.encoding or DEFAULT_INPUT_ENCODING
 
     import_fields = _get_import_fields(fields, fields_exclude)
@@ -272,7 +280,10 @@ def convert(
         )
 
 
-@cli.command(help="Join tables from `source` URIs using `key(s)` to group " "rows and save into `destination`")
+@cli.command(
+    help="Join tables from `source` URIs using `key(s)` to group "
+    "rows and save into `destination`"
+)
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
@@ -309,9 +320,15 @@ def join(
 
     if input_locale is not None:
         with rows.locale_context(input_locale):
-            tables = [_import_table(source, encoding=input_encoding, verify_ssl=verify_ssl) for source in sources]
+            tables = [
+                _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl)
+                for source in sources
+            ]
     else:
-        tables = [_import_table(source, encoding=input_encoding, verify_ssl=verify_ssl) for source in sources]
+        tables = [
+            _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl)
+            for source in sources
+        ]
 
     result = rows.join(keys, tables)
     if order_by is not None:
@@ -332,10 +349,14 @@ def join(
                 export_fields=export_fields,
             )
     else:
-        export_to_uri(result, destination, encoding=output_encoding, export_fields=export_fields)
+        export_to_uri(
+            result, destination, encoding=output_encoding, export_fields=export_fields
+        )
 
 
-@cli.command(name="sum", help="Sum tables from `source` URIs and save into `destination`")
+@cli.command(
+    name="sum", help="Sum tables from `source` URIs and save into `destination`"
+)
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
@@ -403,7 +424,9 @@ def sum_(
                 export_fields=export_fields,
             )
     else:
-        export_to_uri(result, destination, encoding=output_encoding, export_fields=export_fields)
+        export_to_uri(
+            result, destination, encoding=output_encoding, export_fields=export_fields
+        )
 
 
 @cli.command(name="print", help="Print a table")
@@ -417,7 +440,9 @@ def sum_(
     help="Custom (import) plugin key=value custom option (can be specified multiple times)",
 )
 @click.option("--output-locale")
-@click.option("--frame-style", default="ascii", help="Options: ascii, single, double, none")
+@click.option(
+    "--frame-style", default="ascii", help="Options: ascii, single, double, none"
+)
 @click.option("--table-index", default=0)
 @click.option("--verify-ssl", type=bool, default=True)
 @click.option("--fields", help="A comma-separated list of fields to import")
@@ -446,7 +471,9 @@ def print_(
     input_encoding = input_encoding or input_options.get("encoding", None)
     source_info = None
     if input_encoding is None:
-        source_info = detect_source(uri=source, verify_ssl=verify_ssl, progress=progress)
+        source_info = detect_source(
+            uri=source, verify_ssl=verify_ssl, progress=progress
+        )
         input_encoding = source_info.encoding or DEFAULT_INPUT_ENCODING
 
     import_fields = _get_import_fields(fields, fields_exclude)
@@ -525,7 +552,9 @@ def print_(
     help="Custom (import) plugin key=value custom option (can be specified multiple times)",
 )
 @click.option("--output")
-@click.option("--frame-style", default="ascii", help="Options: ascii, single, double, none")
+@click.option(
+    "--frame-style", default="ascii", help="Options: ascii, single, double, none"
+)
 @click.option("--quiet", "-q", is_flag=True)
 @click.argument("query", required=True)
 @click.argument("sources", nargs=-1, required=True)
@@ -552,7 +581,9 @@ def query(
     samples = samples if samples > 0 else None
 
     if not query.strip().lower().startswith("select"):
-        table_names = ", ".join(["table{}".format(index) for index in range(1, len(sources) + 1)])
+        table_names = ", ".join(
+            ["table{}".format(index) for index in range(1, len(sources) + 1)]
+        )
         query = "SELECT * FROM {} WHERE {}".format(table_names, query)
 
     if len(sources) == 1:
@@ -560,7 +591,9 @@ def query(
 
         if source.plugin_name in ("sqlite", "postgresql"):
             # Optimization: query the db directly
-            result = import_from_source(source, input_encoding, query=query, samples=samples)
+            result = import_from_source(
+                source, input_encoding, query=query, samples=samples
+            )
         else:
             if input_locale is not None:
                 with rows.locale_context(input_locale):
@@ -600,7 +633,9 @@ def query(
 
         sqlite_connection = sqlite3.Connection(":memory:")
         for index, table in enumerate(tables, start=1):
-            rows.export_to_sqlite(table, sqlite_connection, table_name="table{}".format(index))
+            rows.export_to_sqlite(
+                table, sqlite_connection, table_name="table{}".format(index)
+            )
 
         result = rows.import_from_sqlite(sqlite_connection, query=query)
 
@@ -610,9 +645,13 @@ def query(
         fobj = BytesIO()
         if output_locale is not None:
             with rows.locale_context(output_locale):
-                rows.export_to_txt(result, fobj, encoding=output_encoding, frame_style=frame_style)
+                rows.export_to_txt(
+                    result, fobj, encoding=output_encoding, frame_style=frame_style
+                )
         else:
-            rows.export_to_txt(result, fobj, encoding=output_encoding, frame_style=frame_style)
+            rows.export_to_txt(
+                result, fobj, encoding=output_encoding, frame_style=frame_style
+            )
         fobj.seek(0)
         click.echo(fobj.read())
     else:
@@ -672,7 +711,9 @@ def schema(
 
     input_options = parse_options(input_option)
     progress = not quiet
-    input_encoding = input_encoding or input_options.get("encoding", None) or DEFAULT_INPUT_ENCODING
+    input_encoding = (
+        input_encoding or input_options.get("encoding", None) or DEFAULT_INPUT_ENCODING
+    )
     source_info = detect_source(uri=source, verify_ssl=verify_ssl, progress=progress)
     source_info.encoding = input_encoding  # TODO: fix `detect_source`
 
@@ -680,10 +721,14 @@ def schema(
     import_fields = _get_import_fields(fields, fields_exclude)
 
     if detect_all_types:
-        field_types_names = [field_name for field_name in rows.fields.__all__ if field_name != "Field"]
+        field_types_names = [
+            field_name for field_name in rows.fields.__all__ if field_name != "Field"
+        ]
     else:
         field_types_names = [
-            FieldClass.__name__ for FieldClass in rows.fields.DEFAULT_TYPES if FieldClass != rows.fields.Field
+            FieldClass.__name__
+            for FieldClass in rows.fields.DEFAULT_TYPES
+            if FieldClass != rows.fields.Field
         ]
     field_types = [getattr(rows.fields, field_name) for field_name in field_types_names]
 
@@ -733,7 +778,9 @@ def schema(
 @click.option("--schemas", default=None)
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("output", required=True)
-def command_csv_to_sqlite(batch_size, samples, input_encoding, dialect, schemas, sources, output):
+def command_csv_to_sqlite(
+    batch_size, samples, input_encoding, dialect, schemas, sources, output
+):
 
     # TODO: add --quiet
 
@@ -808,7 +855,17 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
 @click.argument("source", required=True)
 @click.argument("database_uri", required=True)
 @click.argument("table_name", required=True)
-def command_pgimport(input_encoding, no_create_table, dialect, schema, unlogged, access_method, source, database_uri, table_name):
+def command_pgimport(
+    input_encoding,
+    no_create_table,
+    dialect,
+    schema,
+    unlogged,
+    access_method,
+    source,
+    database_uri,
+    table_name,
+):
 
     # TODO: add --quiet
     # TODO: may detect encoding here (instead of inside rows.utils.pgimport)
@@ -817,7 +874,10 @@ def command_pgimport(input_encoding, no_create_table, dialect, schema, unlogged,
     class CustomProgressBar(ProgressBar):
         def update(self, *args, **kwargs):
             super().update(*args, **kwargs)
-            if self.progress.total is not None and self.progress.n > self.progress.total:
+            if (
+                self.progress.total is not None
+                and self.progress.n > self.progress.total
+            ):
                 # The total size reached a level above the detected one,
                 # probabaly error on gzip (it has only 32 bits to store
                 # uncompressed size, so if uncompressed size is greater than
@@ -831,14 +891,18 @@ def command_pgimport(input_encoding, no_create_table, dialect, schema, unlogged,
                 self.progress.total = new_total
                 # TODO: update total when finish (total = n)?
 
-    progress_bar = CustomProgressBar(prefix="Importing data", pre_prefix="Detecting file size", unit="bytes")
+    progress_bar = CustomProgressBar(
+        prefix="Importing data", pre_prefix="Detecting file size", unit="bytes"
+    )
     compressed_size = os.stat(source).st_size
     try:
         total_size = uncompressed_size(source)
     except (RuntimeError, ValueError):
         total_size = compressed_size
     finally:
-        progress_bar.total = total_size if total_size > compressed_size else compressed_size
+        progress_bar.total = (
+            total_size if total_size > compressed_size else compressed_size
+        )
         progress_bar.original_total = total_size
         progress_bar.bit_updates = 0
 
@@ -874,7 +938,9 @@ def command_pgimport(input_encoding, no_create_table, dialect, schema, unlogged,
 @click.argument("database_uri", required=True)
 @click.argument("table_name", required=True)
 @click.argument("destination", required=True)
-def command_pgexport(is_query, output_encoding, dialect, database_uri, table_name, destination):
+def command_pgexport(
+    is_query, output_encoding, dialect, database_uri, table_name, destination
+):
     # TODO: add --quiet
 
     updater = ProgressBar(prefix="Exporting data", unit="bytes")
@@ -903,7 +969,9 @@ def command_pgexport(is_query, output_encoding, dialect, database_uri, table_nam
 @click.option("--pages")
 @click.argument("source", required=True)
 @click.argument("output", required=False)
-def command_pdf_to_text(input_option, output_encoding, quiet, backend, pages, source, output):
+def command_pdf_to_text(
+    input_option, output_encoding, quiet, backend, pages, source, output
+):
 
     input_options = parse_options(input_option)
     input_options["backend"] = backend or input_options.get("backend", None)
@@ -911,7 +979,9 @@ def command_pdf_to_text(input_option, output_encoding, quiet, backend, pages, so
     # Define page range
     input_options["page_numbers"] = pages or input_options.get("page_numbers", None)
     if input_options["page_numbers"]:
-        input_options["page_numbers"] = rows.plugins.pdf.extract_intervals(input_options["page_numbers"])
+        input_options["page_numbers"] = rows.plugins.pdf.extract_intervals(
+            input_options["page_numbers"]
+        )
 
     # Define if output is file or stdout
     if output:
@@ -934,7 +1004,9 @@ def command_pdf_to_text(input_option, output_encoding, quiet, backend, pages, so
         if input_options["page_numbers"]:
             total_pages = len(input_options["page_numbers"])
         else:
-            total_pages = rows.plugins.pdf.number_of_pages(source, backend=input_options["backend"])
+            total_pages = rows.plugins.pdf.number_of_pages(
+                source, backend=input_options["backend"]
+            )
         reader = tqdm(reader, desc="Extracting text", total=total_pages)
 
     for page in reader:
@@ -956,7 +1028,14 @@ def command_pdf_to_text(input_option, output_encoding, quiet, backend, pages, so
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("destination")
 def csv_merge(
-    input_encoding, output_encoding, no_strip, no_remove_empty_lines, sample_size, buffer_size, sources, destination
+    input_encoding,
+    output_encoding,
+    no_strip,
+    no_remove_empty_lines,
+    sample_size,
+    buffer_size,
+    sources,
+    destination,
 ):
 
     # TODO: add option to preserve original key names
@@ -980,8 +1059,12 @@ def csv_merge(
         # TODO: fix final header in case of empty field names (a command like
         # `rows csv-clean` would fix the problem if run before `csv-merge` for
         # each file).
-        metadata[filename]["fobj"] = open_compressed(filename, encoding=input_encoding, buffering=buffer_size)
-        metadata[filename]["reader"] = csv.reader(metadata[filename]["fobj"], dialect=dialect)
+        metadata[filename]["fobj"] = open_compressed(
+            filename, encoding=input_encoding, buffering=buffer_size
+        )
+        metadata[filename]["reader"] = csv.reader(
+            metadata[filename]["fobj"], dialect=dialect
+        )
         metadata[filename]["header"] = make_header(next(metadata[filename]["reader"]))
         metadata[filename]["header_map"] = {}
         for field_name in metadata[filename]["header"]:
@@ -992,19 +1075,27 @@ def csv_merge(
     # TODO: is it needed to use make_header here?
 
     progress_bar = tqdm(desc="Exporting data")
-    output_fobj = open_compressed(destination, mode="w", encoding=output_encoding, buffering=buffer_size)
+    output_fobj = open_compressed(
+        destination, mode="w", encoding=output_encoding, buffering=buffer_size
+    )
     writer = csv.writer(output_fobj)
     writer.writerow(final_header)
     for index, filename in enumerate(sources):
         progress_bar.desc = "Exporting data {}/{}".format(index + 1, len(sources))
         meta = metadata[filename]
         field_indexes = [
-            meta["header"].index(field_name) if field_name in meta["header"] else None for field_name in final_header
+            meta["header"].index(field_name) if field_name in meta["header"] else None
+            for field_name in final_header
         ]
         if strip:
-            create_new_row = lambda row: [row[index].strip() if index is not None else None for index in field_indexes]
+            create_new_row = lambda row: [
+                row[index].strip() if index is not None else None
+                for index in field_indexes
+            ]
         else:
-            create_new_row = lambda row: [row[index] if index is not None else None for index in field_indexes]
+            create_new_row = lambda row: [
+                row[index] if index is not None else None for index in field_indexes
+            ]
 
         for row in meta["reader"]:
             new_row = create_new_row(row)
@@ -1025,7 +1116,15 @@ def csv_merge(
 @click.option("--in-place", is_flag=True)
 @click.argument("source", required=True)
 @click.argument("destination", required=False)
-def csv_clean(input_encoding, output_encoding, sample_size, buffer_size, in_place, source, destination):
+def csv_clean(
+    input_encoding,
+    output_encoding,
+    sample_size,
+    buffer_size,
+    in_place,
+    source,
+    destination,
+):
     """Create a consistent and clean version of a CSV file
 
     The tasks this command executes are:
@@ -1050,12 +1149,16 @@ def csv_clean(input_encoding, output_encoding, sample_size, buffer_size, in_plac
     dialect = rows.plugins.csv.discover_dialect(sample, input_encoding)
 
     # Get header
-    with open_compressed(source, encoding=input_encoding, buffering=buffer_size) as fobj:
+    with open_compressed(
+        source, encoding=input_encoding, buffering=buffer_size
+    ) as fobj:
         reader = csv.reader(fobj, dialect=dialect)
         header = make_header(next(reader))
 
     # Detect empty columns
-    with open_compressed(source, encoding=input_encoding, buffering=buffer_size) as fobj:
+    with open_compressed(
+        source, encoding=input_encoding, buffering=buffer_size
+    ) as fobj:
         reader = csv.reader(fobj, dialect=dialect)
         _ = next(reader)  # Skip header
         empty_columns = list(header)
@@ -1076,12 +1179,20 @@ def csv_clean(input_encoding, output_encoding, sample_size, buffer_size, in_plac
     fobj = open_compressed(source, encoding=input_encoding, buffering=buffer_size)
     reader = csv.reader(fobj, dialect=dialect)
     _ = next(reader)  # Skip header
-    field_indexes = [header.index(field_name) for field_name in header if field_name not in empty_columns]
+    field_indexes = [
+        header.index(field_name)
+        for field_name in header
+        if field_name not in empty_columns
+    ]
     create_new_row = lambda row: [row[index].strip() for index in field_indexes]
 
-    output_fobj = open_compressed(destination, mode="w", encoding=output_encoding, buffering=buffer_size)
+    output_fobj = open_compressed(
+        destination, mode="w", encoding=output_encoding, buffering=buffer_size
+    )
     writer = csv.writer(output_fobj)
-    writer.writerow([field_name for field_name in header if field_name not in empty_columns])
+    writer.writerow(
+        [field_name for field_name in header if field_name not in empty_columns]
+    )
     for row in tqdm(reader, desc="Converting file"):
         row = create_new_row(row)
         if not any(row):  # Empty row
@@ -1124,11 +1235,21 @@ def csv_row_count(input_encoding, buffer_size, dialect, sample_size, source):
 @click.option("--buffer-size", default=DEFAULT_BUFFER_SIZE)
 @click.option("--quiet", "-q", is_flag=True)
 @click.option(
-    "--destination-pattern", default=None, help="Template name for destination files, like: `myfile-{part:03d}.csv`"
+    "--destination-pattern",
+    default=None,
+    help="Template name for destination files, like: `myfile-{part:03d}.csv`",
 )
 @click.argument("source")
 @click.argument("lines", type=int)
-def csv_split(input_encoding, output_encoding, buffer_size, quiet, destination_pattern, source, lines):
+def csv_split(
+    input_encoding,
+    output_encoding,
+    buffer_size,
+    quiet,
+    destination_pattern,
+    source,
+    lines,
+):
     """Split CSV into equal parts (by number of lines).
 
     Input and output files can be compressed.
