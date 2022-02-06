@@ -425,7 +425,9 @@ def define_threshold(axis, objects, proportion=0.3):
     For y axis: uses `proportion` of average height
     For x axis: uses `proportion` of average character size (`(obj.x1 - obj.x0) / len(obj.text)`).
     """
-    if axis == "x":
+    if not objects:
+        return 0
+    elif axis == "x":
         values = [
             (obj.x1 - obj.x0) / len(obj.text) if obj.text else 0 for obj in objects
         ]
