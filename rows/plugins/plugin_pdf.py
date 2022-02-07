@@ -554,8 +554,10 @@ def contains_or_overlap(a, b):
     return contains or overlaps
 
 
-def distance(a, b):
-    return math.sqrt((a.x0 - b.x0) ** 2 + (a.y0 - b.y0) ** 2)
+def distance_center(a, b):
+    a_x, a_y = a.x0 + (a.x1 - a.x0) / 2, a.y0 + (a.y1 - a.y0) / 2
+    b_x, b_y = b.x0 + (b.x1 - b.x0) / 2, b.y0 + (b.y1 - b.y0) / 2
+    return math.sqrt((a_x - b_x) ** 2 + (a_y - b_y) ** 2)
 
 
 def closest_object(objects, value):
@@ -566,7 +568,7 @@ def closest_object(objects, value):
 
     desired_object = found[0]
     distances = {
-        distance(desired_object, other): other
+        distance_center(desired_object, other): other
         for other in objects
         if other != desired_object
     }
