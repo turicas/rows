@@ -298,14 +298,18 @@ class PyMuPDFBackend(PDFBackend):
             yield load_page(page_index)
 
     @staticmethod
-    def convert_object(obj):
-        bbox = obj["bbox"]
+    def convert_object(obj, page):
+        # TODO: should consider using `dir` and `wmode` from line dict (`obj`)?
+        #       `dir` is already considered in the calculation below:
+        bbox = pymupdf.Rect(*obj["bbox"]) * page.rotation_matrix
         text = " ".join(
             [
                 "\n".join(line.strip() for line in span["text"].splitlines())
                 for span in obj["spans"]
             ]
         )
+        # TODO: may use glyph's height instead of object's bbox (more info:
+        # <https://pymupdf.readthedocs.io/en/latest/textpage.html#span-dictionary>)
         return TextObject(
             x0=bbox[0],
             y0=bbox[1],
@@ -321,7 +325,7 @@ class PyMuPDFBackend(PDFBackend):
     def page_objects(self, page):
         blocks = getattr(page, "get_text", getattr(page, "getText"))("dict")["blocks"]
         objects = [
-            PyMuPDFBackend.convert_object(line)
+            PyMuPDFBackend.convert_object(line, page)
             for block in blocks
             if block["type"] == 0
             for line in block["lines"]
