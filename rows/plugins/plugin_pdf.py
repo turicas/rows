@@ -18,7 +18,9 @@
 from __future__ import unicode_literals
 
 import math
+import re
 import statistics
+import tempfile
 from dataclasses import dataclass
 
 import six
@@ -56,6 +58,8 @@ except ImportError:
     PDFMINER_TEXT_TYPES, PDFMINER_ALL_TYPES = None, None
 
 
+REGEXP_BBOX = re.compile("bbox ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+)")
+
 def extract_intervals(text, repeat=False, sort=True):
     """
     >>> extract_intervals("1,2,3")
@@ -88,6 +92,8 @@ def extract_intervals(text, repeat=False, sort=True):
 
 
 def get_check_object_function(value):
+    # TODO: accept `value` being a TextObject/RectObject
+
     if isinstance(value, str):  # regular string, match exactly
         return lambda obj: (
             isinstance(obj, TextObject) and obj.text.strip() == value.strip()
@@ -334,6 +340,41 @@ class PyMuPDFBackend(PDFBackend):
         return objects
 
 
+class PyMuPDFTesseractBackend(PyMuPDFBackend):
+    name = "pymupdf-tesseract"
+
+    def page_objects(self, page, dpi=300, alpha=True, lang=None, remove_empty=True, merge_x=True):
+        import pytesseract
+        from lxml.html import document_fromstring
+
+        with tempfile.NamedTemporaryFile(suffix=".png") as tmp:
+            pix = page.get_pixmap(dpi=dpi, alpha=alpha)
+            pix.save(tmp.name)
+            html = pytesseract.image_to_pdf_or_hocr(tmp.name, extension="hocr", lang=lang)
+
+        tree = document_fromstring(html)
+        objects = []
+        for span in tree.xpath("//span[@class = 'ocrx_word']"):
+            bbox = [int(value) for value in REGEXP_BBOX.findall(span.attrib["title"])[0]]
+            text = span.text.strip()
+            if not remove_empty or (remove_empty and text):
+                objects.append(TextObject(*bbox, text=text))
+
+        if merge_x:
+
+            def check_group(axis, obj1, obj2, threshold):
+                return check_merge_x(obj1, obj2, threshold)
+
+            groups = group_objects("y", objects)
+            new_objects = []
+            for group in groups:
+                new_objects.extend(group_objects("y", group, check_group=check_group))
+            objects = new_objects
+
+        objects.sort(key=lambda obj: (obj.y0, obj.x0))
+        return objects
+
+
 @dataclass
 class TextObject(object):
     x0: float
@@ -440,6 +481,16 @@ def define_threshold(axis, objects, proportion=0.3):
     return proportion * (sum(values) / len(values))
 
 
+def check_merge_x(obj1, obj2, threshold=0):
+    """Check if an object could be merged to another according to x distance
+    and average char length"""
+
+    if obj1.x0 > obj2.x0:
+        obj1, obj2 = obj2, obj1
+    average_char_length = (obj1.x1 - obj1.x0) / len(obj1.text)
+    return obj1.x1 + average_char_length + threshold >= obj2.x0
+
+
 class Group(object):
     "Group objects based on its positions and sizes"
 
@@ -479,6 +530,10 @@ class Group(object):
     @property
     def bbox(self):
         return (self.x0, self.y0, self.x1, self.y1)
+
+    @property
+    def text(self):
+        return " ".join(obj.text for obj in self.objects)
 
     def object_dimensions(self, obj):
         if self.axis == "x":
