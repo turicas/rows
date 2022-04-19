@@ -45,18 +45,31 @@ class BaseTable(MutableSequence):
             ]
         )
 
-        # TODO: should be able to customize row return type (namedtuple, dict
-        #       etc.)
-        self.Row = namedtuple("Row", self.field_names)
         self.meta = dict(meta) if meta is not None else {}
+
+    @property
+    def Row(self):
+        """Returns the class to be used to represent a row from this table.
+
+            by default, Rows are Python's namedtuples with the table field names.
+            For other objects, create a mixin replacing this method.
+        """
+        if not getattr(self, field_names, ()):
+            raise RuntimeError("Table must know its fields before being able to determine a Row class")
+        if not getattr(self, "_row_cls_namedtuple", None):
+                self._row_cls_namedtuple = namedtuple("Row", self.field_names)
+        return self._row_cls_named_tuple
+
 
     def _repr_html_(self):
         import rows.plugins
 
+        HEAD_THRESHOLD = 20
+
         convert_to_html = rows.plugins.html.export_to_html
 
         total = len(self)
-        if total <= 20:
+        if total <= HEAD_THRESHOLD:
             result = convert_to_html(self, caption=True)
 
         else:  # Show only head and tail
@@ -87,14 +100,14 @@ class BaseTable(MutableSequence):
                     }
                 )
 
-            result = convert_to_html(representation, caption=True).replace(
-                b"</caption>",
-                b" (showing 20 rows, out of "
-                + str(total).encode("ascii")
-                + b")</caption>",
+            result = convert_to_html(representation, caption=True).decode("utf-8")
+            if isinstance(result, bytes):
+                result = result.decode("utf-8")
+            result = result.replace(
+                "</caption>",
+                f" (showing {HEAD_THRESHOLD} rows, out of {total})</caption>"
             )
-
-        return result.decode("utf-8")
+        return result
 
     @property
     def field_names(self):
