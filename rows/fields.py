@@ -565,7 +565,8 @@ def slug(text, separator="_", permitted_chars=SLUG_CHARS):
 
     # Remove non-permitted characters and put everything to lowercase
     # Example: u'_ALVARO__justen%_' -> u'_alvaro__justen_'
-    allowed_chars = list(permitted_chars) + [separator]
+    allowed_chars = set(permitted_chars)
+    allowed_chars.add(separator)
     text = "".join(char for char in text if char in allowed_chars).lower()
 
     # Remove double occurrencies of separator
@@ -573,7 +574,7 @@ def slug(text, separator="_", permitted_chars=SLUG_CHARS):
     text = (
         REGEXP_SEPARATOR
         if separator == "_"
-        else re.compile("(" + re.escape(separator) + "+)")
+        else re.compile(f"({re.escape(separator)}+)")
     ).sub(separator, text)
 
     # Strip separators
