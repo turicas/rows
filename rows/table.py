@@ -18,16 +18,11 @@
 from __future__ import unicode_literals
 
 import os
-from collections import OrderedDict, namedtuple
+from collections import namedtuple
 from operator import itemgetter
 from pathlib import Path
 
-import six
-
-if six.PY2:
-    from collections import MutableSequence, Sized
-elif six.PY3:
-    from collections.abc import MutableSequence, Sized
+from collections.abc import MutableSequence, Sized
 
 
 class BaseTable(MutableSequence):
@@ -35,15 +30,22 @@ class BaseTable(MutableSequence):
     def __init__(self, fields, meta=None):
         from rows.plugins import utils
 
-        # TODO: should we really use OrderedDict here?
-        # TODO: should use slug on each field name automatically or inside each
-        #       plugin?
-        self.fields = OrderedDict(
-            [
-                (utils.slug(field_name), field_type)
-                for field_name, field_type in OrderedDict(fields).items()
-            ]
-        )
+        # Field order is guarranteed by Dictionaries preserving insetion order in Py 3.6+
+        # (NB.: In Py 3.6 dict order is an "implementation detail", but from
+        # 3.7 on it is a language spec.
+
+
+        # Field names are automatically slugged in the internal repr.
+        # Original names are stored as "str_fields"
+
+        fields = dict(fields)
+        self.str_field_names = list(fields.keys())
+
+        self.fields = {
+                utils.slug(field_name): field_type
+                for field_name, field_type in fields.items()
+        }
+        self.field_names = list(self.fields.keys())
 
         self.meta = dict(meta) if meta is not None else {}
 
@@ -197,7 +199,7 @@ class Table(BaseTable):
             return self.Row(*self._rows[key])
         elif key_type == slice:
             return Table.copy(self, self._rows[key])
-        elif key_type is six.text_type:
+        elif issubclass(key_type, str):
             try:
                 field_index = self.field_names.index(key)
             except ValueError:
@@ -212,7 +214,7 @@ class Table(BaseTable):
         key_type = type(key)
         if key_type == int:
             self._rows[key] = self._make_row(value)
-        elif key_type is six.text_type:
+        elif issubclass(key_type, str):
             from rows import fields
             from rows.plugins import utils
 
@@ -245,7 +247,7 @@ class Table(BaseTable):
         key_type = type(key)
         if key_type == int:
             del self._rows[key]
-        elif key_type is six.text_type:
+        elif issubclass(key_type, str):
             try:
                 field_index = self.field_names.index(key)
             except ValueError:
@@ -415,7 +417,7 @@ class SQLiteTable(BaseTable):
             # TODO: must return a copy of this table!
             return data
 
-        elif key_type is six.text_type:
+        elif issubclass(key_type, str):
             if key not in self.field_names:
                 raise KeyError(key)
             query = "SELECT {} FROM {}".format(key, self.name)
