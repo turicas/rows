@@ -31,6 +31,8 @@ import rows.fields as fields
 from rows.table import FlexibleTable, Table
 from rows.utils import Source
 
+import pytest
+
 binary_type_name = six.binary_type.__name__
 
 
@@ -77,9 +79,9 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(self.table[::2][0].name, "Álvaro Justen")
 
     def test_table_slicing_error(self):
-        with self.assertRaises(ValueError) as context_manager:
+        with self.assertRaises(TypeError) as context_manager:
             self.table[[1]]
-        self.assertEqual(type(context_manager.exception), ValueError)
+        self.assertEqual(type(context_manager.exception), TypeError)
 
     def test_table_insert_row(self):
         self.table.insert(
@@ -102,13 +104,13 @@ class TableTestCase(unittest.TestCase):
         self.assertIn("does not match format", context_manager.exception.args[0])
 
     def test_table_getitem_invalid_type(self):
-        with self.assertRaises(ValueError) as exception_context:
+        with self.assertRaises(TypeError) as exception_context:
             self.table[3.14]
         self.assertEqual(
             exception_context.exception.args[0], "Unsupported key type: float"
         )
 
-        with self.assertRaises(ValueError) as exception_context:
+        with self.assertRaises(TypeError) as exception_context:
             self.table[b"name"]
         self.assertEqual(
             exception_context.exception.args[0],
