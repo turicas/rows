@@ -1,6 +1,7 @@
 # coding: utf-8
 
-# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2022 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2022 João S. O. Bueno <https://github.com/jsbueno/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -22,10 +23,12 @@ from collections import namedtuple, OrderedDict
 from operator import itemgetter
 from pathlib import Path
 
-from collections.abc import MutableSequence, Sized
+from collections.abc import MutableSequence, Sized, Sequence, Mapping
 
 
 class BaseTable(MutableSequence):
+
+    _rows: Sequence
 
     def __init__(self, fields, meta=None):
         from rows.plugins import utils
@@ -47,6 +50,9 @@ class BaseTable(MutableSequence):
         }
 
         self.meta = dict(meta) if meta is not None else {}
+
+    def __len__(self):
+        return len(self._rows)
 
     @property
     def Row(self):
@@ -148,12 +154,18 @@ class BaseTable(MutableSequence):
             imported, len(self.fields), length
         )
 
-    def _make_row(self, row):
-        # TODO: should be able to customize row type (namedtuple, dict etc.)
+    def _make_row(self, row: "Sequence|Mapping"):
+        if isinstance(row, Sequence):
+            if isinstance(row, (str, bytes)):
+                raise TypeError()
+            return [field_type.deserialize(row[i]) for i, field_type in enumerate(self.fields.values())]
         return [
             field_type.deserialize(row.get(field_name, None))
             for field_name, field_type in self.fields.items()
         ]
+
+    def insert(self, index, row):
+        self._rows.insert(index, self._make_row(row))
 
     def __radd__(self, other):
         if other == 0:
@@ -163,8 +175,28 @@ class BaseTable(MutableSequence):
     def __iadd__(self, other):
         return self + other
 
+    def _stub_clone(self):
+        return type(self)(self.fields.copy(), meta=self.meta.copy())
+
+    @classmethod
+    def copy(cls, table, data):
+        """Creates a new table, copying the structure of the given table, and filling it witht the given data"""
+        new = table._stub_clone()
+        new.extend(data)
+        return new
+
     def __add__(self, other):
-        raise NotImplementedError()
+        """Vertical concatenation of tables featuring the same field names.
+
+        The leftmost table type, field types and metadata are used in the resulting table.
+        """
+        if isinstance(other, BaseTable) and self.field_names == other.field_names:
+            new = self._stub_clone()
+            new.extend(self._rows)
+            new.extend(other._rows)
+            return new
+
+        return NotImplemented
 
 
 class Table(BaseTable):
@@ -172,27 +204,24 @@ class Table(BaseTable):
         super(Table, self).__init__(fields=fields, meta=meta)
         self._rows = []
 
-    @classmethod
-    def copy(cls, table, data):
-        table = cls(fields=table.fields, meta=table.meta)
-        table._rows = list(data)  # TODO: verify data?
-        return table
-
     def head(self, n=10):
         return Table.copy(self, self._rows[:n])
 
     def tail(self, n=10):
         return Table.copy(self, self._rows[-n:])
 
-    def append(self, row):
-        """Add a row to the table. Should be a dict"""
-
-        self._rows.append(self._make_row(row))
-
-    def __len__(self):
-        return len(self._rows)
-
     def __getitem__(self, key):
+        """Retrives items from table
+
+        Args:
+            key: Union[int|slice|str] -> can be an integer index or a slice, which will select rows
+                case int: returns a single row at position
+                case slice: returns a new table with a  copy of given rows
+                case str: returns a list containing the values of that column for all rows.
+
+        To get table views, avoiding new tables and copies, use "Queries" (work in progress).
+
+        """
         key_type = type(key)
         if key_type == int:
             return self.Row(*self._rows[key])
@@ -204,10 +233,9 @@ class Table(BaseTable):
             except ValueError:
                 raise KeyError(key)
 
-            # TODO: should change the line below to return a generator exp?
             return [row[field_index] for row in self._rows]
         else:
-            raise ValueError("Unsupported key type: {}".format(type(key).__name__))
+            raise TypeError(f"Unsupported key type: {type(key).__name__}")
 
     def __setitem__(self, key, value):
         key_type = type(key)
@@ -258,9 +286,6 @@ class Table(BaseTable):
         else:
             raise ValueError("Unsupported key type: {}".format(type(key).__name__))
 
-    def insert(self, index, row):
-        self._rows.insert(index, self._make_row(row))
-
     def __add__(self, other):
         if other == 0:
             return self
@@ -289,6 +314,14 @@ class Table(BaseTable):
 
 
 class FlexibleTable(Table):
+    """ Table implementation featuring felxible columns: fields can be created on the go
+
+    Rows are stored internally as dictionaries.
+
+    Adding a new row with up to that point unknown fields, will create new fields
+    for the table from that point on. Existing rows, when read, will feature the default
+    'None' for columns that did not exist upon its insertion.
+    """
     def __init__(self, fields=None, meta=None):
         if fields is None:
             fields = {}
@@ -304,7 +337,7 @@ class FlexibleTable(Table):
 
     def _add_field(self, field_name, field_type):
         self.fields[field_name] = field_type
-        # Row is lazily generated based on fields
+        # cls.Row is lazily generated based on fields
 
     def _make_row(self, row):
         from rows import fields
@@ -318,16 +351,9 @@ class FlexibleTable(Table):
             for field_name, field_type in self.fields.items()
         }
 
-    def insert(self, index, row):
-        self._rows.insert(index, self._make_row(row))
 
-    def __setitem__(self, key, value):
-        self._rows[key] = self._make_row(value)
-
-    def append(self, row):
-        """Add a row to the table. Should be a dict"""
-
-        self._rows.append(self._make_row(row))
+    def __setitem__(self, index, value):
+        self._rows[index] = self._make_row(value)
 
 
 class SQLiteTable(BaseTable):
@@ -371,8 +397,17 @@ class SQLiteTable(BaseTable):
     def tail(self, n=10):
         raise NotImplementedError()
 
+    def insert(self, index, row):
+        # MutableSequence expects a working "insert" method.
+        if index >= len(self):
+            self.append(row)
+        raise NotImplementedError("Can't insert items in middle of SQLITE backed tables")
+
     def append(self, row):
         """Add a row to the table. Should be a dict"""
+
+        # NB: this is a reversal of the given methods from MutableSequence,
+        # which uses "insert" to implement "append", and "append" to implement "extend".
 
         self.extend([row])
 
@@ -429,9 +464,6 @@ class SQLiteTable(BaseTable):
         raise NotImplementedError()
 
     def __delitem__(self, key):
-        raise NotImplementedError()
-
-    def insert(self, index, row):
         raise NotImplementedError()
 
     def __add__(self, other):
