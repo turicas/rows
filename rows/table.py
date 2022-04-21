@@ -18,7 +18,7 @@
 from __future__ import unicode_literals
 
 import os
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from operator import itemgetter
 from pathlib import Path
 
@@ -45,7 +45,6 @@ class BaseTable(MutableSequence):
                 utils.slug(field_name): field_type
                 for field_name, field_type in fields.items()
         }
-        self.field_names = list(self.fields.keys())
 
         self.meta = dict(meta) if meta is not None else {}
 
@@ -56,11 +55,11 @@ class BaseTable(MutableSequence):
             by default, Rows are Python's namedtuples with the table field names.
             For other objects, create a mixin replacing this method.
         """
-        if not getattr(self, field_names, ()):
+        if not getattr(self, "fields", None):
             raise RuntimeError("Table must know its fields before being able to determine a Row class")
         if not getattr(self, "_row_cls_namedtuple", None):
                 self._row_cls_namedtuple = namedtuple("Row", self.field_names)
-        return self._row_cls_named_tuple
+        return self._row_cls_namedtuple
 
 
     def _repr_html_(self):
@@ -102,13 +101,13 @@ class BaseTable(MutableSequence):
                     }
                 )
 
-            result = convert_to_html(representation, caption=True).decode("utf-8")
-            if isinstance(result, bytes):
-                result = result.decode("utf-8")
+            result = convert_to_html(representation, caption=True)
             result = result.replace(
-                "</caption>",
-                f" (showing {HEAD_THRESHOLD} rows, out of {total})</caption>"
+                b"</caption>",
+                f" (showing {HEAD_THRESHOLD} rows, out of {total})</caption>".encode()
             )
+        if isinstance(result, bytes):
+            result = result.decode("utf-8")
         return result
 
     @property
@@ -231,7 +230,6 @@ class Table(BaseTable):
                 [field_name], [[value] for value in values]
             )[field_name]
             self.fields[field_name] = field_type
-            self.Row = namedtuple("Row", self.field_names)
 
             if is_new_field:
                 for row, value in zip(self._rows, values):
@@ -254,7 +252,7 @@ class Table(BaseTable):
                 raise KeyError(key)
 
             del self.fields[key]
-            self.Row = namedtuple("Row", self.field_names)
+
             for row in self._rows:
                 row.pop(field_index)
         else:
@@ -306,7 +304,7 @@ class FlexibleTable(Table):
 
     def _add_field(self, field_name, field_type):
         self.fields[field_name] = field_type
-        self.Row = namedtuple("Row", self.field_names)
+        # Row is lazily generated based on fields
 
     def _make_row(self, row):
         from rows import fields

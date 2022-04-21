@@ -17,10 +17,15 @@
 
 from __future__ import unicode_literals
 
+import warnings
+import sys
+
 from collections import OrderedDict
+from collections.abc import Mapping
 from itertools import chain, islice
 from os import unlink
 from pathlib import Path
+from textwrap import dedent as D
 
 import six
 
@@ -61,6 +66,43 @@ def ipartition(iterable, partition_size):
             yield data
 
 
+def _infer_fields(header, sample_rows, force_types, max_rows, import_fields, create_table_args, create_table_kwargs):
+    """Inner function to detect fields and field types from a data source"""
+
+    # autodetect field types
+    # TODO: may add `type_hints` parameter to create_table so autodetection can be easier
+    #       (plugins may specify some possible field types).
+
+    # Detect field types using only the desired columns
+    detected_fields = detect_types(
+        header,
+        sample_rows,
+        skip_indexes=[
+            index
+            for index, field in enumerate(header)
+            if field in force_types or field not in (import_fields or header)
+        ],
+        *create_table_args,
+        **create_table_kwargs
+    )
+    # Check if any field was added during detecting process
+    new_fields = [
+        field_name
+        for field_name in detected_fields.keys()
+        if field_name not in header
+    ]
+    # Finally create the `fields` with both header and new field names,
+    # based on detected fields `and force_types`
+    fields = OrderedDict(
+        [
+            (field_name, detected_fields.get(field_name, TextField))
+            for field_name in header + new_fields
+        ]
+    )
+    fields.update(force_types)
+    return fields
+
+
 def create_table(
     data,
     meta=None,
@@ -71,6 +113,7 @@ def create_table(
     force_types=None,
     max_rows=None,
     *args,
+    table_class=None,
     **kwargs
 ):
     """Create a rows.Table object based on data rows and some configurations
@@ -84,19 +127,21 @@ def create_table(
     - `fields` must always be in the same order as the data
     """
 
+    if table_class is None:
+        table_class = Table
+
     table_rows = iter(data)
     force_types = force_types or {}
     if import_fields is not None:
         import_fields = make_header(import_fields)
 
-    # TODO: test max_rows
-    if fields is None:  # autodetect field types
-        # TODO: may add `type_hints` parameter so autodetection can be easier
-        #       (plugins may specify some possible field types).
+    if fields is None:
         header = make_header(next(table_rows))
 
         if samples is not None:
             sample_rows = list(islice(table_rows, 0, samples))
+            if max_rows is not None and max_rows - samples > 0:
+                table_rows = islice(table_rows, 0, max_rows - samples)
             table_rows = chain(sample_rows, table_rows)
         else:
             if max_rows is not None and max_rows > 0:
@@ -104,45 +149,25 @@ def create_table(
             else:
                 sample_rows = table_rows = list(table_rows)
 
-        # Detect field types using only the desired columns
-        detected_fields = detect_types(
-            header,
-            sample_rows,
-            skip_indexes=[
-                index
-                for index, field in enumerate(header)
-                if field in force_types or field not in (import_fields or header)
-            ],
-            *args,
-            **kwargs
-        )
-        # Check if any field was added during detecting process
-        new_fields = [
-            field_name
-            for field_name in detected_fields.keys()
-            if field_name not in header
-        ]
-        # Finally create the `fields` with both header and new field names,
-        # based on detected fields `and force_types`
-        fields = OrderedDict(
-            [
-                (field_name, detected_fields.get(field_name, TextField))
-                for field_name in header + new_fields
-            ]
-        )
-        fields.update(force_types)
-
+        fields = _infer_fields(header, sample_rows, force_types, max_rows, import_fields, args, kwargs)
         # Update `header` and `import_fields` based on new `fields`
         header = list(fields.keys())
         if import_fields is None:
             import_fields = header
 
     else:  # using provided field types
-        if not isinstance(fields, OrderedDict):
-            raise ValueError("`fields` must be an `OrderedDict`")
+        if isinstance(fields, Mapping):
+            if not isinstance(fields, (dict, OrderedDict)):
+                warning.warn(D("""\
+                    Warning: unknown mapping type detected for table fields.
+                    If the mapping type is unordered, results may be umpredictable
+                    to supress this message use either a `dict` or an `OrderedDict`subclass
+                    """))
+        else:
+            raise ValueError("`fields` must be an ordered Mapping")
 
         if skip_header:
-            # If we're skipping the header probably this row is not trustable
+            # If we're skipping the header probably this row is not trustworthy
             # (can be data or garbage).
             next(table_rows)
 
@@ -163,7 +188,7 @@ def create_table(
     )
 
     get_row = get_items(*map(header.index, import_fields))
-    table = Table(fields=fields, meta=meta)
+    table = table_class(fields=fields, meta=meta)
     if max_rows is not None and max_rows > 0:
         table_rows = islice(table_rows, max_rows)
     table.extend(dict(zip(import_fields, get_row(row))) for row in table_rows)
