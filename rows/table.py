@@ -377,14 +377,19 @@ class SQLiteTable(BaseTable):
         else:
             cursor.executemany(query, args or [])
         header = [item[0] for item in cursor.description] if cursor.description else None
-        if header is None:  # No results
-            data = []
-        elif data_type == "dict":
-            data = [dict(zip(header, row)) for row in cursor.fetchall()]
-        elif data_type == "list":
-            data = list(cursor.fetchall())
-        self._connection.commit()
-        cursor.close()
+        try:
+            if header is None:  # No results
+                data = []
+            else:
+                data = cursor.fetchall()
+        except Exception:
+            raise
+        else:
+            self._connection.commit()
+        finally:
+            cursor.close()
+        if data_type == "dict":
+            data = [dict(zip(header, row)) for row in data]
         return data
 
     @classmethod
