@@ -33,6 +33,25 @@ def test_ensure_query_builds_tree_for_simple_expression():
     tree = query.ensure_query("2 + 3")
     assert tree.value == 5
 
+def test_ensure_query_builds_tree_for_2ops_expression():
+    tree = query.ensure_query("2 + 3 + 5")
+    assert tree.value == 10
+
+@pytest.mark.parametrize("expression,expected", [
+    ("2 + 3 * 3", 11),
+    ("2 * 3 + 3", 9),
+    ("2 * (3 + 3)", 12),
+    ("(2 + 2) * 3 + (3 * 3)", 21),
+    ("(2 + 2) * 3 == 3 * 3 + 3", True),
+])
+
+def test_ensure_query_tree_for_expression_observes_precedence(expression, expected):
+    tree = query.ensure_query(expression)
+    assert tree.value == expected
+    if isinstance(expected, bool):
+        assert tree.value is expected
+
+
 
 
 @pytest.mark.skip
