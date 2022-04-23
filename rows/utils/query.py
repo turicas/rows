@@ -116,12 +116,19 @@ class BinOpToken(Token):
 
 
 class EqualToken(BinOpToken):
+    precedence = 0
     literal = "=="
     op = operator.eq
 
 class AddToken(BinOpToken):
+    precedence = 2
     literal = "+"
     op = operator.add
+
+class MulToken(BinOpToken):
+    precedence = 3
+    literal = "*"
+    op = operator.mul
 
 # TODO: instantiate other operator token classes
 
@@ -153,7 +160,7 @@ class LiteralStrToken(Token):
 
 
 def tokenize(query:str) -> "list[Token]":
-    tokens =  [Token(g[0]) for g in re.findall(r"""(OR|AND|\w+|((?P<quote>['"]).*?(?P=quote))|==|<|>|>=|<=|\+)""", query, flags=re.IGNORECASE)]
+    tokens =  [Token(g[0]) for g in re.findall(r"""(OR|AND|\w+|((?P<quote>['"]).*?(?P=quote))|==|<|>|>=|<=|\+|\*|\(|\))""", query, flags=re.IGNORECASE)]
     return tokens
 
 
@@ -177,7 +184,7 @@ class TokenTree:
                     raise ValueError(f"Unbalanced parentheses in token sequence {tokens}")
                 depth -= 1
                 if depth == 0:
-                    new_tokens.append(TokenTree(subtree))
+                    new_tokens.append(TokenTree._from_tokens(subtree))
                     subtree = None
                     continue
             if depth == 0:
@@ -191,11 +198,20 @@ class TokenTree:
         if len(tokens) == 1:
             self.root = tokens[0]
         elif len(tokens) > 1:
-            if not isinstance(tokens[1], BinOpToken):
+            if not all(isinstance(token, BinOpToken) for token in tokens[1::2]):
                 raise ValueError(f"Malformed token stream {tokens}")
+            while len(tokens) > 3:
+                if tokens[1].precedence >= tokens[3].precedence:
+                    tokens = [TokenTree._from_tokens(tokens[0:3]), *tokens[3:]]
+                else:
+                    tokens = [*tokens[0:2], TokenTree._from_tokens(tokens[2:])]
+
+                self.root = tokens[1]
+                self.root.left = tokens[0]
+                self.root.right = TokenTree._from_tokens(tokens[2:])
             self.root = tokens[1]
             self.root.left = tokens[0]
-            self.root.right = TokenTree._from_tokens(tokens[2:])
+            self.root.right = tokens[2]
         return self
 
     @property
