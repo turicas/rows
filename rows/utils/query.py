@@ -294,6 +294,8 @@ class QueryBase(TokenTree):
         return self
 
     def _bind_nodes(self, node):
+        if isinstance(node, TokenTree):
+            node = node.root
         if getattr(node, "boundable", False):
             node.parent = self.parent
         if getattr(node, "left", None):
