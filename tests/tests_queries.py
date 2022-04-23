@@ -13,6 +13,7 @@ def test_tokenize_works_for_plain_word():
     # so, "FieldNameToken" will likely not be a top-level name in any file.
     assert isinstance(token, query.FieldNameToken)
 
+
 @pytest.mark.parametrize("expression", [
     "cidade=='São Paulo'",
     "cidade == 'São Paulo'",
@@ -27,6 +28,10 @@ def test_tokenize_works_for_short_expression(expression):
 
     assert a[2].value == "São Paulo"
 
+
+def test_ensure_query_builds_tree_for_simple_expression():
+    tree = query.ensure_query("2 + 3")
+    assert tree.value == 5
 
 
 

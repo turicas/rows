@@ -51,6 +51,12 @@ class Token:
     literal = None
 
     def __new__(cls, value):
+        """Specialized __new__ acts as a factory for whatever subclass best matches
+        what is given as "value". Inheritance of subclasses, though, work as usual:
+        it is just class instantiation for all subclasses that is centralized here.
+
+        (I wonder if there is a "gang of four name" for this)
+        """
 
         if value.upper() in __class__.literal_registry:
             instance = super().__new__(__class__.literal_registry[value.upper()])
@@ -79,16 +85,43 @@ class Token:
     def _match(cls, value):
         raise NotImplementedError()
 
+    def exec(self):
+        return self.value
+
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.value!r})"
+        return f"{self.__class__.__name__}({getattr(self, 'literal_value', None) or self.value!r})"
+
+
+class OpenBracketToken(Token):
+    literal = "("
+
+
+class CloseBracketToken(Token):
+    literal = ")"
 
 
 class BinOpToken(Token):
-    pass
+    right: Token = None
+    left: Token = None
+
+    def __init__(self, value):
+        self.literal_value = value
+
+    @property
+    def value(self):
+        return self.exec()
+
+    def exec(self):
+        return self.op(self.right.value, self.left.value)
+
 
 class EqualToken(BinOpToken):
     literal = "=="
     op = operator.eq
+
+class AddToken(BinOpToken):
+    literal = "+"
+    op = operator.add
 
 # TODO: instantiate other operator token classes
 
@@ -120,14 +153,61 @@ class LiteralStrToken(Token):
 
 
 def tokenize(query:str) -> "list[Token]":
-    tokens =  [Token(g[0]) for g in re.findall(r"""(OR|AND|\w+|((?P<quote>['"]).*?(?P=quote))|==|<|>|>=|<=)""", query, flags=re.IGNORECASE)]
+    tokens =  [Token(g[0]) for g in re.findall(r"""(OR|AND|\w+|((?P<quote>['"]).*?(?P=quote))|==|<|>|>=|<=|\+)""", query, flags=re.IGNORECASE)]
     return tokens
 
 
-class QueryBase:
+class TokenTree:
+
     @classmethod
     def _from_tokens(cls, tokens):
-        raise NotImplementedError()
+        self = cls.__new__(cls)
+        # identify and collapse subtrees recursively
+        depth = 0
+        subtree = None
+        new_tokens = []
+        for token in tokens:
+            if isinstance(token, OpenBracketToken):
+                depth += 1
+                if depth == 1:
+                    subtree = []
+                    continue
+            elif isinstance(token, CloseBracketToken):
+                if depth == 0:
+                    raise ValueError(f"Unbalanced parentheses in token sequence {tokens}")
+                depth -= 1
+                if depth == 0:
+                    new_tokens.append(TokenTree(subtree))
+                    subtree = None
+                    continue
+            if depth == 0:
+                new_tokens.append(token)
+            else:
+                subtree.append(token)
+        if subtree:
+            raise ValueError(f"Unbalanced parentheses in token sequence {tokens}")
+        tokens = new_tokens
+
+        if len(tokens) == 1:
+            self.root = tokens[0]
+        elif len(tokens) > 1:
+            if not isinstance(tokens[1], BinOpToken):
+                raise ValueError(f"Malformed token stream {tokens}")
+            self.root = tokens[1]
+            self.root.left = tokens[0]
+            self.root.right = TokenTree._from_tokens(tokens[2:])
+        return self
+
+    @property
+    def value(self):
+        return self.root.value
+
+    def exec(self):
+        return self.root.value
+
+
+class QueryBase(TokenTree):
+    pass
 
 class Query(QueryBase):
     pass
