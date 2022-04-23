@@ -120,6 +120,7 @@ def import_from_csv(
     dialect=None,
     sample_size=262144,
     *args,
+    query=None,
     **kwargs
 ):
     """Import data from a CSV file (automatically detects dialect).
@@ -139,7 +140,7 @@ def import_from_csv(
     reader = unicodecsv.reader(source.fobj, encoding=encoding, dialect=dialect)
 
     meta = {"imported_from": "csv", "source": source}
-    return create_table(reader, meta=meta, *args, **kwargs)
+    return create_table(reader, meta=meta, *args, query=query, **kwargs)
 
 
 def export_to_csv(

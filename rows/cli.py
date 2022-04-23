@@ -78,8 +78,7 @@ def parse_options(options):
     return options_dict
 
 
-def _import_table(source, encoding, verify_ssl=True, progress=True, *args, **kwargs):
-    # TODO: may use import_from_uri instead
+def _import_table(source, encoding, verify_ssl=True, progress=True, *args, query=None, **kwargs):
     uri = source.uri if hasattr(source, "uri") else source
     try:
         table = import_from_uri(
@@ -89,6 +88,7 @@ def _import_table(source, encoding, verify_ssl=True, progress=True, *args, **kwa
             encoding=encoding,
             progress=progress,
             *args,
+            query=query,
             **kwargs,
         )
     except requests.exceptions.SSLError:
@@ -397,6 +397,7 @@ def sum_(
 @click.option("--fields", help="A comma-separated list of fields to import")
 @click.option("--fields-exclude", help="A comma-separated list of fields to exclude")
 @click.option("--order-by")
+@click.option("--query", default="", help="Filter expression for row output [WIP]")
 @click.option("--quiet", "-q", is_flag=True)
 @click.argument("source", required=True)
 def print_(
@@ -411,6 +412,7 @@ def print_(
     fields,
     fields_exclude,
     order_by,
+    query,
     quiet,
     source,
 ):
@@ -435,6 +437,7 @@ def print_(
                 index=table_index,
                 import_fields=import_fields,
                 progress=progress,
+                query=query,
                 **input_options,
             )
     else:
@@ -445,6 +448,7 @@ def print_(
             index=table_index,
             import_fields=import_fields,
             progress=progress,
+            query=query,
             **input_options,
         )
 

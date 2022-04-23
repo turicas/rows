@@ -511,7 +511,7 @@ def detect_source(uri, verify_ssl, progress, timeout=5):
         return local_file(uri)
 
 
-def import_from_source(source, default_encoding, *args, **kwargs):
+def import_from_source(source, default_encoding, *args, query=None, **kwargs):
     "Import data described in a `rows.Source` into a `rows.Table`"
 
     # TODO: test open_compressed
@@ -521,17 +521,17 @@ def import_from_source(source, default_encoding, *args, **kwargs):
     )
 
     try:
-        import_function = getattr(rows, "import_from_{}".format(plugin_name))
+        import_function = getattr(rows, f"import_from_{plugin_name}")
     except AttributeError:
-        raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
+        raise ValueError(f'Plugin (import) "{plugin_name}" not found')
 
-    table = import_function(source.uri, *args, **kwargs)
+    table = import_function(source.uri, *args, query=query, **kwargs)
 
     return table
 
 
 def import_from_uri(
-    uri, default_encoding="utf-8", verify_ssl=True, progress=False, *args, **kwargs
+    uri, default_encoding="utf-8", verify_ssl=True, progress=False, *args, query=None, **kwargs
 ):
     "Given an URI, detects plugin and encoding and imports into a `rows.Table`"
 
@@ -539,7 +539,7 @@ def import_from_uri(
     # TODO: (optimization) if `kwargs.get('encoding', None) is not None` we can
     #       skip encoding detection.
     source = detect_source(uri, verify_ssl=verify_ssl, progress=progress)
-    return import_from_source(source, default_encoding, *args, **kwargs)
+    return import_from_source(source, default_encoding, *args, query=query, **kwargs)
 
 
 def export_to_uri(table, uri, *args, **kwargs):
