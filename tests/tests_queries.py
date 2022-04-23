@@ -59,6 +59,17 @@ def test_ensure_query_tree_for_expression_observes_precedence(expression, expect
     assert tree.value == expected
 
 
+
+def test_query_tree_is_deepcopiable():
+    from copy import deepcopy
+
+    t = query.ensure_query("2 + 3")
+    t1 = deepcopy(t)
+    assert t.value == t1.value
+    t.root.left.value = 10
+    assert t.value != t1.value
+
+
 @pytest.mark.skip
 def test_field_retrieve_local_class():
     class A:

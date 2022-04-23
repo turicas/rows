@@ -43,6 +43,7 @@ So, the token hierarchy will likely have to be contained as an object,
 which plug-ins can then create a copy, enhance, and change.
 """
 
+_sentinel = object()
 
 class Token:
     # these are not just "tokens": they will also be structured as Query tree nodes, and perform ops.
@@ -50,13 +51,17 @@ class Token:
     match_registry = []
     literal = None
 
-    def __new__(cls, value):
+    def __new__(cls, value=_sentinel):
         """Specialized __new__ acts as a factory for whatever subclass best matches
         what is given as "value". Inheritance of subclasses, though, work as usual:
         it is just class instantiation for all subclasses that is centralized here.
 
         (I wonder if there is a "gang of four name" for this)
         """
+        if cls is not __class__:
+            # subclass is being instantiated directly
+            # (may be a unpickle or deepcopy operation)
+            return super().__new__(cls)
 
         if value.upper() in __class__.literal_registry:
             instance = super().__new__(__class__.literal_registry[value.upper()])
@@ -175,14 +180,28 @@ class OrToken(BinOpToken):
     literal = "OR"
     op = staticmethod(lambda a, b: a or b)
 
-# TODO: instantiate other operator token classes
 
 
 # IMPORTANT: Do not change declaration order of classes that do not declare a "literal" field.
 class LiteralToken(Token):
     pass
 
+
 class FieldNameToken(Token):
+    boundable = True  # this attribute is used in Query.bind
+
+    @property
+    def value(self):
+        if getattr(self, "parent", None) is None:
+            return self.name
+        return self.parent.current_record.get(self.name)
+
+    @value.setter
+    def value(self, value):
+        if getattr(self, "parent", None):
+            raise RuntimeError("Node value can't be changed after it is bound to a Queryable instance")
+        self.name = value
+
     @classmethod
     def _match(cls, value):
         return re.match(r"\w+", value) and not value[0].isdigit()
@@ -268,11 +287,37 @@ class TokenTree:
 
 
 class QueryBase(TokenTree):
-    pass
+    def bind(self, parent):
+        self = deepcopy(self)
+        self.parent = parent
+        self._bind_nodes(self.root)
+        return self
+
+    def _bind_nodes(self, node):
+        if getattr(node, "boundable", False):
+            node.parent = self.parent
+        if getattr(node, "left", None):
+            self._bind_nodes(node.left)
+        if getattr(node, "right", None):
+            self._bind_nodes(node.right)
 
 class Query(QueryBase):
     pass
 
+
+class QueryableMixin:
+    @property
+    def current_record(self):
+        """Property used in eager, per-record filtering strategy (i.e. in memory list of sequences Tables)
+
+        its value should be set, inside a __getitem__ loop for rows,
+        for a mapping for the current row.
+        """
+        return self._current_record
+
+    @current_record.setter
+    def current_record(self, value):
+        self._current_record = value
 '''
 
 class Field:

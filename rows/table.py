@@ -32,7 +32,7 @@ class BaseTable(MutableSequence):
 
     _rows: Sequence
 
-    def __init__(self, fields, meta=None):
+    def __init__(self, fields, meta=None, *, filter=None):
         from rows.plugins import utils
 
         # Field order is guarranteed by Dictionaries preserving insetion order in Py 3.6+
@@ -52,6 +52,7 @@ class BaseTable(MutableSequence):
         }
 
         self.meta = dict(meta) if meta is not None else {}
+        self.filter = filter
 
     def __len__(self):
         return len(self._rows)
@@ -200,11 +201,104 @@ class BaseTable(MutableSequence):
 
         return NotImplemented
 
+    @property
+    def filter(self):
+        return self._filter
 
-class Table(BaseTable):
-    def __init__(self, fields, meta=None):
-        super(Table, self).__init__(fields=fields, meta=meta)
+    @filter.setter
+    def filter(self, filter):
+        if filter:
+            filter = filter.bind(self)
+        self._filter = filter
+        if getattr(self, "filter_reset", None):
+            self.filter_reset()
+
+
+class FilterableSequence(MutableSequence):
+    """Inner sequence that actually applies a query filter row by row
+
+    Few things in the Universe are as thread-unsafe as this;
+    never try to use a filtered Table in more than one thread.
+    """
+    def __init__(self, inner, parent):
+        self.data = inner
+        self.parent = parent
+        # uses parent.filter and parent.fields - TODO:  decouple that a bit
+
+    def invalidate(self):
+        self._row_map = {}
+        self._finished_map = False
+
+    def __iter__(self):
+        if not self.parent.filter:
+            return iter(self.data)
+        valid_rows_counter = 0
+        for i, row in enumerate(self.data):
+            self.parent.current_record = {key: value for key, value in zip(self.parent.fields, row)}
+            if self.parent.filter.value:
+                self._row_map[valid_rows_counter] = i
+                valid_rows_counter += 1
+                yield row
+        self._finished_map = True
+
+    def ensure_filtered(self):
+        if not self._finished_map:
+            # consume self.__iter__
+            for row in self:
+                pass
+
+    def __getitem__(self, index):
+        self.ensure_filtered()
+        return self.data[self._row_map[index]]
+
+    def __setitem__(self, index, value):
+        self.ensure_filtered()
+        self.data[self._row_map[index]] = value
+        self.invalidate()
+
+    def __delitem__(self, index):
+        self.ensure_filtered()
+        del self.data[self._row_map[index]]
+        self.invalidate()
+
+    def __len__(self):
+        if not self.parent.filter:
+            return len(self.data)
+        self.ensure_filtered()
+        return len(self._row_map)
+
+    def insert(self, position, row):
+        """Inserting in a table ignores any filtering
+
+        This behavior is needed because rows are inserted as part of collections.abc.MutableSequence protocol,
+        which calls insert for every row, and we do this after the filter object is set if it
+        is passed on table creation.
+        """
+        #if self.parent.filter:
+            #raise RuntimeError("Can't insert new rows with an active filter")
+        self.data.insert(position, row)
+
+
+class PerRecordFilterable(query.QueryableMixin):
+    filter = None
+
+    def filter_reset(self):
+        self._inner_rows.invalidate()
+
+    @property
+    def _rows(self):
+        if not self.filter:
+            return self._inner_rows.data
+        return self._inner_rows
+
+    @_rows.setter
+    def _rows(self, sequence):
+        self._inner_rows=FilterableSequence(sequence, self)
+
+class _Table(BaseTable):
+    def __init__(self, fields, meta=None, **kwargs):
         self._rows = []
+        super().__init__(fields=fields, meta=meta, **kwargs)
 
     def head(self, n=10):
         return Table.copy(self, self._rows[:n])
@@ -314,9 +408,11 @@ class Table(BaseTable):
         key_index = field_names.index(key)
         self._rows.sort(key=itemgetter(key_index), reverse=reverse)
 
+class Table(_Table, PerRecordFilterable):
+    pass
 
-class FlexibleTable(Table):
-    """ Table implementation featuring felxible columns: fields can be created on the go
+class FlexibleTable(_Table):
+    """ Table implementation featuring flexible columns: fields can be created on the go
 
     Rows are stored internally as dictionaries.
 
@@ -324,10 +420,10 @@ class FlexibleTable(Table):
     for the table from that point on. Existing rows, when read, will feature the default
     'None' for columns that did not exist upon its insertion.
     """
-    def __init__(self, fields=None, meta=None):
+    def __init__(self, fields=None, meta=None, **kwargs):
         if fields is None:
             fields = {}
-        super(FlexibleTable, self).__init__(fields, meta)
+        super(FlexibleTable, self).__init__(fields, meta=meta, **kwargs)
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -359,8 +455,8 @@ class FlexibleTable(Table):
 
 
 class SQLiteTable(BaseTable):
-    def __init__(self, fields, meta=None):
-        super(SQLiteTable, self).__init__(fields=fields, meta=meta)
+    def __init__(self, fields, meta=None, **kwargs):
+        super(SQLiteTable, self).__init__(fields=fields, meta=meta, **kwargs)
 
         import sqlite3
         from rows.plugins.sqlite import create_table_sql

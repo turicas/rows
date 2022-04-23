@@ -40,6 +40,7 @@ from rows.fields import (
 )
 from rows.table import FlexibleTable, Table
 from rows.utils import Source
+from rows.utils.query import ensure_query
 
 if six.PY2:
     from collections import Iterator
@@ -114,6 +115,7 @@ def create_table(
     max_rows=None,
     *args,
     table_class=None,
+    query=None,
     **kwargs
 ):
     """Create a rows.Table object based on data rows and some configurations
@@ -188,7 +190,10 @@ def create_table(
     )
 
     get_row = get_items(*map(header.index, import_fields))
-    table = table_class(fields=fields, meta=meta)
+    if query:
+        query = ensure_query(query)
+
+    table = table_class(fields=fields, filter=query, meta=meta)
     if max_rows is not None and max_rows > 0:
         table_rows = islice(table_rows, max_rows)
     table.extend(dict(zip(import_fields, get_row(row))) for row in table_rows)
