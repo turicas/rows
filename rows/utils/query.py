@@ -66,7 +66,7 @@ class Token:
                     instance = super().__new__(subcls)
                     break
             else:
-                raise ValueError(f"No registerd token type matches {value!r}")
+                raise ValueError(f"No registered token type matches {value!r}")
         # Python won't call __init__ if what __new__ returns is not an strict instance of __class__:
         instance.__init__(value)
         return instance
@@ -112,7 +112,7 @@ class BinOpToken(Token):
         return self.exec()
 
     def exec(self):
-        return self.op(self.right.value, self.left.value)
+        return self.op(self.left.value, self.right.value)
 
 
 class EqualToken(BinOpToken):
@@ -120,15 +120,60 @@ class EqualToken(BinOpToken):
     literal = "=="
     op = operator.eq
 
+class GreaterToken(BinOpToken):
+    precedence = 0
+    literal = ">"
+    op = operator.gt
+
+class LessToken(BinOpToken):
+    precedence = 0
+    literal = "<"
+    op = operator.lt
+
+class GreaterEqualToken(BinOpToken):
+    precedence = 0
+    literal = ">="
+    op = operator.ge
+
+class LessEqualToken(BinOpToken):
+    precedence = 0
+    literal = "<="
+    op = operator.le
+
 class AddToken(BinOpToken):
     precedence = 2
     literal = "+"
     op = operator.add
 
+class SubToken(BinOpToken):
+    precedence = 2
+    literal = "-"
+    op = operator.sub
+
 class MulToken(BinOpToken):
     precedence = 3
     literal = "*"
     op = operator.mul
+
+class DivToken(BinOpToken):
+    precedence = 3
+    literal = "/"
+    op = operator.truediv
+
+class ModToken(BinOpToken):
+    precedence = 3
+    literal = "%"
+    op = operator.mod
+
+class AndToken(BinOpToken):
+    precedence = -1
+    literal = "AND"
+    op = staticmethod(lambda a, b: a and b)
+
+class OrToken(BinOpToken):
+    precedence = -2
+    literal = "OR"
+    op = staticmethod(lambda a, b: a or b)
 
 # TODO: instantiate other operator token classes
 
@@ -160,7 +205,7 @@ class LiteralStrToken(Token):
 
 
 def tokenize(query:str) -> "list[Token]":
-    tokens =  [Token(g[0]) for g in re.findall(r"""(OR|AND|\w+|((?P<quote>['"]).*?(?P=quote))|==|<|>|>=|<=|\+|\*|\(|\))""", query, flags=re.IGNORECASE)]
+    tokens =  [Token(g[0]) for g in re.findall(r"""(OR|AND|\w+|((?P<quote>['"]).*?(?P=quote))|==|<|>|>=|<=|\+|\*|\(|\)|/|-)""", query, flags=re.IGNORECASE)]
     return tokens
 
 

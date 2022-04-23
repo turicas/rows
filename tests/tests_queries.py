@@ -43,15 +43,20 @@ def test_ensure_query_builds_tree_for_2ops_expression():
     ("2 * (3 + 3)", 12),
     ("(2 + 2) * 3 + (3 * 3)", 21),
     ("(2 + 2) * 3 == 3 * 3 + 3", True),
+    ("20 > 10", True),
+    ("20 >= 10", True),
+    ("20 < 10", False),
+    ("20 <= 10", False),
+    ("1 or 0", True),
+    ("1 and 0", False),
+    ("1 and 0 or 1", True),
+    ("1 or 0 and 1", True),
+    ("2 + 3 == 5 and 3 * 3 == 9", True),
 ])
 
 def test_ensure_query_tree_for_expression_observes_precedence(expression, expected):
     tree = query.ensure_query(expression)
     assert tree.value == expected
-    if isinstance(expected, bool):
-        assert tree.value is expected
-
-
 
 
 @pytest.mark.skip
