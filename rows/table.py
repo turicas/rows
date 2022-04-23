@@ -25,6 +25,8 @@ from pathlib import Path
 
 from collections.abc import MutableSequence, Sized, Sequence, Mapping
 
+from .utils import query
+
 
 class BaseTable(MutableSequence):
 
