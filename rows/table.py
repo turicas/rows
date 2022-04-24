@@ -208,11 +208,18 @@ class BaseTable(MutableSequence):
 
     @filter.setter
     def filter(self, filter):
+        from rows.utils.query import Query, ensure_query
+        if not isinstance(filter, Query):
+            filter = ensure_query(filter)
         if filter:
             filter = filter.bind(self)
         self._filter = filter
         if getattr(self, "filter_reset", None):
             self.filter_reset()
+
+    @filter.deleter
+    def filter(self):
+        self._filter = None
 
 
 class FilterableSequence(MutableSequence):
@@ -244,7 +251,7 @@ class FilterableSequence(MutableSequence):
 
     def ensure_filtered(self):
         if not self._finished_map:
-            # consume self.__iter__
+            # consume self.__iter__: updates self._rows_map
             for row in self:
                 pass
 
@@ -298,6 +305,7 @@ class PerRecordFilterable(query.QueryableMixin):
     @_rows.setter
     def _rows(self, sequence):
         self._inner_rows=FilterableSequence(sequence, self)
+
 
 class _Table(BaseTable):
     def __init__(self, fields, meta=None, **kwargs):
@@ -507,6 +515,7 @@ class SQLiteTable(BaseTable):
         # MutableSequence expects a working "insert" method.
         if index >= len(self):
             self.append(row)
+            return
         raise NotImplementedError("Can't insert items in middle of SQLITE backed tables")
 
     def append(self, row):
@@ -541,6 +550,7 @@ class SQLiteTable(BaseTable):
             row = self._execute(query, args=(key + 1,), data_type="dict")[0]
             return self.Row(**row)
 
+
         elif key_type == slice:
             query = "SELECT {} FROM {}".format(", ".join(self.field_names), self.name)
             filters, args = [], []
@@ -548,7 +558,7 @@ class SQLiteTable(BaseTable):
                 filters.append("__id >= ?")
                 args.append(key.start + 1)
             if key.stop is not None:
-                filters.append("__id <= ?")
+                filters.append("__id < ?")
                 args.append(key.stop)
             if filters:
                 query = query + " WHERE " + " AND ".join(filters)

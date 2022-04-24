@@ -28,6 +28,8 @@ import sys
 from collections.abc import Mapping
 
 def ensure_query(query):
+    if query is None:
+        return None
     if isinstance(query, str):
         tokens = tokenize(query)
         return Query.from_tokens(tokens)

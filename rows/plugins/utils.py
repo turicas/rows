@@ -185,8 +185,6 @@ def create_table(
     )
 
     get_row = get_items(*map(header.index, import_fields))
-    if query:
-        query = ensure_query(query)
 
     table = table_class(fields=fields, filter=query, meta=meta)
     if max_rows is not None and max_rows > 0:
