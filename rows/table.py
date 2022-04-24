@@ -237,6 +237,7 @@ class FilterableSequence(MutableSequence):
         self._row_map = {}
         self._finished_map = False
 
+    # tied to "per record filtering"
     def __iter__(self):
         if not self.parent.filter:
             return iter(self.data)
@@ -292,6 +293,10 @@ class FilterableSequence(MutableSequence):
 
 class PerRecordFilterable(query.QueryableMixin):
     filter = None
+
+    @property
+    def filtering_strategy(self):
+        return self.current_record
 
     def filter_reset(self):
         self._inner_rows.invalidate()

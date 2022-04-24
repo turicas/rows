@@ -237,7 +237,7 @@ class FieldNameToken(Token):
     def value(self):
         if getattr(self, "parent", None) is None:
             return self.name
-        return self.parent.current_record.get(self.name)
+        return self.parent.filtering_strategy.get(self.name)
 
     @value.setter
     def value(self, value):
@@ -419,12 +419,25 @@ class Query(QueryBase):
 
 
 class QueryableMixin:
+
+    # @abstractmethod
+    @property
+    def filtering_strategy(self):
+        """ concrete mixins must implement this as a property
+        that returns an object with a "get" that will take the column
+        name as sole parameter.
+
+        The default, per record implementation, just returns "current_record",
+        which must be set in raw "__iter__".
+        """
+        return self.current_record
+
     @property
     def current_record(self):
         """Property used in eager, per-record filtering strategy (i.e. in memory list of sequences Tables)
 
-        its value should be set, inside a __getitem__ loop for rows,
-        for a mapping for the current row.
+        its value should be set, inside  __iter__'s  loop for unfiltered rows, to
+        an object featuring a "get" method for column names in each record.
         """
         return self._current_record
 
