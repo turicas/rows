@@ -211,11 +211,47 @@ class FieldNameToken(Token):
 
 class LiteralIntToken(LiteralToken):
     def __init__(self, value):
-        self.value = int(value)
+        self.value = self._parse(value)
+
+    @classmethod
+    def _parse(self, value):
+         # may raise ValueError: will be catched on "_match"
+        base = 10
+        value = value.lower()
+        if len(value) > 2 and value[0] == "0":
+            base = 16 if value[1] == "x" else 2 if value[1] == "b" else 8 if value[1] == "o" else 10
+            if base == 10:
+                value = value.lstrip("0")
+            else:
+                value = value[2:]
+        return int(value, base)
+
 
     @classmethod
     def _match(cls, value):
-        return re.match(r"\d+", value)
+        try:
+            cls._parse(value)
+        except ValueError:
+            return False
+        return True
+        # return re.match(r"^-?[0-9_]+$", value)
+
+
+class LiteralFloatToken(LiteralToken):
+    def __init__(self, value):
+        self.value = float(value)
+
+    @classmethod
+    def _match(cls, value):
+        # Do not accept alphanumeric only tokens as numbers,
+        # even though they are valid floats
+        if value.lower().strip("-") in ("nan", "inf"):
+            return False
+        try:
+            float(value)
+        except ValueError:
+            return False
+        return True
 
 class LiteralStrToken(Token):
     def __init__(self, value):
@@ -227,7 +263,7 @@ class LiteralStrToken(Token):
 
 
 def tokenize(query:str) -> "list[Token]":
-    tokens =  [Token(g[0]) for g in re.findall(r"""(OR|AND|\w+|((?P<quote>['"]).*?(?P=quote))|==|<|>|>=|<=|\+|\*|\(|\)|/|-)""", query, flags=re.IGNORECASE)]
+    tokens =  [Token(g[0]) for g in re.findall(r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|==|<|>|>=|<=|\+|\*|\(|\)|/|-)""", query, flags=re.IGNORECASE)]
     return tokens
 
 
