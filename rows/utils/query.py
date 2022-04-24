@@ -29,7 +29,7 @@ from collections.abc import Mapping
 def ensure_query(query):
     if isinstance(query, str):
         tokens = tokenize(query)
-        return Query._from_tokens(tokens)
+        return Query.from_tokens(tokens)
     if not isinstance(query, QueryBase):
         raise TypeError(f"Can't create a query from a {type(query).__name__} instance.")
     return query
@@ -182,7 +182,10 @@ class OrToken(BinOpToken):
 
 
 
-# IMPORTANT: Do not change declaration order of classes that do not declare a "literal" field.
+# IMPORTANT: Do not change declaration order of classes that do not declare a "literal" field:
+# textual token match is done in-order, so, if messed up, all numbers could finish up
+# as string-literals, for example.
+
 class LiteralToken(Token):
     pass
 
@@ -231,8 +234,8 @@ def tokenize(query:str) -> "list[Token]":
 class TokenTree:
 
     @classmethod
-    def _from_tokens(cls, tokens):
-        self = cls.__new__(cls)
+    def node_tree_from_tokens(cls, tokens: "list[Token]") -> Token:
+
         # identify and collapse subtrees recursively
         depth = 0
         subtree = None
@@ -248,7 +251,7 @@ class TokenTree:
                     raise ValueError(f"Unbalanced parentheses in token sequence {tokens}")
                 depth -= 1
                 if depth == 0:
-                    new_tokens.append(TokenTree._from_tokens(subtree))
+                    new_tokens.append(TokenTree.node_tree_from_tokens(subtree))
                     subtree = None
                     continue
             if depth == 0:
@@ -260,23 +263,29 @@ class TokenTree:
         tokens = new_tokens
 
         if len(tokens) == 1:
-            self.root = tokens[0]
+            root = tokens[0]
         elif len(tokens) > 1:
             if not all(isinstance(token, BinOpToken) for token in tokens[1::2]):
                 raise ValueError(f"Malformed token stream {tokens}")
             while len(tokens) > 3:
                 if tokens[1].precedence >= tokens[3].precedence:
-                    tokens = [TokenTree._from_tokens(tokens[0:3]), *tokens[3:]]
+                    tokens = [TokenTree.node_tree_from_tokens(tokens[0:3]), *tokens[3:]]
                 else:
-                    tokens = [*tokens[0:2], TokenTree._from_tokens(tokens[2:])]
+                    tokens = [*tokens[0:2], TokenTree.node_tree_from_tokens(tokens[2:])]
 
-                self.root = tokens[1]
-                self.root.left = tokens[0]
-                self.root.right = TokenTree._from_tokens(tokens[2:])
-            self.root = tokens[1]
-            self.root.left = tokens[0]
-            self.root.right = tokens[2]
+            root = tokens[1]
+            root.left = tokens[0]
+            root.right = tokens[2]
+        return root
+
+
+    @classmethod
+    def from_tokens(cls, tokens: "list[Token]")-> "TokenTree":
+        self = cls.__new__(cls)
+        root = cls.node_tree_from_tokens(tokens)
+        self.root = root
         return self
+
 
     @property
     def value(self):
@@ -294,8 +303,6 @@ class QueryBase(TokenTree):
         return self
 
     def _bind_nodes(self, node):
-        if isinstance(node, TokenTree):
-            node = node.root
         if getattr(node, "boundable", False):
             node.parent = self.parent
         if getattr(node, "left", None):
