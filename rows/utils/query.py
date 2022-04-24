@@ -22,6 +22,7 @@ import re
 
 from copy import deepcopy
 import operator
+import random
 import sys
 
 from collections.abc import Mapping
@@ -181,6 +182,43 @@ class OrToken(BinOpToken):
     op = staticmethod(lambda a, b: a or b)
 
 
+class FunctionToken(Token):
+    """Pre-defined function literals
+    that may work with as unary operators
+    (if taking a single parameter) -
+    or can consume nparams of the token stream.
+    Consumed parameters are kept in a linear order and skipped
+    from being folded in the operations tree
+    """
+
+    nparams = 1
+    literal: str
+    params: "Sequence[Token]" = ()
+
+    def __init__(self, value):
+        pass
+
+    @property
+    def value(self):
+        if not self.params:
+            return f"{self.__class__.__name__}()"
+        return self.op(*(param.value for param in self.params))
+
+# TODO: find a way for Function Tokens to "self document".
+# An ordianry function can yield all valid fixed-literal tokens
+# by inspecting the Token class registries
+class NotToken(FunctionToken):
+    """1 ARG, inverts the boolean value of its argument"""
+    literal = "NOT"
+    def op(self, value):
+        return not value
+
+class SampleToken(FunctionToken):
+    """1 ARG: chance of any given row being selected. SAMPLE 0.1 ~= roughly 10% of rows returned, at random"""
+    literal = "SAMPLE"
+    def op(self, value):
+        return random.random() < value
+
 
 # IMPORTANT: Do not change declaration order of classes that do not declare a "literal" field:
 # textual token match is done in-order, so, if messed up, all numbers could finish up
@@ -263,7 +301,9 @@ class LiteralStrToken(Token):
 
 
 def tokenize(query:str) -> "list[Token]":
-    tokens =  [Token(g[0]) for g in re.findall(r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|==|<|>|>=|<=|\+|\*|\(|\)|/|-)""", query, flags=re.IGNORECASE)]
+    tokens =  [Token(g[0]) for g in re.findall(
+        r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|==|<|>|>=|<=|\+|\*|\(|\)|/|-)""",
+        query, flags=re.IGNORECASE)]
     return tokens
 
 
@@ -297,6 +337,29 @@ class TokenTree:
         if subtree:
             raise ValueError(f"Unbalanced parentheses in token sequence {tokens}")
         tokens = new_tokens
+
+        # Feed function tokens:
+        new_tokens = []
+        last_function = []
+        chomping = 0
+        for token in tokens:
+            if chomping:
+                last_function[-1][0].params.append(token)
+                chomping -= 1
+                if chomping == 0:
+                    _, chomping = last_function.pop()
+            else:
+                new_tokens.append(token)
+            if isinstance(token, FunctionToken):
+                last_function.append((token, chomping))
+                token.params = []
+                chomping = token.nparams
+        if chomping:
+            raise ValueError(f"Missing parameters in {last_function[-1].literal} function call in token sequence {tokens}")
+
+        tokens = new_tokens
+
+        # Fold binary operators for remaining tokens into a tree:
 
         if len(tokens) == 1:
             root = tokens[0]
@@ -345,6 +408,9 @@ class QueryBase(TokenTree):
             self._bind_nodes(node.left)
         if getattr(node, "right", None):
             self._bind_nodes(node.right)
+        if getattr(node, "params", ()):
+            for child_node in node.params:
+                self._bind_nodes(child_node)
 
 class Query(QueryBase):
     pass
