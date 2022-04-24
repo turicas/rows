@@ -123,7 +123,7 @@ class BinOpToken(Token):
 
 class EqualToken(BinOpToken):
     precedence = 0
-    literal = "=="
+    literal = "="
     op = operator.eq
 
 class GreaterToken(BinOpToken):
@@ -205,7 +205,7 @@ class FunctionToken(Token):
         return self.op(*(param.value for param in self.params))
 
 # TODO: find a way for Function Tokens to "self document".
-# An ordianry function can yield all valid fixed-literal tokens
+# An ordinary function can yield all valid fixed-literal tokens
 # by inspecting the Token class registries
 class NotToken(FunctionToken):
     """1 ARG, inverts the boolean value of its argument"""
@@ -302,7 +302,7 @@ class LiteralStrToken(Token):
 
 def tokenize(query:str) -> "list[Token]":
     tokens =  [Token(g[0]) for g in re.findall(
-        r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|==|<|>|>=|<=|\+|\*|\(|\)|/|-)""",
+        r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|(?<=[^!><])=|<|>|>=|<=|\+|\*|\(|\)|/|-)""",
         query, flags=re.IGNORECASE)]
     return tokens
 
