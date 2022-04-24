@@ -250,7 +250,10 @@ class FilterableSequence(MutableSequence):
 
     def __getitem__(self, index):
         self.ensure_filtered()
-        return self.data[self._row_map[index]]
+        try:
+            return self.data[self._row_map[index]]
+        except KeyError as e:
+            raise IndexError from e
 
     def __setitem__(self, index, value):
         self.ensure_filtered()

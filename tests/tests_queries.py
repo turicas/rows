@@ -2,6 +2,8 @@ import pytest
 
 #from rows.utils.query import Field
 from rows.utils import query
+from rows import Table
+import rows
 
 
 def test_tokenize_works_for_plain_word():
@@ -15,9 +17,9 @@ def test_tokenize_works_for_plain_word():
 
 
 @pytest.mark.parametrize("expression", [
-    "cidade=='São Paulo'",
-    "cidade == 'São Paulo'",
-    "cidade == \"São Paulo\"",
+    "cidade='São Paulo'",
+    "cidade = 'São Paulo'",
+    "cidade = \"São Paulo\"",
 ])
 def test_tokenize_works_for_short_expression(expression):
     a = query.tokenize(expression)
@@ -42,7 +44,7 @@ def test_ensure_query_builds_tree_for_2ops_expression():
     ("2 * 3 + 3", 9),
     ("2 * (3 + 3)", 12),
     ("(2 + 2) * 3 + (3 * 3)", 21),
-    ("(2 + 2) * 3 == 3 * 3 + 3", True),
+    ("(2 + 2) * 3 = 3 * 3 + 3", True),
     ("20 > 10", True),
     ("20 >= 10", True),
     ("20 < 10", False),
@@ -51,15 +53,14 @@ def test_ensure_query_builds_tree_for_2ops_expression():
     ("1 and 0", False),
     ("1 and 0 or 1", True),
     ("1 or 0 and 1", True),
-    ("2 + 3 == 5 and 3 * 3 == 9", True),
-    ("estado=='estado'", True),
-    ("state=='state' and 6000>5000", True)
+    ("2 + 3 = 5 and 3 * 3 = 9", True),
+    ("estado='estado'", True),
+    ("state='state' and 6000>5000", True)
 ])
 
 def test_ensure_query_tree_for_expression_observes_precedence(expression, expected):
     tree = query.ensure_query(expression)
     assert tree.value == expected
-
 
 
 def test_query_tree_is_deepcopiable():
@@ -71,6 +72,47 @@ def test_query_tree_is_deepcopiable():
     t.root.left.value = 10
     assert t.value != t1.value
 
+
+@pytest.fixture
+def city_table():
+    table = Table(
+            fields={ "state": rows.fields.TextField, "city": rows.fields.TextField, "inhabitants": rows.fields.IntegerField, "area": rows.fields.FloatField}
+        )
+    data = [
+        ['SP', 'Buritizal', 4053, 266.42],
+        ['SP', 'Campina do Monte Alegre', 5567, 185.03],
+        ['SP', 'Canas', 4385, 53.26],
+        ['SP', 'Dolcinópolis', 2096, 78.34],
+        ['SP', 'Dracena', 43258, 488.04],
+        ['SP', 'Garça', 43115, 555.63],
+        ['SP', 'Guarulhos', 1221979, 318.68],
+        ['SP', 'Irapuru', 7789, 214.9],
+        ['SP', 'Quatá', 12799, 650.37],
+        ['SP', 'Rosana', 19691, 742.87],
+        ['SP', 'Santa Albertina', 5723, 272.77],
+        ['SP', 'São João do Pau d`Alho', 2103, 117.72],
+        ['SP', 'Torrinha', 9330, 315.27],
+        ['SP', 'Valinhos', 106793, 148.59]
+    ]
+    table.extend(data)
+
+    return table
+
+
+def test_table_is_filterable_by_query(city_table):
+    assert len(city_table) > 1
+    city_table.filter = query.ensure_query("inhabitants=5723")
+    assert len(city_table) == 1
+
+
+def test_filtered_table_is_iterable(city_table):
+    city_table.filter = query.ensure_query("inhabitants=5723")
+    assert len(list(city_table)) == 1
+
+
+#######################
+# maybe these will be ressurected when coding for programatic queries
+# most likely they are just garbage now:
 
 @pytest.mark.skip
 def test_field_retrieve_local_class():
