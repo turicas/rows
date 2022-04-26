@@ -346,7 +346,6 @@ class PerRecordFilterable(query.QueryableMixin, MutableSequence):
             self.filter = filter_
 
     def extend(self, iterable):
-        print(type(self).__mro__)
         with self.pause_filter():
             super().extend(iterable)
 
@@ -493,15 +492,19 @@ class FlexibleTable(Table):
     def _make_row(self, row):
         from rows import fields
 
-        for field_name in row.keys():
-            if field_name not in self.field_names:
-                self._add_field(field_name, fields.identify_type(row[field_name]))
+        if isinstance(row, Mapping):
+            for field_name in row.keys():
+                if field_name not in self.field_names:
+                    self._add_field(field_name, fields.identify_type(row[field_name]))
 
+            return {
+                field_name: field_type.deserialize(row.get(field_name, None))
+                for field_name, field_type in self.fields.items()
+            }
         return {
-            field_name: field_type.deserialize(row.get(field_name, None))
-            for field_name, field_type in self.fields.items()
+            field_name: field_type.deserialize(row[i])
+            for i, (field_name, field_type) in enumerate(self.fields.items())
         }
-
 
     def __setitem__(self, index, value):
         self._rows[index] = self._make_row(value)

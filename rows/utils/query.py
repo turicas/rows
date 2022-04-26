@@ -123,9 +123,7 @@ class BinOpToken(Token):
         try:
             return self.op(self.left.value, self.right.value)
         except TypeError:
-            breakpoint()
-            pass
-
+            raise
 
 class EqualToken(BinOpToken):
     precedence = 0

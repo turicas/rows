@@ -2,7 +2,7 @@ import pytest
 
 #from rows.utils.query import Field
 from rows.utils import query
-from rows import Table
+from rows import Table, FlexibleTable
 import rows
 
 
@@ -74,10 +74,8 @@ def test_query_tree_is_deepcopiable():
 
 
 @pytest.fixture
-def city_table():
-    table = Table(
-            fields={ "state": rows.fields.TextField, "city": rows.fields.TextField, "inhabitants": rows.fields.IntegerField, "area": rows.fields.FloatField}
-        )
+def city_table_data():
+    fields={ "state": rows.fields.TextField, "city": rows.fields.TextField, "inhabitants": rows.fields.IntegerField, "area": rows.fields.FloatField}
     data = [
         ['SP', 'Buritizal', 4053, 266.42],
         ['SP', 'Campina do Monte Alegre', 5567, 185.03],
@@ -94,12 +92,19 @@ def city_table():
         ['SP', 'Torrinha', 9330, 315.27],
         ['SP', 'Valinhos', 106793, 148.59]
     ]
-    table.extend(data)
 
-    return table
+    return fields, data
 
+@pytest.fixture
+def city_table(city_table_data):
+    t = Table(city_table_data[0])
+    t.extend(city_table_data[1])
+    return t
 
-def test_table_is_filterable_by_query(city_table):
+@pytest.mark.parametrize("table_class", [Table, FlexibleTable])
+def test_table_is_filterable_by_query(table_class, city_table_data):
+    city_table = table_class(city_table_data[0])
+    city_table.extend(city_table_data[1])
     assert len(city_table) > 1
     city_table.filter = query.ensure_query("inhabitants=5723")
     assert len(city_table) == 1
