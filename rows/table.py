@@ -251,7 +251,8 @@ class FilterableSequence(MutableSequence):
             return iter(self.data)
         valid_rows_counter = 0
         for i, row in enumerate(self.data):
-            self.parent.current_record = {key: value for key, value in zip(self.parent.fields, row)}
+            self.parent.current_record = row if isinstance (row, Mapping) else {
+                key: value for key, value in zip(self.parent.fields, row)}
             if self.parent.filter.value:
                 self._row_map[valid_rows_counter] = i
                 valid_rows_counter += 1
@@ -305,7 +306,7 @@ class FilterableSequence(MutableSequence):
                 and can result in quadratically slow workflows.
 
                 Consider removing the filter for insertion - or using the "pause_filter()"
-                context manager on the parent object
+                context manager on the parent object.
                 """))
         self.data.insert(position, row)
         self.invalidate()
@@ -350,7 +351,7 @@ class PerRecordFilterable(query.QueryableMixin, MutableSequence):
             super().extend(iterable)
 
 
-class _Table(BaseTable):
+class Table(BaseTable, PerRecordFilterable):
     def __init__(self, fields, meta=None, **kwargs):
         self._rows = []
         super().__init__(fields=fields, meta=meta, **kwargs)
@@ -462,10 +463,8 @@ class _Table(BaseTable):
         key_index = field_names.index(key)
         self._rows.sort(key=itemgetter(key_index), reverse=reverse)
 
-class Table(_Table, PerRecordFilterable):
-    pass
 
-class FlexibleTable(_Table):
+class FlexibleTable(Table):
     """ Table implementation featuring flexible columns: fields can be created on the go
 
     Rows are stored internally as dictionaries.

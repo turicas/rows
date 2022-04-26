@@ -120,7 +120,11 @@ class BinOpToken(Token):
         return self.exec()
 
     def exec(self):
-        return self.op(self.left.value, self.right.value)
+        try:
+            return self.op(self.left.value, self.right.value)
+        except TypeError:
+            breakpoint()
+            pass
 
 
 class EqualToken(BinOpToken):
@@ -315,6 +319,7 @@ class TokenTree:
     def node_tree_from_tokens(cls, tokens: "list[Token]") -> Token:
 
         # identify and collapse subtrees recursively
+
         depth = 0
         subtree = None
         new_tokens = []
@@ -382,6 +387,8 @@ class TokenTree:
 
     @classmethod
     def from_tokens(cls, tokens: "list[Token]")-> "TokenTree":
+        if not tokens:
+            return None
         self = cls.__new__(cls)
         root = cls.node_tree_from_tokens(tokens)
         self.root = root
