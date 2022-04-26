@@ -18,12 +18,16 @@
 
 from __future__ import unicode_literals
 
+import contextlib
 import os
+import warnings
+
 from collections import namedtuple, OrderedDict
 from operator import itemgetter
 from pathlib import Path
 
 from collections.abc import MutableSequence, Sized, Sequence, Mapping
+from textwrap import dedent as D
 
 from .utils import query
 
@@ -211,7 +215,7 @@ class BaseTable(MutableSequence):
         from rows.utils.query import Query, ensure_query
         if not isinstance(filter, Query):
             filter = ensure_query(filter)
-        if filter:
+        if filter and not filter.bound:
             filter = filter.bind(self)
         self._filter = filter
         if getattr(self, "filter_reset", None):
@@ -231,14 +235,18 @@ class FilterableSequence(MutableSequence):
     def __init__(self, inner, parent):
         self.data = inner
         self.parent = parent
+        self._tick = 0
+        self.invalidate()
         # uses parent.filter and parent.fields - TODO:  decouple that a bit
 
     def invalidate(self):
         self._row_map = {}
         self._finished_map = False
+        self._tick += 1
 
     # tied to "per record filtering"
     def __iter__(self):
+        current_tick = self._tick
         if not self.parent.filter:
             return iter(self.data)
         valid_rows_counter = 0
@@ -248,7 +256,12 @@ class FilterableSequence(MutableSequence):
                 self._row_map[valid_rows_counter] = i
                 valid_rows_counter += 1
                 yield row
-        self._finished_map = True
+        # Avoids that a iterator that has been paused, with
+        # changes taking place in the pauses, marks
+        # the rows as incorrectly filtered
+        if current_tick == self._tick:
+            self._finished_map = True
+
 
     def ensure_filtered(self):
         if not self._finished_map:
@@ -286,12 +299,23 @@ class FilterableSequence(MutableSequence):
         which calls insert for every row, and we do this after the filter object is set if it
         is passed on table creation.
         """
-        #if self.parent.filter:
-            #raise RuntimeError("Can't insert new rows with an active filter")
+        if self.parent.filter:
+            warnings.warn(D("""\
+                Inserting rows in a table with an active filter, will ignore the filter,
+                and can result in quadratically slow workflows.
+
+                Consider removing the filter for insertion - or using the "pause_filter()"
+                context manager on the parent object
+                """))
         self.data.insert(position, row)
+        self.invalidate()
 
 
-class PerRecordFilterable(query.QueryableMixin):
+class PerRecordFilterable(query.QueryableMixin, MutableSequence):
+
+    # Has to inherit from MutableSequence so thatr this cls.extend have
+    # priority over MutableSequence.extend when the mixin is used.
+
     filter = None
 
     @property
@@ -310,6 +334,20 @@ class PerRecordFilterable(query.QueryableMixin):
     @_rows.setter
     def _rows(self, sequence):
         self._inner_rows=FilterableSequence(sequence, self)
+
+    @contextlib.contextmanager
+    def pause_filter(self):
+        filter_ = getattr(self, "filter", None)
+        try:
+            self.filter = None
+            yield
+        finally:
+            self.filter = filter_
+
+    def extend(self, iterable):
+        print(type(self).__mro__)
+        with self.pause_filter():
+            super().extend(iterable)
 
 
 class _Table(BaseTable):

@@ -66,6 +66,15 @@ HOME_PATH = Path.home()
 CACHE_PATH = HOME_PATH / ".cache" / "rows" / "http"
 
 
+def cli_debug_options(*decorators):
+    def decorator(func):
+        if  os.environ.get("ROWS_DEBUG"):
+            for decorator in decorators[::-1]:
+                func = decorator(func)
+        return func
+    return decorator
+
+
 def parse_options(options):
     options_dict = {}
     for option in options:
@@ -454,6 +463,9 @@ def sum_(
 @click.option("--query", default="", help="Filter expression for row output [WIP]")
 @click.option("--quiet", "-q", is_flag=True)
 @click.argument("source", required=True)
+@cli_debug_options(
+    click.option("--table_class", default="Table", help="Internal table class. Options: Table, SQLiteTable, FlexibleTable"),
+)
 def print_(
     input_encoding,
     output_encoding,
@@ -469,9 +481,11 @@ def print_(
     query,
     quiet,
     source,
+    table_class="Table"
 ):
 
     input_options = parse_options(input_option)
+    input_options["table_class"] = getattr(rows.table, table_class)
     progress = not quiet
     input_encoding = input_encoding or input_options.get("encoding", None)
     source_info = None

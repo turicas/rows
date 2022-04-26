@@ -397,10 +397,14 @@ class TokenTree:
 
 
 class QueryBase(TokenTree):
+
+    bound = False
+
     def bind(self, parent):
         self = deepcopy(self)
         self.parent = parent
         self._bind_nodes(self.root)
+        self.bound = True
         return self
 
     def _bind_nodes(self, node):

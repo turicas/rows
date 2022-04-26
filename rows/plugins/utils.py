@@ -32,7 +32,7 @@ import six
 # 'slug' and 'make_unique_name' are required here to maintain backwards compatibility
 from rows.fields import get_items  # NOQA
 from rows.fields import TextField, detect_types, make_header
-from rows.table import FlexibleTable, Table
+from rows.table import FlexibleTable, Table, SQLiteTable
 
 from rows.utils import Source
 from rows.utils.query import ensure_query
@@ -203,8 +203,9 @@ def create_table(
 
 def prepare_to_export(table, export_fields=None, *args, **kwargs):
     # TODO: optimize for more used cases (export_fields=None)
+
     table_type = type(table)
-    if table_type not in (FlexibleTable, Table):
+    if table_type not in (FlexibleTable, Table, SQLiteTable):
         raise ValueError("Table type not recognized")
 
     if export_fields is None:
@@ -222,13 +223,9 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
 
     yield export_fields
 
-    if table_type is Table:
-        field_indexes = list(map(table_field_names.index, export_fields))
-        for row in table._rows:
-            yield [row[field_index] for field_index in field_indexes]
-    elif table_type is FlexibleTable:
-        for row in table._rows:
-            yield [row[field_name] for field_name in export_fields]
+    field_indexes = list(map(table_field_names.index, export_fields))
+    for row in table:
+        yield [row[field_index] for field_index in field_indexes]
 
 
 def serialize(table, *args, **kwargs):
