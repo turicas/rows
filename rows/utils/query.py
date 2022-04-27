@@ -111,6 +111,8 @@ class CloseBracketToken(Token):
 class BinOpToken(Token):
     right: Token = None
     left: Token = None
+    boundable = True
+    bound = False
 
     def __init__(self, value):
         self.literal_value = value
@@ -120,10 +122,10 @@ class BinOpToken(Token):
         return self.exec()
 
     def exec(self):
-        try:
-            return self.op(self.left.value, self.right.value)
-        except TypeError:
-            raise
+        if self.bound == 'literal':
+            # used when recreating a textual representation - for example: SQL Queries
+            return f"{self.left.value} {self.literal} {self.right.value}"
+        return self.op(self.left.value, self.right.value)
 
 class EqualToken(BinOpToken):
     precedence = 0
@@ -234,10 +236,11 @@ class LiteralToken(Token):
 
 class FieldNameToken(Token):
     boundable = True  # this attribute is used in Query.bind
+    bound = False
 
     @property
     def value(self):
-        if getattr(self, "parent", None) is None:
+        if not self.bound or self.bound == "literal":
             return self.name
         return self.parent.filtering_strategy.get(self.name)
 
@@ -296,12 +299,20 @@ class LiteralFloatToken(LiteralToken):
         return True
 
 class LiteralStrToken(Token):
+    boundable = True
+    bound = False
     def __init__(self, value):
-        self.value = value[1:-1]
+        self._value = value[1:-1]
 
     @classmethod
     def _match(cls, value):
         return re.match(r"""(?P<quote>['"]).*?(?P=quote)""", value)
+
+    @property
+    def value(self):
+        if self.bound == "literal":
+            return repr(self._value)
+        return self._value
 
 
 def tokenize(query:str) -> "list[Token]":
@@ -406,15 +417,17 @@ class QueryBase(TokenTree):
     bound = False
 
     def bind(self, parent):
+        binding_type = getattr(parent, "filter_binding_type", True)
         self = deepcopy(self)
         self.parent = parent
+        self.bound = binding_type
         self._bind_nodes(self.root)
-        self.bound = True
         return self
 
     def _bind_nodes(self, node):
         if getattr(node, "boundable", False):
             node.parent = self.parent
+            node.bound = self.bound
         if getattr(node, "left", None):
             self._bind_nodes(node.left)
         if getattr(node, "right", None):

@@ -216,6 +216,10 @@ class BaseTable(MutableSequence):
         if not isinstance(filter, Query):
             filter = ensure_query(filter)
         if filter and not filter.bound:
+            # Query.bind consumes the class "filter_binding_type" attribute to know
+            # how to render itself for use. Current values valid values are: anything truthfull
+            # for expression resolvable filters, and "literal" to generate a string expression
+            # which happens to be valid for a SQL "WHERE" clause
             filter = filter.bind(self)
         self._filter = filter
         if getattr(self, "filter_reset", None):
@@ -511,6 +515,9 @@ class FlexibleTable(Table):
 
 
 class SQLiteTable(BaseTable):
+    filter_binding_type = "literal"
+
+
     def __init__(self, fields, meta=None, **kwargs):
         super(SQLiteTable, self).__init__(fields=fields, meta=meta, **kwargs)
 
@@ -537,6 +544,7 @@ class SQLiteTable(BaseTable):
             else:
                 data = cursor.fetchall()
         except Exception:
+            # cant have an "else:" clause it there is no "except:" clause.
             raise
         else:
             self._connection.commit()
@@ -545,6 +553,18 @@ class SQLiteTable(BaseTable):
         if data_type == "dict":
             data = [dict(zip(header, row)) for row in data]
         return data
+
+    def _build_filtered_select(self, fields=None, offset=None, limit=None):
+        fields = ", ".join(fields if fields is not None else self.field_names)
+        if not self.filter:
+            where = ""
+        else:
+            where = f"WHERE {self.filter.value}"
+        if limit is not None:
+            limit = f"LIMIT {limit}"
+        if offset is not None:
+            offset = f"OFFSET {offset}"
+        return f"SELECT {fields} FROM {self.name} {where} {offset or ''} {limit or ''}".strip()
 
     @classmethod
     def copy(cls, table, data):
@@ -587,6 +607,9 @@ class SQLiteTable(BaseTable):
 
     def __len__(self):
         return self._execute("SELECT COUNT(*) AS total FROM {}".format(self.name))[0]["total"]
+
+
+
 
     def __getitem__(self, key):
         key_type = type(key)
