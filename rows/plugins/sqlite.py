@@ -225,3 +225,16 @@ def export_to_sqlite(
 
     connection.commit()
     return connection
+
+
+def sqlite_escape_col(name):
+    name = name.replace('"', '""')
+    return f'"{name}"'
+
+
+class SQLiteOp:
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return f"SQLiteOP {self.value}"

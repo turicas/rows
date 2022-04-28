@@ -514,20 +514,6 @@ class FlexibleTable(Table):
         self._rows[index] = self._make_row(value)
 
 
-def sqlite_escape_col(name):
-    return name
-    name = name.replace('"', '""')
-    return f'"{name}"'
-
-
-class SQLiteOp:
-    def __init__(self, value):
-        self.value = value
-
-    def __repr__(self):
-        return f"SQLiteOP {self.value}"
-
-
 class SQLiteTable(BaseTable):
     filter_binding_type = "literal"
 
@@ -569,6 +555,7 @@ class SQLiteTable(BaseTable):
         return data
 
     def _build_filtered_select(self, fields=None, offset=None, limit=None):
+        from rows.plugins.sqlite import sqlite_escape_col, SQLiteOp
         # Use non string SQLiteOP instances to convey SQLITE functions or operations to be used in the SELECT clause
         escaped_fields = [field.value  if isinstance(field, SQLiteOp) else sqlite_escape_col(field) for field in fields or self.field_names]
         fields = ", ".join(escaped_fields)
@@ -625,6 +612,7 @@ class SQLiteTable(BaseTable):
         yield from self._execute(self._build_filtered_select(), data_type="list")
 
     def __len__(self):
+        from rows.plugins.sqlite import SQLiteOp
         query = self._build_filtered_select(fields=(SQLiteOp("COUNT(*) AS total"),))
         return self._execute(query)[0]["total"]
 
