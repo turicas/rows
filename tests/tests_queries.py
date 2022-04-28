@@ -2,7 +2,7 @@ import pytest
 
 #from rows.utils.query import Field
 from rows.utils import query
-from rows import Table, FlexibleTable
+from rows import Table, FlexibleTable, SQLiteTable
 import rows
 
 
@@ -101,7 +101,7 @@ def city_table(city_table_data):
     t.extend(city_table_data[1])
     return t
 
-@pytest.mark.parametrize("table_class", [Table, FlexibleTable])
+@pytest.mark.parametrize("table_class", [Table, FlexibleTable, SQLiteTable])
 def test_table_is_filterable_by_query(table_class, city_table_data):
     city_table = table_class(city_table_data[0])
     city_table.extend(city_table_data[1])

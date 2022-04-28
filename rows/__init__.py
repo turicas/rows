@@ -20,7 +20,7 @@ from __future__ import unicode_literals
 import rows.plugins as plugins
 from rows.localization import locale_context  # NOQA
 from rows.operations import join, transform, transpose  # NOQA
-from rows.table import FlexibleTable, Table  # NOQA
+from rows.table import FlexibleTable, Table, SQLiteTable  # NOQA
 
 # General imports
 

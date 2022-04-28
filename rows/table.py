@@ -514,6 +514,20 @@ class FlexibleTable(Table):
         self._rows[index] = self._make_row(value)
 
 
+def sqlite_escape_col(name):
+    return name
+    name = name.replace('"', '""')
+    return f'"{name}"'
+
+
+class SQLiteOp:
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return f"SQLiteOP {self.value}"
+
+
 class SQLiteTable(BaseTable):
     filter_binding_type = "literal"
 
@@ -555,7 +569,9 @@ class SQLiteTable(BaseTable):
         return data
 
     def _build_filtered_select(self, fields=None, offset=None, limit=None):
-        fields = ", ".join(fields if fields is not None else self.field_names)
+        # Use non string SQLiteOP instances to convey SQLITE functions or operations to be used in the SELECT clause
+        escaped_fields = [field.value  if isinstance(field, SQLiteOp) else sqlite_escape_col(field) for field in fields or self.field_names]
+        fields = ", ".join(escaped_fields)
         if not self.filter:
             where = ""
         else:
@@ -564,7 +580,7 @@ class SQLiteTable(BaseTable):
             limit = f"LIMIT {limit}"
         if offset is not None:
             offset = f"OFFSET {offset}"
-        return f"SELECT {fields} FROM {self.name} {where} {offset or ''} {limit or ''}".strip()
+        return f"SELECT {fields} FROM {self.name} {where} {limit or ''} {offset or ''}".strip()
 
     @classmethod
     def copy(cls, table, data):
@@ -602,47 +618,50 @@ class SQLiteTable(BaseTable):
             placeholders=", ".join("?" for _ in field_names),
         )
         _convert_row = _python_to_sqlite(self.field_types)
-        data = ([row[field_name] for field_name in field_names] for row in many_rows)
+        data = ([row[field_name if isinstance(row, Mapping) else i] for i, field_name in enumerate(field_names)] for row in many_rows)
         self._execute(insert_sql, args=map(_convert_row, data), many=True)
 
+    def __iter__(self):
+        yield from self._execute(self._build_filtered_select(), data_type="list")
+
     def __len__(self):
-        return self._execute("SELECT COUNT(*) AS total FROM {}".format(self.name))[0]["total"]
-
-
-
+        query = self._build_filtered_select(fields=(SQLiteOp("COUNT(*) AS total"),))
+        return self._execute(query)[0]["total"]
 
     def __getitem__(self, key):
-        key_type = type(key)
-        if key_type == int:
-            query = "SELECT {} FROM {} WHERE __id = ?".format(", ".join(self.field_names), self.name)
-            row = self._execute(query, args=(key + 1,), data_type="dict")[0]
-            return self.Row(**row)
 
-
-        elif key_type == slice:
-            query = "SELECT {} FROM {}".format(", ".join(self.field_names), self.name)
-            filters, args = [], []
-            if key.start is not None:
-                filters.append("__id >= ?")
-                args.append(key.start + 1)
-            if key.stop is not None:
-                filters.append("__id < ?")
-                args.append(key.stop)
-            if filters:
-                query = query + " WHERE " + " AND ".join(filters)
-            data = self._execute(query, args=args, data_type="dict")
-            # TODO: must return a copy of this table!
-            return data
-
-        elif issubclass(key_type, str):
+        if isinstance(key, str):
             if key not in self.field_names:
                 raise KeyError(key)
-            query = "SELECT {} FROM {}".format(key, self.name)
+            query = self._build_query(fields=(key,))
+            mode = "col"
             return [item[0] for item in self._execute(query, data_type="list")]
+        if hasattr(key, "__index__"):
+            offset = key.__index__()
+            limit = 1
+            mode = "single"
+        elif issubclass(key, slice):
+            if key.step not in {None, 1}:
+                raise NotImplementedError(f"Only unit step for {self.__class__.__name__} slicing is implemented so far")
+            if key.stop is None:
+                limit = None
+            else:
+                limit = key.stop - (key.start or 0)
+            offset = key.start or 0
+            mode = "slice"
         else:
             raise ValueError("Unsupported key type: {}".format(type(key).__name__))
 
-    # TODO: create method to update __id for all subsequent rows
+        if offset < 0 or limit < 0:
+            raise NotImplementedError(f"Negative indices not yet implemented for {self.__class__.__name__}")
+
+        # TODO: return filtered table copy on sliced get
+
+        query = self._build_filtered_select(limit=limit, offset=offset)
+        result = self._execute(query, data_type="dict")
+
+        return self.Row(**result[0]) if mode == "single" else result if mode == "slice" else [item[0][key] for item in result]
+
 
     def __setitem__(self, key, value):
         raise NotImplementedError()
