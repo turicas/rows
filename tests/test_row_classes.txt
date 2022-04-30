@@ -1,0 +1,33 @@
+# doctest file - Pytest will run these and assert the output of each statement
+# should be called from rows project top level, so that the csv file is reachable
+>>> import rows
+>>> x = rows.import_from_csv("examples/data/brazilian-cities.csv",)
+
+>>> z = rows.Table(fields=x.fields, row_class=tuple)
+>>> z.extend(x)
+
+>>> z[0]
+('AC', 'Acrelândia', 12538, 1807.92)
+
+>>> z.row_class=list
+
+>>> z[0]
+['AC', 'Acrelândia', 12538, 1807.92]
+
+>>> z.row_class=dict
+
+>>> z[0]
+{'state': 'AC', 'city': 'Acrelândia', 'inhabitants': 12538, 'area': 1807.92}
+
+>>> from dataclasses import dataclass
+
+@dataclass
+class R:
+     state: str
+     city: str
+     inhabitants: int
+
+z.row_class = R
+
+z[400]
+R(state='BA', city='Itatim', inhabitants=14522)

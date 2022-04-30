@@ -382,7 +382,7 @@ class Table(BaseTable, PerRecordFilterable):
         """
         key_type = type(key)
         if key_type == int:
-            return self.Row(*self._rows[key])
+            return self._row_for_output(self._rows[key])
         elif key_type == slice:
             return Table.copy(self, self._rows[key])
         elif issubclass(key_type, str):
@@ -486,9 +486,9 @@ class FlexibleTable(Table):
 
     def __getitem__(self, key):
         if isinstance(key, int):
-            return self.Row(**self._rows[key])
+            return self._row_for_output(self._rows[key])
         elif isinstance(key, slice):
-            return [self.Row(**row) for row in self._rows[key]]
+            return [self._row_for_output(row) for row in self._rows[key]]
         else:
             raise ValueError("Unsupported key type: {}".format(type(key).__name__))
 
@@ -612,7 +612,8 @@ class SQLiteTable(BaseTable):
         self._execute(insert_sql, args=map(_convert_row, data), many=True)
 
     def __iter__(self):
-        yield from self._execute(self._build_filtered_select(), data_type="list")
+        for row in self._execute(self._build_filtered_select(), data_type="list"):
+            yield _row_for_output(row)
 
     def __len__(self):
         from rows.plugins.sqlite import SQLiteOp
@@ -651,7 +652,7 @@ class SQLiteTable(BaseTable):
         query = self._build_filtered_select(limit=limit, offset=offset)
         result = self._execute(query, data_type="dict")
 
-        return self.Row(**result[0]) if mode == "single" else result if mode == "slice" else [item[0][key] for item in result]
+        return self.Row(result[0]) if mode == "single" else result if mode == "slice" else [item[0][key] for item in result]
 
 
     def __setitem__(self, key, value):

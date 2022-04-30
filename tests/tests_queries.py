@@ -114,39 +114,3 @@ def test_filtered_table_is_iterable(city_table):
     city_table.filter = query.ensure_query("inhabitants=5723")
     assert len(list(city_table)) == 1
 
-
-#######################
-# maybe these will be ressurected when coding for programatic queries
-# most likely they are just garbage now:
-
-@pytest.mark.skip
-def test_field_retrieve_local_class():
-    class A:
-        b: int
-
-    assert Field("A.b").cls is A
-
-
-class B:
-    b: int
-
-@pytest.mark.skip
-def test_field_retrieve_global_class():
-    assert Field("B.b").cls is B
-
-
-@pytest.mark.skip
-def test_field_retrieve_dotted_class():
-    import rows
-    class C:
-        b: int
-
-    try:
-        rows.plugins.dicts._monkey_patched_class = C
-        assert Field("rows.plugins.dicts._monkey_patched_class.b").cls is C
-    finally:
-        del rows.plugins.dicts._monkey_patched_class
-
-
-
-

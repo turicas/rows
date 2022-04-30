@@ -16,6 +16,7 @@
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 from collections import namedtuple
 from collections.abc import Mapping
 
@@ -25,17 +26,17 @@ def _get_param_spec(func) -> "(inspect.Parameter, int)":
     try:
         sig = signature(func)
     except (ValueError, TypeError):
-        return None, 0
+        return None, None, 0
     if not sig.parameters:
-        return None, 0
+        return None, None, 0
     p1_name = next(iter(sig.parameters.keys()))
     p1 = sig.parameters[p1_name]
-    return p1, len(sig.parameters)
+    return sig, p1, len(sig.parameters)
 
 
 class CustomRowMixin:
+    def __init__(self, *, row_class=None, row_class_factory=None, row_class_name="Row", row_class_cache = True, **kwargs):
 
-    def __init__(self, *, row_class=None, row_factory=None, row_class_name="Row", **kwargs):
         """Table component used for customizing the objects returned as "Rows" from a table
 
         If none of "row_factory" or "row_class" are given, the classic default of a lazily created
@@ -54,7 +55,96 @@ class CustomRowMixin:
 
           - row_name: only used as class name for the default namedtuple, if none of the other parameters is given.
 
+          - row_class_cache: Bool, defaults to True: if a row_class_factory is given, it usually will be called
+            one single time, when the first row is instantiated. If this is set to False, it will be called
+            again for each row that is created.
+
         """
+        self.row_class = row_class
+
+        if row_class is None and row_class_factory is None:
+            row_class_factory = self._row_default_factory
+
+        self._row_class_factory = row_class_factory
+        self._row_class_name = row_class_name
+        self._row_class_cache = row_class_cache
+
+        super().__init__(**kwargs)
+
+    @property
+    def row_class(self):
+        return getattr(self, "_row_class", None)
+
+    @row_class.setter
+    def row_class(self, cls):
+        from inspect import signature, _ParameterKind as P
+
+        # an inner enum is used in this class to determine how each row data is passed to the row class
+
+        self._row_class = cls
+
+        if isinstance(cls, type) and issubclass(cls, Mapping):
+            self._row_class_strategy = "kwargs"
+            return
+
+        sig, par1, nparams = _get_param_spec(cls)
+
+        if par1 and par1.kind is P.VAR_POSITIONAL:
+            self._row_class_strategy = "args_sequence" # sequence expansion - ex. def myrow(*args):
+        elif par1 and par1.kind is P.VAR_KEYWORD:
+            self._row_class_strategy = "kwargs"  # dictonary expansion ex. def myrow(**{field1: value1, ...}):
+        elif nparams == 1 and getattr(sig.parameters.get("iterable"), "default", None) == (): # targets tuple and list
+            self._row_class_strategy = "single_sequence" # single argument with a sequence of the values. Ex: list(values)
+        elif getattr(self, "fields", {}) and sig and set(self.fields.keys()).intersection(sig.parameters.keys()): # targets functions and dataclasses
+            if len(self.fields) == nparams:
+                self._row_class_strategy = "kwargs"
+            else:
+                self._row_class_strategy = "select_kwargs"  # Argument injection from the fields existing in parameter list on the target factory
+                self._row_field_names = list(signature(cls).parameters.keys())
+        else:
+            self._row_class_strategy = "args_sequence"
+
+    @row_class.deleter
+    def row_class(self, cls):
+        if getattr(self, "_row_class", None):
+            del self._row_class
+
+    @property
+    def Row(self):
+        if self.row_class:
+            return self.row_class
+        row_class = self._row_class_factory(self.fields)
+        if getattr(self, "_row_class_cache", False):
+            self.row_class = row_class
+        return row_class
+
+    def _row_for_output(self, data):
+        """Inner function to be called by '__getitem__' and '__iter__' to actually generate a row-instance
+        """
+        if isinstance(data, dict):
+            data = data.values()
+        row = self.Row
+        if self._row_class_strategy == "single_sequence":
+           row = self.Row(data)
+        elif self._row_class_strategy == "args_sequence":
+            row = self.Row(*data)
+        elif self._row_class_strategy == "kwargs":
+            row = self.Row(**{field_name: value for field_name, value in zip(self.field_names, data)})
+        elif self._row_class_strategy == "select_kwargs":
+            data_dict = {field_name: value for field_name, value in zip(self.field_names, data)}
+            row = self.Row(**{field_name: data_dict.get(field_name) for field_name in self._row_field_names})
+        else:
+            raise RuntimeError("internal '_row_class_strategy' set to unknown value")
+        return row
+
+    def _row_default_factory(self, fields):
+        self._row_class_cache = True
+        return namedtuple(self._row_class_name, fields.keys())
+
+'''
+class CustomRowMixin:
+
+    def __init__(self, *, row_class=None, row_factory=None, row_class_name="Row", **kwargs):
         from inspect import signature, _ParameterKind as P
 
         def var_positional_sequence_wrapper(*data):
@@ -142,3 +232,4 @@ class CustomRowMixin:
             type(self[0])
         except IndexError:
             raise ValueError("Due to lazy nature of row generation, table must have at least one row of data")
+'''
