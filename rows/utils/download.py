@@ -1,0 +1,170 @@
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+
+from rows.utils import subclasses
+
+
+@dataclass
+class DownloadLink:
+    url: str
+    save_path: str
+
+
+class Downloader:
+    name = None
+
+    def __init__(self, user_agent="Mozilla", continue_paused=True, timeout=10):
+        self.user_agent = user_agent
+        self._commands = []
+        self._directories = set()
+        self._continue_paused = continue_paused
+        self._timeout = timeout
+
+    @classmethod
+    def subclasses(cls):
+        return {class_.name: class_ for class_ in subclasses(cls)}
+
+    def add(self, link):
+        # TODO: what if I don't want to add save path (don't know remote
+        # filename/extension)?
+        download_filename = Path(link.save_path)
+        self._directories.add(download_filename.parent)
+        self._add_download(link.url, download_filename)
+
+    def add_many(self, links):
+        for link in links:
+            self.add(link)
+
+    @property
+    def commands(self):
+        return self._commands
+
+    @property
+    def directories(self):
+        return self._directories
+
+    def _add_download(self, url, filename):
+        raise NotImplementedError()
+
+    def run(self):
+        for path in self.directories:
+            if not path.exists():
+                path.mkdir(parents=True)
+        for command in self.commands:
+            subprocess.call(command)
+        self.cleanup()
+
+    def cleanup(self):
+        pass
+
+
+class WgetDownloader(Downloader):
+    name = "wget"
+
+    def _add_download(self, url, filename):
+        parameters = ["--user-agent", self.user_agent]
+        if self._timeout is not None:
+            parameters.extend(["-t", str(self._timeout)])
+        if self._continue_paused:
+            parameters.append("-c")
+        cmd = ["wget", "-O", str(filename), *parameters, url]
+        if cmd not in self._commands:
+            self._commands.append(cmd)
+
+
+class Aria2cDownloader(Downloader):
+    name = "aria2c"
+
+    def __init__(self, connections=4, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._connections = connections
+
+    def _add_download(self, url, filename):
+        parameters = ["--user-agent", self.user_agent]
+        if self._timeout is not None:
+            parameters.extend(["--connect-timeout", str(self._timeout)])
+        if self._continue_paused:
+            parameters.append("-c")
+        if self._connections is not None:
+            parameters.extend(["-s", str(self._connections), "-x", str(self._connections)])
+        cmd = [
+            "aria2c",
+            *parameters,
+            "--dir", str(filename.parent),
+            url,
+        ]
+        if cmd not in self._commands:
+            self._commands.append(cmd)
+
+
+class Aria2cFileDownloader(Downloader):
+    name = "aria2c-file"
+
+    def __init__(self, connections=4, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._aria_files = []
+        self._connections = connections
+
+    def _add_download(self, url, filename):
+        data = (url, filename.parent)
+        if data not in self._aria_files:
+            self._aria_files.append(data)
+
+    @property
+    def commands(self):
+        tmp = NamedTemporaryFile(delete=False, prefix="aria-download-", suffix=".txt")
+        with open(tmp.name, mode="w") as output:
+            for download_url, download_path in self._aria_files:
+                output.write(f"{download_url}\n  dir={download_path}\n")
+        self._temp_filename = Path(tmp.name)
+
+        parameters = ["--user-agent", self.user_agent]
+        if self._timeout is not None:
+            parameters.extend(["--connect-timeout", str(self._timeout)])
+        if self._continue_paused:
+            parameters.append("-c")
+        if self._connections is not None:
+            parameters.extend(["-s", str(self._connections), "-x", str(self._connections)])
+        cmd = [
+            "aria2c",
+            *parameters,
+            "--dir", str(self._temp_filename.parent),
+            "--input-file", tmp.name,
+        ]
+        return [cmd]
+
+    def cleanup(self):
+        self._temp_filename.unlink()
+
+
+# TODO: implement checks for each class (if executable is available)
+# TODO: implement curl downloader
+# TODO: implement aria2p downloader
+__all__ = [
+    "Aria2cDownloader",
+    "Aria2cFileDownloader",
+    "DownloadLink",
+    "Downloader",
+    "WgetDownloader",
+]
+
+if __name__ == "__main__":
+    import argparse
+
+
+    # TODO: add parameters: continue_paused, connections etc.
+    # TODO: add logging
+    subclasses = Downloader.subclasses()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("downloader", choices=list(subclasses.keys()))
+    parser.add_argument("output_path")
+    parser.add_argument("url", nargs="+")
+    args = parser.parse_args()
+    output_path = Path(args.output_path)
+
+    links = [DownloadLink(url=url, save_path=output_path / Path(url).name) for url in args.url]
+    downloader = subclasses[args.downloader]()
+    downloader.add_many(links)
+    downloader.run()

@@ -133,6 +133,14 @@ regexp_sizes = re.compile("([0-9,.]+ [a-zA-Z]+B)")
 MULTIPLIERS = {"B": 1, "KiB": 1024, "MiB": 1024 ** 2, "GiB": 1024 ** 3}
 
 
+def subclasses(cls):
+    """Return all subclasses of a class, recursively"""
+    children = cls.__subclasses__()
+    return set(children).union(
+        set(grandchild for child in children for grandchild in subclasses(child))
+    )
+
+
 class ProgressBar:
     def __init__(self, prefix, pre_prefix="", total=None, unit=" rows"):
         self.prefix = prefix

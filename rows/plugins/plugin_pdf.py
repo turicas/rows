@@ -27,7 +27,7 @@ import six
 from cached_property import cached_property
 
 from rows.plugins.utils import create_table
-from rows.utils import Source
+from rows.utils import Source, subclasses
 
 try:
     import fitz as pymupdf
@@ -928,13 +928,6 @@ class RectsBoundariesAlgorithm(ExtractionAlgorithm):
     def y_intervals(self):
         y_intervals = set((obj.y0, obj.y1) for obj in self.rects)
         return sorted(self._clean_intersections(y_intervals))
-
-
-def subclasses(cls):
-    children = cls.__subclasses__()
-    return set(children).union(
-        set(grandchild for child in children for grandchild in subclasses(child))
-    )
 
 
 def algorithms():
