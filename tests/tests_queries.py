@@ -161,3 +161,13 @@ def test_can_build_query_programatically(city_table):
     assert len(city_table) == 1
 
 
+# [WIP]
+def test_programatic_query_works_with_reversed_ops(city_table):
+    from rows.utils.query import F, Query
+    query = 1_000_000 < F("inhabitants")
+    assert isinstance(query, Query)
+
+    city_table.filter = query
+    assert len(city_table) == 1
+
+
