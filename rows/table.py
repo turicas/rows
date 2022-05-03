@@ -273,6 +273,7 @@ class FilterableSequence(MutableSequence):
 
     def ensure_filtered(self):
         if not self._finished_map:
+            # DO NOT REMOVE THE EMPTY LOOP!!
             # consume self.__iter__: updates self._rows_map
             for row in self:
                 pass

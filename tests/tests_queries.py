@@ -73,6 +73,43 @@ def test_query_tree_is_deepcopiable():
     assert t.value != t1.value
 
 
+@pytest.mark.parametrize("TokenCls",[
+    query.Token,
+    query.LiteralIntToken,
+    ]
+)
+@pytest.mark.parametrize("in_value", [
+    "10",
+    "0x0a",
+    "0b1010",
+    "0o12",
+    10,
+    ]
+)
+def test_literalinttoken_is_built_from_proper_values(TokenCls, in_value):
+    t = TokenCls(in_value)
+    assert t.__class__ == query.LiteralIntToken
+    assert t.value == 10
+
+
+@pytest.mark.parametrize("TokenCls",[
+    query.Token,
+    query.LiteralFloatToken,
+    ]
+)
+@pytest.mark.parametrize("in_value", [
+    "0.1",
+    "10e-2",
+    "0.100",
+    0.1,
+    ]
+)
+def test_literalinttoken_is_built_from_proper_values(TokenCls, in_value):
+    t = TokenCls(in_value)
+    assert t.__class__ == query.LiteralFloatToken
+    assert t.value == 0.1
+
+
 @pytest.fixture
 def city_table_data():
     fields={ "state": rows.fields.TextField, "city": rows.fields.TextField, "inhabitants": rows.fields.IntegerField, "area": rows.fields.FloatField}
@@ -113,4 +150,14 @@ def test_table_is_filterable_by_query(table_class, city_table_data):
 def test_filtered_table_is_iterable(city_table):
     city_table.filter = query.ensure_query("inhabitants=5723")
     assert len(list(city_table)) == 1
+
+
+def test_can_build_query_programatically(city_table):
+    from rows.utils.query import F, Query
+    query = F("inhabitants") > 1_000_000
+    assert isinstance(query, Query)
+
+    city_table.filter = query
+    assert len(city_table) == 1
+
 

@@ -18,14 +18,15 @@
 
 # from __future__ import unicode_literals
 
-import re
-
+from collections.abc import Mapping
 from copy import deepcopy
+
+import numbers
 import operator
 import random
+import re
 import sys
 
-from collections.abc import Mapping
 
 def ensure_query(query):
     if query is None:
@@ -66,11 +67,11 @@ class Token:
             # (may be a unpickle or deepcopy operation)
             return super().__new__(cls)
 
-        if value.upper() in __class__.literal_registry:
+        if isinstance(value, str) and value.upper() in __class__.literal_registry:
             instance = super().__new__(__class__.literal_registry[value.upper()])
         else:
             for subcls in __class__.match_registry:
-                if subcls._match(value):
+                if isinstance(value, getattr(subcls, "_accept_classes", str)) and subcls._match(value):
                     instance = super().__new__(subcls)
                     break
             else:
@@ -109,13 +110,24 @@ class CloseBracketToken(Token):
 
 
 class BinOpToken(Token):
+
+    dunder_registry = {}
+
     right: Token = None
     left: Token = None
     boundable = True
     bound = False
 
+    _dunder_equiv = None
+
     def __init__(self, value):
         self.literal_value = value
+
+    def __init_subclass__(cls, **kwargs):
+        dunder_equiv = getattr(cls, "_dunder_equiv")
+        if dunder_equiv:
+            __class__.dunder_registry.setdefault(dunder_equiv, []).append(cls)
+        super().__init_subclass__(**kwargs)
 
     @property
     def value(self):
@@ -131,61 +143,73 @@ class EqualToken(BinOpToken):
     precedence = 0
     literal = "="
     op = operator.eq
+    _dunder_equiv = "__eq__"
 
 class GreaterToken(BinOpToken):
     precedence = 0
     literal = ">"
     op = operator.gt
+    _dunder_equiv = "__gt__"
 
 class LessToken(BinOpToken):
     precedence = 0
     literal = "<"
     op = operator.lt
+    _dunder_equiv = "__lt__"
 
 class GreaterEqualToken(BinOpToken):
     precedence = 0
     literal = ">="
     op = operator.ge
+    _dunder_equiv = "__ge__"
 
 class LessEqualToken(BinOpToken):
     precedence = 0
     literal = "<="
     op = operator.le
+    _dunder_equiv = "__le__"
 
 class AddToken(BinOpToken):
     precedence = 2
     literal = "+"
     op = operator.add
+    _dunder_equiv = "__add__"
 
 class SubToken(BinOpToken):
     precedence = 2
     literal = "-"
     op = operator.sub
+    _dunder_equiv = "__sub__"
 
 class MulToken(BinOpToken):
     precedence = 3
     literal = "*"
     op = operator.mul
+    _dunder_equiv = "__mul__"
 
 class DivToken(BinOpToken):
     precedence = 3
     literal = "/"
     op = operator.truediv
+    _dunder_equiv = "__truediv__"
 
 class ModToken(BinOpToken):
     precedence = 3
     literal = "%"
     op = operator.mod
+    _dunder_equiv = "__mod__"
 
 class AndToken(BinOpToken):
     precedence = -1
     literal = "AND"
     op = staticmethod(lambda a, b: a and b)
+    _dunder_equiv = "__and__"  # not quite. TBD: double check implementation
 
 class OrToken(BinOpToken):
     precedence = -2
     literal = "OR"
     op = staticmethod(lambda a, b: a or b)
+    _dunder_equiv = "__or__"  # not quite. TBD: double check implementation
 
 
 class FunctionToken(Token):
@@ -252,15 +276,32 @@ class FieldNameToken(Token):
 
     @classmethod
     def _match(cls, value):
+        if not isinstance(value, str):
+            return False
         return re.match(r"\w+", value) and not value[0].isdigit()
 
+    # Factory methods which allow use of this class with operators
+    # to create lazily boundable and calculatable Query objects!
+
+    def _multi_dunder(self, op_cls, other):
+        return op_cls(self, other)
+
+
+
+# alias for building expressions
+F = FieldNameToken  # NoQA
+
+
 class LiteralIntToken(LiteralToken):
+    _accept_classes = (str, numbers.Integral)
     def __init__(self, value):
         self.value = self._parse(value)
 
     @classmethod
     def _parse(self, value):
-         # may raise ValueError: will be catched on "_match"
+        # may raise ValueError or AttributeError: will be catched on "_match"
+        if isinstance(value, numbers.Integral):
+            return value
         base = 10
         value = value.lower()
         if len(value) > 2 and value[0] == "0":
@@ -276,20 +317,23 @@ class LiteralIntToken(LiteralToken):
     def _match(cls, value):
         try:
             cls._parse(value)
-        except ValueError:
+        except (ValueError, AttributeError):
             return False
         return True
         # return re.match(r"^-?[0-9_]+$", value)
 
 
 class LiteralFloatToken(LiteralToken):
+    _accept_classes = (str, numbers.Real)
     def __init__(self, value):
-        self.value = float(value)
+        self.value = float(value) if not isinstance(value, numbers.Real) else value
 
     @classmethod
     def _match(cls, value):
         # Do not accept alphanumeric only tokens as numbers,
         # even though they are valid floats
+        if isinstance(value, numbers.Real):
+            return value
         if value.lower().strip("-") in ("nan", "inf"):
             return False
         try:
