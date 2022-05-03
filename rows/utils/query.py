@@ -126,7 +126,12 @@ class BinOpToken(Token):
     def __init_subclass__(cls, **kwargs):
         dunder_equiv = getattr(cls, "_dunder_equiv")
         if dunder_equiv:
-            __class__.dunder_registry.setdefault(dunder_equiv, []).append(cls)
+            if dunder_equiv in __class__.dunder_registry:
+                # TBD: add a mechanism for BinOps to be able to register subclasses
+                # of themselves that can work for differnt types of binding-classes
+                raise NotImplementedError(f"More than one class trying to register as {dunder_equiv}. Class {cls.__qualname__}!")
+            else:
+                __class__.dunder_registry[dunder_equiv] = cls
         super().__init_subclass__(**kwargs)
 
     @property
@@ -250,15 +255,41 @@ class SampleToken(FunctionToken):
         return random.random() < value
 
 
+class OperableToken(Token):
+    # ATTENTION: this class body must be run only after all BinOps Tokens had been defined
+    # TBD: mechanism to allow other dunder methods to be registered late for extra operators
+    # TBD: Some FunctionTokens should really work as operators (e.g. "NotToken"). Implementation missing.
+
+    # Generate programatically methods which allow use of this class with operators
+    # to create lazily boundable and calculatable Query objects!
+
+    def _multi_dunder(self, TokenCls, other):
+        if not isinstance(other, Token):
+            other = Token(other)
+        return Query.from_tokens([self, TokenCls(TokenCls.literal), other])
+
+    def _bind(cls_namespace, dunder_name, multi_dunder, TokenCls):
+        # We need an extra closure, because the class body namespace is not
+        # captured as a closure for functions defined here. So, method
+        # created to actually perform the operation would not be able to "see"
+        # the "_multi_dunder" function
+        cls_namespace[dunder_name] = lambda self, other: multi_dunder(self, TokenCls, other)
+
+
+    for dunder_name, TokenCls in BinOpToken.dunder_registry.items():
+        _bind(locals(), dunder_name, _multi_dunder, TokenCls)
+
+    # TBD: bind reverse methods for the bin-ops. (__rsub__ and so on)
+
+    del _bind  # _multi_dunder is considered as possibly usefull and will not be deleted.
+
 # IMPORTANT: Do not change declaration order of classes that do not declare a "literal" field:
 # textual token match is done in-order, so, if messed up, all numbers could finish up
 # as string-literals, for example.
-
-class LiteralToken(Token):
+class LiteralToken(OperableToken):
     pass
 
-
-class FieldNameToken(Token):
+class FieldNameToken(OperableToken):
     boundable = True  # this attribute is used in Query.bind
     bound = False
 
@@ -276,15 +307,7 @@ class FieldNameToken(Token):
 
     @classmethod
     def _match(cls, value):
-        if not isinstance(value, str):
-            return False
         return re.match(r"\w+", value) and not value[0].isdigit()
-
-    # Factory methods which allow use of this class with operators
-    # to create lazily boundable and calculatable Query objects!
-
-    def _multi_dunder(self, op_cls, other):
-        return op_cls(self, other)
 
 
 
