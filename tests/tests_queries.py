@@ -170,4 +170,28 @@ def test_programatic_query_works_with_reversed_ops(city_table):
     city_table.filter = query
     assert len(city_table) == 1
 
+@pytest.mark.parametrize("kwarg,value,expected_rows", [
+    ("inhabitants", 5723, 1),
+    ("inhabitants", 12341234, 0),
+    ("inhabitants__eq", 5723, 1),
+    ("inhabitants__gt", 1_000_000, 1),
+    ("inhabitants__lt", 1_000_000, 13),
+    ("inhabitants__ge", 1_221_979, 1),
+    ("inhabitants__le", 1_221_979, 14),
+
+    ]
+)
+def test_kwarg_query_works_with_single_filter(kwarg, value, expected_rows, city_table):
+    from rows.utils.query import Query
+    query = Query(**{kwarg: value})
+    city_table.filter = query
+    assert len(city_table) == expected_rows
+
+
+def test_kwarg_query_works_with_combining_filters(city_table):
+    from rows.utils.query import Query
+    city_table.filter = Query(inhabitants__ge = 100_000, inhabitants__le = 200_000)
+    assert len(city_table) == 1
+
+
 

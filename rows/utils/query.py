@@ -53,6 +53,7 @@ class Token:
     # these are not just "tokens": they will also be structured as Query tree nodes, and perform ops.
     literal_registry = {}
     match_registry = []
+    kwarg_registry = {}
     literal = None
 
     def __new__(cls, value=_sentinel):
@@ -90,6 +91,9 @@ class Token:
         elif "_match" in cls.__dict__:
             __class__.match_registry.append(cls)
 
+        if "_kwarg_name" in cls.__dict__:
+            __class__.kwarg_registry[cls._kwarg_name] = cls
+
     @classmethod
     def _match(cls, value):
         raise NotImplementedError()
@@ -120,8 +124,8 @@ class BinOpToken(Token):
 
     _dunder_equiv = None
 
-    def __init__(self, value):
-        self.literal_value = value
+    def __init__(self, value=None):
+        self.literal_value = value if value is not None else self.literal
 
     def __init_subclass__(cls, **kwargs):
         dunder_equiv = getattr(cls, "_dunder_equiv")
@@ -149,30 +153,35 @@ class EqualToken(BinOpToken):
     literal = "="
     op = operator.eq
     _dunder_equiv = "__eq__"
+    _kwarg_name = "eq"
 
 class GreaterToken(BinOpToken):
     precedence = 0
     literal = ">"
     op = operator.gt
     _dunder_equiv = "__gt__"
+    _kwarg_name = "gt"
 
 class LessToken(BinOpToken):
     precedence = 0
     literal = "<"
     op = operator.lt
     _dunder_equiv = "__lt__"
+    _kwarg_name = "lt"
 
 class GreaterEqualToken(BinOpToken):
     precedence = 0
     literal = ">="
     op = operator.ge
     _dunder_equiv = "__ge__"
+    _kwarg_name = "ge"
 
 class LessEqualToken(BinOpToken):
     precedence = 0
     literal = "<="
     op = operator.le
     _dunder_equiv = "__le__"
+    _kwarg_name = "le"
 
 class AddToken(BinOpToken):
     precedence = 2
@@ -283,6 +292,7 @@ class OperableToken(Token):
 
     del _bind  # _multi_dunder is considered as possibly usefull and will not be deleted.
 
+
 # IMPORTANT: Do not change declaration order of classes that do not declare a "literal" field:
 # textual token match is done in-order, so, if messed up, all numbers could finish up
 # as string-literals, for example.
@@ -368,8 +378,13 @@ class LiteralFloatToken(LiteralToken):
 class LiteralStrToken(Token):
     boundable = True
     bound = False
-    def __init__(self, value):
-        self._value = value[1:-1]
+    def __init__(self, value, strip=True):
+
+        # Sometimes this will be called by Token.__new__ after matching a quoted string.
+        # sometimes it may be called directly, with nothing to strip
+        if strip and value and value[0] not in "\"'" and value[-1] not in "\"'":
+            strip = False
+        self._value = value[1:-1] if strip else value
 
     @classmethod
     def _match(cls, value):
@@ -387,6 +402,31 @@ def tokenize(query:str) -> "list[Token]":
         r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|(?<=[^!><])=|<|>|>=|<=|\+|\*|\(|\)|/|-)""",
         query, flags=re.IGNORECASE)]
     return tokens
+
+
+def build_tokens_from_kwargs(kwargs):
+    """Convert a dict with keys composed of "fieldnames__operator" into a token sequence
+
+    Given a dictionary containing django-like operations for fields return
+    a token sequence ready to be transformed into a Tree by TokenTree.from_tokens
+
+    Used internaly from Query.__init__
+    """
+    token_dict = Token.kwarg_registry
+    expression_seq = []
+    for full_name, value in kwargs.items():
+        if "__" in full_name:
+            field_name, operator = full_name.rsplit("__", 1)
+        else:
+            field_name = full_name
+            operator = "eq"
+        field_token = Token(field_name)
+        op_token = token_dict[operator]()
+        literal_token = Token(value) if not isinstance(value, str) else LiteralStrToken(value, strip=False)
+        expression_seq.extend((field_token, op_token, literal_token, AndToken()))
+    expression_seq.pop()
+    return expression_seq
+
 
 
 class TokenTree:
@@ -462,7 +502,7 @@ class TokenTree:
 
 
     @classmethod
-    def from_tokens(cls, tokens: "list[Token]")-> "TokenTree":
+    def from_tokens(cls, tokens: "list[Token]") -> "TokenTree":
         if not tokens:
             return None
         self = cls.__new__(cls)
@@ -482,6 +522,42 @@ class TokenTree:
 class QueryBase(TokenTree):
 
     bound = False
+
+    def __init__(self, **kwargs):
+        """A new query can be created from keyword-style operation specifictions:
+
+        The first part of a keywoerd argumend will match a column name (or other lazily
+        evaluable target) on the class the query will eventually be bound to.
+        If passed as "=" it means that it will filter for that exact mach for that attribute.
+
+        Otherwise, separated from the column name by two underscores, an operator name can be
+        given - and that operator will be used to filter the records, using the argument assigned
+        in the keyword parameter as the other operand,.
+
+        Example:  `mytable.filter = Query(inhabitants__ge = 1_000_000)" will filter mytable
+        making only the rows where the inhabitants colums is greater or equal than 1 million visible.
+
+        Valid operators are:
+            ge, gt, le, lt, eq (same as no suffix).
+
+        Given keyword parameters are combined as an "and" clause.
+
+        Queries can also be created by creating first a "Filter" object
+        (rows.utils.query.F) with a column name, and then using normal Python
+        expressions where the F instance is an operand.
+
+        A third way: one may call rows.utils.ensure_query with a string
+        representing the Query. Literal strings should be enclosed in single quotes
+        inside such a string, and unquoted names are taken as column names.
+
+        "ensure_query" is called automatically in all (or most) places a Query
+        can be bound to a Table or other objectr, so one might just do:
+        `mytable.filter = "inhabitants > 1_000_000" `
+        for the same effect as above.
+        """
+        token_seq = build_tokens_from_kwargs(kwargs)
+        self.root = self.node_tree_from_tokens(token_seq)
+
 
     def bind(self, parent):
         binding_type = getattr(parent, "filter_binding_type", True)
@@ -503,8 +579,17 @@ class QueryBase(TokenTree):
             for child_node in node.params:
                 self._bind_nodes(child_node)
 
+
+# Why do we need "QueryBase"?
+# something is just telling me we might want to hook
+# some stuff here, or specialize Queries in a
+# different way.
+
 class Query(QueryBase):
     pass
+
+
+Q = Query
 
 
 class QueryableMixin:
