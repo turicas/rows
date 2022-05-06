@@ -55,7 +55,8 @@ def test_ensure_query_builds_tree_for_2ops_expression():
     ("1 or 0 and 1", True),
     ("2 + 3 = 5 and 3 * 3 = 9", True),
     ("estado='estado'", True),
-    ("state='state' and 6000>5000", True)
+    ("state='state' and 6000>5000", True),
+    ("'banana' ^ 'b.n.n.'", True), #regexp "match" operator (actually re.search)
 ])
 
 def test_ensure_query_tree_for_expression_observes_precedence(expression, expected):
@@ -178,7 +179,8 @@ def test_programatic_query_works_with_reversed_ops(city_table):
     ("inhabitants__lt", 1_000_000, 13),
     ("inhabitants__ge", 1_221_979, 1),
     ("inhabitants__le", 1_221_979, 14),
-
+    ("city", "Guarulhos", 1),
+    ("city__match", "r[iu]", 4)
     ]
 )
 def test_kwarg_query_works_with_single_filter(kwarg, value, expected_rows, city_table):

@@ -56,7 +56,7 @@ class Token:
     kwarg_registry = {}
     literal = None
 
-    def __new__(cls, value=_sentinel):
+    def __new__(cls, value=_sentinel, **kwargs):
         """Specialized __new__ acts as a factory for whatever subclass best matches
         what is given as "value". Inheritance of subclasses, though, work as usual:
         it is just class instantiation for all subclasses that is centralized here.
@@ -78,7 +78,7 @@ class Token:
             else:
                 raise ValueError(f"No registered token type matches {value!r}")
         # Python won't call __init__ if what __new__ returns is not an strict instance of __class__:
-        instance.__init__(value)
+        instance.__init__(value, **kwargs)
         return instance
 
     def __init__(self, value):
@@ -212,6 +212,13 @@ class ModToken(BinOpToken):
     literal = "%"
     op = operator.mod
     _dunder_equiv = "__mod__"
+
+class MatchToken(BinOpToken):
+    precedence = 3
+    literal = "^"
+    op = staticmethod(lambda string, regexp: bool(re.search(regexp, string)))  # Order is reversed so that kwarg form works out of the box
+    _dunder_equiv = "__xor__"
+    _kwarg_name = "match"
 
 class AndToken(BinOpToken):
     precedence = -1
@@ -399,7 +406,7 @@ class LiteralStrToken(Token):
 
 def tokenize(query:str) -> "list[Token]":
     tokens =  [Token(g[0]) for g in re.findall(
-        r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|(?<=[^!><])=|<|>|>=|<=|\+|\*|\(|\)|/|-)""",
+        r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|(?<=[^!><])=|<|>|>=|<=|\+|\*|\(|\)|/|-|\^)""",
         query, flags=re.IGNORECASE)]
     return tokens
 
