@@ -218,7 +218,7 @@ class BaseTable(MutableSequence, CustomRowMixin):
         from rows.utils.query import Query, ensure_query
         if not isinstance(filter, Query):
             filter = ensure_query(filter)
-        if filter and not filter.bound:
+        if filter is not None and not filter.bound:
             # Query.bind consumes the class "filter_binding_type" attribute to know
             # how to render itself for use. Current values valid values are: anything truthfull
             # for expression resolvable filters, and "literal" to generate a string expression
@@ -254,7 +254,7 @@ class FilterableSequence(MutableSequence):
     # tied to "per record filtering"
     def __iter__(self):
         current_tick = self._tick
-        if not self.parent.filter:
+        if self.parent.filter is None:
             return iter(self.data)
         valid_rows_counter = 0
         for i, row in enumerate(self.data):
@@ -296,7 +296,7 @@ class FilterableSequence(MutableSequence):
         self.invalidate()
 
     def __len__(self):
-        if not self.parent.filter:
+        if self.parent.filter is None:
             return len(self.data)
         self.ensure_filtered()
         return len(self._row_map)
@@ -308,7 +308,7 @@ class FilterableSequence(MutableSequence):
         which calls insert for every row, and we do this after the filter object is set if it
         is passed on table creation.
         """
-        if self.parent.filter:
+        if self.parent.filter is not None:
             warnings.warn(D("""\
                 Inserting rows in a table with an active filter, will ignore the filter,
                 and can result in quadratically slow workflows.
@@ -336,7 +336,7 @@ class PerRecordFilterable(query.QueryableMixin, MutableSequence):
 
     @property
     def _rows(self):
-        if not self.filter:
+        if self.filter is None:
             return self._inner_rows.data
         return self._inner_rows
 
@@ -563,7 +563,7 @@ class SQLiteTable(BaseTable):
         # Use non string SQLiteOP instances to convey SQLITE functions or operations to be used in the SELECT clause
         escaped_fields = [field.value  if isinstance(field, SQLiteOp) else sqlite_escape_col(field) for field in fields or self.field_names]
         fields = ", ".join(escaped_fields)
-        if not self.filter:
+        if self.filter is None:
             where = ""
         else:
             where = f"WHERE {self.filter.value}"

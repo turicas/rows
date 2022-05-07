@@ -54,8 +54,8 @@ def test_ensure_query_builds_tree_for_2ops_expression():
     ("1 and 0 or 1", True),
     ("1 or 0 and 1", True),
     ("2 + 3 = 5 and 3 * 3 = 9", True),
-    ("estado='estado'", True),
-    ("state='state' and 6000>5000", True),
+    ("'estado'='estado'", True),
+    ("'state'='state' and 6000>5000", True),
     ("'banana' ^ 'b.n.n.'", True), #regexp "match" operator (actually re.search)
 ])
 

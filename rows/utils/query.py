@@ -18,15 +18,19 @@
 
 # from __future__ import unicode_literals
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence, MutableSequence
 from copy import deepcopy
 
+import enum
 import numbers
 import operator
 import random
 import re
 import sys
 
+class _sentinels(enum.Enum):
+    sequence = enum.auto()
+    record_not_set = enum.auto()
 
 def ensure_query(query):
     if query is None:
@@ -55,6 +59,7 @@ class Token:
     match_registry = []
     kwarg_registry = {}
     literal = None
+    _tree_strategy = "lazy"
 
     def __new__(cls, value=_sentinel, **kwargs):
         """Specialized __new__ acts as a factory for whatever subclass best matches
@@ -119,8 +124,8 @@ class BinOpToken(Token):
 
     right: Token = None
     left: Token = None
-    boundable = True
-    bound = False
+    boundable = False
+    #bound = False
 
     _dunder_equiv = None
 
@@ -143,10 +148,23 @@ class BinOpToken(Token):
         return self.exec()
 
     def exec(self):
-        if self.bound == 'literal':
+        if self.bound == 'literal' or not self.bound:
             # used when recreating a textual representation - for example: SQL Queries
             return f"{self.left.value} {self.literal} {self.right.value}"
         return self.op(self.left.value, self.right.value)
+
+    def __bool__(self):
+        return bool(self.value)
+
+    @property
+    def bound(self):
+        bright = getattr(self.right, "bound", None)
+        bleft = getattr(self.left, "bound", None)
+        # in each hyerachy of bound tokens, there should be just one bounding type
+        # differing from falsey values and from "True", which used for literals.
+        if bright and bleft:
+            return bright if not isinstance(bright, bool) else bleft
+        return False
 
 class EqualToken(BinOpToken):
     precedence = 0
@@ -220,6 +238,22 @@ class MatchToken(BinOpToken):
     _dunder_equiv = "__xor__"
     _kwarg_name = "match"
 
+
+class SequenceAssembler(BinOpToken):
+    _tree_strategy = "eager"
+    precedence = -0.5
+    literal = ","
+    op = staticmethod(lambda left, right: (left if isinstance(left, SequenceToken) else SequenceToken([left])).curry_append(right))
+    @property
+    def right(self):
+        return getattr(self, "_right", _sentinels.sequence)
+    @right.setter
+    def right(self, value):
+        self._right = value
+    @right.deleter
+    def right(self):
+        del self._right
+
 class AndToken(BinOpToken):
     precedence = -1
     literal = "AND"
@@ -231,6 +265,57 @@ class OrToken(BinOpToken):
     literal = "OR"
     op = staticmethod(lambda a, b: a or b)
     _dunder_equiv = "__or__"  # not quite. TBD: double check implementation
+
+
+
+class SequenceToken(Token, MutableSequence):
+    _accept_classes = Sequence
+    def __init__(self, value=_sentinels.sequence):
+        self.data = []
+        self.extend(value)
+
+    @classmethod
+    def _match(cls, value):
+        return isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray))
+
+    def curry_append(self, item):
+        if item is _sentinels.sequence:
+            return self
+        if not isinstance(item, Token):
+            item = Token(item)
+        self.data.append(item)
+        return self
+
+    def __getitem__(self, index):
+        return self.data[index]
+
+    def _check_and_convert(self, item, index=None):
+        if item is _sentinels.sequence or isinstance(index, slice) and isinstance(item, Sequence) and any(element is _sentinels.sequence for element in item):
+            raise ValueError("Can't add special sentinel object to sequence")
+        if not isinstance(item, Token):
+            item = Token(item)
+        return item
+
+    def __setitem__(self, index, item):
+        item = self._check_and_convert(item, index)
+        self.data[index] = item
+
+    def __delitem__(self, index):
+        del self.data[index]
+
+    def insert(self, index, item):
+        item = self._check_and_convert(item, index)
+        self.data.insert(index, item)
+
+    def __len__(self):
+        return len(self.data)
+
+    @property
+    def value(self):
+        return self
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}([{', '.join(repr(item) for item in self)}])"
 
 
 class FunctionToken(Token):
@@ -253,6 +338,7 @@ class FunctionToken(Token):
     def value(self):
         if not self.params:
             return f"{self.__class__.__name__}()"
+        # TODO: check if all params are bound or return string form.
         return self.op(*(param.value for param in self.params))
 
 # TODO: find a way for Function Tokens to "self document".
@@ -304,17 +390,20 @@ class OperableToken(Token):
 # textual token match is done in-order, so, if messed up, all numbers could finish up
 # as string-literals, for example.
 class LiteralToken(OperableToken):
-    pass
+    bound = True
 
 class FieldNameToken(OperableToken):
     boundable = True  # this attribute is used in Query.bind
-    bound = False
+    _bound = False
 
     @property
     def value(self):
         if not self.bound or self.bound == "literal":
             return self.name
-        return self.parent.filtering_strategy.get(self.name)
+        container = self.parent.filtering_strategy
+        if container is _sentinels.record_not_set:
+            return self.name
+        return container.get(self.name)
 
     @value.setter
     def value(self, value):
@@ -325,6 +414,17 @@ class FieldNameToken(OperableToken):
     @classmethod
     def _match(cls, value):
         return re.match(r"\w+", value) and not value[0].isdigit()
+
+    @property
+    def bound(self):
+        if hasattr(self, "parent"):
+            strategy = getattr(self.parent, "filtering_strategy", _sentinels.record_not_set)
+            return (strategy is not _sentinels.record_not_set) and self._bound
+        return False
+
+    @bound.setter
+    def bound(self, value):
+        self._bound = value
 
 
 
@@ -382,9 +482,8 @@ class LiteralFloatToken(LiteralToken):
             return False
         return True
 
-class LiteralStrToken(Token):
-    boundable = True
-    bound = False
+
+class LiteralStrToken(LiteralToken):
     def __init__(self, value, strip=True):
 
         # Sometimes this will be called by Token.__new__ after matching a quoted string.
@@ -406,7 +505,7 @@ class LiteralStrToken(Token):
 
 def tokenize(query:str) -> "list[Token]":
     tokens =  [Token(g[0]) for g in re.findall(
-        r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|(?<=[^!><])=|<|>|>=|<=|\+|\*|\(|\)|/|-|\^)""",
+        r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|(?<=[^!><])=|<|>|>=|<=|\+|\*|\(|\)|/|-|\^|,)""",
         query, flags=re.IGNORECASE)]
     return tokens
 
@@ -505,6 +604,8 @@ class TokenTree:
             root = tokens[1]
             root.left = tokens[0]
             root.right = tokens[2]
+            if root._tree_strategy == "eager":
+                root = root.value
         return root
 
 
@@ -586,6 +687,8 @@ class QueryBase(TokenTree):
             for child_node in node.params:
                 self._bind_nodes(child_node)
 
+    def __bool__(self):
+        return bool(self.root)
 
 # Why do we need "QueryBase"?
 # something is just telling me we might want to hook
@@ -620,7 +723,8 @@ class QueryableMixin:
         its value should be set, inside  __iter__'s  loop for unfiltered rows, to
         an object featuring a "get" method for column names in each record.
         """
-        return self._current_record
+        return getattr(self, "_current_record",  _sentinels.record_not_set)
+
 
     @current_record.setter
     def current_record(self, value):
