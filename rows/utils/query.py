@@ -29,6 +29,7 @@ import re
 import sys
 
 class _sentinels(enum.Enum):
+    empty = enum.auto()
     sequence = enum.auto()
     record_not_set = enum.auto()
 
@@ -51,8 +52,6 @@ So, the token hierarchy will likely have to be contained as an object,
 which plug-ins can then create a copy, enhance, and change.
 """
 
-_sentinel = object()
-
 class Token:
     # these are not just "tokens": they will also be structured as Query tree nodes, and perform ops.
     literal_registry = {}
@@ -61,7 +60,7 @@ class Token:
     literal = None
     _tree_strategy = "lazy"
 
-    def __new__(cls, value=_sentinel, **kwargs):
+    def __new__(cls, value=_sentinels.empty, **kwargs):
         """Specialized __new__ acts as a factory for whatever subclass best matches
         what is given as "value". Inheritance of subclasses, though, work as usual:
         it is just class instantiation for all subclasses that is centralized here.
@@ -138,7 +137,7 @@ class BinOpToken(Token):
             if dunder_equiv in __class__.dunder_registry:
                 # TBD: add a mechanism for BinOps to be able to register subclasses
                 # of themselves that can work for differnt types of binding-classes
-                raise NotImplementedError(f"More than one class trying to register as {dunder_equiv}. Class {cls.__qualname__}!")
+                raise TypeError(f"More than one class trying to register as {dunder_equiv}. Class {cls.__qualname__}!")
             else:
                 __class__.dunder_registry[dunder_equiv] = cls
         super().__init_subclass__(**kwargs)
@@ -160,6 +159,11 @@ class BinOpToken(Token):
     def bound(self):
         bright = getattr(self.right, "bound", None)
         bleft = getattr(self.left, "bound", None)
+
+        if self.right is _sentinels.sequence:
+            #sepcial case allowing creation of 1-item sequences with a trailing comma.
+            bright = True
+
         # in each hyerachy of bound tokens, there should be just one bounding type
         # differing from falsey values and from "True", which used for literals.
         if bright and bleft:
@@ -243,7 +247,26 @@ class SequenceAssembler(BinOpToken):
     _tree_strategy = "eager"
     precedence = -0.5
     literal = ","
-    op = staticmethod(lambda left, right: (left if isinstance(left, SequenceToken) else SequenceToken([left])).curry_append(right))
+    boundable = True
+
+    def exec(self):
+        # this will execute at NodeTree assmbling time, (see "eager"):
+        # no need to check if members are bound or not: there is no
+        # "SequenceAssimbler" on the NodeTree itself, just SequenceNode .
+        return self._op(self.left, self.right)
+
+    # anti-staticmethod :o)
+    def _op(self, left, right):
+        if not isinstance(left, SequenceToken):
+            left = SequenceToken([left])
+        if right is not _sentinels.sequence:
+            left.curry_append(right)
+        return left
+
+    @property
+    def op(self):
+        return NotImplemented
+
     @property
     def right(self):
         return getattr(self, "_right", _sentinels.sequence)
@@ -270,13 +293,15 @@ class OrToken(BinOpToken):
 
 class SequenceToken(Token, MutableSequence):
     _accept_classes = Sequence
+    boundable = False
+
     def __init__(self, value=_sentinels.sequence):
         self.data = []
         self.extend(value)
 
     @classmethod
     def _match(cls, value):
-        return isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray))
+        return isinstance(value, Sequence) and not isinstance(value, (str, bytes))
 
     def curry_append(self, item):
         if item is _sentinels.sequence:
@@ -314,8 +339,18 @@ class SequenceToken(Token, MutableSequence):
     def value(self):
         return self
 
+    def __eq__(self, other):
+        # compares the contents of the sequence with the contents of other sequence, even if
+        # of different class
+        return self.data == list(other)
+
     def __repr__(self):
         return f"{self.__class__.__name__}([{', '.join(repr(item) for item in self)}])"
+
+    @property
+    def bound(self):
+        return all(getattr(member, "bound", None) for member in self.data)
+
 
 
 class FunctionToken(Token):
@@ -591,7 +626,6 @@ class TokenTree:
         tokens = new_tokens
 
         # Fold binary operators for remaining tokens into a tree:
-
         if len(tokens) == 1:
             root = tokens[0]
         elif len(tokens) > 1:
@@ -605,7 +639,10 @@ class TokenTree:
 
             root = tokens[1]
             root.left = tokens[0]
-            root.right = tokens[2]
+            if len(tokens) == 3:
+                root.right = tokens[2]
+            elif not isinstance(root, SequenceAssembler):
+                raise ValueError(f"Malformed binary-op expression: {tokens}")
             if root._tree_strategy == "eager":
                 root = root.value
         return root
@@ -678,6 +715,9 @@ class QueryBase(TokenTree):
         return self
 
     def _bind_nodes(self, node):
+        # TODO: [maybe? probable!]
+        # pass the recursive binding responsibility to the nodes themselves
+        # this way new node-types can be written in plug-ins that will know how to behave.
         if getattr(node, "boundable", False):
             node.parent = self.parent
             node.bound = self.bound
@@ -687,6 +727,9 @@ class QueryBase(TokenTree):
             self._bind_nodes(node.right)
         if getattr(node, "params", ()):
             for child_node in node.params:
+                self._bind_nodes(child_node)
+        if isinstance(node, SequenceToken):
+            for child_node in node.data:
                 self._bind_nodes(child_node)
 
     def __bool__(self):

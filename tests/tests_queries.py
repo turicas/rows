@@ -63,6 +63,28 @@ def test_ensure_query_tree_for_expression_observes_precedence(expression, expect
     tree = query.ensure_query(expression)
     assert tree.value == expected
 
+@pytest.mark.parametrize(("input, expected"), [
+    ([42], [42]),
+    ([23, 42], [23,42]),
+    ([5, 23, 42], [5, 23,42]),
+    ((23, 42), [23,42]),
+    ((23, 42), [23,42]),
+    (bytearray((23, 42)), [23,42]),
+    ("42,", [42,]),
+    ("23, 42", [23,42]),
+    ("23, 42, 55", [23, 42, 55]),
+    ("5, 23, 42, 55", [5, 23, 42, 55]),
+    ("(23, 42)", [23,42]),
+   # ("5, 23 + 42, 55", [5, 65, 55]),
+    ]
+)
+def test_sequence_token_creation(input, expected):
+    if isinstance(input, str):
+        token = query.ensure_query(input).root
+    else:
+        token = query.Token(input)
+    assert token == expected
+
 
 def test_query_tree_is_deepcopiable():
     from copy import deepcopy
