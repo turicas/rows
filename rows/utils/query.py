@@ -544,10 +544,36 @@ class LiteralStrToken(LiteralToken):
 
 
 def tokenize(query:str) -> "list[Token]":
-    str_tokens = re.findall(
-        r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|(?<=[^!><])=|>=|<=|<|>|\+|\*|\(|\)|/|-|\^|,)""",
-        query, flags=re.IGNORECASE
-    )
+
+    # Do not change _order_.
+    # If "gt" comes before "ge", for example, the regexp will never extract ">=", just ">"
+    matchers = {
+        'or': 'OR',
+        'and': 'AND',
+        'float': '-?[0-9]+\\.[0-9]*(e-?[0-9]+)?',
+        'int_other_bases': '0[xob][0-9a-f_]+',
+        'int_base_10': '-?[0-9_]+',
+        'field_name': '[a-z]\\w+',
+        'literal_str': '((?P<quote>[\'"]).*?(?P=quote))',
+        'eq': '(?<=[^!><])=',
+        'ge': '>=',
+        'le': '<=',
+        'lt': '<',
+        'gt': '>',
+        'add': '\\+',
+        'mul': '\\*',
+        'open_bracket': '\\(',
+        'close_bracket': '\\)',
+        'div': '/',
+        'sub': '-',
+        'match': '\\^',
+        'sequence_builder': ','
+    }
+
+    # if one needs to run this on Python < 3.6, this is the final expression:
+    # r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|(?<=[^!><])=|>=|<=|<|>|\+|\*|\(|\)|/|-|\^|,)"""
+    # (updated on 2022-05-07)
+    str_tokens = re.findall(f"({'|'.join(matchers.values())})", query, flags=re.IGNORECASE)
     recognized_chars = "".join(c[0].replace(" ", "") for c in str_tokens)
     space_free_query = re.sub(r"\s", "", query)
     if recognized_chars != space_free_query:
