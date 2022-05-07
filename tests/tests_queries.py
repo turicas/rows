@@ -75,7 +75,7 @@ def test_ensure_query_tree_for_expression_observes_precedence(expression, expect
     ("23, 42, 55", [23, 42, 55]),
     ("5, 23, 42, 55", [5, 23, 42, 55]),
     ("(23, 42)", [23,42]),
-   # ("5, 23 + 42, 55", [5, 65, 55]),
+    ("5, 23 + 42, 55", [5, 65, 55]),
     ]
 )
 def test_sequence_token_creation(input, expected):
