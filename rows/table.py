@@ -614,7 +614,7 @@ class SQLiteTable(BaseTable):
 
     def __iter__(self):
         for row in self._execute(self._build_filtered_select(), data_type="list"):
-            yield _row_for_output(row)
+            yield self._row_for_output(row)
 
     def __len__(self):
         from rows.plugins.sqlite import SQLiteOp

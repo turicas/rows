@@ -484,6 +484,8 @@ class LiteralFloatToken(LiteralToken):
 
 
 class LiteralStrToken(LiteralToken):
+    boundable = True
+
     def __init__(self, value, strip=True):
 
         # Sometimes this will be called by Token.__new__ after matching a quoted string.
