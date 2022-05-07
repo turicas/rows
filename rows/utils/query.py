@@ -249,18 +249,21 @@ class SequenceAssembler(BinOpToken):
     literal = ","
     boundable = True
 
-    def exec(self):
+    def exec(self, extend=False):
         # this will execute at NodeTree assmbling time, (see "eager"):
         # no need to check if members are bound or not: there is no
         # "SequenceAssimbler" on the NodeTree itself, just SequenceNode .
-        return self._op(self.left, self.right)
+        return self._op(self.left, self.right, extend)
 
     # anti-staticmethod :o)
-    def _op(self, left, right):
+    def _op(self, left, right, extend=False):
         if not isinstance(left, SequenceToken):
             left = SequenceToken([left])
         if right is not _sentinels.sequence:
-            left.curry_append(right)
+            if extend and isinstance(right, SequenceToken):
+                left.extend(right)
+            else:
+                left.curry_append(right)
         return left
 
     @property
@@ -337,7 +340,7 @@ class SequenceToken(Token, MutableSequence):
 
     @property
     def value(self):
-        return self
+        return [item.value for item in self]
 
     def __eq__(self, other):
         # compares the contents of the sequence with the contents of other sequence, even if
@@ -541,9 +544,15 @@ class LiteralStrToken(LiteralToken):
 
 
 def tokenize(query:str) -> "list[Token]":
-    tokens =  [Token(g[0]) for g in re.findall(
-        r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|(?<=[^!><])=|<|>|>=|<=|\+|\*|\(|\)|/|-|\^|,)""",
-        query, flags=re.IGNORECASE)]
+    str_tokens = re.findall(
+        r"""(OR|AND|-?[0-9]+\.[0-9]*(e-?[0-9]+)?|0[xob][0-9a-f_]+|-?[0-9_]+|[a-z]\w+|((?P<quote>['"]).*?(?P=quote))|(?<=[^!><])=|>=|<=|<|>|\+|\*|\(|\)|/|-|\^|,)""",
+        query, flags=re.IGNORECASE
+    )
+    recognized_chars = "".join(c[0].replace(" ", "") for c in str_tokens)
+    space_free_query = re.sub(r"\s", "", query)
+    if recognized_chars != space_free_query:
+        raise ValueError(f"Unrecognized characters in string for query:{set(space_free_query) - set(recognized_chars)}")
+    tokens =  [Token(g[0]) for g in str_tokens]
     return tokens
 
 
@@ -623,8 +632,8 @@ class TokenTree:
         if chomping:
             raise ValueError(f"Missing parameters in {last_function[-1].literal} function call in token sequence {tokens}")
 
+        sequence_member_has_subexpr = False
         tokens = new_tokens
-
         # Fold binary operators for remaining tokens into a tree:
         if len(tokens) == 1:
             root = tokens[0]
@@ -632,9 +641,11 @@ class TokenTree:
             if not all(isinstance(token, BinOpToken) for token in tokens[1::2]):
                 raise ValueError(f"Malformed token stream {tokens}")
             while len(tokens) > 3:
+                sequence_member_has_subexpr = False
                 if tokens[1].precedence >= tokens[3].precedence:
                     tokens = [TokenTree.node_tree_from_tokens(tokens[0:3]), *tokens[3:]]
                 else:
+                    sequence_member_has_subexpr = True  # <- used to indicate there is a subtree when creating a SequenceToken
                     tokens = [*tokens[0:2], TokenTree.node_tree_from_tokens(tokens[2:])]
 
             root = tokens[1]
@@ -644,7 +655,9 @@ class TokenTree:
             elif not isinstance(root, SequenceAssembler):
                 raise ValueError(f"Malformed binary-op expression: {tokens}")
             if root._tree_strategy == "eager":
-                root = root.value
+                # For now, this is just "SequenceAssembler". And it needs to know
+                # if we are folding [1, 2 + 2, 3] or [1, 2, [2, 3]]
+                root = root.exec(extend=sequence_member_has_subexpr)
         return root
 
 

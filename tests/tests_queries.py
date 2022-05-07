@@ -49,6 +49,8 @@ def test_ensure_query_builds_tree_for_2ops_expression():
     ("20 >= 10", True),
     ("20 < 10", False),
     ("20 <= 10", False),
+    ("10 <= 10", True),
+    ("10 >= 10", True),
     ("1 or 0", True),
     ("1 and 0", False),
     ("1 and 0 or 1", True),
@@ -76,6 +78,8 @@ def test_ensure_query_tree_for_expression_observes_precedence(expression, expect
     ("5, 23, 42, 55", [5, 23, 42, 55]),
     ("(23, 42)", [23,42]),
     ("5, 23 + 42, 55", [5, 65, 55]),
+    ("5, (23, 42), 55", [5, [23, 42], 55]),
+    ("5, (23, 42, (55,)), 555", [5, [23, 42, [55]], 555]),
     ]
 )
 def test_sequence_token_creation(input, expected):
@@ -83,7 +87,15 @@ def test_sequence_token_creation(input, expected):
         token = query.ensure_query(input).root
     else:
         token = query.Token(input)
-    assert token == expected
+    if all(isinstance(item, query.LiteralToken) for item in token):
+        # we get this for free: literal tokens should compare equal to their unwrapped counterparts:
+        assert token == expected
+    assert token.value == expected
+
+
+def test_sequence_token_creation_errors_on_square_bracket():
+    with pytest.raises(ValueError):
+        query.ensure_query("[23, 42]")
 
 
 def test_query_tree_is_deepcopiable():
