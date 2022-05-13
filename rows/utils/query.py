@@ -331,6 +331,7 @@ class ContainsToken(BinOpToken):
     literal = "IN"
     op = staticmethod(lambda left, right: left in right)
     _dunder_equiv = "__contains__"
+    _kwarg_name = "in"
 
 
 class SequenceToken(Token, MutableSequence):
