@@ -245,12 +245,12 @@ class MatchToken(BinOpToken):
 
 class SequenceAssembler(BinOpToken):
     _tree_strategy = "eager"
-    precedence = -0.5
+    precedence = -2
     literal = ","
     boundable = True
 
     def exec(self, extend=False):
-        # this will execute at NodeTree assmbling time, (see "eager"):
+        # this will execute at NodeTree assembling time, (see "eager"):
         # no need to check if members are bound or not: there is no
         # "SequenceAssimbler" on the NodeTree itself, just SequenceNode .
         return self._op(self.left, self.right, extend)
@@ -281,13 +281,13 @@ class SequenceAssembler(BinOpToken):
         del self._right
 
 class AndToken(BinOpToken):
-    precedence = -1
+    precedence = -3
     literal = "AND"
     op = staticmethod(lambda a, b: a and b)
     _dunder_equiv = "__and__"  # not quite. TBD: double check implementation
 
 class OrToken(BinOpToken):
-    precedence = -2
+    precedence = -4
     literal = "OR"
     op = staticmethod(lambda a, b: a or b)
     _dunder_equiv = "__or__"  # not quite. TBD: double check implementation
@@ -547,13 +547,17 @@ def tokenize(query:str) -> "list[Token]":
 
     # Do not change _order_.
     # If "gt" comes before "ge", for example, the regexp will never extract ">=", just ">"
+    # (on the other hand, order here does not imply operator precedence. Some of the precedence
+    # is hardcoded in the TokenTree builder, and the others are the "precedence" attribute
+    # on each Token subclass)
     matchers = {
-        'or': 'OR',
-        'and': 'AND',
+        'or': r'\bOR\b',
+        'and': r'\bAND\b',
+        'in': r'\bIN\b',
         'float': '-?[0-9]+\\.[0-9]*(e-?[0-9]+)?',
         'int_other_bases': '0[xob][0-9a-f_]+',
         'int_base_10': '-?[0-9_]+',
-        'field_name': '[a-z]\\w+',
+        'field_name': '[a-z]\\w*\\b',
         'literal_str': '((?P<quote>[\'"]).*?(?P=quote))',
         'eq': '(?<=[^!><])=',
         'ge': '>=',

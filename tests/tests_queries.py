@@ -80,6 +80,11 @@ def test_ensure_query_tree_for_expression_observes_precedence(expression, expect
     ("5, 23 + 42, 55", [5, 65, 55]),
     ("5, (23, 42), 55", [5, [23, 42], 55]),
     ("5, (23, 42, (55,)), 555", [5, [23, 42, [55]], 555]),
+    ("a,b,c", ["a", "b", "c"]),
+    ("aa,bb,cc", ["aa", "bb", "cc"]),
+    ("a, b, c", ["a", "b", "c"]),
+    ("'a', 'b', 'c'", ["a", "b", "c"]),
+    ("'aaa', 'bbb', 'ccc'", ["aaa", "bbb", "ccc"]),
     ]
 )
 def test_sequence_token_creation(input, expected):
