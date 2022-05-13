@@ -19,7 +19,7 @@
 # from __future__ import unicode_literals
 
 from collections.abc import Mapping, Sequence, MutableSequence
-from copy import deepcopy
+from copy import copy, deepcopy
 
 import enum
 import numbers
@@ -59,6 +59,18 @@ class Token:
     kwarg_registry = {}
     literal = None
     _tree_strategy = "lazy"
+
+    #: class attribute to denote instances of itself class will not change
+    #: when bound to an object that will be queried.
+    #: If 'true', upon being "bound", the instance have to produce a
+    #: copy of itself, that will be able to provide informaton specific the bound object
+    #: The bound instances will populate the "bound" and "binding_type" instance attributes
+    boundable = False
+    #: Instance attribute to denote whether this token is bound to a particular
+    #: object with which it will interact when resolving its value
+    bound = False
+    #: "How" to resolve its value, self is bound.
+    binding_type = None
 
     def __new__(cls, value=_sentinels.empty, **kwargs):
         """Specialized __new__ acts as a factory for whatever subclass best matches
@@ -105,6 +117,17 @@ class Token:
     def exec(self):
         return self.value
 
+    def bind(self, parent, binding_type):
+        # Any new node that has children node as operators of any kind,
+        # must ensure this method is called in any of its children
+        # when itself is bound.
+        if not self.boundable:
+            return self
+        bound_instance = copy(self)
+        bound_instance.bound = True
+        bound_instance.binding_type = binding_type
+        return bound_instance
+
     def __repr__(self):
         return f"{self.__class__.__name__}({getattr(self, 'literal_value', None) or self.value!r})"
 
@@ -123,8 +146,7 @@ class BinOpToken(Token):
 
     right: Token = None
     left: Token = None
-    boundable = False
-    #bound = False
+    boundable = True
 
     _dunder_equiv = None
 
@@ -147,13 +169,19 @@ class BinOpToken(Token):
         return self.exec()
 
     def exec(self):
-        if self.bound == 'literal' or not self.bound:
+        if self.binding_type == 'literal' or not self.bound:
             # used when recreating a textual representation - for example: SQL Queries
             return f"{self.left.value} {self.literal} {self.right.value}"
         return self.op(self.left.value, self.right.value)
 
     def __bool__(self):
         return bool(self.value)
+
+    def bind(self, parent, binding_type):
+        bound_instance = super().bind(parent, binding_type)
+        bound_instance.left = self.left.bind(parent, binding_type)
+        bound_instance.right = self.right.bind(parent, binding_type)
+        return bound_instance
 
     @property
     def bound(self):
@@ -164,11 +192,16 @@ class BinOpToken(Token):
             #sepcial case allowing creation of 1-item sequences with a trailing comma.
             bright = True
 
-        # in each hyerachy of bound tokens, there should be just one bounding type
-        # differing from falsey values and from "True", which used for literals.
+        # in each hierarchy of bound tokens, there should be just one bounding type
+        # differing from falsey values and from "True", which is used for literals.
         if bright and bleft:
             return bright if not isinstance(bright, bool) else bleft
         return False
+
+    @bound.setter
+    def bound(self, value):
+        # bound value always depend on children.
+        pass
 
 class EqualToken(BinOpToken):
     precedence = 0
@@ -293,6 +326,11 @@ class OrToken(BinOpToken):
     _dunder_equiv = "__or__"  # not quite. TBD: double check implementation
 
 
+class ContainsToken(BinOpToken):
+    precedence = -1
+    literal = "IN"
+    op = staticmethod(lambda left, right: left in right)
+    _dunder_equiv = "__contains__"
 
 class SequenceToken(Token, MutableSequence):
     _accept_classes = Sequence
@@ -354,7 +392,14 @@ class SequenceToken(Token, MutableSequence):
     def bound(self):
         return all(getattr(member, "bound", None) for member in self.data)
 
+    @bound.setter
+    def bound(self, value):
+        pass
 
+    def bind(self, parent, binding_type):
+        bound_instance = super().bind(parent, binding_type)
+        bound_instance.data = [item.bind(parent, binding_type) for item in self.data]
+        return bound_instance
 
 class FunctionToken(Token):
     """Pre-defined function literals
@@ -378,6 +423,11 @@ class FunctionToken(Token):
             return f"{self.__class__.__name__}()"
         # TODO: check if all params are bound or return string form.
         return self.op(*(param.value for param in self.params))
+
+    def bind(self, parent, binding_type):
+        bound_instance = super().bind(parent, binding_type)
+        bound_instance.params = [param.bind(parent, binding_type) for param in self.params]
+        return bound_instance
 
 # TODO: find a way for Function Tokens to "self document".
 # An ordinary function can yield all valid fixed-literal tokens
@@ -428,6 +478,7 @@ class OperableToken(Token):
 # textual token match is done in-order, so, if messed up, all numbers could finish up
 # as string-literals, for example.
 class LiteralToken(OperableToken):
+    boundable = True
     bound = True
 
 class FieldNameToken(OperableToken):
@@ -436,7 +487,7 @@ class FieldNameToken(OperableToken):
 
     @property
     def value(self):
-        if not self.bound or self.bound == "literal":
+        if not self.bound or self.binding_type == "literal":
             return self.name
         container = self.parent.filtering_strategy
         if container is _sentinels.record_not_set:
@@ -453,16 +504,21 @@ class FieldNameToken(OperableToken):
     def _match(cls, value):
         return re.match(r"\w+", value) and not value[0].isdigit()
 
-    @property
-    def bound(self):
-        if hasattr(self, "parent"):
-            strategy = getattr(self.parent, "filtering_strategy", _sentinels.record_not_set)
-            return (strategy is not _sentinels.record_not_set) and self._bound
-        return False
+    def bind(self, parent, binding_type):
+        bound_instance = super().bind(parent, binding_type)
+        bound_instance.parent = parent
+        return bound_instance
 
-    @bound.setter
-    def bound(self, value):
-        self._bound = value
+    #@property
+    #def bound(self):
+        #if hasattr(self, "parent"):
+            #strategy = getattr(self.parent, "filtering_strategy", _sentinels.record_not_set)
+            #return (strategy is not _sentinels.record_not_set) and self._bound
+        #return False
+
+    #@bound.setter
+    #def bound(self, value):
+        #self._bound = value
 
 
 
@@ -538,7 +594,7 @@ class LiteralStrToken(LiteralToken):
 
     @property
     def value(self):
-        if self.bound == "literal":
+        if self.binding_type == "literal":
             return repr(self._value)
         return self._value
 
@@ -753,27 +809,12 @@ class QueryBase(TokenTree):
         binding_type = getattr(parent, "filter_binding_type", True)
         self = deepcopy(self)
         self.parent = parent
-        self.bound = binding_type
-        self._bind_nodes(self.root)
+        self.bound = True
+        self.binding_type = binding_type
+        # This retrieves a deep-copy with new instances of every boundable node.
+        # imutable literal nodes are not copied:
+        self.root = self.root.bind(parent, binding_type)
         return self
-
-    def _bind_nodes(self, node):
-        # TODO: [maybe? probable!]
-        # pass the recursive binding responsibility to the nodes themselves
-        # this way new node-types can be written in plug-ins that will know how to behave.
-        if getattr(node, "boundable", False):
-            node.parent = self.parent
-            node.bound = self.bound
-        if getattr(node, "left", None):
-            self._bind_nodes(node.left)
-        if getattr(node, "right", None):
-            self._bind_nodes(node.right)
-        if getattr(node, "params", ()):
-            for child_node in node.params:
-                self._bind_nodes(child_node)
-        if isinstance(node, SequenceToken):
-            for child_node in node.data:
-                self._bind_nodes(child_node)
 
     def __bool__(self):
         return bool(self.root)

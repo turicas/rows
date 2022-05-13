@@ -234,5 +234,16 @@ def test_kwarg_query_works_with_combining_filters(city_table):
     city_table.filter = Query(inhabitants__ge = 100_000, inhabitants__le = 200_000)
     assert len(city_table) == 1
 
+@pytest.mark.parametrize("table_class", [Table, FlexibleTable, SQLiteTable])
+def test_query_in_operator_can_match_field_to_given_sequence(table_class, city_table_data):
+    city_table = table_class(city_table_data[0])
+    city_table.extend(city_table_data[1])
 
+    city_table.filter = "city IN ('Rosana', 'Irapuru', 'Garça')"
+    assert len(city_table) == 3
+
+
+def test_query_in_operator_can_match_literal_to_fieldname(city_table):
+    city_table.filter = "'ru' in city" # Guarulhos, Irapuru
+    assert len(city_table) == 2
 
