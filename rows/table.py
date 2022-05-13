@@ -519,7 +519,7 @@ class FlexibleTable(Table):
 
 
 class SQLiteTable(BaseTable):
-    filter_binding_type = "literal"
+    filter_binding_type = "sql"
 
 
     def __init__(self, fields, meta=None, **kwargs):

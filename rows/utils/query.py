@@ -169,7 +169,7 @@ class BinOpToken(Token):
         return self.exec()
 
     def exec(self):
-        if self.binding_type == 'literal' or not self.bound:
+        if self.binding_type in ("literal", "sql") or not self.bound:
             # used when recreating a textual representation - for example: SQL Queries
             return f"{self.left.value} {self.literal} {self.right.value}"
         return self.op(self.left.value, self.right.value)
@@ -332,9 +332,10 @@ class ContainsToken(BinOpToken):
     op = staticmethod(lambda left, right: left in right)
     _dunder_equiv = "__contains__"
 
+
 class SequenceToken(Token, MutableSequence):
     _accept_classes = Sequence
-    boundable = False
+    boundable = True
 
     def __init__(self, value=_sentinels.sequence):
         self.data = []
@@ -378,6 +379,9 @@ class SequenceToken(Token, MutableSequence):
 
     @property
     def value(self):
+        if self.bound and self.binding_type == "sql":
+            return f"({', '.join(item.value for item in self)})"
+
         return [item.value for item in self]
 
     def __eq__(self, other):
@@ -487,7 +491,7 @@ class FieldNameToken(OperableToken):
 
     @property
     def value(self):
-        if not self.bound or self.binding_type == "literal":
+        if not self.bound or self.binding_type in ("literal", "sql"):
             return self.name
         container = self.parent.filtering_strategy
         if container is _sentinels.record_not_set:
@@ -594,7 +598,7 @@ class LiteralStrToken(LiteralToken):
 
     @property
     def value(self):
-        if self.binding_type == "literal":
+        if self.binding_type in ("literal", "sql"):
             return repr(self._value)
         return self._value
 
