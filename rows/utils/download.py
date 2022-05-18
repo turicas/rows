@@ -77,12 +77,7 @@ class WgetDownloader(Downloader):
             self._commands.append(cmd)
 
 
-class Aria2cDownloader(Downloader):
-    name = "aria2c"
-
-    def __init__(self, connections=4, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._connections = connections
+class Aria2cMixin:
 
     def _build_parameters(self):
         parameters = ["--user-agent", self.user_agent]
@@ -96,6 +91,13 @@ class Aria2cDownloader(Downloader):
             parameters.extend(["--max-tries", str(self._max_tries)])
         return parameters
 
+class Aria2cDownloader(Aria2cMixin, Downloader):
+    name = "aria2c"
+
+    def __init__(self, connections=4, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._connections = connections
+
     def _add_download(self, url, filename):
         cmd = [
             "aria2c",
@@ -107,7 +109,7 @@ class Aria2cDownloader(Downloader):
             self._commands.append(cmd)
 
 
-class Aria2cFileDownloader(Downloader):
+class Aria2cFileDownloader(Aria2cMixin, Downloader):
     name = "aria2c-file"
 
     def __init__(self, connections=4, *args, **kwargs):
