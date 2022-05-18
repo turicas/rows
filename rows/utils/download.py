@@ -77,7 +77,14 @@ class WgetDownloader(Downloader):
             self._commands.append(cmd)
 
 
-class Aria2cMixin:
+class Aria2cDownloader(Downloader):
+    name = "aria2c"
+
+    def __init__(self, max_concurrent_downloads=4, max_connections_per_download=4, split_download_parts=4, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._max_connections_per_download = max_connections_per_download
+        self._max_concurrent_downloads = max_concurrent_downloads
+        self._split_download_parts = split_download_parts
 
     def _build_parameters(self):
         parameters = ["--user-agent", self.user_agent]
@@ -85,18 +92,15 @@ class Aria2cMixin:
             parameters.extend(["--connect-timeout", str(self._timeout)])
         if self._continue_paused:
             parameters.append("-c")
-        if self._connections is not None:
-            parameters.extend(["-s", str(self._connections), "-x", str(self._connections)])
+        if self._max_concurrent_downloads is not None:
+            parameters.extend(["-j", str(self._max_concurrent_downloads)])
+        if self._max_connections_per_download is not None:
+            parameters.extend(["-x", str(self._max_connections_per_download)])
+        if self._split_download_parts is not None:
+            parameters.extend(["-s", str(self._split_download_parts)])
         if self._max_tries is not None:
             parameters.extend(["--max-tries", str(self._max_tries)])
         return parameters
-
-class Aria2cDownloader(Aria2cMixin, Downloader):
-    name = "aria2c"
-
-    def __init__(self, connections=4, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._connections = connections
 
     def _add_download(self, url, filename):
         cmd = [
@@ -109,13 +113,12 @@ class Aria2cDownloader(Aria2cMixin, Downloader):
             self._commands.append(cmd)
 
 
-class Aria2cFileDownloader(Aria2cMixin, Downloader):
+class Aria2cFileDownloader(Aria2cDownloader):
     name = "aria2c-file"
 
-    def __init__(self, connections=4, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._aria_files = []
-        self._connections = connections
 
     def _add_download(self, url, filename):
         data = (url, filename.parent)
