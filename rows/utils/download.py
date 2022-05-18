@@ -15,12 +15,13 @@ class DownloadLink:
 class Downloader:
     name = None
 
-    def __init__(self, user_agent="Mozilla", continue_paused=True, timeout=10):
+    def __init__(self, user_agent="Mozilla", continue_paused=True, timeout=10, max_tries=5):
         self.user_agent = user_agent
         self._commands = []
         self._directories = set()
         self._continue_paused = continue_paused
         self._timeout = timeout
+        self._max_tries = max_tries
 
     @classmethod
     def subclasses(cls):
@@ -69,6 +70,8 @@ class WgetDownloader(Downloader):
             parameters.extend(["-t", str(self._timeout)])
         if self._continue_paused:
             parameters.append("-c")
+        if self._max_tries:
+            parameters.extend(["-t", str(self._max_tries)])
         cmd = ["wget", "-O", str(filename), *parameters, url]
         if cmd not in self._commands:
             self._commands.append(cmd)
@@ -81,7 +84,7 @@ class Aria2cDownloader(Downloader):
         super().__init__(*args, **kwargs)
         self._connections = connections
 
-    def _add_download(self, url, filename):
+    def _build_parameters(self):
         parameters = ["--user-agent", self.user_agent]
         if self._timeout is not None:
             parameters.extend(["--connect-timeout", str(self._timeout)])
@@ -89,9 +92,14 @@ class Aria2cDownloader(Downloader):
             parameters.append("-c")
         if self._connections is not None:
             parameters.extend(["-s", str(self._connections), "-x", str(self._connections)])
+        if self._max_tries is not None:
+            parameters.extend(["--max-tries", str(self._max_tries)])
+        return parameters
+
+    def _add_download(self, url, filename):
         cmd = [
             "aria2c",
-            *parameters,
+            *self._build_parameters(),
             "--dir", str(filename.parent),
             url,
         ]
@@ -120,16 +128,9 @@ class Aria2cFileDownloader(Downloader):
                 output.write(f"{download_url}\n  dir={download_path}\n")
         self._temp_filename = Path(tmp.name)
 
-        parameters = ["--user-agent", self.user_agent]
-        if self._timeout is not None:
-            parameters.extend(["--connect-timeout", str(self._timeout)])
-        if self._continue_paused:
-            parameters.append("-c")
-        if self._connections is not None:
-            parameters.extend(["-s", str(self._connections), "-x", str(self._connections)])
         cmd = [
             "aria2c",
-            *parameters,
+            *self._build_parameters(),
             "--dir", str(self._temp_filename.parent),
             "--input-file", tmp.name,
         ]
