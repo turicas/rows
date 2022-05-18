@@ -111,7 +111,7 @@ def get_psql_copy_command(
     if header is None:
         header = ""
     else:
-        header = ", ".join(fields.slug(field_name) for field_name in header)
+        header = ", ".join(f'"{field_name}"' for field_name in header)
         header = "({header}) ".format(header=header)
     copy = (
         r"\copy {source} {header}{direction} STDIN WITH("
@@ -439,7 +439,7 @@ class PostgresCopy:
             field_names = list(schema.keys())
         else:
             reader = csv.reader(io.StringIO(sample), dialect=dialect)
-            csv_field_names = [fields.slug(field_name) for field_name in next(reader)]
+            csv_field_names = [field_name for field_name in next(reader)]
             if schema is None:
                 field_names = csv_field_names
             else:
@@ -505,6 +505,9 @@ class PostgresCopy:
                     schema, table_name, unlogged=unlogged, access_method=access_method
                 ),
             )
+
+        # TODO: if reading from fobj, the schema must be in the same order as
+        # the file
 
         return self._import(
             fobj=fobj,
