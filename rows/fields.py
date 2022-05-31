@@ -15,8 +15,6 @@
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import unicode_literals
-
 import binascii
 import datetime
 import json
@@ -100,10 +98,9 @@ class Field(object):
 
         if isinstance(value, cls.TYPE):
             return value
-        elif is_null(value):
+        if is_null(value):
             return None
-        else:
-            return value
+        return value
 
 
 class BinaryField(Field):
@@ -112,35 +109,34 @@ class BinaryField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (six.binary_type,)
+    TYPE = (bytes,)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
-        if value is not None:
-            if not isinstance(value, six.binary_type):
-                value_error(value, cls)
-            else:
-                try:
-                    return b64encode(value).decode("ascii")
-                except (TypeError, binascii.Error):
-                    return value
-        else:
+        if value is None:
             return ""
+        if not isinstance(value, (bytes, bytearray)):
+            value_error(value, cls)
+        try:
+            return b64encode(value).decode("ascii")
+        except (TypeError, binascii.Error):
+            return value
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        if value is not None:
-            if isinstance(value, six.binary_type):
-                return value
-            elif isinstance(value, six.text_type):
-                try:
-                    return b64decode(value)
-                except (TypeError, ValueError, binascii.Error):
-                    raise ValueError("Can't decode base64")
-            else:
-                value_error(value, cls)
-        else:
+        if value is None:
             return b""
+        if isinstance(value, bytes):
+            return value
+        elif isinstance(value, bytearray):
+            return bytes(value)
+        elif isinstance(value, str):
+            try:
+                return b64decode(value)
+            except (TypeError, ValueError, binascii.Error):
+                raise ValueError("Can't decode base64")
+        else:
+            value_error(value, cls)
 
 
 class UUIDField(Field):
@@ -153,13 +149,12 @@ class UUIDField(Field):
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
-        if value is not None:
-            if not isinstance(value, self.TYPE):
-                value_error(value, cls)
-            else:
-                return str(value)
-        else:
+        if value is None:
             return ""
+        if not isinstance(value, self.TYPE):
+            value_error(value, cls)
+        else:
+            return str(value)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -211,29 +206,28 @@ class IntegerField(Field):
     TYPE = (int,)
 
     @classmethod
-    def serialize(cls, value, *args, **kwargs):
+    def serialize(cls, value, *args, grouping=None, **kwargs):
         if value is None:
             return ""
 
         if SHOULD_NOT_USE_LOCALE:
-            return six.text_type(value)
+            return str(value)
         else:
-            grouping = kwargs.get("grouping", None)
             return locale.format_string("%d", value, grouping=grouping)
 
     @classmethod
-    def deserialize(cls, value, *args, **kwargs):
+    def deserialize(cls, value, *args, rounding=False, **kwargs):
         value = super(IntegerField, cls).deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
         elif isinstance(value, float):
             new_value = int(value)
-            if new_value != value:
-                raise ValueError("It's float, not integer")
-            else:
-                value = new_value
-
+            if new_value != value and not rounding:
+                raise ValueError("Can't convert float value {value:%.03f} to integer without rounding")
+            value = new_value
         value = as_string(value)
+        if value != "0" and value.startswith("0"):
+            raise ValueError("It's a string, not an integer")
         return int(value) if SHOULD_NOT_USE_LOCALE else locale.atoi(value)
 
 
@@ -246,19 +240,18 @@ class FloatField(Field):
     TYPE = (float,)
 
     @classmethod
-    def serialize(cls, value, *args, **kwargs):
+    def serialize(cls, value, *args, grouping=None, **kwargs):
         if value is None:
             return ""
 
         if SHOULD_NOT_USE_LOCALE:
-            return six.text_type(value)
+            return str(value)
         else:
-            grouping = kwargs.get("grouping", None)
             return locale.format_string("%f", value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(FloatField, cls).deserialize(value)
+        value = super().deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
 
@@ -278,15 +271,15 @@ class DecimalField(Field):
     TYPE = (Decimal,)
 
     @classmethod
-    def serialize(cls, value, *args, **kwargs):
+    def serialize(cls, value, *args, grouping=None, **kwargs):
         if value is None:
             return ""
 
-        value_as_string = six.text_type(value)
+        value_as_string = str(value)
         if SHOULD_NOT_USE_LOCALE:
             return value_as_string
         else:
-            grouping = kwargs.get("grouping", None)
+            # TBD: check locale option for decimal separator.
             has_decimal_places = value_as_string.find(".") != -1
             if not has_decimal_places:
                 string_format = "%d"
@@ -301,7 +294,7 @@ class DecimalField(Field):
         if value is None or isinstance(value, cls.TYPE):
             return value
         elif type(value) in (int, float):
-            return Decimal(six.text_type(value))
+            return Decimal(str(value))
 
         if SHOULD_NOT_USE_LOCALE:
             try:
@@ -358,8 +351,8 @@ class PercentField(DecimalField):
         elif value == Decimal("0"):
             return "0.00%"
 
-        value = Decimal(six.text_type(value * 100)[:-2])
-        value = super(PercentField, cls).serialize(value, *args, **kwargs)
+        value = Decimal(str(value * 100)[:-2])
+        value = super().serialize(value, *args, **kwargs)
         return "{}%".format(value)
 
     @classmethod
@@ -381,17 +374,22 @@ class DateField(Field):
 
     Is not locale-aware (does not need to be)
     """
+    # TBD: add support to custom date format
+    # TBD: add tz support
 
     TYPE = (datetime.date,)
     INPUT_FORMAT = "%Y-%m-%d"
     OUTPUT_FORMAT = "%Y-%m-%d"
 
+
+    # For custom date format, these methods might work as both instance
+    # and class methods, and retrieve the *_FORMAT strings from the instance.
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is None:
             return ""
 
-        return six.text_type(value.strftime(cls.OUTPUT_FORMAT))
+        return str(value.strftime(cls.OUTPUT_FORMAT))
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -410,7 +408,8 @@ class DatetimeField(Field):
 
     Is not locale-aware (does not need to be)
     """
-
+    # TBD: add support to custom datetime format
+    # TBD: add tz support
     TYPE = (datetime.datetime,)
     DATETIME_REGEXP = re.compile(
         "^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]" "([0-9]{2}):([0-9]{2}):([0-9]{2})$"
@@ -421,11 +420,11 @@ class DatetimeField(Field):
         if value is None:
             return ""
 
-        return six.text_type(value.isoformat())
+        return value.isoformat()
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(DatetimeField, cls).deserialize(value)
+        value = super().deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
 
@@ -444,7 +443,7 @@ class TextField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (six.text_type,)
+    TYPE = (str,)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -469,11 +468,11 @@ class EmailField(TextField):
         if value is None:
             return ""
 
-        return six.text_type(value)
+        return str(value)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(EmailField, cls).deserialize(value)
+        value = super().deserialize(value)
         if value is None or not value.strip():
             return None
 
@@ -506,26 +505,35 @@ class JSONField(Field):
 
 
 def as_string(value):
-    if isinstance(value, six.binary_type):
+    if isinstance(value, (bytes, bytearray)):
         raise ValueError("Binary is not supported")
-    elif isinstance(value, six.text_type):
+    elif isinstance(value, str):
         return value
-    else:
-        return six.text_type(value)
+    return str(value)
 
 
 def is_null(value):
     if value is None:
         return True
-    elif type(value) is six.binary_type:
+    if isinstance(value, (bytes, bytearray)):
         value = value.strip().lower()
-        return not value or value in NULL_BYTES
+        return True if not value else bytes(value) in NULL_BYTES
     else:
         value_str = as_string(value).strip().lower()
-        return not value_str or value_str in NULL
+        return True if not value_str else value_str in NULL
 
 
 def unique_values(values):
+    # if all values are hashable, the O(n) implementation will work:
+    try:
+        result = set()
+        for value in values:
+            if not is_null(value):
+                result.add(value)
+        return list(result)
+    except TypeError:
+        pass
+    # Fallback to O(n²) :-(
     result = []
     for value in values:
         if not is_null(value) and value not in result:
@@ -533,15 +541,15 @@ def unique_values(values):
     return result
 
 
-def get_items(*indexes):
+def get_items(*indexes, default=None):
     """Return a callable that fetches the given indexes of an object
     Always return a tuple even when len(indexes) == 1.
 
-    Similar to `operator.itemgetter`, but will insert `None` when the object
-    does not have the desired index (instead of raising IndexError).
+    Similar to `operator.itemgetter`, but will return the `default` value when the object
+    does not have the desired index, instead of raising IndexError.
     """
     return lambda obj: tuple(
-        obj[index] if len(obj) > index else None for index in indexes
+        obj[index] if len(obj) > index else default for index in indexes
     )
 
 
@@ -554,7 +562,7 @@ def slug(text, separator="_", permitted_chars=SLUG_CHARS):
     'alvaro-justen'
     """
 
-    text = six.text_type(text or "")
+    text = str(text or "")
 
     # Strip non-ASCII characters
     # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
@@ -608,16 +616,18 @@ def make_header(field_names, permit_not=False, max_size=None, prefix="field_"):
             for field_name in header
         ]
     result = []
+    existing_names = set()
     for index, field_name in enumerate(header):
         if not field_name:
-            field_name = "{}{}".format(prefix, index)
+            field_name = f"{prefix}{index}"
         elif field_name[0].isdigit():
-            field_name = "{}{}".format(prefix, field_name)
+            field_name = f"{prefix}{field_name}"
 
         if field_name in result:
             field_name = make_unique_name(
-                name=field_name, existing_names=result, start=2, max_size=max_size
+                name=field_name, existing_names=existing_names, start=2, max_size=max_size
             )
+        existing_names.add(field_name)
         result.append(field_name)
 
     return result
