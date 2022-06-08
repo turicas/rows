@@ -28,10 +28,8 @@ from unicodedata import normalize
 
 import six
 
-if six.PY2:
-    from itertools import izip_longest as zip_longest
-else:
-    from itertools import zip_longest
+
+from itertools import zip_longest
 
 
 # Order matters here
@@ -369,6 +367,23 @@ class PercentField(DecimalField):
         return super(PercentField, cls).deserialize(value) / 100
 
 
+# code here because the "fromisoformat" splited functions need "value_error" to be defined
+try:
+    # TBD: when adding optional dependencies to rows install, create one for "dateutil".
+    from dateutil.parse import isoparse as fromisoformat
+except ImportError:
+    # This is less generic - dateutil.parse.isoparse is full ISO8601 compliant.
+    # the datetime native is less capable, but can still pickup some forms of TZINFO
+    fromisoformat = getattr(datetime.datetime, "fromisoformat", None)  # fromisoformat available in Python 3.7
+
+
+if fromisoformat:
+    datetime_from_iso_format = lambda text: fromisoformat(text) if len(text) > 10 else value_error(text, datetime.datetime)
+    date_from_iso_format = lambda text: fromisoformat(text) if len(text) <= 10 else value_error(text, datetime.date)
+else:
+    datetime_from_iso_format = date_from_iso_format = None
+
+
 class DateField(Field):
     """Field class to represent date
 
@@ -399,7 +414,11 @@ class DateField(Field):
 
         value = as_string(value)
 
-        dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
+        if cls.INPUT_FORMAT != "%Y-%m-%d" or date_from_iso_format is None:
+            dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
+        else:
+            dt_object = date_from_iso_format(value)
+
         return dt_object.date()
 
 
@@ -422,19 +441,25 @@ class DatetimeField(Field):
 
         return value.isoformat()
 
+
+    @classmethod
+    def _fallback_fromisoformat(cls, value):
+        groups = cls.DATETIME_REGEXP.findall(value)
+        if not groups:
+            value_error(value, cls)
+        else:
+            return datetime.datetime(*[int(x) for x in groups[0]])
+
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         value = super().deserialize(value)
         if value is None or isinstance(value, cls.TYPE):
             return value
 
-        value = as_string(value)
-        # TODO: may use iso8601
-        groups = cls.DATETIME_REGEXP.findall(value)
-        if not groups:
-            value_error(value, cls)
-        else:
-            return datetime.datetime(*[int(x) for x in groups[0]])
+        str_value = as_string(value)
+        value = (datetime_from_iso_format or cls._fallback_fromisoformat)(str_value)
+        return value
+
 
 
 class TextField(Field):
@@ -728,7 +753,7 @@ class TypeDetector(object):
 
 def detect_types(
     field_names,
-    field_values,
+    field_values: "Iterable[Iterable[any]]",
     field_types=DEFAULT_TYPES,
     skip_indexes=None,
     type_detector=TypeDetector,

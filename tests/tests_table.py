@@ -101,7 +101,6 @@ class TableTestCase(unittest.TestCase):
         with self.assertRaises(ValueError) as context_manager:
             self.table.append({"name": "Álvaro Justen", "birthdate": "WRONG"})
         self.assertEqual(type(context_manager.exception), ValueError)
-        self.assertIn("does not match format", context_manager.exception.args[0])
 
     def test_table_getitem_invalid_type(self):
         with self.assertRaises(TypeError) as exception_context:

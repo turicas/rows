@@ -183,7 +183,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # Therefore, some tests have to run against
         # pristine copies of rows.plugins.txt
         try:
-            from imp import reload
+            from importlib import reload
         except ImportError:
             pass
         import rows.plugins.txt

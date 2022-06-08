@@ -41,7 +41,7 @@ class BaseTable(MutableSequence, CustomRowMixin):
     def __init__(self, fields, meta=None, *, filter=None, **kwargs):
         from rows.fields import slug
 
-        # Field order is guarranteed by Dictionaries preserving insetion order in Py 3.6+
+        # Field order is guarranteed by Dictionaries preserving insertion order in Py 3.6+
         # (NB.: In Py 3.6 dict order is an "implementation detail", but from
         # 3.7 on it is a language spec.
 
@@ -65,22 +65,9 @@ class BaseTable(MutableSequence, CustomRowMixin):
     def __len__(self):
         return len(self._rows)
 
-    #@property
-    #def Row(self):
-        #"""Returns the class to be used to represent a row from this table.
-
-            #by default, Rows are Python's namedtuples with the table field names.
-            #For other objects, create a mixin replacing this method.
-        #"""
-        #if not getattr(self, "fields", None):
-            #raise RuntimeError("Table must know its fields before being able to determine a Row class")
-        #if not getattr(self, "_row_cls_namedtuple", None):
-                #self._row_cls_namedtuple = namedtuple("Row", self.field_names)
-        #return self._row_cls_namedtuple
-
-
-    def _repr_html_(self):
+    def _repr_html_(self, max_records=20):
         import rows.plugins
+
 
         HEAD_THRESHOLD = 20
 
@@ -100,6 +87,9 @@ class BaseTable(MutableSequence, CustomRowMixin):
                 ),
                 meta={"name": self.name},
             )
+            head_len = max_records // 2 + max_records % 2
+            tail_len = max_records // 2
+
             for row in self.head():
                 representation.append(
                     {

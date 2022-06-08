@@ -155,8 +155,8 @@ def export_to_html(
     result.extend(header)
     result.extend(["    </tr>\n", "  </thead>\n", "\n", "  <tbody>\n", "\n"])
     for index, row in enumerate(serialized_table, start=1):
-        css_class = "odd" if index % 2 == 1 else "even"
-        result.append('    <tr class="{}">\n'.format(css_class))
+        css_class = ("even", "odd")[index % 2]
+        result.append(f'    <tr class="{css_class}">\n')
         for value in row:
             result.extend(["      <td> ", escape(value), " </td>\n"])
         result.append("    </tr>\n\n")
