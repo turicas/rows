@@ -29,48 +29,8 @@ from pathlib import Path
 from collections.abc import MutableSequence, Sized, Sequence, Mapping
 from textwrap import dedent as D
 
-from .utils import query
+from .utils import query, OrderableMapping
 from .rows import CustomRowMixin
-
-from collections.abc import MutableMapping
-
-from threading import Lock
-
-class OrderableMapping(MutableMapping):
-    # maybe offload this to jsbueno/extradict?
-    def __init__(self, initial: "Union[Mapping, Sequence[tuple[hashable, any]]"):
-        self.data = {}
-        self.order = []
-        self.lock = Lock()
-        if isinstance (initial, Mapping):
-            initial = initial.items()
-        for key,value in initial:
-            self[key] = value
-
-    def __getitem__(self, key):
-        return self.data[key]
-
-    def __setitem__(self, key, value):
-        with self.lock:
-            if key not in self.data:
-                self.order.append(key)
-            self.data[key] = value
-
-    def __delitem__(self, key):
-        with self.lock:
-            del self.data[key]
-            self.order.remove(key)
-
-    def __len__(self):
-        return len(self.data)
-
-    def __iter__(self):
-        yield from iter(self.order)
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({list(self.items())})"
-
-
 
 
 class BaseTable(MutableSequence, CustomRowMixin):
@@ -81,15 +41,10 @@ class BaseTable(MutableSequence, CustomRowMixin):
     def __init__(self, fields, meta=None, *, filter=None, **kwargs):
         from rows.fields import slug
 
-        # Field order is guarranteed by Dictionaries preserving insertion order in Py 3.6+
-        # (NB.: In Py 3.6 dict order is an "implementation detail", but from
-        # 3.7 on it is a language spec.
-
-
         # Field names are automatically slugged in the internal repr.
         # Original names are stored as "str_fields"
 
-        fields = dict(fields)
+        fields = OrderableMapping(fields)
         self.str_field_names = list(fields.keys())
 
         self.fields = {
