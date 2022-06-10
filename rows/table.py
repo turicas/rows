@@ -33,32 +33,9 @@ from .utils import query, OrderableMapping
 from .rows import CustomRowMixin
 
 
-class BaseTable(MutableSequence, CustomRowMixin):
-
-    _rows: Sequence
-
-
-    def __init__(self, fields, meta=None, *, filter=None, **kwargs):
-        from rows.fields import slug
-
-        # Field names are automatically slugged in the internal repr.
-        # Original names are stored as "str_fields"
-
-        fields = OrderableMapping(fields)
-        self.str_field_names = list(fields.keys())
-
-        self.fields = {
-                slug(field_name): field_type
-                for field_name, field_type in fields.items()
-        }
-
-        self.meta = dict(meta) if meta is not None else {}
-        self.filter = filter
-        super().__init__(**kwargs)
-
-
-    def __len__(self):
-        return len(self._rows)
+class ReprHTMLMixin:
+    # TODO: move this to plugins.html
+    # Add registry allowing Table classes to be enriched from plugins
 
     def _repr_html_(self, max_records=20):
         import rows.plugins
@@ -111,6 +88,34 @@ class BaseTable(MutableSequence, CustomRowMixin):
         if isinstance(result, bytes):
             result = result.decode("utf-8")
         return result
+
+
+class BaseTable(MutableSequence, ReprHTMLMixin, CustomRowMixin):
+
+    _rows: Sequence
+
+
+    def __init__(self, fields, meta=None, *, filter=None, **kwargs):
+        from rows.fields import slug
+
+        # Field names are automatically slugged in the internal repr.
+        # Original names are stored as "str_fields"
+
+        fields = OrderableMapping(fields)
+        self.str_field_names = list(fields.keys())
+
+        self.fields = {
+                slug(field_name): field_type
+                for field_name, field_type in fields.items()
+        }
+
+        self.meta = dict(meta) if meta is not None else {}
+        self.filter = filter
+        super().__init__(**kwargs)
+
+
+    def __len__(self):
+        return len(self._rows)
 
     @property
     def field_names(self):

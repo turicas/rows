@@ -18,6 +18,7 @@
 
 
 from collections.abc import Mapping, MutableMapping
+from copy import copy
 from threading import RLock
 
 class OrderableMapping(MutableMapping):
@@ -26,11 +27,13 @@ class OrderableMapping(MutableMapping):
     used to keep track of fields in tables.
     """
     # maybe offload this to jsbueno/extradict?
-    def __init__(self, initial: "Union[Mapping, Sequence[tuple[hashable, any]]"):
+    def __init__(self, initial: "Union[Mapping, Sequence[tuple[hashable, any]]|None"=None):
         self.data = {}
         self.order = []
         self.lock = RLock()
         self._inserting = False  # state used when inserting a field at a specific position
+        if not initial:
+            return
         if isinstance (initial, Mapping):
             initial = initial.items()
         for key,value in initial:
@@ -61,6 +64,16 @@ class OrderableMapping(MutableMapping):
         with self.lock:
             self.order.remove(key)
             self.order.insert(pos, key)
+
+    def copy(self):
+        return copy(self)
+
+    def __copy__(self):
+        instance = self.__class__()
+        with instance.lock, self.lock:
+            instance.data = copy(self.data)
+            instance.order = copy(self.order)
+        return instance
 
     def __len__(self):
         return len(self.data)

@@ -67,3 +67,10 @@ def test_orderable_mapping_move_col():
     assert list(a.keys()) == ["a", "c", "b"]
 
 
+def test_orderable_mapping_copy():
+    a = OrderableMapping({"a": 1, "b": 2})
+    b = a.copy()
+    a["c"] = 3
+    with pytest.raises(KeyError):
+        b["c"]
+
