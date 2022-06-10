@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2020 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2022 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
