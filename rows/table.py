@@ -26,7 +26,7 @@ from collections import namedtuple, OrderedDict
 from operator import itemgetter
 from pathlib import Path
 
-from collections.abc import MutableSequence, Sized, Sequence, Mapping
+from collections.abc import MutableSequence, Sized, Sequence, Mapping, Iterable
 from textwrap import dedent as D
 
 from .utils import query, OrderableMapping
@@ -102,7 +102,6 @@ class BaseTable(MutableSequence, ReprHTMLMixin, CustomRowMixin):
         # Original names are stored as "str_fields"
 
         fields = OrderableMapping(fields)
-        self.str_field_names = list(fields.keys())
 
         self.fields = {
                 slug(field_name): field_type
@@ -117,9 +116,12 @@ class BaseTable(MutableSequence, ReprHTMLMixin, CustomRowMixin):
     def __len__(self):
         return len(self._rows)
 
+
     @property
     def field_names(self):
         return list(self.fields.keys())
+
+    str_field_names = field_names
 
     @property
     def field_types(self):
@@ -350,6 +352,9 @@ class PerRecordFilterable(query.QueryableMixin, MutableSequence):
 
 class Table(BaseTable, PerRecordFilterable):
     def __init__(self, fields, meta=None, **kwargs):
+
+        # "CameFrom" effect: ._rows is a property defined in PerRecordFilterable which
+        # forces the assigned sequence to be a FilterableSequence.
         self._rows = []
         super().__init__(fields=fields, meta=meta, **kwargs)
 
@@ -391,16 +396,25 @@ class Table(BaseTable, PerRecordFilterable):
         if key_type == int:
             self._rows[key] = self._make_row(value)
         elif issubclass(key_type, str):
-            from rows import fields
+            self.insert_column(len(self.fields), key, value)
+        else:
+            raise ValueError("Unsupported key type: {}".format(type(key).__name__))
 
-            values = list(value)  # I'm not lazy, sorry
+    def insert_column(self, position, name, value):
+            from rows import fields
+            if isinstance(value, (Iterable, Sequence)):
+                values = list(value)  # I'm not lazy, sorry
+            else:
+                raise NotImplementedError()
+            if position != len(self.fields):
+                raise NotImplementedError()
             if len(values) != len(self):
                 raise ValueError(
                     "Values length ({}) should be the same as "
                     "Table length ({})".format(len(values), len(self))
                 )
 
-            field_name = fields.slug(key)
+            field_name = fields.slug(name)
             is_new_field = field_name not in self.field_names
             field_type = fields.detect_types(
                 [field_name], [[value] for value in values]
@@ -414,8 +428,6 @@ class Table(BaseTable, PerRecordFilterable):
                 field_index = self.field_names.index(field_name)
                 for row, value in zip(self._rows, values):
                     row[field_index] = field_type.deserialize(value)
-        else:
-            raise ValueError("Unsupported key type: {}".format(type(key).__name__))
 
     def __delitem__(self, key):
         key_type = type(key)

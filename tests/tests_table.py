@@ -154,7 +154,6 @@ class TableTestCase(unittest.TestCase):
     def test_table_setitem_column_happy_path_new_column(self):
         number_of_fields = len(self.table.fields)
         self.assertEqual(len(self.table), 3)
-
         self.table["user_id"] = [4, 5, 6]
 
         self.assertEqual(len(self.table), 3)
@@ -165,6 +164,9 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(self.table[0].user_id, 4)
         self.assertEqual(self.table[1].user_id, 5)
         self.assertEqual(self.table[2].user_id, 6)
+
+        #pytest era:
+        assert "user_id" in self.table.field_names
 
     def test_table_setitem_column_happy_path_replace_column(self):
         number_of_fields = len(self.table.fields)
