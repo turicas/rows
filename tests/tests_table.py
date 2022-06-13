@@ -129,6 +129,12 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(list(self.table[1:]), list(self.table)[1:])
         self.assertEqual(list(self.table[:-1]), list(self.table)[:-1])
 
+    def test_table_getitem_slice_for_filtered_table(self):
+        self.table.filter = "name = 'Douglas Adams'"
+        clone = self.table[:]
+        assert len(clone) == 1
+        assert clone[0].name == "Douglas Adams"
+
     def test_table_getitem_column_happy_path(self):
         expected_values = ["Álvaro Justen", "Somebody", "Douglas Adams"]
         self.assertEqual(self.table["name"], expected_values)

@@ -69,7 +69,7 @@ class Token:
     #: Instance attribute to denote whether this token is bound to a particular
     #: object with which it will interact when resolving its value
     bound = False
-    #: "How" to resolve its value, self is bound.
+    #: "How" to resolve its value, when self is bound.
     binding_type = None
 
     def __new__(cls, value=_sentinels.empty, **kwargs):

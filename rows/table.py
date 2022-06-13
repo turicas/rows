@@ -30,6 +30,7 @@ from collections.abc import MutableSequence, Sized, Sequence, Mapping, Iterable
 from textwrap import dedent as D
 
 from .utils import query, OrderableMapping
+from .utils.mixins import SliceableGetSequenceMixin
 from .rows import CustomRowMixin
 
 
@@ -225,7 +226,7 @@ class BaseTable(MutableSequence, ReprHTMLMixin, CustomRowMixin):
         self._filter = None
 
 
-class FilterableSequence(MutableSequence):
+class FilterableSequence(MutableSequence, SliceableGetSequenceMixin):
     """Inner sequence that actually applies a query filter row by row
 
     Few things in the Universe are as thread-unsafe as this;
