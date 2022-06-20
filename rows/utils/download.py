@@ -94,11 +94,11 @@ class Downloader:
             filename = None
         else:
             filename = download.filename
-            if filename.is_absolute():
+            if self.path is not None and filename.is_absolute():
                 warnings.warn(
-                    f"filename {repr(filename)} cannot be absolute", RuntimeWarning
+                    f"filename {repr(str(filename))} cannot be absolute when downloader path is set (will be saved in downloader root path)", RuntimeWarning
                 )
-                filename = Path(*filename.parts[1:])
+                filename = filename.name
             full_filename = save_path / filename
             save_path = full_filename.parent
             filename = full_filename.name
