@@ -130,7 +130,7 @@ MIME_TYPE_TO_PLUGIN_NAME = {
     "application/pdf": "pdf",
 }
 regexp_sizes = re.compile("([0-9,.]+ [a-zA-Z]+B)")
-MULTIPLIERS = {"B": 1, "KiB": 1024, "MiB": 1024 ** 2, "GiB": 1024 ** 3}
+MULTIPLIERS = {"B": 1, "KiB": 1024, "MiB": 1024**2, "GiB": 1024**3}
 
 
 def subclasses(cls):
@@ -399,7 +399,11 @@ def download_file(
         verify=verify_ssl,
         timeout=timeout,
         stream=True,
-        headers={"user-agent": "rows-{}".format(rows.__version__)},
+        headers={
+            "User-Agent": "python/rows-{} (requests {})".format(
+                rows.__version__, requests.__version__
+            )
+        },
     )
     if not response.ok:
         raise RuntimeError("HTTP response: {}".format(response.status_code))

@@ -244,7 +244,7 @@ def import_from_postgresql(
     query_args=None,
     close_connection=None,
     *args,
-    **kwargs
+    **kwargs,
 ):
 
     if query is None:
@@ -280,7 +280,7 @@ def export_to_postgresql(
     batch_size=100,
     close_connection=None,
     *args,
-    **kwargs
+    **kwargs,
 ):
     # TODO: should add transaction support?
 
@@ -303,6 +303,7 @@ def export_to_postgresql(
     prepared_table = prepare_to_export(table, *args, **kwargs)
     field_names = next(prepared_table)
     field_types = list(map(table.fields.get, field_names))
+    # TODO: add option to table access method (columnar, for example)
     cursor.execute(pg_create_table_sql(table.fields, table_name))
 
     insert_sql = SQL_INSERT.format(
@@ -466,6 +467,9 @@ class PostgresCopy:
                 unlogged=unlogged,
                 access_method=access_method,
             )
+            # TODO: we may check if the server has support to the selected
+            # access method with the following query:
+            # `SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_am WHERE amname = %s)`
             pg_execute_psql(self.database_uri, create_table_sql)
 
         fobj = open_compressed(filename, mode="rb")
