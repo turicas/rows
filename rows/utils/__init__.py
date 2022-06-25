@@ -17,22 +17,12 @@
 
 from __future__ import unicode_literals
 
-import cgi
 import csv
-import gzip
 import io
-import mimetypes
 import os
-import re
-import shlex
-import sqlite3
-import subprocess
-import tempfile
 from collections import OrderedDict
 from dataclasses import dataclass
-from itertools import islice
 from pathlib import Path
-from textwrap import dedent
 
 import six
 
@@ -339,6 +329,8 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
         mime_type = detected.mime_type or mime_type
 
     else:
+        import mimetypes
+
         if chardet and not encoding:
             encoding = chardet.detect(content)["encoding"] or encoding
         mime_name = None
@@ -389,6 +381,8 @@ def download_file(
     progress_pattern="Downloading file",
 ):
     # TODO: add ability to continue download
+    import cgi
+    import tempfile
 
     session = requests.Session()
     retry_adapter = HTTPAdapter(max_retries=Retry(total=retries, backoff_factor=1))
@@ -613,6 +607,7 @@ def open_compressed(
         fobj_binary = lzma.LZMAFile(get_fobj_binary(), mode=mode_binary)
 
     elif extension == "gz":
+        import gzip
         fobj_binary = gzip.GzipFile(fileobj=get_fobj_binary(), mode=mode_binary)
 
     elif extension == "bz2":
@@ -640,6 +635,7 @@ def csv_to_sqlite(
     schema=None,
 ):
     "Export a CSV file to SQLite, based on field type detection from samples"
+    from itertools import islice
 
     # TODO: automatically detect encoding if encoding == `None`
     # TODO: should be able to specify fields
@@ -694,6 +690,7 @@ def sqlite_to_csv(
     query=None,
 ):
     """Export a table inside a SQLite database to CSV"""
+    import sqlite3
 
     # TODO: should be able to specify fields
     # TODO: should be able to specify custom query
@@ -784,6 +781,8 @@ class CsvLazyDictWriter:
 
 def execute_command(command):
     """Execute a command and return its output"""
+    import shlex
+    import subprocess
     import typing
 
     if isinstance(command, typing.Text):
@@ -870,6 +869,8 @@ def generate_schema(table, export_fields, output_format):
             return plugins.csv.export_to_csv(table).decode("utf-8")
 
     elif output_format == "sql":
+        from textwrap import dedent
+
         # TODO: may use dict from rows.plugins.sqlite or postgresql
         sql_fields = {
             rows.fields.BinaryField: "BLOB",

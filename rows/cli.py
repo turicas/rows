@@ -32,7 +32,6 @@ from io import BytesIO
 from pathlib import Path
 
 import click
-import requests.exceptions
 import six
 from tqdm import tqdm
 
@@ -79,6 +78,8 @@ def parse_options(options):
 
 def _import_table(source, encoding, verify_ssl=True, progress=True, *args, **kwargs):
     # TODO: may use import_from_uri instead
+    import requests.exceptions
+
     uri = source.uri if hasattr(source, "uri") else source
     try:
         table = import_from_uri(
