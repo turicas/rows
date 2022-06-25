@@ -371,6 +371,8 @@ class PostgresCopy:
             # TODO: use env instead of passing full database URI to
             # command-line? (other system users could see the process and its
             # parameters)
+            # TODO: we may need to set other parameters explicitly (depending
+            # on psqlrc's configs, the defaults could be changed)
             process = subprocess.Popen(
                 shlex.split(command),
                 stdin=subprocess.PIPE,
@@ -392,7 +394,11 @@ class PostgresCopy:
                         continue
                     else:
                         raise RuntimeError(stderr.decode("utf-8"))
-            rows_imported = int(stdout.replace(b"COPY ", b"").strip())
+            rows_imported = None
+            for line in stdout.splitlines():
+                if line.startswith(b"COPY "):
+                    rows_imported = int(line.replace(b"COPY ", b"").strip())
+                    break
 
         except FileNotFoundError:
             fobj.close()
