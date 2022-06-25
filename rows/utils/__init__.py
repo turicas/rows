@@ -129,7 +129,6 @@ MIME_TYPE_TO_PLUGIN_NAME = {
     "text/txt": "txt",
     "application/pdf": "pdf",
 }
-regexp_sizes = re.compile("([0-9,.]+ [a-zA-Z]+B)")
 MULTIPLIERS = {"B": 1, "KiB": 1024, "MiB": 1024**2, "GiB": 1024**3}
 
 
@@ -820,8 +819,12 @@ def uncompressed_size(filename):
     # TODO: get filetype from file-magic, if available
     if str(filename).lower().endswith(".xz"):
         output = execute_command(["xz", "--list", filename])
-        compressed, uncompressed = regexp_sizes.findall(output)
-        value, unit = uncompressed.split()
+        lines = output.splitlines()
+        header = lines[0]
+        column_start = [header.find(field_name) for field_name in lines[0].split()]
+        values = [lines[1][a:b].strip() for a, b in list(zip(column_start, column_start[1:] + [None]))]
+        result = dict(zip(header.split(), values))
+        value, unit = result.get("Uncompressed", "").split()
         value = float(value.replace(",", ""))
         return int(value * MULTIPLIERS[unit])
 
