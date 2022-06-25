@@ -897,7 +897,7 @@ def command_pgimport(
     compressed_size = os.stat(source).st_size
     try:
         total_size = uncompressed_size(source)
-    except (RuntimeError, ValueError):
+    except (FileNotFoundError, ValueError):
         total_size = compressed_size
     finally:
         progress_bar.total = (

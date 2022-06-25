@@ -402,7 +402,7 @@ class PostgresCopy:
 
         except FileNotFoundError:
             fobj.close()
-            raise RuntimeError("Command `psql` not found")
+            raise
 
         except BrokenPipeError:
             fobj.close()
@@ -643,7 +643,7 @@ def pgexport(
 
     except FileNotFoundError:
         fobj.close()
-        raise RuntimeError("Command `psql` not found")
+        raise
 
     except BrokenPipeError:
         fobj.close()

@@ -782,17 +782,18 @@ class CsvLazyDictWriter:
 
 def execute_command(command):
     """Execute a command and return its output"""
+    import typing
 
-    command = shlex.split(command)
-    try:
-        process = subprocess.Popen(
-            command,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    except FileNotFoundError:
-        raise RuntimeError("Command not found: {}".format(repr(command)))
+    if isinstance(command, typing.Text):
+        command = shlex.split(command)
+    elif not isinstance(command, typing.Sequence):
+        raise ValueError("Unknown command type: {}".format(type(command)))
+    process = subprocess.Popen(
+        command,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     process.wait()
     # TODO: may use another codec to decode
     if process.returncode > 0:
