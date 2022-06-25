@@ -267,6 +267,7 @@ def plugin_name_by_uri(uri):
         elif parsed.scheme == "postgres":
             return "postgresql"
 
+    # TODO: use pathlib instead
     basename = os.path.basename(parsed.path)
     if not basename.strip():
         raise RuntimeError("Could not identify file format.")
@@ -325,6 +326,7 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
 
     # TODO: may add sample_size
 
+    # TODO: use pathlib instead
     filename = os.path.basename(path)
     parts = filename.split(".")
     extension = parts[-1].lower() if len(parts) > 1 else None
@@ -465,6 +467,7 @@ def download_file(
         filename = tmp.name
         if extension:
             filename += "." + extension
+        # TODO: use pathlib instead
         os.rename(tmp.name, filename)
 
     return Source(
@@ -814,11 +817,9 @@ def uncompressed_size(filename):
     4GiB will have a wrong value.
     """
 
-    quoted_filename = shlex.quote(filename)
-
     # TODO: get filetype from file-magic, if available
     if str(filename).lower().endswith(".xz"):
-        output = execute_command('xz --list "{}"'.format(quoted_filename))
+        output = execute_command(["xz", "--list", filename])
         compressed, uncompressed = regexp_sizes.findall(output)
         value, unit = uncompressed.split()
         value = float(value.replace(",", ""))
@@ -828,7 +829,7 @@ def uncompressed_size(filename):
         # XXX: gzip only uses 32 bits to store uncompressed size, so if the
         # uncompressed size is greater than 4GiB, the value returned will be
         # incorrect.
-        output = execute_command('gzip --list "{}"'.format(quoted_filename))
+        output = execute_command(["gzip", "--list", filename])
         lines = [line.split() for line in output.splitlines()]
         header, data = lines[0], lines[1]
         gzip_data = dict(zip(header, data))

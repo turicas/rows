@@ -20,7 +20,6 @@ from __future__ import unicode_literals
 import csv
 import io
 import itertools
-import shlex
 import string
 import subprocess
 from pathlib import Path
@@ -81,7 +80,7 @@ def get_psql_command(
             user=user, password=password, host=host, port=port, name=database_name
         )
 
-    return "psql -c {} {}".format(shlex.quote(command), shlex.quote(database_uri))
+    return ["psql", "--no-psqlrc", "-c", command, database_uri]
 
 
 def get_psql_copy_command(
@@ -374,7 +373,7 @@ class PostgresCopy:
             # TODO: we may need to set other parameters explicitly (depending
             # on psqlrc's configs, the defaults could be changed)
             process = subprocess.Popen(
-                shlex.split(command),
+                command,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -624,7 +623,7 @@ def pgexport(
     fobj = open_compressed(filename, mode="wb")
     try:
         process = subprocess.Popen(
-            shlex.split(command),
+            command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
