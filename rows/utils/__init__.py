@@ -122,6 +122,60 @@ MIME_TYPE_TO_PLUGIN_NAME = {
 MULTIPLIERS = {"B": 1, "KiB": 1024, "MiB": 1024**2, "GiB": 1024**3}
 
 
+def estimate_gzip_uncompressed_size(filename):
+    """Guess the uncompressed size of a gzip file (it's truncated if > 4GiB)
+
+    The gzip format stores the uncompressed size in just 4 bytes (the last 4
+    bytes of the file), so the uncompressed size stored is actually the size
+    modulo 2**32 (4GiB). In cases when the real uncompressed size is less than
+    4GiB the value will be correct. For uncompressed files greater than 4GiB
+    the only way to have the correct value is by reading the whole file - but
+    we can estimate it.
+
+    Using `gzip --list <filename>` to get the uncompressed size is not an
+    option here because:
+    - Prior to version 2.12, the command run quickly but reported
+      the wrong uncompressed size (it just reads the 4 last bytes); and
+    - Version 2.12 fixed this bug by reading the whole file
+      (just to print the uncompressed size!) - it's not an option, since it's
+      going to read the whole file (which is a big one).
+
+    From the release notes <https://lists.gnu.org/archive/html/info-gnu/2022-04/msg00003.html>:
+        'gzip -l' no longer misreports file lengths 4 GiB and larger.
+        Previously, 'gzip -l' output the 32-bit value stored in the gzip header
+        even though that is the uncompressed length modulo 2**32.  Now, 'gzip
+        -l' calculates the uncompressed length by decompressing the data and
+        counting the resulting bytes.  Although this can take much more time,
+        nowadays the correctness pros seem to outweigh the performance cons.
+    """
+    import struct
+
+    compressed_size = os.stat(filename).st_size
+    with open(filename, mode="rb") as fobj:
+        fobj.seek(-4, 2)
+        uncompressed_size = struct.unpack("<I", fobj.read())[0]
+    if compressed_size > uncompressed_size:
+        # If the compressed size is greater than the uncompressed, probably the
+        # uncompressed is greater than 4GiB and we try to guess the correct
+        # size by adding "1" bits to the left until the new size is greater
+        # than the compressed one and greater than 4GiB. Note that this guess
+        # may be wrong for 2 reasons:
+        # - The compressed size may be greater than the uncompressed one in
+        #   some cases (like trying to compress an already compressed file); or
+        # - For very big files we keep shifting the bit "1" to the left
+        #   several times, which makes a "hole" between the digit "1" and the
+        #   original 32 bits (e.g.: shifting 5 times lead to in 10000X, where
+        #   X are the original 32 bits). The value returned is the minimum
+        #   expected size for the uncompressed file, since there's no way to
+        #   correctly "fill the hole" without reading the whole file.
+        i, value = 32, uncompressed_size
+        while value <= 2**32 and value < compressed_size:
+            value = (1 << i) ^ uncompressed_size
+            i += 1
+        uncompressed_size = value
+    return uncompressed_size
+
+
 def subclasses(cls):
     """Return all subclasses of a class, recursively"""
     children = cls.__subclasses__()
@@ -812,11 +866,13 @@ def uncompressed_size(filename):
     """Return the uncompressed size for a file by executing commands
 
     Note: due to a limitation in gzip format, uncompressed files greather than
-    4GiB will have a wrong value.
+    4GiB could have a wrong value (more info on function
+    `estimate_gzip_uncompressed_size`).
     """
 
     # TODO: get filetype from file-magic, if available
     if str(filename).lower().endswith(".xz"):
+        # TODO: move this approach to reading the file directly, as in gzip
         output = execute_command(["xz", "--list", filename])
         lines = output.splitlines()
         header = lines[0]
@@ -828,14 +884,7 @@ def uncompressed_size(filename):
         return int(value * MULTIPLIERS[unit])
 
     elif str(filename).lower().endswith(".gz"):
-        # XXX: gzip only uses 32 bits to store uncompressed size, so if the
-        # uncompressed size is greater than 4GiB, the value returned will be
-        # incorrect.
-        output = execute_command(["gzip", "--list", filename])
-        lines = [line.split() for line in output.splitlines()]
-        header, data = lines[0], lines[1]
-        gzip_data = dict(zip(header, data))
-        return int(gzip_data["uncompressed"])
+        return estimate_gzip_uncompressed_size(filename)
 
     else:
         raise ValueError('Unrecognized file type for "{}".'.format(filename))

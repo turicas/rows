@@ -874,23 +874,23 @@ def command_pgimport(
     # First, detect file size
     class CustomProgressBar(ProgressBar):
         def update(self, *args, **kwargs):
+            # TODO: update total when finish (total = n)?
             super().update(*args, **kwargs)
             if (
                 self.progress.total is not None
                 and self.progress.n > self.progress.total
             ):
                 # The total size reached a level above the detected one,
-                # probabaly error on gzip (it has only 32 bits to store
+                # probabaly an error on gzip (it has only 32 bits to store
                 # uncompressed size, so if uncompressed size is greater than
-                # 4GB, it will have truncated data). If this happens, we update
-                # the total by adding a bit `1` to left of the original size
-                # (in bits). It may not be the correct uncompressed size (more
-                # than one bit could be truncated, so the process will repeat.
-                n = self.original_total
+                # 4GiB, it will have truncated data). If this happens, we
+                # update the total by adding a bit `1` to left of the original
+                # size (in bits). It may not be the correct uncompressed size
+                # (more than one bit could be truncated, so the process will
+                # repeat. For more details, see comments on
+                # `rows.utils.uncompressed_size`.
+                self.progress.total = (1 << self.bit_updates) ^ self.original_total
                 self.bit_updates += 1
-                new_total = (self.bit_updates << len(bin(n).replace("0b", ""))) ^ n
-                self.progress.total = new_total
-                # TODO: update total when finish (total = n)?
 
     progress_bar = CustomProgressBar(
         prefix="Importing data", pre_prefix="Detecting file size", unit="bytes"
