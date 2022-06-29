@@ -378,14 +378,14 @@ class PostgresCopy:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            data = fobj.read(self.chunk_size)
+            data = fobj.read(self.chunk_size).replace(b"\x00", b"")
             total_written = 0
             while data != b"":
                 written = process.stdin.write(data)
                 total_written += written
                 if callback:
                     callback(written, total_written)
-                data = fobj.read(self.chunk_size)
+                data = fobj.read(self.chunk_size).replace(b"\x00", b"")
             stdout, stderr = process.communicate()
             if stderr != b"":
                 for line in stderr.splitlines():
@@ -426,13 +426,13 @@ class PostgresCopy:
     ):
         if encoding is None:
             fobj = open_compressed(filename, mode="rb")
-            sample_bytes = fobj.read(self.chunk_size)
+            sample_bytes = fobj.read(self.chunk_size).replace(b"\x00", b"")
             fobj.close()
             source = detect_local_source(filename, sample_bytes)
             encoding = source.encoding
 
         fobj = open_compressed(filename, mode="r", encoding=encoding)
-        sample = fobj.read(self.chunk_size)
+        sample = fobj.read(self.chunk_size).replace("\x00", "")
         fobj.close()
 
         if dialect is None:  # Detect dialect
@@ -517,6 +517,8 @@ class PostgresCopy:
 
         # TODO: if reading from fobj, the schema must be in the same order as
         # the file
+
+        # TODO: check if the file is open in binary mode
 
         return self._import(
             fobj=fobj,
@@ -629,13 +631,13 @@ def pgexport(
             stderr=subprocess.PIPE,
         )
         total_written = 0
-        data = process.stdout.read(chunk_size)
+        data = process.stdout.read(chunk_size).replace(b"\x00", b"")
         while data != b"":
             written = fobj.write(data)
             total_written += written
             if callback:
                 callback(written, total_written)
-            data = process.stdout.read(chunk_size)
+            data = process.stdout.read(chunk_size).replace(b"\x00", b"")
         stdout, stderr = process.communicate()
         if stderr != b"":
             raise RuntimeError(stderr.decode("utf-8"))
@@ -651,3 +653,11 @@ def pgexport(
     else:
         fobj.close()
         return {"bytes_written": total_written}
+
+
+# TODO: run `psql` with --filename=tempfile instead of -c (prevent other users
+# seeing the query). only current user must be able to read the temp file
+# TODO: run `psql` with env vars to pass connection info:
+# - PGDATABASE, PGHOST, PGPORT, PGUSER and PGPASSFILE. only current user must
+# be able to read the temp file on PGPASSFILE
+# To securely set the file permissions, may use https://github.com/YakDriver/oschmod
