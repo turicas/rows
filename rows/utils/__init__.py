@@ -791,8 +791,6 @@ class CsvLazyDictWriter:
         self._fobj = None
         self.writer_args = args
         self.writer_kwargs = kwargs
-        self.writer_kwargs["lineterminator"] = kwargs.get("lineterminator", "\n")
-        # TODO: check if it should be the same in other OSes
 
     def __enter__(self):
         return self
