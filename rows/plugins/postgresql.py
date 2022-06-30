@@ -378,20 +378,25 @@ class PostgresCopy:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            data = fobj.read(self.chunk_size).replace(b"\x00", b"")
-            total_written = 0
+            data = fobj.read(self.chunk_size)
+            total_read, total_written = 0, 0
             while data != b"":
-                written = process.stdin.write(data)
-                total_written += written
+                # If `data` contains `\x00`, then the amount of bytes written
+                # will be different from `len(data)`. Since the progress bar
+                # reports the uncompressed size of the file we must report
+                # progress based on original data read, not on data written.
+                total_written += process.stdin.write(data.replace(b"\x00", b""))
+                total_read += len(data)
                 if callback:
-                    callback(written, total_written)
-                data = fobj.read(self.chunk_size).replace(b"\x00", b"")
+                    callback(len(data), total_read)
+                data = fobj.read(self.chunk_size)
             stdout, stderr = process.communicate()
             if stderr != b"":
                 for line in stderr.splitlines():
                     if line.startswith(b"NOTICE:"):
                         continue
                     else:
+                        # TODO: decode with correct encoding
                         raise RuntimeError(stderr.decode("utf-8"))
             rows_imported = None
             for line in stdout.splitlines():
@@ -405,11 +410,16 @@ class PostgresCopy:
 
         except BrokenPipeError:
             fobj.close()
+            # TODO: decode with correct encoding
             raise RuntimeError(process.stderr.read().decode("utf-8"))
 
         else:
             fobj.close()
-            return {"bytes_written": total_written, "rows_imported": rows_imported}
+            return {
+                "bytes_read": total_read,
+                "bytes_written": total_written,
+                "rows_imported": rows_imported,
+            }
 
     def import_from_filename(
         self,
@@ -640,6 +650,7 @@ def pgexport(
             data = process.stdout.read(chunk_size).replace(b"\x00", b"")
         stdout, stderr = process.communicate()
         if stderr != b"":
+            # TODO: decode with correct encoding
             raise RuntimeError(stderr.decode("utf-8"))
 
     except FileNotFoundError:
@@ -648,6 +659,7 @@ def pgexport(
 
     except BrokenPipeError:
         fobj.close()
+        # TODO: decode with correct encoding
         raise RuntimeError(process.stderr.read().decode("utf-8"))
 
     else:
