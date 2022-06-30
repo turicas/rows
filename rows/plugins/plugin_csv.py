@@ -20,34 +20,34 @@ from __future__ import unicode_literals
 from io import BytesIO
 
 import six
-import unicodecsv
+import csv
 
 from rows.plugins.utils import create_table, ipartition, serialize
 from rows.utils import Source
 
-sniffer = unicodecsv.Sniffer()
+sniffer = csv.Sniffer()
 # Some CSV files have more than 128kB of data in a cell, so we force this value
 # to be greater (16MB).
 # TODO: check if it impacts in memory usage.
 # TODO: may add option to change it by passing a parameter to import/export.
-unicodecsv.field_size_limit(16777216)
+csv.field_size_limit(16777216)
 
 
 def fix_dialect(dialect):
     if not dialect.doublequote and dialect.escapechar is None:
         dialect.doublequote = True
 
-    if dialect.quoting == unicodecsv.QUOTE_MINIMAL and dialect.quotechar == "'":
+    if dialect.quoting == csv.QUOTE_MINIMAL and dialect.quotechar == "'":
         # Python csv's Sniffer seems to detect a wrong quotechar when
         # quoting is minimal
         dialect.quotechar = '"'
 
 
-class excel_semicolon(unicodecsv.excel):
+class excel_semicolon(csv.excel):
     delimiter = ";"
 
 
-unicodecsv.register_dialect("excel-semicolon", excel_semicolon)
+csv.register_dialect("excel-semicolon", excel_semicolon)
 
 
 if six.PY2:
@@ -60,8 +60,8 @@ if six.PY2:
         try:
             dialect = sniffer.sniff(sample, delimiters=delimiters)
 
-        except unicodecsv.Error:  # Couldn't detect: fall back to 'excel'
-            dialect = unicodecsv.excel
+        except csv.Error:  # Couldn't detect: fall back to 'excel'
+            dialect = csv.excel
 
         fix_dialect(dialect)
         return dialect
@@ -96,8 +96,8 @@ elif six.PY3:
         try:
             dialect = sniffer.sniff(decoded, delimiters=delimiters)
 
-        except unicodecsv.Error:  # Couldn't detect: fall back to 'excel'
-            dialect = unicodecsv.excel
+        except csv.Error:  # Couldn't detect: fall back to 'excel'
+            dialect = csv.excel
 
         fix_dialect(dialect)
         return dialect
@@ -133,7 +133,7 @@ def import_from_csv(
             sample=read_sample(source.fobj, sample_size), encoding=source.encoding
         )
 
-    reader = unicodecsv.reader(source.fobj, encoding=encoding, dialect=dialect)
+    reader = csv.reader(source.fobj, encoding=encoding, dialect=dialect)
 
     meta = {"imported_from": "csv", "source": source}
     return create_table(reader, meta=meta, *args, **kwargs)
@@ -143,7 +143,7 @@ def export_to_csv(
     table,
     filename_or_fobj=None,
     encoding="utf-8",
-    dialect=unicodecsv.excel,
+    dialect=csv.excel,
     batch_size=100,
     callback=None,
     *args,
@@ -176,7 +176,7 @@ def export_to_csv(
     # TODO: may use `io.BufferedWriter` instead of `ipartition` so user can
     # choose the real size (in Bytes) when to flush to the file system, instead
     # number of rows
-    writer = unicodecsv.writer(source.fobj, encoding=encoding, dialect=dialect)
+    writer = csv.writer(source.fobj, encoding=encoding, dialect=dialect)
 
     if callback is None:
         for batch in ipartition(serialize(table, *args, **kwargs), batch_size):
