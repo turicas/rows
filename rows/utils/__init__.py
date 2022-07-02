@@ -376,17 +376,18 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
     if extension in COMPRESSED_EXTENSIONS:
         extension = parts[-2].lower() if len(parts) > 2 else None
 
-    if magic is not None:
+    if chardet and not encoding:
+        encoding = chardet.detect(content)["encoding"] or encoding
+
+    if magic is not None and hasattr(magic, "detect_from_content"):
         detected = magic.detect_from_content(content)
-        encoding = detected.encoding or encoding
+        encoding = encoding or detected.encoding
         mime_name = detected.name
         mime_type = detected.mime_type or mime_type
 
     else:
         import mimetypes
 
-        if chardet and not encoding:
-            encoding = chardet.detect(content)["encoding"] or encoding
         mime_name = None
         mime_type = mime_type or mimetypes.guess_type(filename)[0]
 

@@ -40,7 +40,13 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         (affects Debian and Fedora packaging)
         """
 
-        self.assertEqual(first.lower().split("-")[:-1], second.lower().split("-")[:-1])
+        encoding_1 = first.lower().split("-")[:-1]
+        encoding_2 = second.lower().split("-")[:-1]
+        if encoding_1 == ["windows"]:
+            encoding_1 = ["iso", "8859"]
+        if encoding_2 == ["windows"]:
+            encoding_2 = ["iso", "8859"]
+        self.assertEqual(encoding_1, encoding_2)
 
     def test_local_file_sample_size(self):
 
