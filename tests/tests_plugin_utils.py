@@ -349,6 +349,20 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         expected_result = ["abc", "^qwe", "rty"]
         self.assertEqual(result, expected_result)
 
+    def test_make_header_prefix(self):
+        result = plugins_utils.make_header(["abc", "123"])
+        expected_result = ["abc", "field_123"]
+        self.assertEqual(result, expected_result)
+
+        result = plugins_utils.make_header(["abc", "123"], prefix="table_")
+        expected_result = ["abc", "table_123"]
+        self.assertEqual(result, expected_result)
+
+    def test_make_header_max_size(self):
+        result = plugins_utils.make_header(["test", "another test", "another string"], max_size=8)
+        expected_result = ["test", "another", "anothe_2"]
+        self.assertEqual(result, expected_result)
+
     def test_make_unique_name(self):
         name = "test"
         existing_names = []
@@ -369,6 +383,9 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result = fields.make_unique_name(name, existing_names, name_format, start=1)
         self.assertEqual(result, "1_test")
 
-    # TODO: test make_header
+        existing_names = ["test"]
+        result = fields.make_unique_name(name, existing_names, start=1, max_size=4)
+        self.assertEqual(result, "te_1")
+
     # TODO: test all features of create_table
     # TODO: test if error is raised if len(row) != len(fields)

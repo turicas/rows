@@ -581,34 +581,41 @@ def slug(text, separator="_", permitted_chars=SLUG_CHARS):
     return text.strip(separator)
 
 
-def make_unique_name(name, existing_names, name_format="{name}_{index}", start=2):
+def make_unique_name(name, existing_names, name_format="{name}_{index}", start=2, max_size=None):
     """Return a unique name based on `name_format` and `name`."""
     index = start
     new_name = name
     while new_name in existing_names:
         new_name = name_format.format(name=name, index=index)
+        if max_size is not None and len(new_name) > max_size:
+            new_name = name_format.format(name=name[:-(len(new_name) - max_size)], index=index)
         index += 1
 
     return new_name
 
 
-def make_header(field_names, permit_not=False):
+def make_header(field_names, permit_not=False, max_size=None, prefix="field_"):
     """Return unique and slugged field names."""
     slug_chars = SLUG_CHARS if not permit_not else SLUG_CHARS + "^"
 
     header = [
         slug(field_name, permitted_chars=slug_chars) for field_name in field_names
     ]
+    if max_size is not None:
+        header = [
+            slug(field_name[:max_size], permitted_chars=slug_chars)
+            for field_name in header
+        ]
     result = []
     for index, field_name in enumerate(header):
         if not field_name:
-            field_name = "field_{}".format(index)
+            field_name = "{}{}".format(prefix, index)
         elif field_name[0].isdigit():
-            field_name = "field_{}".format(field_name)
+            field_name = "{}{}".format(prefix, field_name)
 
         if field_name in result:
             field_name = make_unique_name(
-                name=field_name, existing_names=result, start=2
+                name=field_name, existing_names=result, start=2, max_size=max_size
             )
         result.append(field_name)
 

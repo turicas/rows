@@ -823,10 +823,8 @@ def command_csv_to_sqlite(
 
     inputs = [Path(filename) for filename in sources]
     output = Path(output)
-    # TODO: if table_name is "2019" the final name will be "field_2019" - must
-    #       be "table_2019"
     # TODO: implement schema=:text:, like in pgimport
-    table_names = make_header([filename.name.split(".")[0] for filename in inputs])
+    table_names = make_header([filename.name.split(".")[0] for filename in inputs], prefix="table_")
     schemas = _get_schemas_for_inputs(schemas, inputs)
 
     for filename, table_name, schema in zip(inputs, table_names, schemas):
@@ -905,6 +903,8 @@ def command_pgimport(
     table_name,
 ):
 
+    # TODO: implement parameter to import CSVs with no header on the first line
+    #       (if schema is not provided, must use field_1, field_2, ...)
     # TODO: add --quiet
     if schema and schema != ":text:" and not Path(schema).exists():
         click.echo("ERROR: file '{}' not found.".format(schema), err=True)
@@ -958,7 +958,10 @@ def command_pgimport(
     if schema:
         progress_bar.description = "Reading schema"
         if schema == ":text:":
-            schemas = [OrderedDict([(field_name, TextField) for field_name in inspector.field_names])]
+            schemas = [OrderedDict([
+                (field_name, TextField)
+                for field_name in make_header(inspector.field_names, max_size=63)
+            ])]
         else:
             schemas = _get_schemas_for_inputs(schema, [source])
     else:
@@ -970,6 +973,8 @@ def command_pgimport(
         filename=source,
         encoding=input_encoding,
         dialect=dialect,
+        skip_header=True,
+        has_header=True,
         database_uri=database_uri,
         create_table=not no_create_table,
         table_name=table_name,

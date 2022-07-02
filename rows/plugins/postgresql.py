@@ -352,6 +352,7 @@ class PostgresCopy:
         field_names,
         table_name,
         skip_header=False,
+        has_header=True,
         callback=None,
     ):
         # Prepare the `psql` command to be executed based on collected metadata
@@ -378,6 +379,9 @@ class PostgresCopy:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
+            if skip_header and has_header:
+                # Read the first line (which will be the header in most cases)
+                fobj.readline()
             data = fobj.read(self.chunk_size)
             total_read, total_written = 0, 0
             while data != b"":
@@ -429,6 +433,7 @@ class PostgresCopy:
         dialect=None,
         schema=None,
         skip_header=False,
+        has_header=True,
         create_table=True,
         unlogged=False,
         access_method=None,
@@ -477,6 +482,7 @@ class PostgresCopy:
             field_names=field_names,
             table_name=table_name,
             skip_header=skip_header,
+            has_header=has_header,
             callback=callback,
         )
 
@@ -488,6 +494,7 @@ class PostgresCopy:
         dialect,
         schema,
         skip_header=False,
+        has_header=True,
         create_table=True,
         unlogged=False,
         access_method=None,
@@ -521,6 +528,7 @@ class PostgresCopy:
             field_names=list(schema.keys()),
             table_name=table_name,
             skip_header=skip_header,
+            has_header=has_header,
             callback=callback,
         )
 
@@ -533,6 +541,7 @@ def pgimport(
     dialect=None,
     schema=None,
     skip_header=False,
+    has_header=True,
     chunk_size=8388608,
     max_samples=10000,
     create_table=True,
