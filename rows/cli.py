@@ -27,7 +27,7 @@ import os
 import sqlite3
 import sys
 import tempfile
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from io import BytesIO
 from pathlib import Path
 
@@ -36,7 +36,8 @@ import six
 from tqdm import tqdm
 
 import rows
-from rows.fields import make_header
+from rows.fields import make_header, TextField
+from rows.plugins.plugin_csv import CsvInspector
 from rows.utils import (
     COMPRESSED_EXTENSIONS,
     ProgressBar,
@@ -782,11 +783,8 @@ def schema(
 def command_csv_to_sqlite(
     batch_size, samples, input_encoding, dialect, schemas, sources, output
 ):
-
     # TODO: add --quiet
-
-    # TODO: detect input_encoding for all sources
-    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
+    # TODO: check if all filenames exist (if not, exit with error)
 
     inputs = [Path(filename) for filename in sources]
     output = Path(output)
@@ -799,19 +797,22 @@ def command_csv_to_sqlite(
         prefix = "[{filename} -> {db_filename}#{tablename}]".format(
             db_filename=output.name, tablename=table_name, filename=filename.name
         )
-        # TODO: if `schemas` is present, will not detect data types
-        pre_prefix = "{} (detecting data types)".format(prefix)
+        inspector = CsvInspector(six.text_type(filename), encoding=input_encoding, dialect=dialect, schema=schema, max_samples=samples)
+        if not schema:
+            pre_prefix = "{} (detecting schema)".format(prefix)
+        else:
+            pre_prefix = "{} (reading schema)".format(prefix)
         progress_bar = ProgressBar(prefix=prefix, pre_prefix=pre_prefix)
         csv_to_sqlite(
             six.text_type(filename),
             six.text_type(output),
-            dialect=dialect,
+            dialect=inspector.dialect,
             table_name=table_name,
             samples=samples,
             batch_size=batch_size,
             callback=progress_bar.update,
-            encoding=input_encoding,
-            schema=schema,
+            encoding=inspector.encoding,
+            schema=inspector.schema,
         )
         progress_bar.close()
 
@@ -869,7 +870,12 @@ def command_pgimport(
 ):
 
     # TODO: add --quiet
-    # TODO: may detect encoding here (instead of inside rows.utils.pgimport)
+    if schema and not Path(schema).exists():
+        click.echo("ERROR: file '{}' not found.".format(schema), err=True)
+        sys.exit(3)
+    elif not Path(source).exists():
+        click.echo("ERROR: file '{}' not found.".format(source), err=True)
+        sys.exit(3)
 
     # First, detect file size
     class CustomProgressBar(ProgressBar):
@@ -907,13 +913,18 @@ def command_pgimport(
         progress_bar.original_total = total_size
         progress_bar.bit_updates = 0
 
+    inspector = CsvInspector(source, encoding=input_encoding, dialect=dialect)
+    input_encoding = input_encoding or inspector.encoding
+    dialect = dialect or inspector.dialect
+
     # Then, define its schema
+    schema = str(schema or "").strip()
     if schema:
         progress_bar.description = "Reading schema"
         schemas = _get_schemas_for_inputs(schema if schema else None, [source])
     else:
         progress_bar.description = "Detecting schema"
-        schemas = [None]
+        schemas = [inspector.schema]
 
     # So we can finally import it!
     import_meta = pgimport(
@@ -1040,31 +1051,26 @@ def csv_merge(
 ):
 
     # TODO: add option to preserve original key names
-    # TODO: detect input_encoding for all sources
     # TODO: add --quiet
 
     strip = not no_strip
     remove_empty_lines = not no_remove_empty_lines
-    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
 
     metadata = defaultdict(dict)
     final_header = []
     for filename in tqdm(sources, desc="Detecting dialects and headers"):
-        # Detect dialect
-        with open_compressed(filename, mode="rb") as fobj:
-            sample = fobj.read(sample_size)
-        dialect = rows.plugins.csv.discover_dialect(sample, input_encoding)
-        metadata[filename]["dialect"] = dialect
+        inspector = CsvInspector(filename, chunk_size=sample_size, encoding=input_encoding)
+        metadata[filename]["dialect"] = inspector.dialect
 
         # Get header
         # TODO: fix final header in case of empty field names (a command like
         # `rows csv-clean` would fix the problem if run before `csv-merge` for
         # each file).
         metadata[filename]["fobj"] = open_compressed(
-            filename, encoding=input_encoding, buffering=buffer_size
+            filename, encoding=inspector.encoding, buffering=buffer_size
         )
         metadata[filename]["reader"] = csv.reader(
-            metadata[filename]["fobj"], dialect=dialect
+            metadata[filename]["fobj"], dialect=metadata[filename]["dialect"]
         )
         metadata[filename]["header"] = make_header(next(metadata[filename]["reader"]))
         metadata[filename]["header_map"] = {}
@@ -1139,29 +1145,20 @@ def csv_clean(
     """
 
     # TODO: add option to preserve original key names
-    # TODO: detect input_encoding for source
     # TODO: add --quiet
+    # TODO: fix if destination is empty
 
-    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
-
-    # Detect dialect
-    with open_compressed(source, mode="rb", buffering=buffer_size) as fobj:
-        sample = fobj.read(sample_size)
-    dialect = rows.plugins.csv.discover_dialect(sample, input_encoding)
-
-    # Get header
-    with open_compressed(
-        source, encoding=input_encoding, buffering=buffer_size
-    ) as fobj:
-        reader = csv.reader(fobj, dialect=dialect)
-        header = make_header(next(reader))
+    inspector = CsvInspector(source, chunk_size=sample_size, encoding=input_encoding)
+    dialect = inspector.dialect
+    header = make_header(inspector.field_names)
+    input_encoding = input_encoding or inspector.encoding
 
     # Detect empty columns
     with open_compressed(
         source, encoding=input_encoding, buffering=buffer_size
     ) as fobj:
         reader = csv.reader(fobj, dialect=dialect)
-        _ = next(reader)  # Skip header
+        next(reader)  # Skip header
         empty_columns = list(header)
         for row in tqdm(reader, desc="Detecting empty columns"):
             row = dict(zip(header, [value.strip() for value in row]))
@@ -1214,16 +1211,13 @@ def csv_clean(
 @click.option("--sample-size", default=DEFAULT_SAMPLE_SIZE)
 @click.argument("source")
 def csv_row_count(input_encoding, buffer_size, dialect, sample_size, source):
-    input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
-
-    if dialect is None:  # Detect dialect
-        with open_compressed(source, mode="rb") as fobj:
-            sample = fobj.read(sample_size)
-        dialect = rows.plugins.csv.discover_dialect(sample, input_encoding)
+    inspector = CsvInspector(source, chunk_size=sample_size, encoding=input_encoding)
+    dialect = dialect or inspector.dialect
+    input_encoding = input_encoding or inspector.encoding
 
     fobj = open_compressed(source, encoding=input_encoding, buffering=buffer_size)
     reader = csv.reader(fobj, dialect=dialect)
-    next(reader)  # Read header
+    next(reader)  # Skip header
     count = sum(1 for _ in reader)
     fobj.close()
 

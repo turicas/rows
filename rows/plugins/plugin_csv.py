@@ -17,13 +17,16 @@
 
 from __future__ import unicode_literals
 
-from io import BytesIO
+from functools import lru_cache
+from io import BytesIO, StringIO
+from itertools import islice
 
 import six
 import unicodecsv
 
+from rows import fields
 from rows.plugins.utils import create_table, ipartition, serialize
-from rows.utils import Source
+from rows.utils import Source, detect_local_source, open_compressed
 
 sniffer = unicodecsv.Sniffer()
 # Some CSV files have more than 128kB of data in a cell, so we force this value
@@ -41,6 +44,9 @@ def fix_dialect(dialect):
         # Python csv's Sniffer seems to detect a wrong quotechar when
         # quoting is minimal
         dialect.quotechar = '"'
+
+    if not hasattr(dialect, "strict"):
+        dialect.strict = False
 
 
 class excel_semicolon(unicodecsv.excel):
@@ -202,3 +208,75 @@ def export_to_csv(
         source.fobj.close()
 
     return result
+
+
+class CsvInspector:
+    def __init__(self, filename, encoding=None, dialect=None, schema=None,
+            chunk_size=1 * 1024 * 1024, max_samples=5000):
+        self.filename = filename
+        self._encoding = encoding
+        self._field_names = None
+        self._dialect = dialect
+        if isinstance(dialect, six.text_type):
+            self._dialect = unicodecsv.get_dialect(dialect)
+        self._schema = schema
+        self._chunk_size = chunk_size
+        self._sample_binary = self._sample_unicode = None
+        self._max_samples = max_samples
+
+    def _read_sample(self, binary=False):
+        if binary:
+            if self._sample_binary is None:
+                fobj = open_compressed(self.filename, mode="rb")
+                self._sample_binary = fobj.read(self._chunk_size).replace(b"\x00", b"")
+                fobj.close()
+            return self._sample_binary
+
+        else:
+            if self._sample_unicode is None:
+                fobj = open_compressed(self.filename, mode="r", encoding=self.encoding)
+                self._sample_unicode = fobj.read(self._chunk_size).replace("\x00", "")
+                fobj.close()
+            return self._sample_unicode
+
+    @property
+    def encoding(self):
+        if self._encoding is None:
+            source = detect_local_source(self.filename, self._read_sample(binary=True))
+            self._encoding = source.encoding
+        return self._encoding
+
+    @property
+    def dialect(self):
+        if self._dialect is None:
+            sample = self._read_sample(binary=False)
+            self._dialect = discover_dialect(sample.encode(self.encoding), encoding=self.encoding)
+        return self._dialect
+
+    @property
+    def field_names(self):
+        if self._field_names is None:
+            import csv
+
+            reader = csv.reader(
+                StringIO(self._read_sample(binary=False)),
+                dialect=self.dialect,
+            )
+            self._field_names = [field_name for field_name in next(reader)]
+        return self._field_names
+
+    @property
+    def schema(self):
+        if self._schema is None:
+            import csv
+            import itertools
+
+            reader = csv.reader(
+                StringIO(self._read_sample(binary=False)),
+                dialect=self.dialect,
+            )
+            self._field_names = [field_name for field_name in next(reader)]
+            self._schema = fields.detect_types(
+                self._field_names, itertools.islice(reader, self._max_samples)
+            )
+        return self._schema

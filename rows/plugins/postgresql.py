@@ -28,7 +28,7 @@ import six
 from psycopg2 import connect as pgconnect
 
 import rows.fields as fields
-from rows.plugins.plugin_csv import discover_dialect
+from rows.plugins.plugin_csv import CsvInspector
 from rows.plugins.utils import create_table, ipartition, prepare_to_export
 from rows.utils import Source, detect_local_source, execute_command, open_compressed
 
@@ -434,48 +434,30 @@ class PostgresCopy:
         access_method=None,
         callback=None,
     ):
-        if encoding is None:
-            fobj = open_compressed(filename, mode="rb")
-            sample_bytes = fobj.read(self.chunk_size).replace(b"\x00", b"")
-            fobj.close()
-            source = detect_local_source(filename, sample_bytes)
-            encoding = source.encoding
-
-        fobj = open_compressed(filename, mode="r", encoding=encoding)
-        sample = fobj.read(self.chunk_size).replace("\x00", "")
-        fobj.close()
-
-        if dialect is None:  # Detect dialect
-            dialect = discover_dialect(sample.encode(encoding), encoding=encoding)
-        elif isinstance(dialect, six.text_type):
+        inspector = CsvInspector(filename, chunk_size=self.chunk_size, max_samples=self.max_samples, encoding=encoding, dialect=dialect)
+        encoding = encoding or inspector.encoding
+        dialect = dialect or inspector.dialect
+        schema = schema or inspector.schema
+        if isinstance(dialect, six.text_type):
             dialect = csv.get_dialect(dialect)
-        # TODO: add `else` to check if `dialect` is instace of correct class
 
         if skip_header:
             field_names = list(schema.keys())
         else:
-            reader = csv.reader(io.StringIO(sample), dialect=dialect)
-            csv_field_names = [field_name for field_name in next(reader)]
-            if schema is None:
-                field_names = csv_field_names
-            else:
-                field_names = list(schema.keys())
-                if not set(csv_field_names).issubset(set(field_names)):
-                    raise ValueError(
-                        "CSV field names are not a subset of schema field names"
-                    )
-                field_names = [
-                    field for field in csv_field_names if field in field_names
-                ]
+            csv_field_names = inspector.field_names
+            field_names = list(schema.keys())
+            if not set(csv_field_names).issubset(set(field_names)):
+                raise ValueError(
+                    "CSV field names are not a subset of schema field names"
+                )
+            field_names = [
+                field for field in csv_field_names if field in field_names
+            ]
 
         if create_table:
             # If we need to create the table, it creates based on schema
             # (automatically identified or forced), not on CSV directly (field
             # order will be schema's field order).
-            if schema is None:
-                schema = fields.detect_types(
-                    csv_field_names, itertools.islice(reader, self.max_samples)
-                )
             create_table_sql = pg_create_table_sql(
                 schema,
                 table_name,
@@ -514,6 +496,8 @@ class PostgresCopy:
         if isinstance(dialect, six.text_type):
             dialect = csv.get_dialect(dialect)
         # TODO: add `else` to check if `dialect` is instace of correct class
+
+        # TODO: check if access_method exists in pg_am
 
         if create_table:
             # If we need to create the table, it creates based on schema, not
@@ -562,6 +546,8 @@ def pgimport(
     """
 
     # TODO: add warning if table already exists and create_table=True
+    if isinstance(dialect, six.text_type):
+        dialect = csv.get_dialect(dialect)
 
     pgcopy = PostgresCopy(
         database_uri=database_uri,

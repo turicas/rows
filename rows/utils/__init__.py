@@ -681,7 +681,7 @@ def csv_to_sqlite(
     samples=None,
     dialect=None,
     batch_size=10000,
-    encoding="utf-8",
+    encoding=None,
     callback=None,
     force_types=None,
     chunk_size=8388608,
@@ -691,24 +691,22 @@ def csv_to_sqlite(
     "Export a CSV file to SQLite, based on field type detection from samples"
     from itertools import islice
 
-    # TODO: automatically detect encoding if encoding == `None`
+    from rows.plugins.plugin_csv import CsvInspector
+
+    # TODO: move to rows.plugins.plugin_sqlite
+    # TODO: we may move all inspection (encoding, dialect etc.) to outside this
+    # function
     # TODO: should be able to specify fields
     # TODO: if schema is provided and the names are in uppercase, this function
     #       will fail
 
-    if dialect is None:  # Get a sample to detect dialect
-        fobj = open_compressed(input_filename, mode="rb")
-        sample = fobj.read(chunk_size)
-        fobj.close()
-        dialect = rows.plugins.csv.discover_dialect(sample, encoding=encoding)
-    elif isinstance(dialect, six.text_type):
+    inspector = CsvInspector(input_filename, chunk_size=chunk_size, max_samples=samples, encoding=encoding)
+    encoding = encoding or inspector.encoding
+    dialect = dialect or inspector.dialect
+    if isinstance(dialect, six.text_type):
         dialect = csv.get_dialect(dialect)
-
-    if schema is None:  # Identify data types
-        fobj = open_compressed(input_filename, encoding=encoding)
-        data = list(islice(csv.DictReader(fobj, dialect=dialect), samples))
-        fobj.close()
-        schema = rows.import_from_dicts(data).fields
+    if schema is None:
+        schema = inspector.schema
         if force_types is not None:
             schema.update(force_types)
 
@@ -717,8 +715,13 @@ def csv_to_sqlite(
     #       we can call here `rows.import_from_csv` instead of `csv.reader`.
     fobj = open_compressed(input_filename, encoding=encoding)
     csv_reader = csv.reader(fobj, dialect=dialect)
-    header = make_header(next(csv_reader))  # skip header
-    table = rows.Table(fields=OrderedDict([(field, schema[field]) for field in header]))
+    original_header = next(csv_reader)
+    header = make_header(original_header)
+    table = rows.Table(
+        fields=OrderedDict([
+            (field, schema[original_field])
+            for field, original_field in zip(header, original_header)
+        ]))
     table._rows = csv_reader
 
     # Export to SQLite
