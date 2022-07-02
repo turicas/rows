@@ -767,6 +767,40 @@ def schema(
     content = generate_schema(table, export_fields, output_format)
     output_fobj.write(content.encode("utf-8"))
 
+@cli.command(name="csv-inspect", help="Identifies encoding, dialect and schema")
+@click.option("--encoding", default=None)
+@click.option("--dialect")
+@click.option(
+    "--samples",
+    type=int,
+    default=5000,
+    help="Number of rows to determine the field types (0 = all)",
+)
+@click.argument("source", required=True)
+def csv_inspect(encoding, dialect, samples, source):
+    inspector = CsvInspector(source, encoding=encoding, dialect=dialect, max_samples=samples)
+
+    click.echo("encoding = {}".format(repr(inspector.encoding)))
+
+    dialect = inspector.dialect
+    quote_codes = {
+        getattr(csv, item): item
+        for item in dir(csv)
+        if item.startswith("QUOTE_")
+    }
+    dialect_field_names = (
+        "delimiter", "doublequote", "escapechar", "lineterminator",
+        "quotechar", "quoting", "skipinitialspace", "strict"
+    )
+    for field_name in dialect_field_names:
+        value = getattr(dialect, field_name, None)
+        if field_name == "quoting":
+            if value in quote_codes:
+                value = "csv.{}".format(quote_codes[value])
+        else:
+            value = repr(value)
+        click.echo("dialect.{} = {}".format(field_name, value))
+
 
 @cli.command(name="csv-to-sqlite", help="Convert one or more CSV files to SQLite")
 @click.option("--batch-size", default=10000)
