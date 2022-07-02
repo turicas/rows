@@ -710,6 +710,9 @@ def schema(
     source,
     output,
 ):
+    if not Path(source).exists():
+        click.echo("ERROR: file '{}' not found.".format(source), err=True)
+        sys.exit(3)
 
     input_options = parse_options(input_option)
     progress = not quiet
