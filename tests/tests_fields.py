@@ -147,9 +147,9 @@ class FieldsTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             fields.IntegerField.deserialize(1.23)
 
-        with self.assertRaises(ValueError):
-            fields.IntegerField.deserialize("013")
-
+        self.assertEqual(fields.IntegerField.deserialize("       42"), 42)
+        self.assertEqual(fields.IntegerField.deserialize("42       "), 42)
+        self.assertEqual(fields.IntegerField.deserialize("042"), 42)
         self.assertEqual(fields.IntegerField.deserialize("0"), 0)
 
     def test_FloatField(self):
@@ -495,6 +495,17 @@ class FieldUtilsTestCase(unittest.TestCase):
             field_types=[item[1] for item in field_types],
         )
         self.assertDictEqual(dict(result), dict(field_types))
+
+    def test_detect_types_integer_with_leading_zeroes(self):
+        result = fields.detect_types(
+            ["month", "document"],
+            [[f"{x:02d}", f"{x * 1000:09d}"] for x in range(1, 13)],
+        )
+        expected = {
+            "month": fields.IntegerField,
+            "document": fields.IntegerField,
+        }
+        self.assertDictEqual(result, expected)
 
 
 class FieldsFunctionsTestCase(unittest.TestCase):

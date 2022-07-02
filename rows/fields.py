@@ -234,8 +234,6 @@ class IntegerField(Field):
                 value = new_value
 
         value = as_string(value)
-        if value != "0" and value.startswith("0"):
-            raise ValueError("It's string, not integer")
         return int(value) if SHOULD_NOT_USE_LOCALE else locale.atoi(value)
 
 
