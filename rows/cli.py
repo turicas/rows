@@ -790,6 +790,7 @@ def command_csv_to_sqlite(
     output = Path(output)
     # TODO: if table_name is "2019" the final name will be "field_2019" - must
     #       be "table_2019"
+    # TODO: implement schema=:text:, like in pgimport
     table_names = make_header([filename.name.split(".")[0] for filename in inputs])
     schemas = _get_schemas_for_inputs(schemas, inputs)
 
@@ -870,7 +871,7 @@ def command_pgimport(
 ):
 
     # TODO: add --quiet
-    if schema and not Path(schema).exists():
+    if schema and schema != ":text:" and not Path(schema).exists():
         click.echo("ERROR: file '{}' not found.".format(schema), err=True)
         sys.exit(3)
     elif not Path(source).exists():
@@ -921,7 +922,10 @@ def command_pgimport(
     schema = str(schema or "").strip()
     if schema:
         progress_bar.description = "Reading schema"
-        schemas = _get_schemas_for_inputs(schema if schema else None, [source])
+        if schema == ":text:":
+            schemas = [OrderedDict([(field_name, TextField) for field_name in inspector.field_names])]
+        else:
+            schemas = _get_schemas_for_inputs(schema, [source])
     else:
         progress_bar.description = "Detecting schema"
         schemas = [inspector.schema]
