@@ -1208,14 +1208,20 @@ def csv_clean(
         next(reader)  # Skip header
         empty_columns = list(header)
         for row in tqdm(reader, desc="Detecting empty columns"):
-            row = dict(zip(header, [value.strip() for value in row]))
-            if not any(row.values()):  # Empty row
+            row = [value.strip() for value in row]
+            if not any(row):  # Empty row
                 continue
-            for key, value in row.items():
-                if value and key in empty_columns:
+            for key, value in zip(header, row):
+                if key in empty_columns and value:
                     empty_columns.remove(key)
             if not empty_columns:
                 break
+    field_indexes = [
+        header.index(field_name)
+        for field_name in header
+        if field_name not in empty_columns
+    ]
+    create_new_row = lambda row: [row[index].strip() for index in field_indexes]
 
     if in_place:
         temp_path = Path(tempfile.mkdtemp())
@@ -1224,20 +1230,11 @@ def csv_clean(
     fobj = open_compressed(source, encoding=input_encoding, buffering=buffer_size)
     reader = csv.reader(fobj, dialect=dialect)
     _ = next(reader)  # Skip header
-    field_indexes = [
-        header.index(field_name)
-        for field_name in header
-        if field_name not in empty_columns
-    ]
-    create_new_row = lambda row: [row[index].strip() for index in field_indexes]
-
     output_fobj = open_compressed(
         destination, mode="w", encoding=output_encoding, buffering=buffer_size
     )
     writer = csv.writer(output_fobj)
-    writer.writerow(
-        [field_name for field_name in header if field_name not in empty_columns]
-    )
+    writer.writerow(create_new_row(header))
     for row in tqdm(reader, desc="Converting file"):
         row = create_new_row(row)
         if not any(row):  # Empty row
