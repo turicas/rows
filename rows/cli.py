@@ -1216,12 +1216,15 @@ def csv_clean(
                     empty_columns.remove(key)
             if not empty_columns:
                 break
-    field_indexes = [
-        header.index(field_name)
-        for field_name in header
-        if field_name not in empty_columns
-    ]
-    create_new_row = lambda row: [row[index].strip() for index in field_indexes]
+    if empty_columns:
+        field_indexes = [
+            header.index(field_name)
+            for field_name in header
+            if field_name not in empty_columns
+        ]
+        create_new_row = lambda row: [row[index].strip() for index in field_indexes]
+    else:
+        create_new_row = lambda row: [value.strip() for value in row]
 
     if in_place:
         temp_path = Path(tempfile.mkdtemp())
@@ -1233,7 +1236,7 @@ def csv_clean(
     output_fobj = open_compressed(
         destination, mode="w", encoding=output_encoding, buffering=buffer_size
     )
-    writer = csv.writer(output_fobj)
+    writer = csv.writer(output_fobj, dialect=csv.excel)
     writer.writerow(create_new_row(header))
     for row in tqdm(reader, desc="Converting file"):
         row = create_new_row(row)
