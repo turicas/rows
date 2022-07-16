@@ -887,6 +887,7 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
 @cli.command(name="pgimport", help="Import a CSV file into a PostgreSQL table")
 @click.option("--input-encoding", default=None)
 @click.option("--no-create-table", default=False, is_flag=True)
+@click.option("--no-header", default=False, is_flag=True)
 @click.option("--dialect", default=None)
 @click.option("--schema", default=None)
 @click.option("--unlogged", is_flag=True)
@@ -897,6 +898,7 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
 def command_pgimport(
     input_encoding,
     no_create_table,
+    no_header,
     dialect,
     schema,
     unlogged,
@@ -915,6 +917,9 @@ def command_pgimport(
     elif not Path(source).exists():
         click.echo("ERROR: file '{}' not found.".format(source), err=True)
         sys.exit(3)
+    elif no_header and schema is None:
+        click.echo("ERROR: cannot import a file with no header and no schema.", err=True)
+        sys.exit(5)
 
     # First, detect file size
     class CustomProgressBar(ProgressBar):
@@ -976,8 +981,7 @@ def command_pgimport(
         filename=source,
         encoding=input_encoding,
         dialect=dialect,
-        skip_header=True,
-        has_header=True,
+        has_header=not no_header,
         database_uri=database_uri,
         create_table=not no_create_table,
         table_name=table_name,

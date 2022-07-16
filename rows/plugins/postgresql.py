@@ -96,7 +96,7 @@ def get_psql_copy_command(
     is_query=False,
     dialect=csv.excel,
     direction="FROM",
-    skip_header=False,
+    has_header=True,
 ):
 
     direction = direction.upper()
@@ -120,7 +120,7 @@ def get_psql_copy_command(
     if direction == "FROM":
         copy += "FORCE_NULL {header}, "
     copy += "ENCODING '{encoding}', "
-    copy += "FORMAT CSV{});".format(", HEADER" if not skip_header else "")
+    copy += "FORMAT CSV{});".format(", HEADER" if has_header else "")
 
     copy_command = copy.format(
         source=source,
@@ -351,14 +351,11 @@ class PostgresCopy:
         dialect,
         field_names,
         table_name,
-        skip_header=False,
         has_header=True,
         callback=None,
     ):
-        # TODO: replace skip_header with skip_rows (and if > 0, consume the CSV
-        # before sending do psql's stdin)
-        if not has_header and skip_header:
-            raise ValueError("Cannot skip header when no header is available")
+        # TODO: add skip_rows (and if > 0, consume the CSV before sending do
+        # psql's stdin)
 
         # Prepare the `psql` command to be executed based on collected metadata
         command = get_psql_copy_command(
@@ -369,7 +366,7 @@ class PostgresCopy:
             header=field_names,
             table_name_or_query=table_name,
             is_query=False,
-            skip_header=skip_header,
+            has_header=has_header,
         )
         rows_imported, error = 0, None
         try:
@@ -434,7 +431,6 @@ class PostgresCopy:
         encoding=None,
         dialect=None,
         schema=None,
-        skip_header=False,
         has_header=True,
         create_table=True,
         unlogged=False,
@@ -448,7 +444,7 @@ class PostgresCopy:
         if isinstance(dialect, six.text_type):
             dialect = csv.get_dialect(dialect)
 
-        if skip_header:
+        if not has_header:
             field_names = list(schema.keys())
         else:
             csv_field_names = inspector.field_names
@@ -483,7 +479,6 @@ class PostgresCopy:
             dialect=dialect,
             field_names=field_names,
             table_name=table_name,
-            skip_header=skip_header,
             has_header=has_header,
             callback=callback,
         )
@@ -495,7 +490,6 @@ class PostgresCopy:
         encoding,
         dialect,
         schema,
-        skip_header=False,
         has_header=True,
         create_table=True,
         unlogged=False,
@@ -529,7 +523,6 @@ class PostgresCopy:
             dialect=dialect,
             field_names=list(schema.keys()),
             table_name=table_name,
-            skip_header=skip_header,
             has_header=has_header,
             callback=callback,
         )
@@ -542,7 +535,6 @@ def pgimport(
     encoding=None,
     dialect=None,
     schema=None,
-    skip_header=False,
     has_header=True,
     chunk_size=8388608,
     max_samples=10000,
@@ -573,7 +565,7 @@ def pgimport(
             encoding=encoding,
             dialect=dialect,
             schema=schema,
-            skip_header=skip_header,
+            has_header=has_header,
             create_table=create_table,
             unlogged=unlogged,
             access_method=access_method,
@@ -591,7 +583,7 @@ def pgimport(
             encoding=encoding,
             dialect=dialect,
             schema=schema,
-            skip_header=skip_header,
+            has_header=has_header,
             create_table=create_table,
             unlogged=unlogged,
             access_method=access_method,
