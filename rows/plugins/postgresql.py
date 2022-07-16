@@ -355,6 +355,11 @@ class PostgresCopy:
         has_header=True,
         callback=None,
     ):
+        # TODO: replace skip_header with skip_rows (and if > 0, consume the CSV
+        # before sending do psql's stdin)
+        if not has_header and skip_header:
+            raise ValueError("Cannot skip header when no header is available")
+
         # Prepare the `psql` command to be executed based on collected metadata
         command = get_psql_copy_command(
             database_uri=self.database_uri,
@@ -379,9 +384,6 @@ class PostgresCopy:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            if skip_header and has_header:
-                # Read the first line (which will be the header in most cases)
-                fobj.readline()
             data = fobj.read(self.chunk_size)
             total_read, total_written = 0, 0
             while data != b"":
