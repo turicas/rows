@@ -434,6 +434,7 @@ def download_file(
     sample_size=1048576,
     retries=3,
     progress_pattern="Downloading file",
+    user_agent="python/rows-{} (requests {})".format(rows.__version__, requests.__version__),
 ):
     # TODO: add ability to continue download
     import cgi
@@ -449,11 +450,7 @@ def download_file(
         verify=verify_ssl,
         timeout=timeout,
         stream=True,
-        headers={
-            "User-Agent": "python/rows-{} (requests {})".format(
-                rows.__version__, requests.__version__
-            )
-        },
+        headers={"User-Agent": user_agent},
     )
     if not response.ok:
         raise RuntimeError("HTTP response: {}".format(response.status_code))
