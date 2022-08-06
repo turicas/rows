@@ -293,7 +293,7 @@ class PyMuPDFBackend(PDFBackend):
 
     @cached_property
     def number_of_pages(self):
-        return self.document.pageCount
+        return self.document.page_count
 
     @property
     def pages(self):
