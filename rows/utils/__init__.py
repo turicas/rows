@@ -434,12 +434,14 @@ def download_file(
     sample_size=1048576,
     retries=3,
     progress_pattern="Downloading file",
-    user_agent="python/rows-{} (requests {})".format(rows.__version__, requests.__version__),
+    user_agent=None
 ):
     # TODO: add ability to continue download
     import cgi
     import tempfile
 
+    if user_agent is None:
+        user_agent = "python/rows-{} (requests {})".format(rows.__version__, requests.__version__)
     session = requests.Session()
     retry_adapter = HTTPAdapter(max_retries=Retry(total=retries, backoff_factor=1))
     session.mount("http://", retry_adapter)
