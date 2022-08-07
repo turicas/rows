@@ -656,9 +656,139 @@ def pgexport(
         return {"bytes_written": total_written}
 
 
+def get_create_table_from_query(database_uri, table_name_or_query, table_name):
+    if " " in table_name_or_query:
+        import random
+        alias = "".join(random.choice(string.ascii_lowercase) for _ in range(10))
+        query = f"""SELECT * FROM ({table_name_or_query}) AS "{alias}" LIMIT 0"""
+    else:
+        query = f"SELECT * FROM {table_name_or_query} LIMIT 0"
+
+    conn = pgconnect(database_uri)
+    cursor = conn.cursor()
+    cursor.execute(query)
+    columns = list(cursor.description)
+    cursor.close()
+
+    query = "SELECT oid, typname FROM pg_type"
+    cursor = conn.cursor()
+    cursor.execute(query)
+    header = [item[0] for item in cursor.description]
+    type_name_by_oid = {
+        row["oid"]: row["typname"]
+        for row in [dict(zip(header, values)) for values in cursor.fetchall()]
+    }
+    cursor.close()
+
+    columns = [(column.name, type_name_by_oid[column.type_code]) for column in columns]
+    column_types = [f'''"{name}" {type}''' for name, type in columns]
+    return f"""CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join(column_types)})"""
+
+
+def pg2pg(
+    database_uri_from,
+    database_uri_to,
+    table_name_from,
+    table_name_to,
+    chunk_size=8388608,
+    callback=None,
+    dialect=csv.excel,
+    encoding="utf-8",
+    create_table=True,
+):
+    r"""Export data from one PostgreSQL instance to another using psql's \copy
+
+    Required: psql command
+    """
+
+    # TODO: if table already exists, check whether the types are the same from
+    # expected query result
+
+    if create_table:
+        query = get_create_table_from_query(database_uri_from, table_name_from, table_name_to)
+        conn = pgconnect(database_uri_to)
+        cursor = conn.cursor()
+        cursor.execute(query)
+        cursor.close()
+        conn.commit()
+        conn.close()
+
+    # Prepare the `psql` command to be executed to export data
+    command_output = get_psql_copy_command(
+        database_uri=database_uri_from,
+        direction="TO",
+        encoding=encoding,
+        header=None,  # Needed when direction = 'TO'
+        table_name_or_query=table_name_from,
+        is_query=" " in table_name_from,
+        dialect=dialect,
+    )
+    rows_imported, total_written = 0, 0
+
+    try:
+        process_output = subprocess.Popen(
+            command_output,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        data = process_output.stdout.read(chunk_size)
+        field_names = next(csv.reader(io.TextIOWrapper(io.BytesIO(data), encoding=encoding), dialect=dialect))
+        command_input = get_psql_copy_command(
+            database_uri=database_uri_to,
+            dialect=dialect,
+            direction="FROM",
+            encoding=encoding,
+            header=field_names,
+            table_name_or_query=table_name_to,
+            is_query=False,
+            has_header=True,
+        )
+        process_input = subprocess.Popen(
+            command_input,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        while data != b"":
+            written = process_input.stdin.write(data)
+            total_written += written
+            if callback:
+                callback(written, total_written)
+            data = process_output.stdout.read(chunk_size)
+
+        # Process both stdout
+        stdout, stderr = process_output.communicate()
+        if stderr != b"":
+            raise RuntimeError(stderr.decode("utf-8"))
+
+        stdout, stderr = process_input.communicate()
+        if stderr != b"":
+            for line in stderr.splitlines():
+                if line.startswith(b"NOTICE:"):
+                    continue
+                else:
+                    raise RuntimeError(stderr.decode("utf-8"))
+        rows_imported = None
+        for line in stdout.splitlines():
+            if line.startswith(b"COPY "):
+                rows_imported = int(line.replace(b"COPY ", b"").strip())
+                break
+
+    except FileNotFoundError:
+        raise
+
+    except BrokenPipeError:
+        # TODO: get also from process_output
+        raise RuntimeError(process_input.stderr.read().decode("utf-8"))
+
+    else:
+        return {"bytes_written": total_written, "rows_imported": rows_imported}
+
 # TODO: run `psql` with --filename=tempfile instead of -c (prevent other users
 # seeing the query). only current user must be able to read the temp file
 # TODO: run `psql` with env vars to pass connection info:
 # - PGDATABASE, PGHOST, PGPORT, PGUSER and PGPASSFILE. only current user must
 # be able to read the temp file on PGPASSFILE
 # To securely set the file permissions, may use https://github.com/YakDriver/oschmod
+# TODO: may use pg_stat_progress_copy to get number of tuples already processed

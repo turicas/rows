@@ -1019,6 +1019,40 @@ def command_pgexport(
     updater.close()
 
 
+@cli.command(name="pg2pg", help="Copy data from one PostgreSQL instance to another")
+@click.option("--chunk-size", default=8 * 1024 * 1024)
+@click.option("--encoding", default="utf-8")
+@click.option("--no-create-table", default=False, is_flag=True)
+@click.argument("database_uri_from", required=True)
+@click.argument("table_name_or_query_from", required=True)
+@click.argument("database_uri_to", required=True)
+@click.argument("table_name_to", required=True)
+def command_pg2pg(
+    chunk_size,
+    encoding,
+    no_create_table,
+    database_uri_from,
+    table_name_or_query_from,
+    database_uri_to,
+    table_name_to,
+):
+    from rows.plugins.postgresql import pg2pg
+
+    progress_bar = ProgressBar(prefix="Importing data", unit="bytes")
+    import_meta = pg2pg(
+        database_uri_from=database_uri_from,
+        database_uri_to=database_uri_to,
+        table_name_from=table_name_or_query_from,
+        table_name_to=table_name_to,
+        chunk_size=chunk_size,
+        callback=progress_bar.update,
+        encoding=encoding,
+        create_table=not no_create_table,
+    )
+    progress_bar.description = "{} rows imported".format(import_meta["rows_imported"])
+    progress_bar.close()
+
+
 @cli.command(name="pdf-to-text", help="Extract text from a PDF")
 @click.option(
     "--input-option",
