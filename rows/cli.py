@@ -888,6 +888,7 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
 @click.option("--input-encoding", default=None)
 @click.option("--no-create-table", default=False, is_flag=True)
 @click.option("--no-header", default=False, is_flag=True)
+@click.option("--skip-rows", type=int, default=0)
 @click.option("--dialect", default=None)
 @click.option("--schema", default=None)
 @click.option("--unlogged", is_flag=True)
@@ -899,6 +900,7 @@ def command_pgimport(
     input_encoding,
     no_create_table,
     no_header,
+    skip_rows,
     dialect,
     schema,
     unlogged,
@@ -970,6 +972,8 @@ def command_pgimport(
                 (field_name, TextField)
                 for field_name in make_header(inspector.field_names, max_size=63)
             ])]
+            no_header = True
+            skip_rows += 1
         else:
             schemas = _get_schemas_for_inputs(schema, [source])
     else:
@@ -982,6 +986,7 @@ def command_pgimport(
         encoding=input_encoding,
         dialect=dialect,
         has_header=not no_header,
+        skip_rows=skip_rows,
         database_uri=database_uri,
         create_table=not no_create_table,
         table_name=table_name,

@@ -352,11 +352,9 @@ class PostgresCopy:
         field_names,
         table_name,
         has_header=True,
+        skip_rows=0,
         callback=None,
     ):
-        # TODO: add skip_rows (and if > 0, consume the CSV before sending do
-        # psql's stdin)
-
         # Prepare the `psql` command to be executed based on collected metadata
         command = get_psql_copy_command(
             database_uri=self.database_uri,
@@ -382,6 +380,15 @@ class PostgresCopy:
                 stderr=subprocess.PIPE,
             )
             data = fobj.read(self.chunk_size)
+            if skip_rows > 0:
+                temp_fobj = io.BytesIO(data)
+                for _ in range(skip_rows):
+                    next(temp_fobj)  # Read next line
+                    # TODO: we're reading the next LINE instead of next ROW
+                    # because it's easier, but not 100% correct (will work for
+                    # most cases). It'd be complicated to have the exact byte
+                    # where each row finishes to skip.
+                data = data[temp_fobj.tell():]  # Consume bytes read by `for`
             total_read, total_written = 0, 0
             while data != b"":
                 # If `data` contains `\x00`, then the amount of bytes written
@@ -432,6 +439,7 @@ class PostgresCopy:
         dialect=None,
         schema=None,
         has_header=True,
+        skip_rows=0,
         create_table=True,
         unlogged=False,
         access_method=None,
@@ -451,7 +459,7 @@ class PostgresCopy:
             field_names = list(schema.keys())
             if not set(csv_field_names).issubset(set(field_names)):
                 raise ValueError(
-                    "CSV field names are not a subset of schema field names"
+                    f"CSV field names are not a subset of schema field names ({set(csv_field_names)} versus {set(field_names)})"
                 )
             field_names = [
                 field for field in csv_field_names if field in field_names
@@ -480,6 +488,7 @@ class PostgresCopy:
             field_names=field_names,
             table_name=table_name,
             has_header=has_header,
+            skip_rows=skip_rows,
             callback=callback,
         )
 
@@ -491,6 +500,7 @@ class PostgresCopy:
         dialect,
         schema,
         has_header=True,
+        skip_rows=0,
         create_table=True,
         unlogged=False,
         access_method=None,
@@ -524,6 +534,7 @@ class PostgresCopy:
             field_names=list(schema.keys()),
             table_name=table_name,
             has_header=has_header,
+            skip_rows=skip_rows,
             callback=callback,
         )
 
@@ -536,6 +547,7 @@ def pgimport(
     dialect=None,
     schema=None,
     has_header=True,
+    skip_rows=0,
     chunk_size=8388608,
     max_samples=10000,
     create_table=True,
@@ -566,6 +578,7 @@ def pgimport(
             dialect=dialect,
             schema=schema,
             has_header=has_header,
+            skip_rows=skip_rows,
             create_table=create_table,
             unlogged=unlogged,
             access_method=access_method,
@@ -584,6 +597,7 @@ def pgimport(
             dialect=dialect,
             schema=schema,
             has_header=has_header,
+            skip_rows=skip_rows,
             create_table=create_table,
             unlogged=unlogged,
             access_method=access_method,
