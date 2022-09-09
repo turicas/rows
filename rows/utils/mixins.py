@@ -9,7 +9,7 @@ from . import query
 
 class SliceableGetSequenceMixin:
     """
-       Automatically handle slices in keys so that implementer classes
+       Automatically handle slices in sequence keys so that implementer classes
         always get a single key in their getitem call
     """
     def __init_subclass__(cls, *args, **kw):
@@ -126,7 +126,8 @@ class FilterableSequence(MutableSequence, SliceableGetSequenceMixin):
 
 class PerRecordFilterable(query.QueryableMixin, MutableSequence):
 
-    # Has to inherit from MutableSequence so thatr this cls.extend have
+    # Mutiple inheritance curiosity, also: #donotchange:
+    # This has to inherit explicitly from MutableSequence so thatr this cls.extend have
     # priority over MutableSequence.extend when the mixin is used.
 
     filter = None
