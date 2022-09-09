@@ -86,7 +86,7 @@ def parse_options(options):
     return options_dict
 
 
-def _import_table(source, encoding, verify_ssl=True, progress=True, *args, quert=None,**kwargs):
+def _import_table(source, encoding, verify_ssl=True, progress=True, *args, query=None,**kwargs):
     # TODO: may use import_from_uri instead
     import requests.exceptions
 
