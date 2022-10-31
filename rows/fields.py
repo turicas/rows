@@ -54,12 +54,13 @@ __all__ = [
 ]
 NULL = ("-", "null", "none", "nil", "n/a", "na")
 NULL_BYTES = (b"-", b"null", b"none", b"nil", b"n/a", b"na")
+REGEXP_CAMELCASE_1 = re.compile("(.)([A-Z][a-z]+)")
+REGEXP_CAMELCASE_2 = re.compile("([a-z0-9])([A-Z])")
 REGEXP_ONLY_NUMBERS = re.compile(r"[^0-9\-]")
-REGEXP_WORD_BOUNDARY = re.compile("(\\w\\b)")
 REGEXP_SEPARATOR = re.compile("(_+)")
+REGEXP_WORD_BOUNDARY = re.compile("(\\w\\b)")
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 SLUG_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-
 
 def value_error(value, cls):
     value = repr(value)
@@ -579,6 +580,16 @@ def slug(text, separator="_", permitted_chars=SLUG_CHARS):
     # Strip separators
     # Example: u'_alvaro_justen_' -> u'alvaro_justen'
     return text.strip(separator)
+
+
+def camel_to_snake(value):
+    value = str(value or "").strip()
+    if not value:
+        return ""
+    # Adapted from <https://stackoverflow.com/a/1176023/1299446>
+    return slug(
+        REGEXP_CAMELCASE_2.sub(r"\1_\2", REGEXP_CAMELCASE_1.sub(r"\1_\2", value))
+    )
 
 
 def make_unique_name(name, existing_names, name_format="{name}_{index}", start=2, max_size=None):

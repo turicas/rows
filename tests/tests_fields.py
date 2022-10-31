@@ -421,6 +421,16 @@ class FieldUtilsTestCase(unittest.TestCase):
             fields.slug("this/is\ta\ntest", separator="-"), "this-is-a-test"
         )
 
+    def test_camel_to_snake(self):
+        self.assertEqual(fields.camel_to_snake(None), "")
+        self.assertEqual(fields.camel_to_snake("myFieldName"), "my_field_name")
+        self.assertEqual(fields.camel_to_snake("MyFieldName"), "my_field_name")
+        self.assertEqual(fields.camel_to_snake("TheHTTPLink"), "the_http_link")
+        self.assertEqual(fields.camel_to_snake("TheHTTPURL"), "the_httpurl")
+        self.assertEqual(fields.camel_to_snake("First\xa0second"), "first_second")
+        self.assertEqual(fields.camel_to_snake("this/is\ta\ntest"), "this_is_a_test"
+        )
+
     def test_detect_types_no_sample(self):
         expected = {key: fields.TextField for key in self.expected.keys()}
         result = fields.detect_types(self.fields, [])
