@@ -26,11 +26,13 @@ class Downloader:
     version_command = None
 
     def __init__(
-        self, path=None, user_agent=None, continue_paused=True, timeout=10, max_tries=5
+        self, path=None, user_agent=None, continue_paused=True, timeout=10,
+        max_tries=5, quiet=False,
     ):
         self.path = path
         if self.path is not None and not isinstance(self.path, Path):
             self.path = Path(self.path)
+        self._quiet = quiet
         self._user_agent = user_agent
         self._commands = []
         self._directories = set()
@@ -162,6 +164,8 @@ class WgetDownloader(Downloader):
             "--trust-server-names",  # When a redirect occurs, set filename based on last URL, not first
             "--content-disposition",  # Use filename if available in Content-Disposition
         ]
+        if self._quiet:
+            cmd.append("--quiet")
         if self._timeout is not None:
             cmd.extend(["--timeout", str(self._timeout)])
         if self._continue_paused:  # -c
@@ -208,6 +212,8 @@ class Aria2cDownloader(Downloader):
 
     def _build_parameters(self):
         parameters = ["--user-agent", self.user_agent]
+        if self._quiet:
+            parameters.append("--quiet")
         if self._timeout is not None:
             parameters.extend(["--connect-timeout", str(self._timeout)])
         if self._continue_paused:  # -c
