@@ -27,12 +27,13 @@ class Downloader:
 
     def __init__(
         self, path=None, user_agent=None, continue_paused=True, timeout=10,
-        max_tries=5, quiet=False,
+        max_tries=5, quiet=False, disable_ipv6=False,
     ):
         self.path = path
         if self.path is not None and not isinstance(self.path, Path):
             self.path = Path(self.path)
         self._quiet = quiet
+        self._disable_ipv6 = disable_ipv6
         self._user_agent = user_agent
         self._commands = []
         self._directories = set()
@@ -166,6 +167,8 @@ class WgetDownloader(Downloader):
         ]
         if self._quiet:
             cmd.append("--quiet")
+        if self._disable_ipv6:
+            cmd.append("--inet4-only")
         if self._timeout is not None:
             cmd.extend(["--timeout", str(self._timeout)])
         if self._continue_paused:  # -c
@@ -214,6 +217,8 @@ class Aria2cDownloader(Downloader):
         parameters = ["--user-agent", self.user_agent]
         if self._quiet:
             parameters.append("--quiet")
+        if self._disable_ipv6:
+            parameters.append("--disable-ipv6")
         if self._timeout is not None:
             parameters.extend(["--connect-timeout", str(self._timeout)])
         if self._continue_paused:  # -c
@@ -278,6 +283,7 @@ class Aria2cDownloader(Downloader):
             self._temp_filename.unlink()
 
 
+# TODO: implement requests downloader
 # TODO: implement curl downloader
 # curl --create-dirs --output-dir tmp/curl/ --remote-name URL
 # curl --create-dirs --output-dir tmp/curl/ --output some-filename.ext URL
