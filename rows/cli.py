@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2022 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -23,6 +23,8 @@
 #       fields)
 
 import csv
+import io
+import logging
 import os
 import sqlite3
 import sys
@@ -37,7 +39,7 @@ from tqdm import tqdm
 
 import rows
 from rows.fields import make_header, TextField
-from rows.plugins.plugin_csv import CsvInspector
+from rows.plugins.plugin_csv import CsvInspector, fix_file
 from rows.utils import (
     COMPRESSED_EXTENSIONS,
     ProgressBar,
@@ -803,6 +805,54 @@ def csv_inspect(encoding, dialect, samples, source):
         else:
             value = repr(value)
         click.echo("dialect.{} = {}".format(field_name, value))
+
+@cli.command(name="csv-fix", help="Read a CSV file, merge down rows (if number of cols differ) and fix quotes")
+@click.option("--log-filename")
+@click.option("--log-level", default="NONE", type=click.Choice(["NONE", "CRITICAL", "DEBUG", "ERROR", "FATAL", "INFO", "WARNING"]))
+@click.option("--input-dialect")
+@click.option("--input-encoding")
+@click.option("--output-encoding", default="utf-8")
+@click.option("--output-dialect", default="excel")
+@click.argument("input_filename")
+@click.argument("output_filename")
+def command_csv_fix(log_filename, log_level, input_dialect, input_encoding,
+                    output_encoding, output_dialect, input_filename,
+                    output_filename):
+    inspector = CsvInspector(input_filename)
+    input_encoding = input_encoding or inspector.encoding
+    input_dialect = input_dialect or inspector.dialect
+
+    if input_filename == "-":
+        fobj_in = io.TextIOWrapper(sys.stdin.buffer, encoding=input_encoding)
+    else:
+        fobj_in = open_compressed(input_filename, encoding=input_encoding)
+    if output_filename == "-":
+        fobj_out = io.TextIOWrapper(sys.stdout.buffer, encoding=output_encoding)
+    else:
+        fobj_out = open_compressed(output_filename, mode="w", encoding=output_encoding)
+
+    if log_level == "NONE":
+        logger = None
+    else:
+        log_level = getattr(logging, log_level)
+        config = {
+            "format": "%(asctime)-15s [%(name)s] %(levelname)s: %(message)s",
+            "level": log_level,
+        }
+        if log_filename:
+            config["filename"] = log_filename
+            if not Path(log_filename).parent.exists():
+                Path(log_filename).parent.mkdir(parents=True)
+        else:
+            config["stream"] = sys.stdout
+        logging.basicConfig(**config)
+        logger = logging.getLogger("converter")
+        logger.setLevel(log_level)
+
+    reader = csv.reader(fobj_in, dialect=input_dialect)
+    writer = csv.writer(fobj_out, dialect=output_dialect)
+    reader = reader if logger is not None else tqdm(reader, desc="Converting file")
+    fix_file(reader, writer, logger=logger)
 
 
 @cli.command(name="csv-to-sqlite", help="Convert one or more CSV files to SQLite")

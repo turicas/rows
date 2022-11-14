@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2014-2019 Álvaro Justen <https://github.com/turicas/rows/>
+# Copyright 2014-2022 Álvaro Justen <https://github.com/turicas/rows/>
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Lesser General Public License as published by
@@ -25,6 +25,7 @@ import six
 import unicodecsv
 
 from rows import fields
+from rows.fields import make_header
 from rows.plugins.utils import create_table, ipartition, serialize
 from rows.utils import Source, detect_local_source, open_compressed
 
@@ -47,6 +48,52 @@ def fix_dialect(dialect):
 
     if not hasattr(dialect, "strict"):
         dialect.strict = False
+
+
+def fix_file(csv_reader, csv_writer, logger=None):
+    """Read a CSV file, merge down rows (if number of cols differ) and fix quotes
+
+    `csv_reader` and `csv_writer` must be `csv.reader` and `csv.writer`
+    instances or compatible objects (read/write lists)
+    """
+    total, written, fixed, n_col, last_row = 0, 0, 0, None, None
+    for row in csv_reader:
+        total += 1
+        if n_col is None:  # First row - header
+            n_col = len(row)
+            row = make_header(row)
+            if logger is not None:
+                logger.warning(f"Detected number of columns: {n_col}")
+        elif last_row is not None:
+            if not row:
+                if logger is not None:
+                    logger.warning(f"Skipping empty row.")
+                continue
+            fixed += 1
+            tmp = last_row[:-1] + [(last_row[-1] + " " + row[0]).strip()]
+            if len(row) > 1:
+                tmp += row[1:]
+            if logger is not None:
+                logger.warning(f"Merging last row ({len(last_row)} cols) with current one ({len(row)} cols) - new row has {len(tmp)} cols.")
+            row, last_row = tmp, None
+        if len(row) != n_col:
+            if logger is not None:
+                logger.warning(f"Saving current truncated row ({len(row)} cols) and skipping")
+            last_row = row
+        else:  # Write only if has complete row
+            csv_writer.writerow(row)
+            written += 1
+    if logger is not None:
+        if fixed > 0:
+            logger.warning(f"Total fixed rows: {fixed}")
+        logger.info(f"Total written rows: {written}")
+
+    return {
+        "columns": n_col,
+        "rows_read": total,
+        "rows_fixed": fixed,
+        "rows_written": written,
+    }
 
 
 class excel_semicolon(unicodecsv.excel):
