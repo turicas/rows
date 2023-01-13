@@ -728,13 +728,14 @@ def pg2pg(
         conn.close()
 
     # Prepare the `psql` command to be executed to export data
+    output_sql = table_name_from if " " in table_name_from else f'''SELECT * FROM "{table_name_from}"'''
     command_output = get_psql_copy_command(
         database_uri=database_uri_from,
         direction="TO",
         encoding=encoding,
         header=None,  # Needed when direction = 'TO'
-        table_name_or_query=table_name_from,
-        is_query=" " in table_name_from,
+        table_name_or_query=output_sql,
+        is_query=True,
         dialect=dialect,
     )
     rows_imported, total_written = 0, 0
