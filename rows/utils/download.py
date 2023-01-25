@@ -27,20 +27,21 @@ class Downloader:
 
     def __init__(
         self, path=None, user_agent=None, continue_paused=True, timeout=10,
-        max_tries=5, quiet=False, disable_ipv6=False,
+        max_tries=5, quiet=False, disable_ipv6=False, check_certificate=True,
     ):
         self.path = path
         if self.path is not None and not isinstance(self.path, Path):
             self.path = Path(self.path)
-        self._quiet = quiet
-        self._disable_ipv6 = disable_ipv6
-        self._user_agent = user_agent
+        self._check_certificate = check_certificate
         self._commands = []
-        self._directories = set()
         self._continue_paused = continue_paused
-        self._timeout = timeout
+        self._directories = set()
+        self._disable_ipv6 = disable_ipv6
         self._max_tries = max_tries
+        self._quiet = quiet
+        self._timeout = timeout
         self._urls = set()
+        self._user_agent = user_agent
 
         if type(self).get_version() is None:
             raise FileNotFoundError(
@@ -165,6 +166,8 @@ class WgetDownloader(Downloader):
             "--trust-server-names",  # When a redirect occurs, set filename based on last URL, not first
             "--content-disposition",  # Use filename if available in Content-Disposition
         ]
+        if not self._check_certificate:
+            cmd.append("--no-check-certificate")
         if self._quiet:
             cmd.append("--quiet")
         if self._disable_ipv6:
@@ -215,6 +218,8 @@ class Aria2cDownloader(Downloader):
 
     def _build_parameters(self):
         parameters = ["--user-agent", self.user_agent]
+        if not self._check_certificate:
+            parameters.append("--check-certificate=false")
         if self._quiet:
             parameters.append("--quiet")
         if self._disable_ipv6:
