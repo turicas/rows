@@ -36,7 +36,11 @@ to).
 - Added CSV dialect "excel-semicolon"
 - Improved PostgreSQL import from CSV (pgimport) when dealing with null values
 - PDF now supports `page_numbers` as string (range of numbers)
-- Add support to exporto to multiple sheets on the same XLSX file
+- Add support to export to multiple sheets on the same XLSX file
+- Optimize row reading on XLSX files
+- Fix date convertion on XLS files
+- Fix sheet boundaries values if out of bound
+- Remove XLSX/openpyxl warning by forcing defusedxml version
 
 ### Command-Line Interface
 
@@ -62,18 +66,19 @@ to).
 ### Utils
 
 - Add support for CSV format on schema export
-- Use dataclasses to describe Source
+- Use dataclasses to describe source files (`rows.utils.Source`)
 - `import_from_source` now supports compressed files (and so all CLI commands)
 - Add support for passing a `context` to `load_schema`
 
 ### Bug Fixes
 
-- [#314](https://github.com/turicas/rows/issues/314) rows pgimport fails if
-  using --schema
+- [#314](https://github.com/turicas/rows/issues/314) `rows pgimport` fails if
+  using `--schema`
 - [#309](https://github.com/turicas/rows/issues/309) Fix file-magic detection
 - [#320](https://github.com/turicas/rows/issues/320) Get correct data if ODS
   spreadsheet has empty cells
 - Fix slug function (so `"a/b"` will turn into `"a_b"`)
+- Change CSV field size limit to fixed value
 - Detect as fallback type if all values are empty
 - Fix output on `rows schema` (was printing to stdout even if output file is
   provided)
