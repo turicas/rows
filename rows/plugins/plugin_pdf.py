@@ -1060,5 +1060,58 @@ def import_from_pdf(
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
+OBJECT_COLORS = {
+    TextObject: (255, 0, 0),
+    RectObject: (0, 0, 0),
+}
+LINE_WIDTHS = {
+    TextObject: 3,
+    RectObject: 1,
+}
+
+def plot_objects(objects, width=None, height=None, background_color=(255, 255, 255), object_colors=OBJECT_COLORS,
+                 line_widths=LINE_WIDTHS):
+    import math
+    from PIL import Image, ImageDraw
+
+    if width is None:
+        width = math.ceil(max(obj.x1 for obj in objects))
+    if height is None:
+        height = math.ceil(max(obj.y1 for obj in objects))
+
+    img = Image.new("RGB", (width, height), color=background_color)
+    draw = ImageDraw.Draw(img)
+    for obj in objects:
+        obj_type = type(obj)
+        obj_color = object_colors.get(obj_type, (0, 0, 0))
+        line_width = line_widths.get(obj_type, 1)
+        draw.rectangle(
+            obj.bbox,
+            fill=obj_color if getattr(obj, "fill", False) else background_color,
+            outline=obj_color,
+            width=line_width,
+        )
+    return img
+
+
+def split_object_lines(obj, line_height_percent=0.95, strip=True):
+    """Split multi line `TextObject` into multiple `TextObject`s"""
+
+    if "\n" not in obj.text:
+        return [obj]
+
+    new = []
+    lines = obj.text.splitlines()
+    line_height = (obj.y1 - obj.y0) / len(lines)
+    for index, line in enumerate(lines):
+        if strip:
+            line = line.strip()
+        y0 = obj.y0 + index * line_height
+        y1 = y0 + line_height_percent * line_height
+        # TODO: copy fonts etc.?
+        new.append(TextObject(x0=obj.x0, x1=obj.x1, y0=y0, y1=y1, text=line))
+    return new
+
+
 # Call the function so it'll raise ImportError if no backend is available
 default_backend()
