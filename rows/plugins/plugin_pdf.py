@@ -343,6 +343,11 @@ class PyMuPDFBackend(PDFBackend):
 class PyMuPDFTesseractBackend(PyMuPDFBackend):
     name = "pymupdf-tesseract"
 
+    def __init__(self, *args, **kwargs):
+        preserve_groups = kwargs.pop("preserve_groups", False)
+        super().__init__(*args, **kwargs)
+        self.preserve_groups = preserve_groups
+
     def page_objects(self, page, dpi=300, alpha=True, lang=None, remove_empty=True, merge_x=True):
         import pytesseract
         from lxml.html import document_fromstring
@@ -372,7 +377,12 @@ class PyMuPDFTesseractBackend(PyMuPDFBackend):
             objects = new_objects
 
         objects.sort(key=lambda obj: (obj.y0, obj.x0))
-        return objects
+        if self.preserve_groups:
+            return objects
+        return [
+            TextObject(x0=obj.x0, x1=obj.x1, y0=obj.y0, y1=obj.y1, text=obj.text)
+            for obj in objects
+        ]
 
 
 @dataclass
@@ -685,6 +695,7 @@ def closest_same_column(objects, value, threshold=None):
 
 
 class ExtractionAlgorithm(object):
+    # TODO: do not work with list of Group objects
     # TODO: create an way to detect how many tables exist and its positions
 
     def __init__(
