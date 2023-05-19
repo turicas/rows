@@ -297,7 +297,7 @@ class PyMuPDFBackend(PDFBackend):
 
     @property
     def pages(self):
-        load_page = getattr(self.document, "load_page") or getattr(
+        load_page = getattr(self.document, "load_page", None) or getattr(
             self.document, "loadPage"
         )
         for page_index in range(self.number_of_pages):
@@ -329,7 +329,8 @@ class PyMuPDFBackend(PDFBackend):
         )
 
     def page_objects(self, page):
-        blocks = getattr(page, "get_text", getattr(page, "getText"))("dict")["blocks"]
+        get_text = getattr(page, "get_text", None) or getattr(page, "getText")
+        blocks = get_text("dict")["blocks"]
         objects = [
             PyMuPDFBackend.convert_object(line, page)
             for block in blocks
