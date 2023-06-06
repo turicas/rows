@@ -268,6 +268,8 @@ class Aria2cDownloader(Downloader):
                 for url, path, filename in self._aria2c_downloads:
                     data = f"{url}\n" f"  dir={str(path)}\n"
                     if filename is not None:
+                        # TODO: path not working when filename =
+                        # dir1/dir2/filename (instead of only filename)?
                         data += f"  out={filename}\n"
                     output.write(f"{data}\n")
             self._temp_filename = Path(tmp.name)

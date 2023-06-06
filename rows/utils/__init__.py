@@ -569,7 +569,6 @@ def import_from_source(source, default_encoding, *args, **kwargs):
         import_function = getattr(rows, "import_from_{}".format(plugin_name))
     except AttributeError:
         raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
-
     table = import_function(source.uri, *args, **kwargs)
 
     return table

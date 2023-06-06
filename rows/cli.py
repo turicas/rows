@@ -745,6 +745,7 @@ def schema(
             table = import_from_source(
                 source_info,
                 input_encoding,
+                encoding=input_encoding,
                 samples=samples,
                 import_fields=import_fields,
                 max_rows=samples,
@@ -755,6 +756,7 @@ def schema(
         table = import_from_source(
             source_info,
             input_encoding,
+            encoding=input_encoding,
             samples=samples,
             import_fields=import_fields,
             max_rows=samples,
