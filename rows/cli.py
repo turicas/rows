@@ -1077,14 +1077,16 @@ def command_pgexport(
 
 
 @cli.command(name="pg2pg", help="Copy data from one PostgreSQL instance to another")
+@click.option("-b", "--binary", default=False, is_flag=True)
 @click.option("--chunk-size", default=8 * 1024 * 1024)
-@click.option("--encoding", default="utf-8")
+@click.option("-e", "--encoding", default="utf-8")
 @click.option("--no-create-table", default=False, is_flag=True)
 @click.argument("database_uri_from", required=True)
 @click.argument("table_name_or_query_from", required=True)
 @click.argument("database_uri_to", required=True)
 @click.argument("table_name_to", required=True)
 def command_pg2pg(
+    binary,
     chunk_size,
     encoding,
     no_create_table,
@@ -1105,6 +1107,7 @@ def command_pg2pg(
         callback=progress_bar.update,
         encoding=encoding,
         create_table=not no_create_table,
+        binary=binary,
     )
     progress_bar.description = "{} rows imported".format(import_meta["rows_imported"])
     progress_bar.close()

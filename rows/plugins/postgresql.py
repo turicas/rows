@@ -97,11 +97,16 @@ def get_psql_copy_command(
     dialect=csv.excel,
     direction="FROM",
     has_header=True,
+    output_format="CSV",
+    force_null=True,
 ):
-
+    # TODO: implement WHERE (copy FROM)
+    output_format = str(output_format or "").strip().upper()
     direction = direction.upper()
     if direction not in ("FROM", "TO"):
-        raise ValueError('`direction` must be "FROM" or "TO"')
+        raise ValueError('`direction` must be one of: "FROM", "TO"')
+    if output_format not in ("TEXT", "CSV", "BINARY"):
+        raise ValueError('`output_format` must be one of: "TEXT", "CSV", "BINARY"')
 
     if not is_query:  # Table name
         source = table_name_or_query
@@ -112,23 +117,26 @@ def get_psql_copy_command(
     else:
         header = ", ".join(f'"{field_name}"' for field_name in header)
         header = "({header}) ".format(header=header)
-    copy = (
-        r"\copy {source} {header}{direction} STDIN WITH("
-        "DELIMITER '{delimiter}', "
-        "QUOTE '{quote}', "
-    )
-    if direction == "FROM":
-        copy += "FORCE_NULL {header}, "
-    copy += "ENCODING '{encoding}', "
-    copy += "FORMAT CSV{});".format(", HEADER" if has_header else "")
 
+    inside_with = []
+    if output_format == "CSV":
+        inside_with.append("DELIMITER '{delimiter}'")
+        inside_with.append("QUOTE '{quote}'")
+        inside_with.append("ENCODING '{encoding}'")
+        if direction == "FROM" and force_null:
+            inside_with.append("FORCE_NULL {header}")
+    inside_with.append("FORMAT {output_format}")
+    if has_header and output_format != "BINARY":
+        inside_with.append("HEADER")
+    copy = r"\copy {source} {header}{direction} STDIN WITH (" + ", ".join(inside_with) + ");"
     copy_command = copy.format(
-        source=source,
-        header=header,
-        direction=direction,
         delimiter=dialect.delimiter.replace("'", "''"),
-        quote=dialect.quotechar.replace("'", "''"),
+        direction=direction,
         encoding=encoding,
+        header=header,
+        output_format=output_format,
+        quote=dialect.quotechar.replace("'", "''"),
+        source=source,
     )
 
     return get_psql_command(
@@ -710,6 +718,7 @@ def pg2pg(
     dialect=csv.excel,
     encoding="utf-8",
     create_table=True,
+    binary=False,
 ):
     r"""Export data from one PostgreSQL instance to another using psql's \copy
 
@@ -730,15 +739,17 @@ def pg2pg(
 
     # Prepare the `psql` command to be executed to export data
     output_sql = table_name_from if " " in table_name_from else f'''SELECT * FROM "{table_name_from}"'''
-    # TODO: use `FORMAT binary` to increase performance
+    if not binary:
+        copy_params = {"encoding": encoding, "dialect": dialect}
+    else:
+        copy_params = {"output_format": "binary"}
     command_output = get_psql_copy_command(
         database_uri=database_uri_from,
         direction="TO",
-        encoding=encoding,
         header=None,  # Needed when direction = 'TO'
         table_name_or_query=output_sql,
         is_query=True,
-        dialect=dialect,
+        **copy_params,
     )
     rows_imported, total_written = 0, 0
 
@@ -750,16 +761,18 @@ def pg2pg(
             stderr=subprocess.PIPE,
         )
         data = process_output.stdout.read(chunk_size)
-        field_names = next(csv.reader(io.TextIOWrapper(io.BytesIO(data), encoding=encoding), dialect=dialect))
+        if not binary:
+            field_names = next(csv.reader(io.TextIOWrapper(io.BytesIO(data), encoding=encoding), dialect=dialect))
+        else:
+            field_names = None
         command_input = get_psql_copy_command(
             database_uri=database_uri_to,
-            dialect=dialect,
             direction="FROM",
-            encoding=encoding,
             header=field_names,
             table_name_or_query=table_name_to,
             is_query=False,
             has_header=True,
+            **copy_params,
         )
         process_input = subprocess.Popen(
             command_input,
