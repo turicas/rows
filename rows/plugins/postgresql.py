@@ -143,6 +143,7 @@ def get_psql_copy_command(
 
 
 def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
+    access_method = str(access_method or "").strip().lower()
     field_names = list(schema.keys())
     field_types = list(schema.values())
 
@@ -155,7 +156,7 @@ def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
         post_table=" IF NOT EXISTS",
         table_name=table_name,
         field_types=", ".join(columns),
-        post_fields=" USING {}".format(access_method)
+        post_fields=" USING {}".format(access_method) if access_method != "heap" else ""
         if access_method is not None
         else "",
     )
@@ -729,6 +730,7 @@ def pg2pg(
 
     # Prepare the `psql` command to be executed to export data
     output_sql = table_name_from if " " in table_name_from else f'''SELECT * FROM "{table_name_from}"'''
+    # TODO: use `FORMAT binary` to increase performance
     command_output = get_psql_copy_command(
         database_uri=database_uri_from,
         direction="TO",
