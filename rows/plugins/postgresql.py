@@ -164,7 +164,7 @@ def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
         post_table=" IF NOT EXISTS",
         table_name=table_name,
         field_types=", ".join(columns),
-        post_fields=" USING {}".format(access_method) if access_method != "heap" else ""
+        post_fields=" USING {}".format(access_method) if access_method and access_method != "heap" else ""
         if access_method is not None
         else "",
     )
