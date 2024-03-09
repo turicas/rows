@@ -389,6 +389,7 @@ class PostgresCopy:
                 stderr=subprocess.PIPE,
             )
             data = fobj.read(self.chunk_size)
+            total_read, total_written = 0, 0
             if skip_rows > 0:
                 temp_fobj = io.BytesIO(data)
                 for _ in range(skip_rows):
@@ -397,8 +398,14 @@ class PostgresCopy:
                     # because it's easier, but not 100% correct (will work for
                     # most cases). It'd be complicated to have the exact byte
                     # where each row finishes to skip.
-                data = data[temp_fobj.tell():]  # Consume bytes read by `for`
-            total_read, total_written = 0, 0
+                skipped_bytes = temp_fobj.tell()
+                data = data[skipped_bytes:]  # Consume bytes read by `for`
+                # `total_read` must be incremented and `callback` must be called, even if these bytes were not written,
+                # to ensure it correctly reflects to total read bytes. Ultimately, `total_read` must match the file
+                # size.
+                total_read += skipped_bytes
+                if callback:
+                    callback(skipped_bytes, total_read)
             while data != b"":
                 # If `data` contains `\x00`, then the amount of bytes written
                 # will be different from `len(data)`. Since the progress bar
