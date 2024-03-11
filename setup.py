@@ -30,7 +30,6 @@ with open(version_filename, mode="r", encoding="utf-8") as fobj:
 utils_requirements = ["requests", "requests-cache", "tqdm"]
 EXTRA_REQUIREMENTS = {
     "cli": ["click"] + utils_requirements,
-    "csv": ["unicodecsv"],
     "detect": ["file-magic"],
     "html": ["lxml"],  # apt: libxslt-dev libxml2-dev
     "ods": ["lxml"],
@@ -46,10 +45,10 @@ EXTRA_REQUIREMENTS = {
 }
 EXTRA_REQUIREMENTS["all"] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = [
-    "dataclasses",    
+    "dataclasses",
     "six",
     "requests",
-] + EXTRA_REQUIREMENTS["csv"]
+]
 LONG_DESCRIPTION = """
 No matter in which format your tabular data is: rows will import it,
 automatically detect types and give you high-level Python objects so you can
