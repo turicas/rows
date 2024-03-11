@@ -47,6 +47,14 @@ Install all plugins' dependencies:
 pip install --editable .[all]
 ```
 
+Install required libs:
+    
+    In linux:
+    apt-get install libsnappy-dev libmagic-dev
+
+    In Mac:
+    brew install snappy libmagic
+
 Install development dependencies:
 
 ```bash
