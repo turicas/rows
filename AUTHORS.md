@@ -35,3 +35,4 @@ Created and maintained by Álvaro Justen aka turicas:
 - Marcelo Jorge Vieira <https://github.com/marcelometal>
 - Marcos Vinícius <https://github.com/marcosvbras>
 - Daniel Drumond <https://github.com/DanielDrumond>
+- Alan Taranti <https://github.com/AlanTaranti>
