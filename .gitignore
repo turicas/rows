@@ -19,6 +19,8 @@ MANIFEST
 build/*
 data/
 dist/*
+docker/data/
+docker/env/*.local
 docs-build/
 docs/man/
 docs/reference/

@@ -31,10 +31,10 @@ each Python version.
 For the PostgreSQL plugin you're going to need a PostgreSQL server running and
 must set the `POSTGRESQL_URI` environment variable. If you have docker
 installed you can easily create a container running PostgreSQL with the
-provided `docker-compose.yml` by running:
+provided `compose.yml` by running:
 
 ```bash
-docker-compose -p rows -f docker-compose.yml up -d
+docker compose -p rows up -d
 ```
 
 ### Running on your virtualenv
@@ -76,11 +76,11 @@ A PostgreSQL server is needed to run the PostgreSQL plugin tests. You can use
 use your own method to run it. The `POSTGRESQL_URI` environment variable need
 to be se so you can run the tests.
 
-Running the PostgreSQL container using docker-compose, set the environment
+Running the PostgreSQL container using docker compose, set the environment
 variable and run the PostgreSQL-specific tests:
 
 ```bash
-docker-compose -p rows -f docker-compose.yml up -d
+docker compose -p rows up -d
 export POSTGRESQL_URI=postgres://postgres:postgres@127.0.0.1:42001/rows
 nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/tests_plugin_postgresql.py
 ```

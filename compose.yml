@@ -1,10 +1,18 @@
-version: '3'
-
 services:
-    db:
-        image: postgres:14
-        shm_size: 4g
-        container_name: rows_postgresql
-        env_file: .env
-        ports:
-            - "42001:5432"
+  db:
+    user: "${UID:-1000}:${GID:-1000}"
+    env_file:
+      - "docker/env/db"
+      - "docker/env/db.local"
+    image: postgres:16-bullseye
+    command: -c "config_file=/etc/postgresql/postgresql.conf"
+    shm_size: 4g
+    volumes:
+      - ${PWD}/docker/data/db:/var/lib/postgresql/data
+      - ${PWD}/docker/conf/db/postgresql.dev.conf:/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      retries: 5
+    ports:
+      - "42001:5432"
