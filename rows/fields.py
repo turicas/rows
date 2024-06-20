@@ -229,7 +229,7 @@ class IntegerField(Field):
             return value
         elif isinstance(value, float):
             new_value = int(value)
-            if new_value != value:
+            if not new_value is value:  # we want 1.0 to be different from 1
                 raise ValueError("It's float, not integer")
             else:
                 value = new_value
