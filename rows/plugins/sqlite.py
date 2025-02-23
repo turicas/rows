@@ -143,6 +143,9 @@ def import_from_sqlite(
     """Return a rows.Table with data from SQLite database."""
     source = get_source(filename_or_connection)
     connection = source.fobj
+    # TODO: add PRAGMA journal_mode=WAL (may save old state)
+    # TODO: add PRAGMA synchronous=1 (may save old state)
+    # TODO: may use strict mode
     cursor = connection.cursor()
 
     if query is None:

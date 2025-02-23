@@ -26,6 +26,7 @@ import csv
 import io
 import logging
 import os
+import re
 import sqlite3
 import sys
 import tempfile
@@ -60,9 +61,7 @@ from rows.utils import (
 
 DEFAULT_BUFFER_SIZE = 8 * 1024 * 1024
 DEFAULT_INPUT_ENCODING = "utf-8"
-DEFAULT_INPUT_LOCALE = "C"
 DEFAULT_OUTPUT_ENCODING = "utf-8"
-DEFAULT_OUTPUT_LOCALE = "C"
 DEFAULT_SAMPLE_SIZE = 1024 * 1024
 HOME_PATH = Path.home()
 CACHE_PATH = HOME_PATH / ".cache" / "rows" / "http"
@@ -536,6 +535,18 @@ def print_(
     # TODO: may pass unicode to click.echo if output_encoding is not provided
     click.echo(fobj.read())
 
+def create_complete_query(query, table_names):
+    """Return a complete SQL query - allows user to specify only the part after 'WHERE'"""
+    REGEXP_SQL_MULTILINE_COMMENTS = re.compile(r"/\*.*?\*/", flags=re.MULTILINE | re.DOTALL)
+    REGEXP_SQL_INLINE_COMMENT = re.compile(r"^\s*--.*?\n", flags=re.MULTILINE)
+
+    query_without_comments = REGEXP_SQL_INLINE_COMMENT.sub("\n", REGEXP_SQL_MULTILINE_COMMENTS.sub("\n", query))
+    first_word = query_without_comments.strip().lower().split(maxsplit=1)[0]
+    if first_word not in ("select", "with"):
+        return "SELECT * FROM {} WHERE {}".format(", ".join(table_names), query)
+    else:
+        return query
+
 
 @cli.command(name="query", help="Query a table using SQL")
 @click.option("--input-encoding", default=None)
@@ -583,12 +594,8 @@ def query(
     progress = not quiet
 
     samples = samples if samples > 0 else None
-
-    if not query.strip().lower().startswith("select"):
-        table_names = ", ".join(
-            ["table{}".format(index) for index in range(1, len(sources) + 1)]
-        )
-        query = "SELECT * FROM {} WHERE {}".format(table_names, query)
+    table_names = ["table{}".format(index) for index in range(1, len(sources) + 1)]
+    query = create_complete_query(query, table_names)
 
     if len(sources) == 1:
         source = detect_source(sources[0], verify_ssl=verify_ssl, progress=progress)

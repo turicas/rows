@@ -19,7 +19,19 @@ from __future__ import unicode_literals
 
 import unittest
 
+from rows.cli import create_complete_query
+
 
 class CliTestCase(unittest.TestCase):
-    # TODO: test everything
-    pass
+
+    def test_create_complete_query(self):
+        query = "-- Olá\n--Como vai?\n\n\n\t--aqui tem outro\n-- SELECT ahaha\n\t\n\n/*\nmultiline\ncomments\nin\nSQL\n\t\t\tWITH x AS (SELECT * FROM foo) SELECT * FROM x\n--teste\t\t*/\n\t\tSELECT * FROM bar"
+        result = create_complete_query(query, [])
+        expected = query
+        assert result == expected
+
+        result = create_complete_query("a > 1", ["tableX"])
+        expected = "SELECT * FROM tableX WHERE a > 1"
+        assert result == expected
+
+    # TODO: test everything else

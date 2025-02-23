@@ -17,7 +17,6 @@
 
 from __future__ import unicode_literals
 
-from functools import lru_cache
 from io import BytesIO, StringIO
 from itertools import islice
 

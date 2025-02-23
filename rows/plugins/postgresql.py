@@ -829,3 +829,7 @@ def pg2pg(
 # be able to read the temp file on PGPASSFILE
 # To securely set the file permissions, may use https://github.com/YakDriver/oschmod
 # TODO: may use pg_stat_progress_copy to get number of tuples already processed
+
+# TODO: try to use COPY SQL command directly (instead of running `psql`)
+# TOOD: because of this pass-through method, \copy ... from in CSV mode will erroneously treat a \. data value alone on
+# a line as an end-of-input marker.
