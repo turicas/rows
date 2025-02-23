@@ -834,7 +834,7 @@ class CsvLazyDictWriter:
             self._fobj.close()
 
 
-def execute_command(command):
+def execute_command(command, timeout=30.0, encoding="utf-8"):
     """Execute a command and return its output"""
     import shlex
     import subprocess
@@ -850,15 +850,11 @@ def execute_command(command):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    process.wait()
-    # TODO: may use another codec to decode
+    stdout, stderr = process.communicate(timeout=timeout)
     if process.returncode > 0:
-        stderr = process.stderr.read().decode("utf-8")
+        stderr = stderr.decode(encoding)
         raise ValueError("Error executing command: {}".format(repr(stderr)))
-    data = process.stdout.read().decode("utf-8")
-    process.stdin.close()
-    process.stdout.close()
-    process.stderr.close()
+    data = stdout.decode(encoding)
     process.wait()
     return data
 
