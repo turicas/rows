@@ -58,10 +58,6 @@ Helper functions:
   `rows csv2sqlite --help`). The CSV can be optionally compressed (`.csv`,
   `.csv.gz` and `.csv.xz`).
 
-Learn by example:
-
-- [`examples/library/usa_legislators.py`][example-legislators]
-
 
 ## List of dicts
 [See code reference][reference-dicts]
