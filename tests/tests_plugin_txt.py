@@ -185,11 +185,12 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         try:
             from imp import reload
         except ImportError:
-            pass
+            reload = None
         import rows.plugins.txt
 
         original_txt_plugin = rows.plugins.txt
-        reload(rows.plugins.txt)
+        if reload is not None:
+            reload(rows.plugins.txt)
         rows.import_from_txt = rows.plugins.txt.import_from_txt
         rows.export_to_txt = rows.plugins.txt.export_to_txt
         original_txt_plugin.FRAME_SENTINEL = rows.plugins.txt.FRAME_SENTINEL

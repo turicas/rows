@@ -1014,7 +1014,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             elif sql_type == "INTEGER":
                 sql_type = metadata["subtype"]
             elif sql_type == "TEXT":
-                if metadata["subtype"] == "VARCHAR":
+                if metadata.get("subtype") == "VARCHAR":
                     sql_type = f"VARCHAR({metadata['max_length']})"
                 field_choices = metadata.get("choices")
                 if field_choices is not None:
