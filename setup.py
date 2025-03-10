@@ -17,15 +17,26 @@
 
 from __future__ import unicode_literals
 
+import sys
 from distutils.util import convert_path
-
 from setuptools import find_packages, setup
 
+
 version_filename = convert_path("rows/__init__.py")
-with open(version_filename, mode="r", encoding="utf-8") as fobj:
-    for line in fobj:
-        if "__version__ =" in line:
-            version = line.strip().split("=")[-1].strip().replace('"', '').replace("'", "")
+if sys.version_info.major == 2:
+    with open(version_filename, mode="r") as fobj:
+        for line in fobj:
+            line = line.decode("utf-8")
+            if "__version__ =" in line:
+                line_version = line
+                break
+else:
+    with open(version_filename, mode="r", encoding="utf-8") as fobj:
+        for line in fobj:
+            if "__version__ =" in line:
+                line_version = line
+                break
+version = line.strip().split("=")[-1].strip().replace('"', '').replace("'", "")
 
 utils_requirements = ["requests", "requests-cache", "tqdm"]
 EXTRA_REQUIREMENTS = {
