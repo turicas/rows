@@ -57,7 +57,7 @@ except ImportError:
 
 try:
     import magic
-except (ImportError, TypeError):
+except (AttributeError, ImportError, TypeError):
     magic = None
 else:
     if not hasattr(magic, "detect_from_content"):
