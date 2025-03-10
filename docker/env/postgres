@@ -1,0 +1,4 @@
+# Environment variables for `postgres` service
+
+POSTGRES_PASSWORD="verysecret"
+PGDATA="/data/db-data/"

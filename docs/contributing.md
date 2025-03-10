@@ -25,16 +25,15 @@ pip install -r requirements-development.txt
 
 ## Running the tests
 
-There are two possible ways of running the tests: on your own virtualenv or for
-each Python version.
+There are two possible ways of running the tests: on your own virtualenv (on your own machine) or for each Python
+version inside a Docker container.
 
-For the PostgreSQL plugin you're going to need a PostgreSQL server running and
-must set the `POSTGRESQL_URI` environment variable. If you have docker
-installed you can easily create a container running PostgreSQL with the
-provided `compose.yml` by running:
+For the PostgreSQL plugin you're going to need a PostgreSQL server running and must set the `DATABASE_URL` environment
+variable. If you have Docker installed you can easily create a container running PostgreSQL with the provided
+`compose.yml` by running:
 
 ```bash
-docker compose -p rows up -d
+docker compose up -d
 ```
 
 ### Running on your virtualenv
@@ -71,19 +70,9 @@ section).
 
 ## Running PostgreSQL tests
 
-A PostgreSQL server is needed to run the PostgreSQL plugin tests. You can use
-[Docker](https://docker.io/) to easily run a PostgreSQL server, but can also
-use your own method to run it. The `POSTGRESQL_URI` environment variable need
-to be se so you can run the tests.
-
-Running the PostgreSQL container using docker compose, set the environment
-variable and run the PostgreSQL-specific tests:
-
-```bash
-docker compose -p rows up -d
-export POSTGRESQL_URI=postgres://postgres:postgres@127.0.0.1:42001/rows
-nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/tests_plugin_postgresql.py
-```
+A PostgreSQL server is needed to run the PostgreSQL plugin tests. There's a `postgres` service already on the
+`compose.yml` file, so just start with `docker compose up -d` and it'll run the tests properly.
+The environment variable `DATABASE_URL` will be available inside `py*` containers for connecting to the database.
 
 
 ## Generating the documentation

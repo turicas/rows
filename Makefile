@@ -1,3 +1,8 @@
+MAKEFLAGS += --always-make
+PYTHON_VERSIONS = 27 35 36 37 38 39 310 311 312 313
+TEST_PY_TARGETS = $(foreach version, $(PYTHON_VERSIONS), test-py$(version))
+BUILD_PY_TARGETS = $(foreach version, $(PYTHON_VERSIONS), build-py$(version))
+
 envtest: clean
 	nosetests tests/
 
