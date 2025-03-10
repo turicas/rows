@@ -1,7 +1,6 @@
 import re
 import subprocess
 import warnings
-from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -12,12 +11,10 @@ from rows.compat import TEXT_TYPE
 REGEXP_VERSION = re.compile("([0-9][a-z0-9.+-]+)")
 
 
-@dataclass
-class Download:
-    url: str
-    filename: Path = None
-
-    def __post_init__(self):
+class Download(object):
+    def __init__(self, url, filename=None):
+        self.url = url  # str
+        self.filename = filename  # Path
         if self.filename is not None and not isinstance(self.filename, Path):
             self.filename = Path(self.filename)
 

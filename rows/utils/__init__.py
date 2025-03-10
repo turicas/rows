@@ -22,7 +22,6 @@ import io
 import json
 import os
 from collections import OrderedDict, defaultdict
-from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -236,19 +235,20 @@ class ProgressBar(object):
         self.progress.close()
 
 
-@dataclass
 class Source(object):
     "Define a source to import a `rows.Table`"
 
-    uri: (str, Path)
-    plugin_name: str
-    encoding: str
-    fobj: object = None
-    compressed: bool = None
-    should_delete: bool = False
-    should_close: bool = False
-    is_file: bool = None
-    local: bool = None
+    def __init__(self, uri, plugin_name, encoding, fobj=None, compressed=None, should_delete=None, should_close=None,
+                 is_file=None, local=None):
+        self.uri = uri  # str, Path
+        self.plugin_name = plugin_name  # str
+        self.encoding = encoding  # str
+        self.fobj = fobj  # object?
+        self.compressed = compressed  # bool
+        self.should_delete = should_delete  # bool
+        self.should_close = should_close  # bool
+        self.is_file = is_file  # bool
+        self.local = local  # bool
 
     # TODO: may add a general way to get the decoded version of the file-like object
 

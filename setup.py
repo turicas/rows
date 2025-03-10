@@ -64,7 +64,6 @@ EXTRA_REQUIREMENTS = {
 }
 EXTRA_REQUIREMENTS["all"] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = [
-    "dataclasses",
     "requests",
 ] + EXTRA_REQUIREMENTS["csv"]
 LONG_DESCRIPTION = """

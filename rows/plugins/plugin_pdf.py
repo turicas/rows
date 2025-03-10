@@ -20,7 +20,6 @@ from __future__ import unicode_literals
 import math
 import re
 import tempfile
-from dataclasses import dataclass
 
 from cached_property import cached_property
 
@@ -415,17 +414,11 @@ class PyMuPDFTesseractBackend(PyMuPDFBackend):
         ]
 
 
-@dataclass
 class TextObject(object):
-    x0: float
-    y0: float
-    x1: float
-    y1: float
-    text: str
-    colors: int = None
-    flags: int = None
-    fonts: str = None
-    sizes: int = None
+    def __init__(self, x0, y0, x1, y1, text, colors=None, flags=None, fonts=None, sizes=None):
+        self.x0, self.y0, self.x1, self.y1 = x0, y0, x1, y1  # float
+        self.text = text  # str
+        self.colors, self.flags, self.fonts, self.sizes = colors, flags, fonts, sizes  # int
 
     @property
     def center_x(self):
