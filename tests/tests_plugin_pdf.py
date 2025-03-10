@@ -20,6 +20,8 @@ from __future__ import unicode_literals
 import re
 import unittest
 
+import pytest
+
 import rows
 import rows.plugins.plugin_pdf as pdf
 import tests.utils as utils
@@ -109,6 +111,7 @@ class PDFTestCase(utils.RowsTestMixIn):
         self.assertTrue(first_page.startswith(expected_start))
 
 
+@pytest.mark.skipif(PYTHON_VERSION < (3, 7, 0), reason="pymupdf not supported on Python < 3.7")
 class PyMuPDFTestCase(PDFTestCase, unittest.TestCase):
 
     backend = "pymupdf"

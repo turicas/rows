@@ -42,12 +42,19 @@ utils_requirements = ["requests", "requests-cache", "tqdm"]
 EXTRA_REQUIREMENTS = {
     "cli": ["click"] + utils_requirements,
     "csv": ["unicodecsv; python_version < '3.0'"],
-    "detect": ["file-magic"],
+    "detect": ["file-magic; python_version >= '3.0'"],
     "html": ["lxml"],  # apt: libxslt-dev libxml2-dev
     "ods": ["lxml"],
     "parquet": ["parquet"],
-    "pdf": ["cached-property", "pymupdf>=1.16.8"],
-    "pdf-pdfminer.six": ["cached-property", "pdfminer.six"],
+    "pdf": ["cached-property", "pymupdf >= 1.16.8; python_version >= '3.7'"],
+    "pdf-pdfminer.six": [
+        "cached-property",
+        "pdfminer.six == 20191110; python_version == '2.7'",
+        "pdfminer.six == 20201018; python_version == '3.5'",
+        "pdfminer.six == 20221105; python_version == '3.6'",
+        "pdfminer.six == 20221105; python_version == '3.7'",
+        "pdfminer.six; python_version >= '3.8'"
+    ],
     "pdf-pymupdf": ["cached-property", "pymupdf"],
     "postgresql": ["psycopg2-binary"],
     "utils": utils_requirements,
