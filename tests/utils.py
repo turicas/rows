@@ -24,11 +24,11 @@ from collections import OrderedDict
 from decimal import Decimal
 from pathlib import Path
 
-import six
 
 import rows.fields as fields
 from rows.fields import slug
 from rows.table import Table
+from rows.compat import TEXT_TYPE
 
 NONE_VALUES = list(fields.NULL) + ["", None]
 FIELDS = OrderedDict(
@@ -280,9 +280,9 @@ class RowsTestMixIn(object):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
         elif expected_value is True:
-            assert str(value).lower() in ("true", b"true", "yes", b"yes")
+            assert TEXT_TYPE(value).lower() in ("true", b"true", "yes", b"yes")
         elif expected_value is False:
-            assert str(value).lower() in ("false", b"false", "no", b"no")
+            assert TEXT_TYPE(value).lower() in ("false", b"false", "no", b"no")
         else:
             raise ValueError("expected_value is not True or False")
 
@@ -290,13 +290,13 @@ class RowsTestMixIn(object):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
         else:
-            self.assertIn(value, (expected_value, str(expected_value)))
+            self.assertIn(value, (expected_value, TEXT_TYPE(expected_value)))
 
     def assert_FloatField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
         elif type(value) != type(expected_value):
-            self.assertEqual(str(value), str(expected_value))
+            self.assertEqual(TEXT_TYPE(value), TEXT_TYPE(expected_value))
         else:
             self.assertAlmostEqual(expected_value, value, places=5)
 
@@ -310,22 +310,22 @@ class RowsTestMixIn(object):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
         else:
-            float_value = str(Decimal(expected_value) * 100)[:-2]
+            float_value = TEXT_TYPE(Decimal(expected_value) * 100)[:-2]
             if float_value.endswith("."):
                 float_value = float_value[:-1]
 
             possible_values = []
 
             if "." not in float_value:
-                possible_values.append(str(int(float_value)) + "%")
-                possible_values.append(str(int(float_value)) + ".00%")
+                possible_values.append(TEXT_TYPE(int(float_value)) + "%")
+                possible_values.append(TEXT_TYPE(int(float_value)) + ".00%")
 
             float_value = float(float_value)
             possible_values.extend(
                 [
-                    six.text_type(float_value) + "%",
-                    six.text_type(float_value) + ".0%",
-                    six.text_type(float_value) + ".00%",
+                    TEXT_TYPE(float_value) + "%",
+                    TEXT_TYPE(float_value) + ".0%",
+                    TEXT_TYPE(float_value) + ".00%",
                 ]
             )
 
@@ -335,10 +335,10 @@ class RowsTestMixIn(object):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
         else:
-            value = str(value)
+            value = TEXT_TYPE(value)
             if value.endswith("00:00:00"):
                 value = value[:-9]
-            self.assertEqual(str(expected_value), value)
+            self.assertEqual(TEXT_TYPE(expected_value), value)
 
     def assert_DatetimeField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
@@ -352,12 +352,12 @@ class RowsTestMixIn(object):
             delta_1 = expected_value - value
             delta_2 = value - expected_value
             self.assertTrue(
-                str(delta_1).startswith("0:00:00") or str(delta_2).startswith("0:00:00")
+                TEXT_TYPE(delta_1).startswith("0:00:00") or TEXT_TYPE(delta_2).startswith("0:00:00")
             )
         else:
             # if not, convert values to string and verify if are equal
-            value = str(value)
-            self.assertEqual(str(expected_value).replace(" ", "T"), value)
+            value = TEXT_TYPE(value)
+            self.assertEqual(TEXT_TYPE(expected_value).replace(" ", "T"), value)
 
     def assert_TextField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:

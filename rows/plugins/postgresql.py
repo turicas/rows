@@ -24,13 +24,13 @@ import string
 import subprocess
 from pathlib import Path
 
-import six
 from psycopg2 import connect as pgconnect
 
 import rows.fields as fields
 from rows.plugins.plugin_csv import CsvInspector
 from rows.plugins.utils import create_table, ipartition, prepare_to_export
 from rows.utils import Source, detect_local_source, execute_command, open_compressed
+from rows.compat import BINARY_TYPE, TEXT_TYPE
 
 POSTGRESQL_TYPES = {
     fields.BinaryField: "BYTEA",
@@ -101,7 +101,7 @@ def get_psql_copy_command(
     force_null=True,
 ):
     # TODO: implement WHERE (copy FROM)
-    output_format = str(output_format or "").strip().upper()
+    output_format = TEXT_TYPE(output_format or "").strip().upper()
     direction = direction.upper()
     if direction not in ("FROM", "TO"):
         raise ValueError('`direction` must be one of: "FROM", "TO"')
@@ -151,7 +151,7 @@ def get_psql_copy_command(
 
 
 def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
-    access_method = str(access_method or "").strip().lower()
+    access_method = TEXT_TYPE(access_method or "").strip().lower()
     field_names = list(schema.keys())
     field_types = list(schema.values())
 
@@ -204,7 +204,7 @@ def _python_to_postgresql(field_types):
 
 def get_source(connection_or_uri):
 
-    if isinstance(connection_or_uri, (six.binary_type, six.text_type)):
+    if isinstance(connection_or_uri, (BINARY_TYPE, TEXT_TYPE)):
         connection = pgconnect(connection_or_uri)
         uri = connection_or_uri
         input_is_uri = should_close = True
@@ -270,7 +270,7 @@ def import_from_postgresql(
     cursor = connection.cursor()
     cursor.execute(query, query_args)
     table_rows = list(cursor.fetchall())  # TODO: make it lazy
-    header = [six.text_type(info[0]) for info in cursor.description]
+    header = [TEXT_TYPE(info[0]) for info in cursor.description]
     cursor.close()
     connection.commit()  # WHY?
 
@@ -465,7 +465,7 @@ class PostgresCopy(object):
         encoding = encoding or inspector.encoding
         dialect = dialect or inspector.dialect
         schema = schema or inspector.schema
-        if isinstance(dialect, six.text_type):
+        if isinstance(dialect, TEXT_TYPE):
             dialect = csv.get_dialect(dialect)
 
         if not has_header:
@@ -524,7 +524,7 @@ class PostgresCopy(object):
         access_method=None,
         callback=None,
     ):
-        if isinstance(dialect, six.text_type):
+        if isinstance(dialect, TEXT_TYPE):
             dialect = csv.get_dialect(dialect)
         # TODO: add `else` to check if `dialect` is instace of correct class
 
@@ -579,7 +579,7 @@ def pgimport(
     """
 
     # TODO: add warning if table already exists and create_table=True
-    if isinstance(dialect, six.text_type):
+    if isinstance(dialect, TEXT_TYPE):
         dialect = csv.get_dialect(dialect)
 
     pgcopy = PostgresCopy(
@@ -588,7 +588,7 @@ def pgimport(
         max_samples=max_samples,
     )
 
-    if isinstance(filename_or_fobj, (six.binary_type, six.text_type, Path)):
+    if isinstance(filename_or_fobj, (BINARY_TYPE, TEXT_TYPE, Path)):
         return pgcopy.import_from_filename(
             filename=filename_or_fobj,
             table_name=table_name,
@@ -640,7 +640,7 @@ def pgexport(
     # TODO: integrate with PostgresCopy
 
     # TODO: add logging to the process
-    if isinstance(dialect, six.text_type):
+    if isinstance(dialect, TEXT_TYPE):
         dialect = csv.get_dialect(dialect)
 
     # Prepare the `psql` command to be executed to export data

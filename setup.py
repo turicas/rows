@@ -41,7 +41,7 @@ version = line.strip().split("=")[-1].strip().replace('"', '').replace("'", "")
 utils_requirements = ["requests", "requests-cache", "tqdm"]
 EXTRA_REQUIREMENTS = {
     "cli": ["click"] + utils_requirements,
-    "csv": ["unicodecsv"],
+    "csv": ["unicodecsv; python_version < '3.0'"],
     "detect": ["file-magic"],
     "html": ["lxml"],  # apt: libxslt-dev libxml2-dev
     "ods": ["lxml"],
@@ -57,8 +57,7 @@ EXTRA_REQUIREMENTS = {
 }
 EXTRA_REQUIREMENTS["all"] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = [
-    "dataclasses",    
-    "six",
+    "dataclasses",
     "requests",
 ] + EXTRA_REQUIREMENTS["csv"]
 LONG_DESCRIPTION = """

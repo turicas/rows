@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 from decimal import Decimal
 from io import BytesIO, UnsupportedOperation
 from numbers import Number
+from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.cell.read_only import EmptyCell
@@ -27,6 +28,7 @@ from openpyxl.cell.read_only import EmptyCell
 from rows import fields
 from rows.plugins.utils import create_table, prepare_to_export
 from rows.utils import Source
+from rows.compat import TEXT_TYPE
 
 
 def _cell_to_python(cell):
@@ -41,12 +43,12 @@ def _cell_to_python(cell):
         return False
 
     elif cell.number_format.lower() == "yyyy-mm-dd":
-        return str(value).split(" 00:00:00")[0]
+        return TEXT_TYPE(value).split(" 00:00:00")[0]
     elif cell.number_format.lower() == "yyyy-mm-dd hh:mm:ss":
-        return str(value).split(".")[0]
+        return TEXT_TYPE(value).split(".")[0]
 
     elif cell.number_format.endswith("%") and isinstance(value, Number):
-        value = Decimal(str(value))
+        value = Decimal(TEXT_TYPE(value))
         return "{:%}".format(value)
 
     elif value is None:
@@ -60,6 +62,8 @@ def sheet_names(filename_or_fobj, workbook_kwargs=None):
     workbook_kwargs = workbook_kwargs or {}
     workbook_kwargs["read_only"] = workbook_kwargs.get("read_only", True)
 
+    if isinstance(filename_or_fobj, Path):
+        filename_or_fobj = TEXT_TYPE(filename_or_fobj)
     workbook = load_workbook(filename_or_fobj, **workbook_kwargs)
     result = workbook.sheetnames
     workbook.close()
@@ -87,6 +91,8 @@ def import_from_xlsx(
     workbook_kwargs = workbook_kwargs or {}
     workbook_kwargs["read_only"] = workbook_kwargs.get("read_only", True)
 
+    if isinstance(filename_or_fobj, Path):
+        filename_or_fobj = TEXT_TYPE(filename_or_fobj)
     workbook = load_workbook(filename_or_fobj, **workbook_kwargs)
     if sheet_name is None:
         sheet_name = workbook.sheetnames[sheet_index]
@@ -198,6 +204,8 @@ def export_to_xlsx(table, filename_or_fobj=None, sheet_name=None, *args, **kwarg
     source = Source.from_file(filename_or_fobj, mode="a+b", plugin_name="xlsx")
 
     if is_existing_spreadsheet(source):
+        if isinstance(filename_or_fobj, Path):
+            filename_or_fobj = TEXT_TYPE(filename_or_fobj)
         workbook = load_workbook(filename_or_fobj)
         if sheet_name is None:
             sheet_name = define_sheet_name(workbook.sheetnames)
@@ -230,7 +238,7 @@ def export_to_xlsx(table, filename_or_fobj=None, sheet_name=None, *args, **kwarg
         # For some reason the `ZipFile` inside
         # `openpyxl.workbook.workbook.save_workbook` was not creating the
         # contents correctly when a fobj is passed, so filename is forced.
-        workbook.save(source.uri)
+        workbook.save(TEXT_TYPE(source.uri))
     else:
         workbook.save(source.fobj)
     source.fobj.flush()

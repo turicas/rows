@@ -25,10 +25,9 @@ import uuid
 from base64 import b64encode
 from decimal import Decimal
 
-import six
-
 import rows
 from rows import fields
+from rows.compat import BINARY_TYPE, TEXT_TYPE
 
 if platform.system() == "Windows":
     locale_name = "ptb_bra"
@@ -42,23 +41,23 @@ class FieldsTestCase(unittest.TestCase):
         self.assertIs(fields.Field.deserialize(None), None)
         self.assertEqual(fields.Field.deserialize("Álvaro"), "Álvaro")
         self.assertEqual(fields.Field.serialize(None), "")
-        self.assertIs(type(fields.Field.serialize(None)), six.text_type)
+        self.assertIs(type(fields.Field.serialize(None)), TEXT_TYPE)
         self.assertEqual(fields.Field.serialize("Álvaro"), "Álvaro")
-        self.assertIs(type(fields.Field.serialize("Álvaro")), six.text_type)
+        self.assertIs(type(fields.Field.serialize("Álvaro")), TEXT_TYPE)
 
     def test_BinaryField(self):
         deserialized = "Álvaro".encode("utf-8")
         serialized = b64encode(deserialized).decode("ascii")
 
-        self.assertEqual(type(deserialized), six.binary_type)
-        self.assertEqual(type(serialized), six.text_type)
+        self.assertEqual(type(deserialized), BINARY_TYPE)
+        self.assertEqual(type(serialized), TEXT_TYPE)
 
         self.assertEqual(fields.BinaryField.TYPE, (bytes,))
 
         self.assertEqual(fields.BinaryField.serialize(None), "")
-        self.assertIs(type(fields.BinaryField.serialize(None)), six.text_type)
+        self.assertIs(type(fields.BinaryField.serialize(None)), TEXT_TYPE)
         self.assertEqual(fields.BinaryField.serialize(deserialized), serialized)
-        self.assertIs(type(fields.BinaryField.serialize(deserialized)), six.text_type)
+        self.assertIs(type(fields.BinaryField.serialize(deserialized)), TEXT_TYPE)
         with self.assertRaises(ValueError):
             fields.BinaryField.serialize(42)
         with self.assertRaises(ValueError):
@@ -70,7 +69,7 @@ class FieldsTestCase(unittest.TestCase):
 
         self.assertIs(fields.BinaryField.deserialize(None), b"")
         self.assertEqual(fields.BinaryField.deserialize(serialized), deserialized)
-        self.assertIs(type(fields.BinaryField.deserialize(serialized)), six.binary_type)
+        self.assertIs(type(fields.BinaryField.deserialize(serialized)), BINARY_TYPE)
         with self.assertRaises(ValueError):
             fields.BinaryField.deserialize(42)
         with self.assertRaises(ValueError):
@@ -101,10 +100,10 @@ class FieldsTestCase(unittest.TestCase):
             self.assertIs(fields.BoolField.deserialize(value), True)
 
         self.assertEqual(fields.BoolField.serialize(False), "false")
-        self.assertIs(type(fields.BoolField.serialize(False)), six.text_type)
+        self.assertIs(type(fields.BoolField.serialize(False)), TEXT_TYPE)
 
         self.assertEqual(fields.BoolField.serialize(True), "true")
-        self.assertIs(type(fields.BoolField.serialize(True)), six.text_type)
+        self.assertIs(type(fields.BoolField.serialize(True)), TEXT_TYPE)
 
         # '0' and '1' should be not accepted as boolean values because the
         # sample could not contain other integers but the actual type could be
@@ -121,14 +120,14 @@ class FieldsTestCase(unittest.TestCase):
     def test_IntegerField(self):
         self.assertEqual(fields.IntegerField.TYPE, (int,))
         self.assertEqual(fields.IntegerField.serialize(None), "")
-        self.assertIs(type(fields.IntegerField.serialize(None)), six.text_type)
+        self.assertIs(type(fields.IntegerField.serialize(None)), TEXT_TYPE)
         self.assertIn(
             type(fields.IntegerField.deserialize("42")), fields.IntegerField.TYPE
         )
         self.assertEqual(fields.IntegerField.deserialize("42"), 42)
         self.assertEqual(fields.IntegerField.deserialize(42), 42)
         self.assertEqual(fields.IntegerField.serialize(42), "42")
-        self.assertIs(type(fields.IntegerField.serialize(42)), six.text_type)
+        self.assertIs(type(fields.IntegerField.serialize(42)), TEXT_TYPE)
         self.assertEqual(fields.IntegerField.deserialize(None), None)
         self.assertEqual(
             fields.IntegerField.deserialize("10152709355006317"), 10152709355006317
@@ -136,7 +135,7 @@ class FieldsTestCase(unittest.TestCase):
 
         with rows.locale_context(locale_name):
             self.assertEqual(fields.IntegerField.serialize(42000), "42000")
-            self.assertIs(type(fields.IntegerField.serialize(42000)), six.text_type)
+            self.assertIs(type(fields.IntegerField.serialize(42000)), TEXT_TYPE)
             self.assertEqual(
                 fields.IntegerField.serialize(42000, grouping=True), "42.000"
             )
@@ -155,7 +154,7 @@ class FieldsTestCase(unittest.TestCase):
     def test_FloatField(self):
         self.assertEqual(fields.FloatField.TYPE, (float,))
         self.assertEqual(fields.FloatField.serialize(None), "")
-        self.assertIs(type(fields.FloatField.serialize(None)), six.text_type)
+        self.assertIs(type(fields.FloatField.serialize(None)), TEXT_TYPE)
         self.assertIn(
             type(fields.FloatField.deserialize("42.0")), fields.FloatField.TYPE
         )
@@ -164,11 +163,11 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.FloatField.deserialize(42), 42.0)
         self.assertEqual(fields.FloatField.deserialize(None), None)
         self.assertEqual(fields.FloatField.serialize(42.0), "42.0")
-        self.assertIs(type(fields.FloatField.serialize(42.0)), six.text_type)
+        self.assertIs(type(fields.FloatField.serialize(42.0)), TEXT_TYPE)
 
         with rows.locale_context(locale_name):
             self.assertEqual(fields.FloatField.serialize(42000.0), "42000,000000")
-            self.assertIs(type(fields.FloatField.serialize(42000.0)), six.text_type)
+            self.assertIs(type(fields.FloatField.serialize(42000.0)), TEXT_TYPE)
             self.assertEqual(
                 fields.FloatField.serialize(42000, grouping=True), "42.000,000000"
             )
@@ -180,7 +179,7 @@ class FieldsTestCase(unittest.TestCase):
         deserialized = Decimal("42.010")
         self.assertEqual(fields.DecimalField.TYPE, (Decimal,))
         self.assertEqual(fields.DecimalField.serialize(None), "")
-        self.assertIs(type(fields.DecimalField.serialize(None)), six.text_type)
+        self.assertIs(type(fields.DecimalField.serialize(None)), TEXT_TYPE)
         self.assertEqual(fields.DecimalField.deserialize(""), None)
         self.assertIn(
             type(fields.DecimalField.deserialize("42.0")), fields.DecimalField.TYPE
@@ -189,7 +188,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.DecimalField.deserialize(deserialized), deserialized)
         self.assertEqual(fields.DecimalField.serialize(deserialized), "42.010")
         self.assertEqual(
-            type(fields.DecimalField.serialize(deserialized)), six.text_type
+            type(fields.DecimalField.serialize(deserialized)), TEXT_TYPE
         )
         self.assertEqual(
             fields.DecimalField.deserialize("21.21657469231"), Decimal("21.21657469231")
@@ -200,7 +199,7 @@ class FieldsTestCase(unittest.TestCase):
 
         with rows.locale_context(locale_name):
             self.assertEqual(
-                six.text_type, type(fields.DecimalField.serialize(deserialized))
+                TEXT_TYPE, type(fields.DecimalField.serialize(deserialized))
             )
             self.assertEqual(fields.DecimalField.serialize(Decimal("4200")), "4200")
             self.assertEqual(fields.DecimalField.serialize(Decimal("42.0")), "42,0")
@@ -235,7 +234,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.PercentField.deserialize(None), None)
         self.assertEqual(fields.PercentField.serialize(deserialized), "42.010%")
         self.assertEqual(
-            type(fields.PercentField.serialize(deserialized)), six.text_type
+            type(fields.PercentField.serialize(deserialized)), TEXT_TYPE
         )
         self.assertEqual(fields.PercentField.serialize(Decimal("42.010")), "4201.0%")
         self.assertEqual(fields.PercentField.serialize(Decimal("0")), "0.00%")
@@ -243,7 +242,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.PercentField.serialize(Decimal("0.01")), "1%")
         with rows.locale_context(locale_name):
             self.assertEqual(
-                type(fields.PercentField.serialize(deserialized)), six.text_type
+                type(fields.PercentField.serialize(deserialized)), TEXT_TYPE
             )
             self.assertEqual(fields.PercentField.serialize(Decimal("42.0")), "4200%")
             self.assertEqual(
@@ -265,7 +264,7 @@ class FieldsTestCase(unittest.TestCase):
         deserialized = datetime.date(2015, 5, 27)
         self.assertEqual(fields.DateField.TYPE, (datetime.date,))
         self.assertEqual(fields.DateField.serialize(None), "")
-        self.assertIs(type(fields.DateField.serialize(None)), six.text_type)
+        self.assertIs(type(fields.DateField.serialize(None)), TEXT_TYPE)
         self.assertIn(
             type(fields.DateField.deserialize(serialized)), fields.DateField.TYPE
         )
@@ -274,7 +273,7 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.DateField.deserialize(None), None)
         self.assertEqual(fields.DateField.deserialize(""), None)
         self.assertEqual(fields.DateField.serialize(deserialized), serialized)
-        self.assertIs(type(fields.DateField.serialize(deserialized)), six.text_type)
+        self.assertIs(type(fields.DateField.serialize(deserialized)), TEXT_TYPE)
         with self.assertRaises(ValueError):
             fields.DateField.deserialize(42)
         with self.assertRaises(ValueError):
@@ -291,14 +290,14 @@ class FieldsTestCase(unittest.TestCase):
         deserialized = fields.DatetimeField.deserialize(serialized)
         self.assertIn(type(deserialized), fields.DatetimeField.TYPE)
         self.assertEqual(fields.DatetimeField.serialize(None), "")
-        self.assertIs(type(fields.DatetimeField.serialize(None)), six.text_type)
+        self.assertIs(type(fields.DatetimeField.serialize(None)), TEXT_TYPE)
 
         value = datetime.datetime(2015, 5, 27, 1, 2, 3)
         self.assertEqual(fields.DatetimeField.deserialize(serialized), value)
         self.assertEqual(fields.DatetimeField.deserialize(deserialized), deserialized)
         self.assertEqual(fields.DatetimeField.deserialize(None), None)
         self.assertEqual(fields.DatetimeField.serialize(value), serialized)
-        self.assertIs(type(fields.DatetimeField.serialize(value)), six.text_type)
+        self.assertIs(type(fields.DatetimeField.serialize(value)), TEXT_TYPE)
         with self.assertRaises(ValueError):
             fields.DatetimeField.deserialize(42)
         with self.assertRaises(ValueError):
@@ -311,17 +310,17 @@ class FieldsTestCase(unittest.TestCase):
     def test_EmailField(self):
         # TODO: accept spaces also
         serialized = "test@domain.com"
-        self.assertEqual(fields.EmailField.TYPE, (six.text_type,))
+        self.assertEqual(fields.EmailField.TYPE, (TEXT_TYPE,))
         deserialized = fields.EmailField.deserialize(serialized)
         self.assertIn(type(deserialized), fields.EmailField.TYPE)
         self.assertEqual(fields.EmailField.serialize(None), "")
-        self.assertIs(type(fields.EmailField.serialize(None)), six.text_type)
+        self.assertIs(type(fields.EmailField.serialize(None)), TEXT_TYPE)
 
         self.assertEqual(fields.EmailField.serialize(serialized), serialized)
         self.assertEqual(fields.EmailField.deserialize(serialized), serialized)
         self.assertEqual(fields.EmailField.deserialize(None), None)
         self.assertEqual(fields.EmailField.deserialize(""), None)
-        self.assertIs(type(fields.EmailField.serialize(serialized)), six.text_type)
+        self.assertIs(type(fields.EmailField.serialize(serialized)), TEXT_TYPE)
 
         with self.assertRaises(ValueError):
             fields.EmailField.deserialize(42)
@@ -333,16 +332,16 @@ class FieldsTestCase(unittest.TestCase):
             fields.EmailField.deserialize("test@example.com".encode("utf-8"))
 
     def test_TextField(self):
-        self.assertEqual(fields.TextField.TYPE, (six.text_type,))
+        self.assertEqual(fields.TextField.TYPE, (TEXT_TYPE,))
         self.assertEqual(fields.TextField.serialize(None), "")
-        self.assertIs(type(fields.TextField.serialize(None)), six.text_type)
+        self.assertIs(type(fields.TextField.serialize(None)), TEXT_TYPE)
         self.assertIn(type(fields.TextField.deserialize("test")), fields.TextField.TYPE)
 
         self.assertEqual(fields.TextField.deserialize("Álvaro"), "Álvaro")
         self.assertIs(fields.TextField.deserialize(None), None)
         self.assertIs(fields.TextField.deserialize(""), "")
         self.assertEqual(fields.TextField.serialize("Álvaro"), "Álvaro")
-        self.assertIs(type(fields.TextField.serialize("Álvaro")), six.text_type)
+        self.assertIs(type(fields.TextField.serialize("Álvaro")), TEXT_TYPE)
 
         with self.assertRaises(ValueError) as exception_context:
             fields.TextField.deserialize("Álvaro".encode("utf-8"))
@@ -368,8 +367,8 @@ class FieldsTestCase(unittest.TestCase):
 
         data = uuid.uuid4()
         assert fields.UUIDField.deserialize(data) == data
-        assert fields.UUIDField.deserialize(str(data)) == data
-        assert fields.UUIDField.deserialize(str(data).replace("-", "")) == data
+        assert fields.UUIDField.deserialize(TEXT_TYPE(data)) == data
+        assert fields.UUIDField.deserialize(TEXT_TYPE(data).replace("-", "")) == data
 
 
 class FieldUtilsTestCase(unittest.TestCase):
@@ -509,7 +508,7 @@ class FieldUtilsTestCase(unittest.TestCase):
     def test_detect_types_integer_with_leading_zeroes(self):
         result = fields.detect_types(
             ["month", "document"],
-            [[f"{x:02d}", f"{x * 1000:09d}"] for x in range(1, 13)],
+            [["%02d" % x, "%09d" % (x * 1000)] for x in range(1, 13)]
         )
         expected = {
             "month": fields.IntegerField,

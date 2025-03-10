@@ -17,30 +17,82 @@
 
 from __future__ import unicode_literals
 
-from io import BytesIO, StringIO
+from io import BytesIO, TextIOWrapper, StringIO
 from itertools import islice
-
-import six
-import unicodecsv
 
 from rows import fields
 from rows.fields import make_header
 from rows.plugins.utils import create_table, ipartition, serialize
 from rows.utils import Source, detect_local_source, open_compressed
+from rows.compat import PYTHON_VERSION, TEXT_TYPE
 
-sniffer = unicodecsv.Sniffer()
+
+if PYTHON_VERSION < (3, 0, 0):
+    import unicodecsv as csv  # noqa
+
+    def discover_dialect(sample, encoding=None, delimiters=(b",", b";", b"\t", b"|")):
+        """Discover a CSV dialect based on a sample size.
+
+        `encoding` is not used (Python 2)
+        """
+        try:
+            dialect = sniffer.sniff(sample, delimiters=delimiters)
+
+        except csv.Error:  # Couldn't detect: fall back to 'excel'
+            dialect = csv.excel
+
+        fix_dialect(dialect)
+        return dialect
+else:
+    import csv  # noqa
+
+    def discover_dialect(sample, encoding, delimiters=(",", ";", "\t", "|")):
+        """Discover a CSV dialect based on a sample size.
+
+        `sample` must be `bytes` and an `encoding must be provided (Python 3)
+        """
+        # `csv.Sniffer.sniff` on Python 3 requires a `str` object. If we take a
+        # sample from the `bytes` object and it happens to end in the middle of
+        # a character which has more than one byte, we're going to have an
+        # `UnicodeDecodeError`. This `while` avoid this problem by removing the
+        # last byte until this error stops.
+        finished = False
+        while not finished:
+            try:
+                decoded = sample.decode(encoding)
+
+            except UnicodeDecodeError as exception:
+                _, _, _, pos, error = exception.args
+                if error == "unexpected end of data" and pos == len(sample):
+                    sample = sample[:-1]
+                else:
+                    raise
+            else:
+                finished = True
+
+        try:
+            dialect = sniffer.sniff(decoded, delimiters=delimiters)
+
+        except csv.Error:  # Couldn't detect: fall back to 'excel'
+            dialect = csv.excel
+
+        fix_dialect(dialect)
+        return dialect
+
+
+sniffer = csv.Sniffer()
 # Some CSV files have more than 128kB of data in a cell, so we force this value
 # to be greater (16MB).
 # TODO: check if it impacts in memory usage.
 # TODO: may add option to change it by passing a parameter to import/export.
-unicodecsv.field_size_limit(16777216)
+csv.field_size_limit(16777216)
 
 
 def fix_dialect(dialect):
     if not dialect.doublequote and dialect.escapechar is None:
         dialect.doublequote = True
 
-    if dialect.quoting == unicodecsv.QUOTE_MINIMAL and dialect.quotechar == "'":
+    if dialect.quoting == csv.QUOTE_MINIMAL and dialect.quotechar == "'":
         # Python csv's Sniffer seems to detect a wrong quotechar when
         # quoting is minimal
         dialect.quotechar = '"'
@@ -95,64 +147,11 @@ def fix_file(csv_reader, csv_writer, logger=None):
     }
 
 
-class excel_semicolon(unicodecsv.excel):
+class excel_semicolon(csv.excel):
     delimiter = ";"
 
 
-unicodecsv.register_dialect("excel-semicolon", excel_semicolon)
-
-
-if six.PY2:
-
-    def discover_dialect(sample, encoding=None, delimiters=(b",", b";", b"\t", b"|")):
-        """Discover a CSV dialect based on a sample size.
-
-        `encoding` is not used (Python 2)
-        """
-        try:
-            dialect = sniffer.sniff(sample, delimiters=delimiters)
-
-        except unicodecsv.Error:  # Couldn't detect: fall back to 'excel'
-            dialect = unicodecsv.excel
-
-        fix_dialect(dialect)
-        return dialect
-
-
-elif six.PY3:
-
-    def discover_dialect(sample, encoding, delimiters=(",", ";", "\t", "|")):
-        """Discover a CSV dialect based on a sample size.
-
-        `sample` must be `bytes` and an `encoding must be provided (Python 3)
-        """
-        # `csv.Sniffer.sniff` on Python 3 requires a `str` object. If we take a
-        # sample from the `bytes` object and it happens to end in the middle of
-        # a character which has more than one byte, we're going to have an
-        # `UnicodeDecodeError`. This `while` avoid this problem by removing the
-        # last byte until this error stops.
-        finished = False
-        while not finished:
-            try:
-                decoded = sample.decode(encoding)
-
-            except UnicodeDecodeError as exception:
-                _, _, _, pos, error = exception.args
-                if error == "unexpected end of data" and pos == len(sample):
-                    sample = sample[:-1]
-                else:
-                    raise
-            else:
-                finished = True
-
-        try:
-            dialect = sniffer.sniff(decoded, delimiters=delimiters)
-
-        except unicodecsv.Error:  # Couldn't detect: fall back to 'excel'
-            dialect = unicodecsv.excel
-
-        fix_dialect(dialect)
-        return dialect
+csv.register_dialect("excel-semicolon", excel_semicolon)
 
 
 def read_sample(fobj, sample):
@@ -185,7 +184,11 @@ def import_from_csv(
             sample=read_sample(source.fobj, sample_size), encoding=source.encoding
         )
 
-    reader = unicodecsv.reader(source.fobj, encoding=encoding, dialect=dialect)
+    fobj = source.fobj
+    if isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode):
+        # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
+        fobj = TextIOWrapper(fobj, encoding=encoding)
+    reader = csv.reader(fobj, dialect=dialect)
 
     meta = {"imported_from": "csv", "source": source}
     return create_table(reader, meta=meta, *args, **kwargs)
@@ -195,7 +198,7 @@ def export_to_csv(
     table,
     filename_or_fobj=None,
     encoding="utf-8",
-    dialect=unicodecsv.excel,
+    dialect=csv.excel,
     batch_size=100,
     callback=None,
     *args,
@@ -228,7 +231,11 @@ def export_to_csv(
     # TODO: may use `io.BufferedWriter` instead of `ipartition` so user can
     # choose the real size (in Bytes) when to flush to the file system, instead
     # number of rows
-    writer = unicodecsv.writer(source.fobj, encoding=encoding, dialect=dialect)
+    fobj = source.fobj
+    if isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode):
+        # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
+        fobj = TextIOWrapper(fobj, encoding=encoding)
+    writer = csv.writer(fobj, dialect=dialect)
 
     if callback is None:
         for batch in ipartition(serialize(table, *args, **kwargs), batch_size):
@@ -263,8 +270,8 @@ class CsvInspector(object):
         self._encoding = encoding
         self._field_names = None
         self._dialect = dialect
-        if isinstance(dialect, six.text_type):
-            self._dialect = unicodecsv.get_dialect(dialect)
+        if isinstance(dialect, TEXT_TYPE):
+            self._dialect = csv.get_dialect(dialect)
         self._schema = schema
         self._chunk_size = chunk_size
         self._sample_binary = self._sample_unicode = None

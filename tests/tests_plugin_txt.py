@@ -24,12 +24,12 @@ from collections import OrderedDict
 from pathlib import Path
 
 import mock
-import six
 
 import rows
 import rows.plugins.txt
 import tests.utils as utils
 from rows.utils import Source
+from rows.compat import TEXT_TYPE
 
 
 class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -138,7 +138,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_export_to_text_should_return_unicode(self):
         result = rows.export_to_txt(utils.table)
-        self.assertEqual(type(result), six.text_type)
+        self.assertEqual(type(result), TEXT_TYPE)
 
     def _test_export_to_txt_frame_style(self, frame_style, chars, positive=True):
         temp = tempfile.NamedTemporaryFile(delete=False)

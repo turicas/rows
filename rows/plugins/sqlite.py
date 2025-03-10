@@ -22,12 +22,11 @@ import sqlite3
 import string
 from pathlib import Path
 
-import six
-
 import rows.fields as fields
 from rows.fields import make_unique_name
 from rows.plugins.utils import create_table, ipartition, prepare_to_export
 from rows.utils import Source
+from rows.compat import BINARY_TYPE, TEXT_TYPE
 
 SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
 SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS "{table_name}" ({field_types})'
@@ -63,7 +62,7 @@ def _python_to_sqlite(field_types):
                 return None
             elif isinstance(value, (datetime.date, datetime.datetime)):
                 return value.isoformat()
-            elif isinstance(value, (six.binary_type, six.text_type)):
+            elif isinstance(value, (BINARY_TYPE, TEXT_TYPE)):
                 return value
             else:
                 raise ValueError("Cannot serialize date value: {}".format(repr(value)))
@@ -85,7 +84,7 @@ def _python_to_sqlite(field_types):
 
 def get_source(filename_or_connection):
 
-    if isinstance(filename_or_connection, (six.binary_type, six.text_type, Path)):
+    if isinstance(filename_or_connection, (BINARY_TYPE, TEXT_TYPE, Path)):
         connection = sqlite3.connect(filename_or_connection)
         uri = filename_or_connection
         input_is_uri = should_close = True
@@ -158,7 +157,7 @@ def import_from_sqlite(
         query_args = tuple()
 
     table_rows = list(cursor.execute(query, query_args))  # TODO: may be lazy
-    header = [six.text_type(info[0]) for info in cursor.description]
+    header = [TEXT_TYPE(info[0]) for info in cursor.description]
     cursor.close()
     # TODO: should close connection also?
 

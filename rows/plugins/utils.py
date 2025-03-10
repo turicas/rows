@@ -22,16 +22,16 @@ from itertools import chain, islice
 from os import unlink
 from pathlib import Path
 
-import six
-
+from rows.fields import get_items
 # 'slug' and 'make_unique_name' are required here to maintain backwards compatibility
-from rows.fields import get_items  # NOQA
+from rows.fields import slug, make_unique_name  # noqa
 from rows.fields import TextField, detect_types, make_header
 from rows.table import FlexibleTable, Table
+from rows.compat import PYTHON_VERSION
 
-if six.PY2:
+if PYTHON_VERSION < (3, 0, 0):
     from collections import Iterator
-elif six.PY3:
+else:
     from collections.abc import Iterator
 
 

@@ -22,11 +22,11 @@ from collections import OrderedDict, namedtuple
 from operator import itemgetter
 from pathlib import Path
 
-import six
+from rows.compat import PYTHON_VERSION, TEXT_TYPE
 
-if six.PY2:
-    from collections import MutableSequence, Sized
-elif six.PY3:
+if PYTHON_VERSION < (3, 0, 0):
+    from collections import MutableSequence, Sized  # noqa
+else:
     from collections.abc import MutableSequence, Sized
 
 
@@ -102,7 +102,7 @@ class Table(MutableSequence):
             result = convert_to_html(representation, caption=True).replace(
                 b"</caption>",
                 b" (showing 20 rows, out of "
-                + str(total).encode("ascii")
+                + TEXT_TYPE(total).encode("ascii")
                 + b")</caption>",
             )
 
@@ -167,7 +167,7 @@ class Table(MutableSequence):
             return self.Row(*self._rows[key])
         elif key_type == slice:
             return Table.copy(self, self._rows[key])
-        elif key_type is six.text_type:
+        elif key_type is TEXT_TYPE:
             try:
                 field_index = self.field_names.index(key)
             except ValueError:
@@ -182,7 +182,7 @@ class Table(MutableSequence):
         key_type = type(key)
         if key_type == int:
             self._rows[key] = self._make_row(value)
-        elif key_type is six.text_type:
+        elif key_type is TEXT_TYPE:
             from rows import fields
 
             values = list(value)  # I'm not lazy, sorry
@@ -214,7 +214,7 @@ class Table(MutableSequence):
         key_type = type(key)
         if key_type == int:
             del self._rows[key]
-        elif key_type is six.text_type:
+        elif key_type is TEXT_TYPE:
             try:
                 field_index = self.field_names.index(key)
             except ValueError:

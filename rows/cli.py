@@ -35,7 +35,6 @@ from io import BytesIO
 from pathlib import Path
 
 import click
-import six
 from tqdm import tqdm
 
 import rows
@@ -58,6 +57,7 @@ from rows.utils import (
     sqlite_to_csv,
     uncompressed_size,
 )
+from rows.compat import TEXT_TYPE
 
 DEFAULT_BUFFER_SIZE = 8 * 1024 * 1024
 DEFAULT_INPUT_ENCODING = "utf-8"
@@ -168,7 +168,7 @@ class AliasedGroup(click.Group):
 
 @click.group(cls=AliasedGroup)
 @click.option("--http-cache", type=bool, default=False)
-@click.option("--http-cache-path", default=str(CACHE_PATH.absolute()))
+@click.option("--http-cache-path", default=TEXT_TYPE(CACHE_PATH.absolute()))
 @click.version_option(version=rows.__version__, prog_name="rows")
 def cli(http_cache, http_cache_path):
     if http_cache:
@@ -176,11 +176,11 @@ def cli(http_cache, http_cache_path):
 
         http_cache_path = Path(http_cache_path).absolute()
         if not http_cache_path.parent.exists():
-            os.makedirs(str(http_cache_path.parent), exist_ok=True)
-        if str(http_cache_path).lower().endswith(".sqlite"):
-            http_cache_path = Path(str(http_cache_path)[:-7]).absolute()
+            os.makedirs(TEXT_TYPE(http_cache_path.parent), exist_ok=True)
+        if TEXT_TYPE(http_cache_path).lower().endswith(".sqlite"):
+            http_cache_path = Path(TEXT_TYPE(http_cache_path)[:-7]).absolute()
 
-        requests_cache.install_cache(str(http_cache_path))
+        requests_cache.install_cache(TEXT_TYPE(http_cache_path))
 
 
 @cli.command(help="Convert table on `source` URI to `destination`")
@@ -913,15 +913,15 @@ def command_csv_to_sqlite(
         prefix = "[{filename} -> {db_filename}#{tablename}]".format(
             db_filename=output.name, tablename=table_name, filename=filename.name
         )
-        inspector = CsvInspector(six.text_type(filename), encoding=input_encoding, dialect=dialect, schema=schema, max_samples=samples)
+        inspector = CsvInspector(TEXT_TYPE(filename), encoding=input_encoding, dialect=dialect, schema=schema, max_samples=samples)
         if not schema:
             pre_prefix = "{} (detecting schema)".format(prefix)
         else:
             pre_prefix = "{} (reading schema)".format(prefix)
         progress_bar = ProgressBar(prefix=prefix, pre_prefix=pre_prefix)
         csv_to_sqlite(
-            six.text_type(filename),
-            six.text_type(output),
+            TEXT_TYPE(filename),
+            TEXT_TYPE(output),
             dialect=inspector.dialect,
             table_name=table_name,
             samples=samples,
@@ -953,10 +953,10 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
     )
     progress_bar = ProgressBar(prefix=prefix, pre_prefix="")
     sqlite_to_csv(
-        input_filename=six.text_type(input_filename),
+        input_filename=TEXT_TYPE(input_filename),
         table_name=table_name,
         dialect=dialect,
-        output_filename=six.text_type(output_filename),
+        output_filename=TEXT_TYPE(output_filename),
         batch_size=batch_size,
         callback=progress_bar.update,
     )
@@ -1043,7 +1043,7 @@ def command_pgimport(
     dialect = dialect or inspector.dialect
 
     # Then, define its schema
-    schema = str(schema or "").strip()
+    schema = TEXT_TYPE(schema or "").strip()
     if schema:
         progress_bar.description = "Reading schema"
         if schema == ":text:":
@@ -1373,7 +1373,7 @@ def csv_clean(
 
     if in_place:
         os.rename(destination, source)
-        os.rmdir(str(temp_path))
+        os.rmdir(TEXT_TYPE(temp_path))
 
 
 @cli.command(name="csv-row-count", help="Lazily count CSV rows")

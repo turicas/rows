@@ -23,6 +23,7 @@ import unittest
 import rows
 import rows.fields
 from rows.localization import locale_context
+from rows.compat import TEXT_TYPE
 
 
 class LocalizationTestCase(unittest.TestCase):
@@ -33,7 +34,7 @@ class LocalizationTestCase(unittest.TestCase):
     def test_locale_context(self):
         self.assertTrue(rows.fields.SHOULD_NOT_USE_LOCALE)
         if platform.system() == "Windows":
-            name = str("ptb_bra")
+            name = TEXT_TYPE("ptb_bra")
         else:
             name = "pt_BR.UTF-8"
         with locale_context(name):

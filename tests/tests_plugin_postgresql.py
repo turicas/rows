@@ -23,7 +23,6 @@ import unittest
 from textwrap import dedent
 
 import mock
-import six
 
 import rows
 import rows.plugins.postgresql
@@ -32,6 +31,7 @@ import tests.utils as utils
 from rows import fields
 from rows.plugins.postgresql import pgconnect
 from rows.utils import Source
+from rows.compat import PYTHON_VERSION
 
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -98,8 +98,8 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(meta, expected_meta)
         self.assertEqual(expected_source.uri, source.uri)
 
+    @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
     @unittest.skipIf(DATABASE_URL is None, "postgres service is not running")
-    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
     @mock.patch("rows.plugins.postgresql.create_table")
     def test_import_from_postgresql_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
@@ -142,7 +142,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 utils.table, DATABASE_URL, table_name='table1", "postgresql_master'
             )
 
-    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
     @unittest.skipIf(DATABASE_URL is None, "postgres service is not running")
     def test_export_to_postgresql_uri(self):
         rows.export_to_postgresql(utils.table, DATABASE_URL, table_name="rows_3")
@@ -150,7 +150,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_postgresql(DATABASE_URL, table_name="rows_3")
         self.assert_table_equal(table, utils.table)
 
-    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
     @unittest.skipIf(DATABASE_URL is None, "postgres service is not running")
     def test_export_to_postgresql_connection(self):
         connection = pgconnect(DATABASE_URL)
@@ -161,7 +161,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_postgresql(DATABASE_URL, table_name="rows_4")
         self.assert_table_equal(table, utils.table)
 
-    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
     @unittest.skipIf(DATABASE_URL is None, "postgres service is not running")
     def test_export_to_postgresql_create_unique_table_name(self):
         first_table = utils.table
@@ -193,7 +193,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(result_first_table, first_table)
         self.assert_table_equal(result_second_table, second_table)
 
-    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
     @unittest.skipIf(DATABASE_URL is None, "postgres service is not running")
     def test_export_to_postgresql_forcing_table_name_appends_rows(self):
         repeat = 3

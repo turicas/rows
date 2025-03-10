@@ -19,8 +19,6 @@ from __future__ import unicode_literals
 
 from io import BytesIO
 
-import six
-
 try:
     from lxml.etree import strip_tags
     from lxml.etree import tostring as to_string
@@ -32,26 +30,23 @@ else:
 
 from rows.plugins.utils import create_table, serialize
 from rows.utils import Source
+from rows.compat import PYTHON_VERSION, TEXT_TYPE
 
-try:
-    from HTMLParser import HTMLParser  # Python 2
+if PYTHON_VERSION < (3, 0, 0):
+    from HTMLParser import HTMLParser  # noqa
+    from cgi import escape  # noqa
 
     unescape = HTMLParser().unescape
-except:
-    import html  # Python 3
+else:
+    import html  # noqa
+    from html import escape  # noqa
 
     unescape = html.unescape
 
 
-try:
-    from html import escape  # Python 3
-except:
-    from cgi import escape  # Python 2
-
-
 def _get_content(element):
     return (element.text if element.text is not None else "") + "".join(
-        to_string(child, encoding=six.text_type) for child in element.getchildren()
+        to_string(child, encoding=TEXT_TYPE) for child in element.getchildren()
     )
 
 
@@ -180,7 +175,7 @@ def _extract_node_text(node):
     """Extract text from a given lxml node."""
 
     texts = map(
-        six.text_type.strip, map(six.text_type, map(unescape, node.xpath(".//text()")))
+        TEXT_TYPE.strip, map(TEXT_TYPE, map(unescape, node.xpath(".//text()")))
     )
     return " ".join(text for text in texts if text)
 

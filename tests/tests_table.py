@@ -24,14 +24,14 @@ from pathlib import Path
 from textwrap import dedent
 
 import mock
-import six
 
 import rows
 import rows.fields as fields
 from rows.table import FlexibleTable, Table
 from rows.utils import Source
+from rows.compat import BINARY_TYPE
 
-binary_type_name = six.binary_type.__name__
+binary_type_name = BINARY_TYPE.__name__
 
 
 class TableTestCase(unittest.TestCase):

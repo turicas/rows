@@ -24,12 +24,12 @@ import unittest
 from collections import OrderedDict
 
 import mock
-import six
 
 import rows
 import rows.plugins.utils as plugins_utils
 import tests.utils as utils
 from rows import fields
+from rows.compat import TEXT_TYPE
 
 
 class GenericUtilsTestCase(unittest.TestCase):
@@ -285,7 +285,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             # convertion to text_type is needed on Python 2 since namedtuples'
             # keys are bytes, not unicode
             flexible.append(
-                {six.text_type(key): value for key, value in row._asdict().items()}
+                {TEXT_TYPE(key): value for key, value in row._asdict().items()}
             )
 
         field_names = list(flexible.fields.keys())

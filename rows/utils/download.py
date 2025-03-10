@@ -7,6 +7,7 @@ from tempfile import NamedTemporaryFile
 
 from rows import __version__
 from rows.utils import subclasses
+from rows.compat import TEXT_TYPE
 
 REGEXP_VERSION = re.compile("([0-9][a-z0-9.+-]+)")
 
@@ -100,7 +101,8 @@ class Downloader(object):
             filename = download.filename
             if self.path is not None and filename.is_absolute():
                 warnings.warn(
-                    f"filename {repr(str(filename))} cannot be absolute when downloader path is set (will be saved in downloader root path)", RuntimeWarning
+                    "filename {} cannot be absolute when downloader path is set (will be saved in downloader root path)".format(repr(TEXT_TYPE(filename)))
+                    , RuntimeWarning
                 )
                 filename = filename.name
             full_filename = save_path / filename
@@ -173,15 +175,15 @@ class WgetDownloader(Downloader):
         if self._disable_ipv6:
             cmd.append("--inet4-only")
         if self._timeout is not None:
-            cmd.extend(["--timeout", str(self._timeout)])
+            cmd.extend(["--timeout", TEXT_TYPE(self._timeout)])
         if self._continue_paused:  # -c
             cmd.append("--continue")
         if self._max_tries:  # -t
-            cmd.extend(["--tries", str(self._max_tries)])
+            cmd.extend(["--tries", TEXT_TYPE(self._max_tries)])
         if filename is not None:  # -O
-            cmd.extend(["--output-document", str(path / filename)])
+            cmd.extend(["--output-document", TEXT_TYPE(path / filename)])
         else:
-            cmd.extend(["--directory-prefix", str(path)])
+            cmd.extend(["--directory-prefix", TEXT_TYPE(path)])
         cmd.append(url)
         self._commands.append(cmd)
 
@@ -225,21 +227,21 @@ class Aria2cDownloader(Downloader):
         if self._disable_ipv6:
             parameters.append("--disable-ipv6")
         if self._timeout is not None:
-            parameters.extend(["--connect-timeout", str(self._timeout)])
+            parameters.extend(["--connect-timeout", TEXT_TYPE(self._timeout)])
         if self._continue_paused:  # -c
             parameters.append("--continue")
         if self._max_concurrent_downloads is not None:  # -j
             parameters.extend(
-                ["--max-concurrent-downloads", str(self._max_concurrent_downloads)]
+                ["--max-concurrent-downloads", TEXT_TYPE(self._max_concurrent_downloads)]
             )
         if self._max_connections_per_download is not None:  # -x
             parameters.extend(
-                ["--max-connection-per-server", str(self._max_connections_per_download)]
+                ["--max-connection-per-server", TEXT_TYPE(self._max_connections_per_download)]
             )
         if self._split_download_parts is not None:  # -s
-            parameters.extend(["--split", str(self._split_download_parts)])
+            parameters.extend(["--split", TEXT_TYPE(self._split_download_parts)])
         if self._max_tries is not None:
-            parameters.extend(["--max-tries", str(self._max_tries)])
+            parameters.extend(["--max-tries", TEXT_TYPE(self._max_tries)])
         return parameters
 
     def _add_download(self, url, path, filename=None):
@@ -249,7 +251,7 @@ class Aria2cDownloader(Downloader):
         elif self.method == "commands":
             cmd = ["aria2c"]
             cmd.extend(self._build_parameters())
-            cmd.extend(["--dir", str(path)])
+            cmd.extend(["--dir", TEXT_TYPE(path)])
             if filename is not None:
                 cmd.extend(["--out", filename])
             cmd.append(url)
@@ -263,7 +265,7 @@ class Aria2cDownloader(Downloader):
             )
             with open(tmp.name, mode="w") as output:
                 for url, path, filename in self._aria2c_downloads:
-                    data = f"{url}\n" f"  dir={str(path)}\n"
+                    data = "{}\n".format(url) + "  dir={}\n".format(TEXT_TYPE(path))
                     if filename is not None:
                         # TODO: path not working when filename =
                         # dir1/dir2/filename (instead of only filename)?

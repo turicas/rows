@@ -23,11 +23,11 @@ import statistics
 import tempfile
 from dataclasses import dataclass
 
-import six
 from cached_property import cached_property
 
 from rows.plugins.utils import create_table
 from rows.utils import Source, subclasses
+from rows.compat import TEXT_TYPE
 
 try:
     import fitz as pymupdf
@@ -127,7 +127,7 @@ def number_of_pages(filename_or_fobj, backend=None):
 
 
 def pdf_to_text(filename_or_fobj, page_numbers=None, backend=None):
-    if isinstance(page_numbers, six.text_type):
+    if isinstance(page_numbers, TEXT_TYPE):
         page_numbers = extract_intervals(page_numbers)
 
     backend = backend or default_backend()
@@ -766,7 +766,7 @@ class ExtractionAlgorithm(object):
 
             # Remove empty lines
             line_text = "".join(
-                "".join(str(obj.text or "") for obj in cell)
+                "".join(TEXT_TYPE(obj.text or "") for obj in cell)
                 for cell in line
                 if cell is not None
             ).strip()
@@ -884,7 +884,7 @@ class HeaderPositionAlgorithm(YGroupsAlgorithm):
                 line.append(y_objs)
             # Remove empty lines
             line_text = "".join(
-                "".join(str(obj.text or "") for obj in cell)
+                "".join(TEXT_TYPE(obj.text or "") for obj in cell)
                 for cell in line
                 if cell is not None
             ).strip()
@@ -950,7 +950,7 @@ def algorithms():
 def get_algorithm(algorithm):
     available_algorithms = algorithms()
 
-    if isinstance(algorithm, six.text_type):
+    if isinstance(algorithm, TEXT_TYPE):
         if algorithm not in available_algorithms:
             raise ValueError(
                 'Unknown algorithm "{}" (options are: {})'.format(
@@ -977,7 +977,7 @@ def backends():
 def get_backend(backend):
     available_backends = backends()
 
-    if isinstance(backend, six.text_type):
+    if isinstance(backend, TEXT_TYPE):
         if backend not in available_backends:
             raise ValueError(
                 'Unknown PDF backend "{}" (options are: {})'.format(
@@ -1007,7 +1007,7 @@ def pdf_table_lines(
     y_threshold=None,
     backend=None,
 ):
-    if isinstance(page_numbers, six.text_type):
+    if isinstance(page_numbers, TEXT_TYPE):
         page_numbers = extract_intervals(page_numbers)
     backend = backend or default_backend()
 
@@ -1054,7 +1054,7 @@ def import_from_pdf(
     **kwargs
 ):
 
-    if isinstance(page_numbers, six.text_type):
+    if isinstance(page_numbers, TEXT_TYPE):
         page_numbers = extract_intervals(page_numbers)
 
     backend = backend or default_backend()

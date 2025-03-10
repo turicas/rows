@@ -27,6 +27,7 @@ import xlwt
 import rows.fields as fields
 from rows.plugins.utils import create_table, prepare_to_export
 from rows.utils import Source
+from rows.compat import TEXT_TYPE
 
 CELL_TYPES = {
     xlrd.XL_CELL_BLANK: fields.TextField,
@@ -131,7 +132,7 @@ def cell_value(sheet, row, col):
                     decimal_places = len(fmt.format_str[:-1].split(".")[-1])
                 except IndexError:
                     decimal_places = 2
-                return "{}%".format(str(round(value * 100, decimal_places)))
+                return "{}%".format(TEXT_TYPE(round(value * 100, decimal_places)))
             else:
                 return None
 
@@ -161,7 +162,7 @@ def sheet_names(filename_or_fobj):
     source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="xls")
     source.fobj.close()
     devnull = open(os.devnull, mode="w")
-    book = xlrd.open_workbook(source.uri, formatting_info=False, logfile=devnull)
+    book = xlrd.open_workbook(TEXT_TYPE(source.uri), formatting_info=False, logfile=devnull)
     result = book.sheet_names()
     del book
     devnull.close()
@@ -184,7 +185,7 @@ def import_from_xls(
     source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="xls")
     source.fobj.close()
     devnull = open(os.devnull, mode="w")
-    book = xlrd.open_workbook(source.uri, formatting_info=True, logfile=devnull)
+    book = xlrd.open_workbook(TEXT_TYPE(source.uri), formatting_info=True, logfile=devnull)
 
     if sheet_name is not None:
         sheet = book.sheet_by_name(sheet_name)

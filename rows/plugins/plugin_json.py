@@ -20,11 +20,10 @@ from __future__ import unicode_literals
 import json
 from io import BytesIO
 
-import six
-
 from rows import fields
 from rows.plugins.utils import create_table, prepare_to_export
 from rows.utils import Source
+from rows.compat import PYTHON_VERSION
 
 
 def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
@@ -104,7 +103,7 @@ def export_to_json(
     ]
 
     json_data = json.dumps(data, indent=indent)
-    if type(json_data) is six.text_type:  # Python 3
+    if PYTHON_VERSION >= (3, 0, 0):  # In Python 3 `json.dumps` returns a non-encoded value
         json_data = json_data.encode(encoding)
 
     if indent is not None:

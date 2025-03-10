@@ -25,7 +25,6 @@ from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-import six
 
 try:
     import requests
@@ -40,6 +39,7 @@ except ImportError:
 
 import rows
 from rows.plugins.utils import make_header
+from rows.compat import BINARY_TYPE, TEXT_TYPE
 
 try:
     import lzma
@@ -250,6 +250,8 @@ class Source(object):
     is_file: bool = None
     local: bool = None
 
+    # TODO: may add a general way to get the decoded version of the file-like object
+
     @classmethod
     def from_file(
         cls,
@@ -268,7 +270,7 @@ class Source(object):
         if isinstance(filename_or_fobj, Source):
             return filename_or_fobj
 
-        elif isinstance(filename_or_fobj, (six.binary_type, six.text_type, Path)):
+        elif isinstance(filename_or_fobj, (BINARY_TYPE, TEXT_TYPE, Path)):
             fobj = open_compressed(filename_or_fobj, mode=mode)
             filename = filename_or_fobj
             should_close = True if should_close is None else should_close
@@ -277,7 +279,7 @@ class Source(object):
             fobj = filename_or_fobj
             filename = getattr(fobj, "name", None)
             if not isinstance(
-                filename, (six.binary_type, six.text_type)
+                filename, (BINARY_TYPE, TEXT_TYPE)
             ):  # BytesIO object
                 filename = None
             should_close = False if should_close is None else should_close
@@ -703,7 +705,7 @@ def csv_to_sqlite(
     inspector = CsvInspector(input_filename, chunk_size=chunk_size, max_samples=samples, encoding=encoding)
     encoding = encoding or inspector.encoding
     dialect = dialect or inspector.dialect
-    if isinstance(dialect, six.text_type):
+    if isinstance(dialect, TEXT_TYPE):
         dialect = csv.get_dialect(dialect)
     if schema is None:
         schema = inspector.schema
@@ -752,7 +754,7 @@ def sqlite_to_csv(
     # TODO: should be able to specify fields
     # TODO: should be able to specify custom query
 
-    if isinstance(dialect, six.text_type):
+    if isinstance(dialect, TEXT_TYPE):
         dialect = csv.get_dialect(dialect)
 
     if query is None:
@@ -868,7 +870,7 @@ def uncompressed_size(filename):
     """
 
     # TODO: get filetype from file-magic, if available
-    if str(filename).lower().endswith(".xz"):
+    if TEXT_TYPE(filename).lower().endswith(".xz"):
         # TODO: move this approach to reading the file directly, as in gzip
         output = execute_command(["xz", "--list", filename])
         lines = output.splitlines()
@@ -880,7 +882,7 @@ def uncompressed_size(filename):
         value = float(value.replace(",", ""))
         return int(value * MULTIPLIERS[unit])
 
-    elif str(filename).lower().endswith(".gz"):
+    elif TEXT_TYPE(filename).lower().endswith(".gz"):
         return estimate_gzip_uncompressed_size(filename)
 
     else:
@@ -936,7 +938,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             if field_type is rows.fields.DecimalField:
                 max_left = max_right = 0
                 for value in values:
-                    value_str = str(value).strip("-")
+                    value_str = TEXT_TYPE(value).strip("-")
                     if "." in value_str:
                         left, right = value_str.split(".")
                     else:
@@ -1187,7 +1189,7 @@ def scale_number(n, divider=1000, suffix=None, multipliers="KMGTPEZ", decimal_pl
         count += 1
     multiplier = multipliers[count] if count > -1 else ""
     if not multiplier:
-        return str(n) + suffix
+        return TEXT_TYPE(n) + suffix
     else:
         fmt_str = "{{n:.{}f}}{{multiplier}}{{suffix}}".format(decimal_places)
         return fmt_str.format(n=n, multiplier=multiplier, suffix=suffix)

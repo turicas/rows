@@ -193,7 +193,7 @@ def export_to_txt(
     filename or file-like object).
 
     `encoding` could be `None` if no filename/file-like object is specified,
-    then the return type will be `six.text_type`.
+    then the return type will be `TEXT_TYPE` (depends on Python 2 vs 3).
     `frame_style`: will select the frame style to be printed around data.
     Valid values are: ('None', 'ASCII', 'single', 'double') - ASCII is default.
     Warning: no checks are made to check the desired encoding allows the

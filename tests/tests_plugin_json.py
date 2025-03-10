@@ -24,11 +24,11 @@ import unittest
 from collections import Counter, OrderedDict, defaultdict
 
 import mock
-import six
 
 import rows
 import tests.utils as utils
 from rows.utils import Source
+from rows.compat import TEXT_TYPE
 
 
 class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -121,10 +121,10 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
             "decimal_column": float,
             "bool_column": bool,
             "integer_column": int,
-            "date_column": six.text_type,
-            "datetime_column": six.text_type,
-            "percent_column": six.text_type,
-            "unicode_column": six.text_type,
+            "date_column": TEXT_TYPE,
+            "datetime_column": TEXT_TYPE,
+            "percent_column": TEXT_TYPE,
+            "unicode_column": TEXT_TYPE,
         }
         field_types = defaultdict(list)
         for row in imported_json:

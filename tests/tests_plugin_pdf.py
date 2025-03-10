@@ -23,6 +23,7 @@ import unittest
 import rows
 import rows.plugins.plugin_pdf as pdf
 import tests.utils as utils
+from rows.compat import PYTHON_VERSION
 
 
 class PDFTestCase(utils.RowsTestMixIn):

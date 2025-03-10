@@ -28,12 +28,12 @@ from collections import OrderedDict, defaultdict
 from decimal import Decimal, InvalidOperation
 from unicodedata import normalize
 
-import six
+from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
 
-if six.PY2:
-    from itertools import izip_longest as zip_longest
+if PYTHON_VERSION < (3, 0, 0):
+    from itertools import izip_longest as zip_longest  # noqa
 else:
-    from itertools import zip_longest
+    from itertools import zip_longest  # noqa
 
 
 # Order matters here
@@ -113,12 +113,12 @@ class BinaryField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (six.binary_type,)
+    TYPE = (BINARY_TYPE,)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is not None:
-            if not isinstance(value, six.binary_type):
+            if not isinstance(value, BINARY_TYPE):
                 value_error(value, cls)
             else:
                 try:
@@ -131,9 +131,9 @@ class BinaryField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         if value is not None:
-            if isinstance(value, six.binary_type):
+            if isinstance(value, BINARY_TYPE):
                 return value
-            elif isinstance(value, six.text_type):
+            elif isinstance(value, TEXT_TYPE):
                 try:
                     return b64decode(value)
                 except (TypeError, ValueError, binascii.Error):
@@ -158,13 +158,13 @@ class UUIDField(Field):
             if not isinstance(value, self.TYPE):
                 value_error(value, cls)
             else:
-                return str(value)
+                return TEXT_TYPE(value)
         else:
             return ""
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = as_string(value).strip()
+        value = as_string(value, encoding="ascii").strip()
         if len(value) not in (36, 32):  # with dashes and without dashes
             value_error(value, cls)
         else:
@@ -217,7 +217,7 @@ class IntegerField(Field):
             return ""
 
         if SHOULD_NOT_USE_LOCALE:
-            return six.text_type(value)
+            return TEXT_TYPE(value)
         else:
             grouping = kwargs.get("grouping", None)
             return locale.format_string("%d", value, grouping=grouping)
@@ -252,7 +252,7 @@ class FloatField(Field):
             return ""
 
         if SHOULD_NOT_USE_LOCALE:
-            return six.text_type(value)
+            return TEXT_TYPE(value)
         else:
             grouping = kwargs.get("grouping", None)
             return locale.format_string("%f", value, grouping=grouping)
@@ -283,7 +283,7 @@ class DecimalField(Field):
         if value is None:
             return ""
 
-        value_as_string = six.text_type(value)
+        value_as_string = TEXT_TYPE(value)
         if SHOULD_NOT_USE_LOCALE:
             return value_as_string
         else:
@@ -302,7 +302,7 @@ class DecimalField(Field):
         if value is None or isinstance(value, cls.TYPE):
             return value
         elif type(value) in (int, float):
-            return Decimal(six.text_type(value))
+            return Decimal(TEXT_TYPE(value))
 
         if SHOULD_NOT_USE_LOCALE:
             try:
@@ -359,7 +359,7 @@ class PercentField(DecimalField):
         elif value == Decimal("0"):
             return "0.00%"
 
-        value = Decimal(six.text_type(value * 100)[:-2])
+        value = Decimal(TEXT_TYPE(value * 100)[:-2])
         value = super(PercentField, cls).serialize(value, *args, **kwargs)
         return "{}%".format(value)
 
@@ -392,7 +392,7 @@ class DateField(Field):
         if value is None:
             return ""
 
-        return six.text_type(value.strftime(cls.OUTPUT_FORMAT))
+        return TEXT_TYPE(value.strftime(cls.OUTPUT_FORMAT))
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -422,7 +422,7 @@ class DatetimeField(Field):
         if value is None:
             return ""
 
-        return six.text_type(value.isoformat())
+        return TEXT_TYPE(value.isoformat())
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -445,7 +445,7 @@ class TextField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (six.text_type,)
+    TYPE = (TEXT_TYPE,)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -470,7 +470,7 @@ class EmailField(TextField):
         if value is None:
             return ""
 
-        return six.text_type(value)
+        return TEXT_TYPE(value)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -506,19 +506,21 @@ class JSONField(Field):
             return json.loads(value)
 
 
-def as_string(value):
-    if isinstance(value, six.binary_type):
-        raise ValueError("Binary is not supported")
-    elif isinstance(value, six.text_type):
+def as_string(value, encoding=None):
+    if isinstance(value, BINARY_TYPE):
+        if encoding is None:
+            raise ValueError("Binary is not supported")
+        return value.decode(encoding)
+    elif isinstance(value, TEXT_TYPE):
         return value
     else:
-        return six.text_type(value)
+        return TEXT_TYPE(value)
 
 
 def is_null(value):
     if value is None:
         return True
-    elif type(value) is six.binary_type:
+    elif type(value) is BINARY_TYPE:
         value = value.strip().lower()
         return not value or value in NULL_BYTES
     else:
@@ -549,13 +551,13 @@ def get_items(*indexes):
 def slug(text, separator="_", permitted_chars=SLUG_CHARS):
     """Generate a slug for the `text`.
 
-    >>> slug(' ÁLVARO  justen% ')
+    >>> str(slug(' ÁLVARO  justen% '))
     'alvaro_justen'
-    >>> slug(' ÁLVARO  justen% ', separator='-')
+    >>> str(slug(' ÁLVARO  justen% ', separator='-'))
     'alvaro-justen'
     """
 
-    text = six.text_type(text or "")
+    text = TEXT_TYPE(text or "")
 
     # Strip non-ASCII characters
     # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
@@ -583,7 +585,7 @@ def slug(text, separator="_", permitted_chars=SLUG_CHARS):
 
 
 def camel_to_snake(value):
-    value = str(value or "").strip()
+    value = TEXT_TYPE(value or "").strip()
     if not value:
         return ""
     # Adapted from <https://stackoverflow.com/a/1176023/1299446>
