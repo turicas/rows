@@ -3,23 +3,31 @@ PYTHON_VERSIONS = 27 35 36 37 38 39 310 311 312 313
 TEST_PY_TARGETS = $(foreach version, $(PYTHON_VERSIONS), test-py$(version))
 BUILD_PY_TARGETS = $(foreach version, $(PYTHON_VERSIONS), build-py$(version))
 
-envtest: clean
-	nosetests tests/
+test-local:
+	coverage run -m pytest $(TEST_ARGS) && coverage report
 
-test:
-	tox
+test-all: $(TEST_PY_TARGETS)
+	@echo "Running tests for all Python versions"
+
+build-py%:
+	@echo "Running py$*"
+	docker compose build py$*
+
+test-py%: build-py%
+	@echo "Running tests for py$*"
+	@COMPOSE_PROFILES=py$* docker compose run --rm -it py$* bash -c "coverage run -m pytest $(TEST_ARGS) && coverage report"
 
 py%:
 	@echo "Running Python shell in version py$*"
-	docker compose run --rm -it py$* python
+	@COMPOSE_PROFILES=py$* docker compose run --rm -it py$* python
 
 bash-py%:
 	@echo "Running bash in version py$*"
-	docker compose run --rm -it py$* bash
+	@COMPOSE_PROFILES=py$* docker compose run --rm -it py$* bash
 
 bash-root-py%:
 	@echo "Running bash in version py$*"
-	docker compose run --rm -itu root py$* bash
+	@COMPOSE_PROFILES=py$* docker compose run --rm -itu root py$* bash
 
 clean:
 	find -regex '.*\.pyc' -exec rm {} \;
@@ -41,6 +49,7 @@ install:
 uninstall:
 	pip uninstall -y rows
 
+# TODO: move to use black
 lint:
 	pylint rows/*.py
 
@@ -65,5 +74,3 @@ docs-upload: docs
 
 release:
 	python setup.py bdist bdist_wheel --universal bdist_egg upload
-
-.PHONY:	test clean docs docs-serve docs-upload fix-imports lint lint-tests install uninstall release

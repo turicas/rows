@@ -39,34 +39,23 @@ docker compose up -d
 ### Running on your virtualenv
 
 ```bash
-nosetests -dsv --with-yanc --with-coverage --cover-package rows tests/*.py
+make test-local  # or just `pytest`
 ```
 
-### Running for all Python versions
+### Running on Docker
 
-Run tests:
+For just one version (let's say Python 3.12):
+
+```shell
+make test-py312
+```
+
+For all Python versions:
 
 ```bash
-make test
+make test-all
 ```
 
-or (if you don't have `make`):
-
-```bash
-tox
-```
-
-you can also run tox against an specific python version:
-
-```bash
-tox -e py27
-tox -e py35
-```
-
-*tox known issues* : running tox with py27 environ may raise InvocationError in
-non Linux environments. To avoid it you may rebuild tox environment in every
-run with `tox -e py27 -r` or if you want to run nosetests directly (see last
-section).
 
 ## Running PostgreSQL tests
 

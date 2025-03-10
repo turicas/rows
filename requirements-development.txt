@@ -23,11 +23,7 @@ coverage
 ipdb
 isort
 mock
-nose
-pylint
 pytest
-tox
-yanc
 
 # Doc tools
 click-man
