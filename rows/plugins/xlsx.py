@@ -77,7 +77,7 @@ def import_from_xlsx(
     end_column=None,
     workbook_kwargs=None,
     *args,
-    **kwargs,
+    **kwargs
 ):
     """Return a rows.Table created from imported XLSX file.
 
@@ -164,7 +164,7 @@ def _python_to_cell(field_types):
 
 def define_sheet_name(existing_names):
     for counter in range(1, 1024 * 1024):
-        new_name = f"Sheet{counter}"
+        new_name = "Sheet{}".format(counter)
         if new_name not in existing_names:
             return new_name
 

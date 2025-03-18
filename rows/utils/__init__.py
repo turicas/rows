@@ -185,7 +185,7 @@ def subclasses(cls):
     )
 
 
-class ProgressBar:
+class ProgressBar(object):
     def __init__(self, prefix, pre_prefix="", total=None, unit=" rows"):
         self.prefix = prefix
         self.progress = tqdm(
@@ -774,7 +774,7 @@ def sqlite_to_csv(
     fobj.close()
 
 
-class CsvLazyDictWriter:
+class CsvLazyDictWriter(object):
     """Lazy CSV dict writer, with compressed output option
 
     This class is almost the same as `csv.DictWriter` with the following
@@ -908,7 +908,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
         field_metadata[field_name]["null"] = any(value in null_values for value in values)
         if field_type is rows.fields.TextField:
             field_metadata[field_name]["max_length"] = max(1, max(len(value) for value in values if value is not None))
-            if any("\n" in value or len(value) > 65_533 for value in values):  # MySQL VARCHAR stores up to 65,533
+            if any("\n" in value or len(value) > 65533 for value in values):  # MySQL VARCHAR stores up to 65,533
                 field_metadata[field_name]["subtype"] = "TEXT"
             else:
                 field_metadata[field_name]["subtype"] = "VARCHAR"
@@ -927,11 +927,11 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             min_value = field_metadata[field_name]["min"] = min(value for value in values if value is not None)
             max_value = field_metadata[field_name]["max"] = max(value for value in values if value is not None)
             if field_type is rows.fields.IntegerField:
-                if -32_768 <= min_value and 32_767 >= max_value:  # 2 bytes
+                if -32768 <= min_value and 32767 >= max_value:  # 2 bytes
                     field_metadata[field_name]["subtype"] = "SMALLINT"
-                elif -2_147_483_648 <= min_value and 2_147_483_647 >= max_value:  # 4 bytes
+                elif -2147483648 <= min_value and 2147483647 >= max_value:  # 4 bytes
                     field_metadata[field_name]["subtype"] = "INTEGER"
-                elif -9_223_372_036_854_775_808 <= min_value and 9_223_372_036_854_775_807 >= max_value:  # 8 bytes
+                elif -9223372036854775808 <= min_value and 9223372036854775807 >= max_value:  # 8 bytes
                     field_metadata[field_name]["subtype"] = "BIGINT"
             if field_type is rows.fields.DecimalField:
                 max_left = max_right = 0
@@ -973,13 +973,12 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                 continue
             if "choices" in metadata:
                 metadata["choices"] = json.dumps(sorted(metadata["choices"]))
-            data.append(
-                {
-                    "field_name": field_name,
-                    "field_type": metadata["type"].__name__.replace("Field", "").lower(),
-                    **{key: value for key, value in metadata.items() if key != "type"},
-                }
-            )
+            base = {
+                "field_name": field_name,
+                "field_type": metadata["type"].__name__.replace("Field", "").lower(),
+            }
+            base.update({key: value for key, value in metadata.items() if key != "type"})
+            data.append(base)
         table = plugins.dicts.import_from_dicts(data)
         if output_format == "txt":
             return plugins.txt.export_to_txt(table)
@@ -1015,7 +1014,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                 sql_type = metadata["subtype"]
             elif sql_type == "TEXT":
                 if metadata.get("subtype") == "VARCHAR":
-                    sql_type = f"VARCHAR({metadata['max_length']})"
+                    sql_type = "VARCHAR({})".format(metadata["max_length"])
                 field_choices = metadata.get("choices")
                 if field_choices is not None:
                     if field_name not in reuse_choices:

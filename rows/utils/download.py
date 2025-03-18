@@ -21,7 +21,7 @@ class Download:
             self.filename = Path(self.filename)
 
 
-class Downloader:
+class Downloader(object):
     name = None
     version_command = None
 
@@ -199,7 +199,7 @@ class Aria2cDownloader(Downloader):
         max_connections_per_download=4,
         split_download_parts=4,
         *args,
-        **kwargs,
+        **kwargs
     ):
         """
         method can be:
@@ -247,12 +247,9 @@ class Aria2cDownloader(Downloader):
             self._aria2c_downloads.append((url, path, filename))
 
         elif self.method == "commands":
-            cmd = [
-                "aria2c",
-                *self._build_parameters(),
-                "--dir",
-                str(path),
-            ]
+            cmd = ["aria2c"]
+            cmd.extend(self._build_parameters())
+            cmd.extend(["--dir", str(path)])
             if filename is not None:
                 cmd.extend(["--out", filename])
             cmd.append(url)
@@ -270,16 +267,13 @@ class Aria2cDownloader(Downloader):
                     if filename is not None:
                         # TODO: path not working when filename =
                         # dir1/dir2/filename (instead of only filename)?
-                        data += f"  out={filename}\n"
-                    output.write(f"{data}\n")
+                        data += "  out={}\n".format(filename)
+                    output.write("{}\n".format(data))
             self._temp_filename = Path(tmp.name)
 
-            cmd = [
-                "aria2c",
-                *self._build_parameters(),
-                "--input-file",
-                tmp.name,
-            ]
+            cmd = ["aria2c"]
+            cmd.extend(self._build_parameters())
+            cmd.extend(["--input-file", tmp.name])
             return [cmd]
 
         elif self.method == "commands":

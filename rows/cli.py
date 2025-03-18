@@ -91,7 +91,7 @@ def _import_table(source, encoding, verify_ssl=True, progress=True, *args, **kwa
             encoding=encoding,
             progress=progress,
             *args,
-            **kwargs,
+            **kwargs
         )
     except requests.exceptions.SSLError:
         click.echo(
@@ -244,7 +244,7 @@ def convert(
                 verify_ssl=verify_ssl,
                 import_fields=import_fields,
                 progress=progress,
-                **input_options,
+                **input_options
             )
     else:
         table = _import_table(
@@ -253,7 +253,7 @@ def convert(
             verify_ssl=verify_ssl,
             import_fields=import_fields,
             progress=progress,
-            **input_options,
+            **input_options
         )
 
     if order_by is not None:
@@ -271,7 +271,7 @@ def convert(
                 destination,
                 encoding=output_encoding,
                 export_fields=export_fields,
-                **output_options,
+                **output_options
             )
     else:
         export_to_uri(
@@ -279,7 +279,7 @@ def convert(
             destination,
             encoding=output_encoding,
             export_fields=export_fields,
-            **output_options,
+            **output_options
         )
 
 
@@ -491,7 +491,7 @@ def print_(
                 index=table_index,
                 import_fields=import_fields,
                 progress=progress,
-                **input_options,
+                **input_options
             )
     else:
         table = _import_table(
@@ -501,7 +501,7 @@ def print_(
             index=table_index,
             import_fields=import_fields,
             progress=progress,
-            **input_options,
+            **input_options
         )
 
     if order_by is not None:
@@ -541,7 +541,7 @@ def create_complete_query(query, table_names):
     REGEXP_SQL_INLINE_COMMENT = re.compile(r"^\s*--.*?\n", flags=re.MULTILINE)
 
     query_without_comments = REGEXP_SQL_INLINE_COMMENT.sub("\n", REGEXP_SQL_MULTILINE_COMMENTS.sub("\n", query))
-    first_word = query_without_comments.strip().lower().split(maxsplit=1)[0]
+    first_word = query_without_comments.strip().lower().split(" ", 1)[0]
     if first_word not in ("select", "with"):
         return "SELECT * FROM {} WHERE {}".format(", ".join(table_names), query)
     else:
@@ -775,7 +775,7 @@ def command_schema(
                 import_fields=import_fields,
                 max_rows=samples,
                 field_types=field_types,
-                **input_options,
+                **input_options
             )
     else:
         table = import_from_source(
@@ -786,7 +786,7 @@ def command_schema(
             import_fields=import_fields,
             max_rows=samples,
             field_types=field_types,
-            **input_options,
+            **input_options
         )
 
     export_fields = _get_export_fields(table.field_names, fields_exclude)
@@ -1424,9 +1424,9 @@ def csv_split(
 
     input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
     if destination_pattern is None:
-        first_part, extension = source.rsplit(".", maxsplit=1)
+        first_part, extension = source.rsplit(".", 1)
         if extension.lower() in COMPRESSED_EXTENSIONS:
-            first_part, new_extension = first_part.rsplit(".", maxsplit=1)
+            first_part, new_extension = first_part.rsplit(".", 1)
             extension = new_extension + "." + extension
         destination_pattern = first_part + "-{part:03d}." + extension
 

@@ -62,30 +62,30 @@ def fix_file(csv_reader, csv_writer, logger=None):
             n_col = len(row)
             row = make_header(row)
             if logger is not None:
-                logger.warning(f"Detected number of columns: {n_col}")
+                logger.warning("Detected number of columns: {}".format(n_col))
         elif last_row is not None:
             if not row:
                 if logger is not None:
-                    logger.warning(f"Skipping empty row.")
+                    logger.warning("Skipping empty row.")
                 continue
             fixed += 1
             tmp = last_row[:-1] + [(last_row[-1] + " " + row[0]).strip()]
             if len(row) > 1:
                 tmp += row[1:]
             if logger is not None:
-                logger.warning(f"Merging last row ({len(last_row)} cols) with current one ({len(row)} cols) - new row has {len(tmp)} cols.")
+                logger.warning("Merging last row ({} cols) with current one ({} cols) - new row has {} cols.".format(len(last_row), len(row), len(tmp)))
             row, last_row = tmp, None
         if len(row) != n_col:
             if logger is not None:
-                logger.warning(f"Saving current truncated row ({len(row)} cols) and skipping")
+                logger.warning("Saving current truncated row ({} cols) and skipping".format(len(row)))
             last_row = row
         else:  # Write only if has complete row
             csv_writer.writerow(row)
             written += 1
     if logger is not None:
         if fixed > 0:
-            logger.warning(f"Total fixed rows: {fixed}")
-        logger.info(f"Total written rows: {written}")
+            logger.warning("Total fixed rows: {}".format(fixed))
+        logger.info("Total written rows: {}".format(written))
 
     return {
         "columns": n_col,
@@ -256,7 +256,7 @@ def export_to_csv(
     return result
 
 
-class CsvInspector:
+class CsvInspector(object):
     def __init__(self, filename, encoding=None, dialect=None, schema=None,
             chunk_size=1 * 1024 * 1024, max_samples=5000):
         self.filename = filename

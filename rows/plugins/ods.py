@@ -56,7 +56,7 @@ def sheet_names(filename_or_fobj):
     namespaces = document.nsmap
     spreadsheet = document.xpath("//office:spreadsheet", namespaces=namespaces)[0]
     tables = xpath(spreadsheet, "//table:table", namespaces)
-    name_attribute = f"{{{namespaces['table']}}}name"
+    name_attribute = "{" + namespaces["table"] + "}name"
     # TODO: unescape values
     return [table.attrib[name_attribute] for table in tables]
 
@@ -69,7 +69,7 @@ def import_from_ods(
     end_row=None,
     end_column=None,
     *args,
-    **kwargs,
+    **kwargs
 ):
     # TODO: unescape values
 

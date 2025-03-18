@@ -245,7 +245,8 @@ class PDFMinerBackend(PDFBackend):
 
     @property
     def pages(self):
-        yield from PDFPage.create_pages(self.document)
+        for item in PDFPage.create_pages(self.document):
+            yield item
 
     @staticmethod
     def convert_object(obj, page_height):

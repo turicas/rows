@@ -115,7 +115,7 @@ def get_psql_copy_command(
     if header is None:
         header = ""
     else:
-        header = ", ".join(f'"{field_name}"' for field_name in header)
+        header = ", ".join('"{}"'.format(field_name) for field_name in header)
         header = "({header}) ".format(header=header)
 
     inside_with = []
@@ -252,7 +252,7 @@ def import_from_postgresql(
     query_args=None,
     close_connection=None,
     *args,
-    **kwargs,
+    **kwargs
 ):
 
     if query is None:
@@ -288,7 +288,7 @@ def export_to_postgresql(
     batch_size=100,
     close_connection=None,
     *args,
-    **kwargs,
+    **kwargs
 ):
     # TODO: should add transaction support?
 
@@ -330,7 +330,7 @@ def export_to_postgresql(
     return connection, table_name
 
 
-class PostgresCopy:
+class PostgresCopy(object):
     """Import data from CSV into PostgreSQL using the fastest method
 
     Required: psql command
@@ -475,7 +475,9 @@ class PostgresCopy:
             field_names = list(schema.keys())
             if not set(csv_field_names).issubset(set(field_names)):
                 raise ValueError(
-                    f"CSV field names are not a subset of schema field names ({set(csv_field_names)} versus {set(field_names)})"
+                    "CSV field names are not a subset of schema field names ({} versus {})".format(
+                        set(csv_field_names), set(field_names)
+                    )
                 )
             field_names = [
                 field for field in csv_field_names if field in field_names
@@ -690,9 +692,9 @@ def get_create_table_from_query(database_uri, table_name_or_query, table_name):
     if " " in table_name_or_query:
         import random
         alias = "".join(random.choice(string.ascii_lowercase) for _ in range(10))
-        query = f"""SELECT * FROM ({table_name_or_query}) AS "{alias}" LIMIT 0"""
+        query = """SELECT * FROM ({}) AS "{}" LIMIT 0""".format(table_name_or_query, alias)
     else:
-        query = f"SELECT * FROM {table_name_or_query} LIMIT 0"
+        query = "SELECT * FROM {} LIMIT 0".format(table_name_or_query)
 
     conn = pgconnect(database_uri)
     cursor = conn.cursor()
@@ -711,8 +713,8 @@ def get_create_table_from_query(database_uri, table_name_or_query, table_name):
     cursor.close()
 
     columns = [(column.name, type_name_by_oid[column.type_code]) for column in columns]
-    column_types = [f'''"{name}" {type}''' for name, type in columns]
-    return f"""CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join(column_types)})"""
+    column_types = ['''"{}" {}'''.format(name, type) for name, type in columns]
+    return """CREATE TABLE IF NOT EXISTS "{}" ({})""".format(table_name, ", ".join(column_types))
 
 
 def pg2pg(
@@ -745,7 +747,7 @@ def pg2pg(
         conn.close()
 
     # Prepare the `psql` command to be executed to export data
-    output_sql = table_name_from if " " in table_name_from else f'''SELECT * FROM "{table_name_from}"'''
+    output_sql = table_name_from if " " in table_name_from else '''SELECT * FROM "{}"'''.format(table_name_from)
     if not binary:
         copy_params = {"encoding": encoding, "dialect": dialect}
     else:
@@ -756,7 +758,7 @@ def pg2pg(
         header=None,  # Needed when direction = 'TO'
         table_name_or_query=output_sql,
         is_query=True,
-        **copy_params,
+        **copy_params
     )
     rows_imported, total_written = 0, 0
 
@@ -779,7 +781,7 @@ def pg2pg(
             table_name_or_query=table_name_to,
             is_query=False,
             has_header=True,
-            **copy_params,
+            **copy_params
         )
         process_input = subprocess.Popen(
             command_input,

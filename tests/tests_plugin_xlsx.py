@@ -44,9 +44,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def get_temp_filename(self):
-        temp = tempfile.NamedTemporaryFile(
-            suffix=f".{self.file_extension}", delete=False
-        )
+        temp = tempfile.NamedTemporaryFile(suffix="." + self.file_extension, delete=False)
         filename = temp.name
         temp.close()
         self.files_to_delete.append(filename)
