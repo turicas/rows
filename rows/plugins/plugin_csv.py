@@ -25,7 +25,7 @@ from rows import fields
 from rows.fields import make_header
 from rows.plugins.utils import create_table, ipartition, serialize
 from rows.utils import Source, detect_local_source, open_compressed
-from rows.compat import PYTHON_VERSION, TEXT_TYPE
+from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
 
 
 PY2 = PYTHON_VERSION < (3, 0, 0)
@@ -51,6 +51,9 @@ if PY2:
             for row in data:
                 writerow([value.encode(encoding) for value in row])
 
+    class excel_semicolon(csv.excel):
+        delimiter = BINARY_TYPE(";")
+
     def discover_dialect(sample, encoding=None, delimiters=(b",", b";", b"\t", b"|")):
         """Discover a CSV dialect based on a sample size.
 
@@ -67,6 +70,9 @@ if PY2:
         return dialect
 else:
     csv_reader = csv.reader
+
+    class excel_semicolon(csv.excel):
+        delimiter = ";"
 
     def discover_dialect(sample, encoding, delimiters=(",", ";", "\t", "|")):
         """Discover a CSV dialect based on a sample size.
@@ -167,10 +173,6 @@ def fix_file(csv_reader, csv_writer, logger=None):
         "rows_fixed": fixed,
         "rows_written": written,
     }
-
-
-class excel_semicolon(csv.excel):
-    delimiter = ";"
 
 
 csv.register_dialect("excel-semicolon", excel_semicolon)
