@@ -63,7 +63,7 @@ DEFAULT_BUFFER_SIZE = 8 * 1024 * 1024
 DEFAULT_INPUT_ENCODING = "utf-8"
 DEFAULT_OUTPUT_ENCODING = "utf-8"
 DEFAULT_SAMPLE_SIZE = 1024 * 1024
-HOME_PATH = Path.home()
+HOME_PATH = Path(os.path.expanduser("~"))
 CACHE_PATH = HOME_PATH / ".cache" / "rows" / "http"
 
 

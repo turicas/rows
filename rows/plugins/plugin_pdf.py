@@ -19,7 +19,6 @@ from __future__ import unicode_literals
 
 import math
 import re
-import statistics
 import tempfile
 from dataclasses import dataclass
 
@@ -27,7 +26,33 @@ from cached_property import cached_property
 
 from rows.plugins.utils import create_table
 from rows.utils import Source, subclasses
-from rows.compat import TEXT_TYPE
+from rows.compat import PYTHON_VERSION, TEXT_TYPE
+
+
+if PYTHON_VERSION >= (3, 8, 0):
+    # `statistics` is available from Python 3.4, but the `mode` function raises an exception if all numbers are
+    # different.
+    from statistics import mode, stdev
+else:
+    import math
+    from collections import Counter
+
+    def mode(data):
+        counter = Counter(data)
+        return max(counter, key=counter.get)
+
+    class StatisticsError(ValueError):
+        pass
+
+    def stdev(data, xbar=None):
+        n = len(data)
+        if n < 2:
+            raise StatisticsError("stdev requires at least two data points")
+        if xbar is None:
+            xbar = sum(data) / float(n)
+        ss = sum((x - xbar) ** 2 for x in data)
+        mss = ss / (n - 1)
+        return math.sqrt(mss)
 
 try:
     import fitz as pymupdf
@@ -802,8 +827,8 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
         groups_width = {
             index: group.x1 - group.x0 for index, group in enumerate(groups)
         }
-        mode_width = statistics.mode(groups_width.values())
-        stdev_width = statistics.stdev(groups_width.values())
+        mode_width = mode(groups_width.values())
+        stdev_width = stdev(groups_width.values())
 
         # To finish, find the groups that match the upper and lower width
         # limits (mode +- stdev) and get its objects.

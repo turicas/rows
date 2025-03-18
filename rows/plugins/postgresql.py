@@ -30,7 +30,7 @@ import rows.fields as fields
 from rows.plugins.plugin_csv import CsvInspector
 from rows.plugins.utils import create_table, ipartition, prepare_to_export
 from rows.utils import Source, detect_local_source, execute_command, open_compressed
-from rows.compat import BINARY_TYPE, TEXT_TYPE
+from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
 
 POSTGRESQL_TYPES = {
     fields.BinaryField: "BYTEA",
@@ -715,6 +715,15 @@ def get_create_table_from_query(database_uri, table_name_or_query, table_name):
     columns = [(column.name, type_name_by_oid[column.type_code]) for column in columns]
     column_types = ['''"{}" {}'''.format(name, type) for name, type in columns]
     return """CREATE TABLE IF NOT EXISTS "{}" ({})""".format(table_name, ", ".join(column_types))
+
+
+if PYTHON_VERSION < (3, 0, 0):
+
+    class FileNotFoundError(OSError):
+        pass
+
+    class BrokenPipeError(IOError):
+        pass
 
 
 def pg2pg(

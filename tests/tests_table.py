@@ -17,9 +17,9 @@
 
 from __future__ import unicode_literals
 
-import collections
 import datetime
 import unittest
+from collections import OrderedDict
 from pathlib import Path
 from textwrap import dedent
 
@@ -37,7 +37,7 @@ binary_type_name = BINARY_TYPE.__name__
 class TableTestCase(unittest.TestCase):
     def setUp(self):
         self.table = Table(
-            fields={"name": rows.fields.TextField, "birthdate": rows.fields.DateField}
+            fields=OrderedDict([("name", rows.fields.TextField), ("birthdate", rows.fields.DateField)])
         )
         self.first_row = {
             "name": "Álvaro Justen",
@@ -49,7 +49,7 @@ class TableTestCase(unittest.TestCase):
 
     def test_table_init_slug_creation_on_fields(self):
         table = rows.Table(
-            fields=collections.OrderedDict(
+            fields=OrderedDict(
                 [('Query Occurrence"( % ),"First Seen', rows.fields.FloatField)]
             )
         )
@@ -323,10 +323,10 @@ class TableTestCase(unittest.TestCase):
 
     def test_table_add_should_not_iterate_over_rows(self):
         table1 = rows.Table(
-            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.FloatField}
+            fields=OrderedDict([("f1", rows.fields.IntegerField), ("f2", rows.fields.FloatField)])
         )
         table2 = rows.Table(
-            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.FloatField}
+            fields=OrderedDict([("f1", rows.fields.IntegerField), ("f2", rows.fields.FloatField)])
         )
         table1._rows = mock.Mock()
         table1._rows.__add__ = mock.Mock()
@@ -404,7 +404,7 @@ class TestFlexibleTable(unittest.TestCase):
 
     def test_table_iadd(self):
         table = rows.Table(
-            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.FloatField}
+            fields=OrderedDict([("f1", rows.fields.IntegerField), ("f2", rows.fields.FloatField)])
         )
         table.append({"f1": 1, "f2": 2})
         table.append({"f1": 3, "f2": 4})
@@ -417,7 +417,7 @@ class TestFlexibleTable(unittest.TestCase):
         self.assertEqual(data_rows[1], data_rows[3])
 
     def test_table_name(self):
-        table = rows.Table(fields=collections.OrderedDict([("a", fields.TextField)]))
+        table = rows.Table(fields=OrderedDict([("a", fields.TextField)]))
 
         self.assertTrue("name" not in table.meta)
         self.assertEqual(table.name, "table1")
@@ -429,7 +429,7 @@ class TestFlexibleTable(unittest.TestCase):
 
     def test_head(self):
         table = rows.Table(
-            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.IntegerField}
+            fields=OrderedDict([("f1", rows.fields.IntegerField), ("f2", rows.fields.IntegerField)])
         )
         for i in range(50):
             table.append({"f1": i, "f2": i ** 2})
@@ -441,7 +441,7 @@ class TestFlexibleTable(unittest.TestCase):
 
     def test_tail(self):
         table = rows.Table(
-            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.IntegerField}
+            fields=OrderedDict([("f1", rows.fields.IntegerField), ("f2", rows.fields.IntegerField)])
         )
         for i in range(50):
             table.append({"f1": i, "f2": i ** 2})
@@ -453,7 +453,7 @@ class TestFlexibleTable(unittest.TestCase):
 
     def test_repr_html(self):
         table = rows.Table(
-            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.IntegerField},
+            fields=OrderedDict([("f1", rows.fields.IntegerField), ("f2", rows.fields.IntegerField)]),
             meta={"name": "my table"},
         )
         for i in range(5):
@@ -508,11 +508,11 @@ class TestFlexibleTable(unittest.TestCase):
             ).strip()
             + "\n"
         )
-        self.assertEqual(result, expected)
+        assert result == expected
 
         # For long tables show only header + spacer + tail
         table = rows.Table(
-            fields={"f1": rows.fields.IntegerField, "f2": rows.fields.IntegerField},
+            fields=OrderedDict([("f1", rows.fields.IntegerField), ("f2", rows.fields.IntegerField)]),
             meta={"name": "my table"},
         )
         for i in range(50):

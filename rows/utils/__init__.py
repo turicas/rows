@@ -39,7 +39,7 @@ except ImportError:
 
 import rows
 from rows.plugins.utils import make_header
-from rows.compat import BINARY_TYPE, TEXT_TYPE
+from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
 
 try:
     import lzma
@@ -630,25 +630,29 @@ def open_compressed(
 
     extension = str(filename).split(".")[-1].lower()
     mode_binary = mode.replace("t", "b")
-    get_fobj_binary = lambda: open(
-        filename,
-        mode=mode_binary,
-        buffering=buffering,
-        errors=errors,
-        newline=newline,
-        closefd=closefd,
-        opener=opener,
-    )
-    get_fobj_text = lambda: open(
-        filename,
-        mode=mode,
-        buffering=buffering,
-        encoding=encoding,
-        errors=errors,
-        newline=newline,
-        closefd=closefd,
-        opener=opener,
-    )
+    if PYTHON_VERSION < (3, 0, 0):
+        get_fobj_binary = lambda: open(filename, mode_binary, buffering)
+        get_fobj_text = lambda: open(filename, mode, buffering)
+    else:
+        get_fobj_binary = lambda: open(
+            filename,
+            mode=mode_binary,
+            buffering=buffering,
+            errors=errors,
+            newline=newline,
+            closefd=closefd,
+            opener=opener,
+        )
+        get_fobj_text = lambda: open(
+            filename,
+            mode=mode,
+            buffering=buffering,
+            encoding=encoding,
+            errors=errors,
+            newline=newline,
+            closefd=closefd,
+            opener=opener,
+        )
     known_extensions = ("xz", "gz", "bz2")
 
     if extension not in known_extensions:  # No compression
@@ -852,7 +856,10 @@ def execute_command(command, timeout=30.0, encoding="utf-8"):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    stdout, stderr = process.communicate(timeout=timeout)
+    if PYTHON_VERSION < (3, 0, 0):
+        stdout, stderr = process.communicate()
+    else:
+        stdout, stderr = process.communicate(timeout=timeout)
     if process.returncode > 0:
         stderr = stderr.decode(encoding)
         raise ValueError("Error executing command: {}".format(repr(stderr)))
@@ -1184,6 +1191,7 @@ def load_schema(filename, context=None):
 def scale_number(n, divider=1000, suffix=None, multipliers="KMGTPEZ", decimal_places=2):
     suffix = suffix if suffix is not None else ""
     count = -1
+    divider = float(divider)
     while n >= divider:
         n /= divider
         count += 1
