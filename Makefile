@@ -9,6 +9,18 @@ envtest: clean
 test:
 	tox
 
+py%:
+	@echo "Running Python shell in version py$*"
+	docker compose run --rm -it py$* python
+
+bash-py%:
+	@echo "Running bash in version py$*"
+	docker compose run --rm -it py$* bash
+
+bash-root-py%:
+	@echo "Running bash in version py$*"
+	docker compose run --rm -itu root py$* bash
+
 clean:
 	find -regex '.*\.pyc' -exec rm {} \;
 	find -regex '.*~' -exec rm {} \;
