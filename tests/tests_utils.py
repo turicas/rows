@@ -19,7 +19,10 @@ from __future__ import unicode_literals
 
 import bz2
 import gzip
-import lzma
+try:
+    import lzma  # Requires Python >= 3.3
+except ImportError:
+    lzma = None
 import pathlib
 import tempfile
 import unittest
@@ -301,8 +304,9 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_open_compressed_text(suffix=".gz", decompress=gzip.decompress)
 
         # Lzma
-        self.assert_open_compressed_binary(suffix=".xz", decompress=lzma.decompress)
-        self.assert_open_compressed_text(suffix=".xz", decompress=lzma.decompress)
+        if lzma is not None:
+            self.assert_open_compressed_binary(suffix=".xz", decompress=lzma.decompress)
+            self.assert_open_compressed_text(suffix=".xz", decompress=lzma.decompress)
 
         # Bz2
         self.assert_open_compressed_binary(suffix=".bz2", decompress=bz2.decompress)
