@@ -936,6 +936,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             min_value = field_metadata[field_name]["min"] = min(value for value in values if value is not None)
             max_value = field_metadata[field_name]["max"] = max(value for value in values if value is not None)
             if field_type is rows.fields.IntegerField:
+                # TODO: add TINYINT and MEDIUMINT? (MySQL)
                 if -32768 <= min_value and 32767 >= max_value:  # 2 bytes
                     field_metadata[field_name]["subtype"] = "SMALLINT"
                 elif -2147483648 <= min_value and 2147483647 >= max_value:  # 4 bytes
@@ -1030,7 +1031,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                         enum_name = "enum_{}".format(field_name)
                         choices_sql.append(
                             """CREATE TYPE "{}" AS ENUM ({}\n);""".format(
-                                enum_name, ", ".join("\n  " + repr(value) for value in field_choices)
+                                enum_name, ",".join("\n  " + repr(value) for value in sorted(field_choices))
                             )
                         )
                         sql_type = enum_name
@@ -1105,9 +1106,9 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                         choices_name = "{}_CHOICES".format(field_name.upper())
                         options["choices"] = choices_name
                         model_choices.append(
-                            "    {} = (\n      {},\n    )".format(
+                            "    {} = (\n        {},\n    )".format(
                                 choices_name,
-                                ",\n      ".join(
+                                ",\n        ".join(
                                     "({}, {})".format(index, repr(value))
                                     for index, value in enumerate(sorted(field_choices))
                                 )
