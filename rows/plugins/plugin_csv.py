@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import csv
 from io import BytesIO, TextIOWrapper, StringIO
 from itertools import islice
 
@@ -27,8 +28,28 @@ from rows.utils import Source, detect_local_source, open_compressed
 from rows.compat import PYTHON_VERSION, TEXT_TYPE
 
 
-if PYTHON_VERSION < (3, 0, 0):
-    import unicodecsv as csv  # noqa
+PY2 = PYTHON_VERSION < (3, 0, 0)
+
+if PY2:
+
+    def _csv_reader(fobj, dialect, encoding):
+        for row in csv.reader(fobj, dialect=dialect):
+            yield [value.decode(encoding) for value in row]
+
+    class _CsvWriter(object):
+        def __init__(self, fobj, dialect, encoding):
+            self.fobj = fobj
+            self.writer = csv.writer(fobj)
+            self.encoding = encoding
+
+        def writerow(self, row):
+            self.writer.writerow([value.encode(self.encoding) for value in row])
+
+        def writerows(self, data):
+            writerow = self.writer.writerow
+            encoding = self.encoding
+            for row in data:
+                writerow([value.encode(encoding) for value in row])
 
     def discover_dialect(sample, encoding=None, delimiters=(b",", b";", b"\t", b"|")):
         """Discover a CSV dialect based on a sample size.
@@ -36,6 +57,7 @@ if PYTHON_VERSION < (3, 0, 0):
         `encoding` is not used (Python 2)
         """
         try:
+            sniffer = csv.Sniffer()
             dialect = sniffer.sniff(sample, delimiters=delimiters)
 
         except csv.Error:  # Couldn't detect: fall back to 'excel'
@@ -44,7 +66,7 @@ if PYTHON_VERSION < (3, 0, 0):
         fix_dialect(dialect)
         return dialect
 else:
-    import csv  # noqa
+    csv_reader = csv.reader
 
     def discover_dialect(sample, encoding, delimiters=(",", ";", "\t", "|")):
         """Discover a CSV dialect based on a sample size.
@@ -71,6 +93,7 @@ else:
                 finished = True
 
         try:
+            sniffer = csv.Sniffer()
             dialect = sniffer.sniff(decoded, delimiters=delimiters)
 
         except csv.Error:  # Couldn't detect: fall back to 'excel'
@@ -80,7 +103,6 @@ else:
         return dialect
 
 
-sniffer = csv.Sniffer()
 # Some CSV files have more than 128kB of data in a cell, so we force this value
 # to be greater (16MB).
 # TODO: check if it impacts in memory usage.
@@ -156,6 +178,7 @@ csv.register_dialect("excel-semicolon", excel_semicolon)
 
 def read_sample(fobj, sample):
     """Read `sample` bytes from `fobj` and return the cursor to where it was."""
+    # TODO: what if object is not seekable? Like in bz2
     cursor = fobj.tell()
     data = fobj.read(sample)
     fobj.seek(cursor)
@@ -185,10 +208,13 @@ def import_from_csv(
         )
 
     fobj = source.fobj
-    if isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode):
-        # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
-        fobj = TextIOWrapper(fobj, encoding=encoding)
-    reader = csv.reader(fobj, dialect=dialect)
+    if not PY2:
+        if isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode):
+            # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
+            fobj = TextIOWrapper(fobj, encoding=encoding)
+        reader = csv.reader(fobj, dialect=dialect)
+    else:
+        reader = _csv_reader(fobj, dialect=dialect, encoding=encoding)
 
     meta = {"imported_from": "csv", "source": source}
     return create_table(reader, meta=meta, *args, **kwargs)
@@ -232,10 +258,13 @@ def export_to_csv(
     # choose the real size (in Bytes) when to flush to the file system, instead
     # number of rows
     fobj = source.fobj
-    if isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode):
-        # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
-        fobj = TextIOWrapper(fobj, encoding=encoding)
-    writer = csv.writer(fobj, dialect=dialect)
+    if not PY2:
+        if isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode):
+            # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
+            fobj = TextIOWrapper(fobj, encoding=encoding)
+        writer = csv.writer(fobj, dialect=dialect)
+    else:
+        writer = _CsvWriter(fobj, dialect=dialect, encoding=encoding)
 
     if callback is None:
         for batch in ipartition(serialize(table, *args, **kwargs), batch_size):
@@ -250,15 +279,16 @@ def export_to_csv(
             total += len(batch)
             callback(total)
 
+    fobj.flush()
     if return_data:
         source.fobj.seek(0)
         result = source.fobj.read()
     else:
-        result = source.fobj
-        source.fobj.flush()
+        result = fobj
+        fobj.flush()
 
     if source.should_close:
-        source.fobj.close()
+        fobj.close()
 
     return result
 

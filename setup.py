@@ -41,7 +41,7 @@ version = line.strip().split("=")[-1].strip().replace('"', '').replace("'", "")
 utils_requirements = ["requests", "requests-cache", "tqdm"]
 EXTRA_REQUIREMENTS = {
     "cli": ["click"] + utils_requirements,
-    "csv": ["unicodecsv; python_version < '3.0'"],
+    "csv": [],
     "detect": ["file-magic; python_version >= '3.0'"],
     "html": ["lxml"],  # apt: libxslt-dev libxml2-dev
     "ods": ["lxml"],
