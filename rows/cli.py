@@ -39,6 +39,7 @@ from tqdm import tqdm
 
 import rows
 from rows.fields import make_header, TextField
+from rows.fileio import cfopen
 from rows.plugins.plugin_csv import CsvInspector, fix_file
 from rows.utils import (
     COMPRESSED_EXTENSIONS,
@@ -51,7 +52,6 @@ from rows.utils import (
     import_from_source,
     import_from_uri,
     load_schema,
-    open_compressed,
     pgexport,
     pgimport,
     sqlite_to_csv,
@@ -795,7 +795,7 @@ def command_schema(
     if output in ("-", None):
         output_fobj = sys.stdout.buffer
     else:
-        output_fobj = open_compressed(output, mode="wb")
+        output_fobj = cfopen(output, mode="wb")
     # TODO: check if all field names in `exclude_choices` actually exists on source dataset
     content = generate_schema(table, export_fields, output_format, max_choices=max_choices,
                               exclude_choices=exclude_choices)
@@ -854,11 +854,11 @@ def command_csv_fix(log_filename, log_level, input_dialect, input_encoding,
     if input_filename == "-":
         fobj_in = io.TextIOWrapper(sys.stdin.buffer, encoding=input_encoding)
     else:
-        fobj_in = open_compressed(input_filename, encoding=input_encoding)
+        fobj_in = cfopen(input_filename, encoding=input_encoding)
     if output_filename == "-":
         fobj_out = io.TextIOWrapper(sys.stdout.buffer, encoding=output_encoding)
     else:
-        fobj_out = open_compressed(output_filename, mode="w", encoding=output_encoding)
+        fobj_out = cfopen(output_filename, mode="w", encoding=output_encoding)
 
     if log_level == "NONE":
         logger = None
@@ -1169,7 +1169,7 @@ def command_pdf_to_text(
 
     # Define if output is file or stdout
     if output:
-        output = open_compressed(output, mode="w", encoding=output_encoding)
+        output = cfopen(output, mode="w", encoding=output_encoding)
         write = output.write
     else:
         write = click.echo
@@ -1238,7 +1238,7 @@ def csv_merge(
         # TODO: fix final header in case of empty field names (a command like
         # `rows csv-clean` would fix the problem if run before `csv-merge` for
         # each file).
-        metadata[filename]["fobj"] = open_compressed(
+        metadata[filename]["fobj"] = cfopen(
             filename, encoding=inspector.encoding, buffering=buffer_size
         )
         metadata[filename]["reader"] = csv.reader(
@@ -1254,7 +1254,7 @@ def csv_merge(
     # TODO: is it needed to use make_header here?
 
     progress_bar = tqdm(desc="Exporting data")
-    output_fobj = open_compressed(
+    output_fobj = cfopen(
         destination, mode="w", encoding=output_encoding, buffering=buffer_size
     )
     writer = csv.writer(output_fobj)
@@ -1326,7 +1326,7 @@ def csv_clean(
     input_encoding = input_encoding or inspector.encoding
 
     # Detect empty columns
-    with open_compressed(
+    with cfopen(
         source, encoding=input_encoding, buffering=buffer_size
     ) as fobj:
         reader = csv.reader(fobj, dialect=dialect)
@@ -1355,10 +1355,10 @@ def csv_clean(
         temp_path = Path(tempfile.mkdtemp())
         destination = temp_path / Path(source).name
 
-    fobj = open_compressed(source, encoding=input_encoding, buffering=buffer_size)
+    fobj = cfopen(source, encoding=input_encoding, buffering=buffer_size)
     reader = csv.reader(fobj, dialect=dialect)
     _ = next(reader)  # Skip header
-    output_fobj = open_compressed(
+    output_fobj = cfopen(
         destination, mode="w", encoding=output_encoding, buffering=buffer_size
     )
     writer = csv.writer(output_fobj, dialect=csv.excel)
@@ -1387,7 +1387,7 @@ def csv_row_count(input_encoding, buffer_size, dialect, sample_size, source):
     dialect = dialect or inspector.dialect
     input_encoding = input_encoding or inspector.encoding
 
-    fobj = open_compressed(source, encoding=input_encoding, buffering=buffer_size)
+    fobj = cfopen(source, encoding=input_encoding, buffering=buffer_size)
     reader = csv.reader(fobj, dialect=dialect)
     next(reader)  # Skip header
     count = sum(1 for _ in reader)
@@ -1433,7 +1433,7 @@ def csv_split(
     part = 0
     output_fobj = None
     writer = None
-    input_fobj = open_compressed(source, encoding=input_encoding, buffering=buffer_size)
+    input_fobj = cfopen(source, encoding=input_encoding, buffering=buffer_size)
     reader = csv.reader(input_fobj)
     header = next(reader)
     if not quiet:
@@ -1443,7 +1443,7 @@ def csv_split(
             if output_fobj is not None:
                 output_fobj.close()
             part += 1
-            output_fobj = open_compressed(
+            output_fobj = cfopen(
                 destination_pattern.format(part=part),
                 mode="w",
                 encoding=output_encoding,

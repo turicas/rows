@@ -37,17 +37,9 @@ except ImportError:
     tqdm = None
 
 import rows
+from rows.fileio import cfopen
 from rows.plugins.utils import make_header
 from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
-
-try:
-    import lzma
-except ImportError:
-    lzma = None
-try:
-    import bz2
-except ImportError:
-    bz2 = None
 
 try:
     from urlparse import urlparse  # Python 2
@@ -80,7 +72,6 @@ else:
 
 
 # TODO: should get this information from the plugins
-COMPRESSED_EXTENSIONS = ("gz", "xz", "bz2")
 TEXT_PLAIN = {
     "txt": "text/txt",
     "text": "text/txt",
@@ -252,6 +243,8 @@ class Source(object):
 
     # TODO: may add a general way to get the decoded version of the file-like object
 
+    # TODO: add `__del__` and call `self.fobj.close()` if `fobj is None and self.should_close`
+
     @classmethod
     def from_file(
         cls,
@@ -267,12 +260,16 @@ class Source(object):
     ):
         """Create a `Source` from a filename or fobj"""
 
+        # TODO: this method may encapsulate `io.TextIOWrapper` if `filename_or_fobj` is a file-like object open in
+        # binary mode and `mode` does not have `"b"` on it.
+
         if isinstance(filename_or_fobj, Source):
             return filename_or_fobj
 
         elif isinstance(filename_or_fobj, (BINARY_TYPE, TEXT_TYPE, Path)):
-            fobj = open_compressed(filename_or_fobj, mode=mode)
+            binary_mode = TEXT_TYPE("b") in TEXT_TYPE(mode)
             filename = filename_or_fobj
+            fobj = cfopen(filename, mode=mode, encoding=None if binary_mode else encoding)
             should_close = True if should_close is None else should_close
 
         else:  # Don't know exactly what is, assume file-like object
@@ -405,7 +402,7 @@ def local_file(path, sample_size=1048576):
     # TODO: may change sample_size
     if path.split(".")[-1].lower() in COMPRESSED_EXTENSIONS:
         compressed = True
-        fobj = open_compressed(path, mode="rb")
+        fobj = cfopen(path, mode="rb")
         content = fobj.read(sample_size)
         fobj.close()
     else:
@@ -472,9 +469,9 @@ def download_file(
 
     if filename is None:
         tmp = tempfile.NamedTemporaryFile(delete=False)
-        fobj = open_compressed(tmp.name, mode="wb")
+        fobj = cfopen(tmp.name, mode="wb")
     else:
-        fobj = open_compressed(filename, mode="wb")
+        fobj = cfopen(filename, mode="wb")
 
     if progress:
         total = response.headers.get("content-length", None)
@@ -562,7 +559,7 @@ def detect_source(uri, verify_ssl, progress, timeout=5):
 def import_from_source(source, default_encoding, *args, **kwargs):
     "Import data described in a `rows.Source` into a `rows.Table`"
 
-    # TODO: test open_compressed
+    # TODO: test cfopen
     plugin_name = source.plugin_name
     kwargs["encoding"] = (
         kwargs.get("encoding", None) or source.encoding or default_encoding
@@ -603,82 +600,9 @@ def export_to_uri(table, uri, *args, **kwargs):
     return export_function(table, uri, *args, **kwargs)
 
 
-# TODO: check https://docs.python.org/3.7/library/fileinput.html
-def open_compressed(
-    filename,
-    mode="r",
-    buffering=-1,
-    encoding=None,
-    errors=None,
-    newline=None,
-    closefd=True,
-    opener=None,
-):
-    """Return a text-based file object from a filename, even if compressed
-
-    NOTE: if the file is compressed, options like `buffering` are valid to the
-    compressed file-object (not the uncompressed file-object returned).
-    """
-
-    binary_mode = "b" in mode
-    if not binary_mode and "t" not in mode:
-        # For some reason, passing only mode='r' to bzip2 is equivalent
-        # to 'rb', not 'rt', so we force it here.
-        mode += "t"
-    if binary_mode and encoding:
-        raise ValueError("encoding should not be specified in binary mode")
-
-    extension = str(filename).split(".")[-1].lower()
-    mode_binary = mode.replace("t", "b")
-    if PYTHON_VERSION < (3, 0, 0):
-        get_fobj_binary = lambda: open(filename, mode_binary, buffering)
-        get_fobj_text = lambda: open(filename, mode, buffering)
-    else:
-        get_fobj_binary = lambda: open(
-            filename,
-            mode=mode_binary,
-            buffering=buffering,
-            errors=errors,
-            newline=newline,
-            closefd=closefd,
-            opener=opener,
-        )
-        get_fobj_text = lambda: open(
-            filename,
-            mode=mode,
-            buffering=buffering,
-            encoding=encoding,
-            errors=errors,
-            newline=newline,
-            closefd=closefd,
-            opener=opener,
-        )
-    known_extensions = ("xz", "gz", "bz2")
-
-    if extension not in known_extensions:  # No compression
-        if binary_mode:
-            return get_fobj_binary()
-        else:
-            return get_fobj_text()
-
-    elif extension == "xz":
-        if lzma is None:
-            raise ModuleNotFoundError("lzma support is not installed")
-        fobj_binary = lzma.LZMAFile(get_fobj_binary(), mode=mode_binary)
-
-    elif extension == "gz":
-        import gzip
-        fobj_binary = gzip.GzipFile(fileobj=get_fobj_binary(), mode=mode_binary)
-
-    elif extension == "bz2":
-        if bz2 is None:
-            raise ModuleNotFoundError("bzip2 support is not installed")
-        fobj_binary = bz2.BZ2File(get_fobj_binary(), mode=mode_binary)
-
-    if binary_mode:
-        return fobj_binary
-    else:
-        return io.TextIOWrapper(fobj_binary, encoding=encoding)
+def open_compressed(*args, **kwargs):
+    # TODO: add warning deprecated
+    return cfopen(*args, **kwargs)
 
 
 def csv_to_sqlite(
@@ -719,7 +643,7 @@ def csv_to_sqlite(
     # Create lazy table object to be converted
     # TODO: this lazyness feature will be incorported into the library soon so
     #       we can call here `rows.import_from_csv` instead of `csv.reader`.
-    fobj = open_compressed(input_filename, encoding=encoding)
+    fobj = cfopen(input_filename, encoding=encoding)
     csv_reader = csv.reader(fobj, dialect=dialect)
     original_header = next(csv_reader)
     header = make_header(original_header)
@@ -767,7 +691,7 @@ def sqlite_to_csv(
     cursor = connection.cursor()
     result = cursor.execute(query)
     header = [item[0] for item in cursor.description]
-    fobj = open_compressed(output_filename, mode="w", encoding=encoding)
+    fobj = cfopen(output_filename, mode="w", encoding=encoding)
     writer = csv.writer(fobj, dialect=dialect)
     writer.writerow(header)
     total_written = 0
@@ -813,7 +737,7 @@ class CsvLazyDictWriter(object):
             if getattr(self.filename_or_fobj, "read", None) is not None:
                 self._fobj = self.filename_or_fobj
             else:
-                self._fobj = open_compressed(
+                self._fobj = cfopen(
                     self.filename_or_fobj, mode="w", encoding=self.encoding
                 )
 
