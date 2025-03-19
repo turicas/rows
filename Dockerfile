@@ -15,7 +15,7 @@ RUN addgroup --gid ${GID:-1000} python \
   && chown -R python:python /app
 
 # Configure locale (required to run tests)
-RUN echo -e 'en_US.UTF-8 UTF-8\npt_BR.UTF-8 UTF-8' > /etc/locale.gen
+RUN bash -c 'echo -e "en_US.UTF-8 UTF-8\npt_BR.UTF-8 UTF-8" > /etc/locale.gen'
 
 # Upgrade and install required system packages
 RUN apt update \
