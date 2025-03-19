@@ -26,21 +26,32 @@ from rows.compat import TEXT_TYPE
 
 @contextlib.contextmanager
 def locale_context(name, category=locale.LC_ALL):
+    """
+    Enables rows locale-aware features
 
-    old_name = locale.getlocale()
-    if None not in old_name:
-        old_name = ".".join(old_name)
+    `name` can be:
+    - A string with only the language, like in `"pt_BR"`
+    - A string with the language and the encoding, like in `"pt_BR.UTF-8"`
+    - A tuple with the language and the encoding, like in `("pt_BR", "UTF-8")`
+    """
+    old_setting = old_lang, old_encoding = locale.getlocale()
     if isinstance(name, TEXT_TYPE):
         name = TEXT_TYPE(name)
+        if "." in name:
+            lang, encoding = name.split(".")
+        else:
+            lang = name
+            encoding = old_encoding
+    if isinstance(name, tuple):
+        lang, encoding = name
+    new_setting = lang, encoding
 
-    if old_name != name:
-        locale.setlocale(category, name)
-
-    rows.fields.SHOULD_NOT_USE_LOCALE = False
     try:
+        if old_setting != new_setting:
+            locale.setlocale(category, new_setting)
+        rows.fields.SHOULD_NOT_USE_LOCALE = False
         yield
     finally:
-        if old_name != name:
-            locale.setlocale(category, old_name)
-
-    rows.fields.SHOULD_NOT_USE_LOCALE = True
+        if old_setting != new_setting:
+            locale.setlocale(category, old_setting)
+        rows.fields.SHOULD_NOT_USE_LOCALE = True

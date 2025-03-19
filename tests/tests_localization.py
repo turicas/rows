@@ -17,8 +17,8 @@
 
 from __future__ import unicode_literals
 
+import locale
 import platform
-import unittest
 
 import rows
 import rows.fields
@@ -26,17 +26,32 @@ from rows.localization import locale_context
 from rows.compat import TEXT_TYPE
 
 
-class LocalizationTestCase(unittest.TestCase):
-    def test_locale_context_present_in_main_namespace(self):
-        self.assertIn("locale_context", dir(rows))
-        self.assertIs(locale_context, rows.locale_context)
+def test_locale_context_present_in_main_namespace():
+    assert "locale_context" in dir(rows)
+    assert locale_context is rows.locale_context
 
-    def test_locale_context(self):
-        self.assertTrue(rows.fields.SHOULD_NOT_USE_LOCALE)
-        if platform.system() == "Windows":
-            name = TEXT_TYPE("ptb_bra")
-        else:
-            name = "pt_BR.UTF-8"
-        with locale_context(name):
-            self.assertFalse(rows.fields.SHOULD_NOT_USE_LOCALE)
-        self.assertTrue(rows.fields.SHOULD_NOT_USE_LOCALE)
+
+def test_locale_context():
+    assert rows.fields.SHOULD_NOT_USE_LOCALE
+    if platform.system() == "Windows":
+        name = TEXT_TYPE("ptb_bra")
+    else:
+        name = "pt_BR.UTF-8"
+    with locale_context(name):
+        assert not rows.fields.SHOULD_NOT_USE_LOCALE
+    assert rows.fields.SHOULD_NOT_USE_LOCALE
+
+
+def test_locale_context_restores_on_exception():
+    initial_locale = locale.getlocale()
+    locale.setlocale(locale.LC_ALL, ("en_US", "UTF-8"))
+    assert locale.getlocale() == ("en_US", "UTF-8")
+    try:
+        with locale_context("pt_BR.UTF-8"):
+            assert locale.getlocale(locale.LC_ALL) == ("pt_BR", "UTF-8")
+            raise RuntimeError("Test Exception")
+    except RuntimeError:
+        pass
+    locale_after = locale.getlocale()
+    locale.setlocale(locale.LC_ALL, initial_locale)
+    assert locale_after == ("en_US", "UTF-8")
