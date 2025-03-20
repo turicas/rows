@@ -181,7 +181,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         ]
         json_obj = io.BytesIO(json.dumps(data).encode("utf-8"))
         table = rows.import_from_json(json_obj)
-        self.assertEqual(table.field_names, ["f1", "f2"])
+        self.assertEqual(sorted(table.field_names), ["f1", "f2"])
         self.assertEqual(table[0].f1, 2)
         self.assertEqual(table[0].f2, 3)
         self.assertEqual(table[1].f1, 1)

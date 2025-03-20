@@ -18,7 +18,7 @@
 from __future__ import unicode_literals
 
 import json
-from io import BytesIO
+from io import BytesIO, TextIOWrapper
 
 from rows import fields
 from rows.plugins.utils import create_table, prepare_to_export
@@ -34,11 +34,15 @@ def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
     """
 
     source = Source.from_file(
-        filename_or_fobj, mode="rb", plugin_name="json", encoding=encoding
+        filename_or_fobj, mode="r", plugin_name="json", encoding=encoding
     )
+    fobj = source.fobj
+    if isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode):
+        # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
+        fobj = TextIOWrapper(fobj, encoding=encoding)
 
     # JSON should always use UTF-8, UTF-16 or UTF-32 encodings.
-    json_obj = json.load(source.fobj)
+    json_obj = json.load(fobj)
     field_names = []
     for row in json_obj:
         for key in row.keys():

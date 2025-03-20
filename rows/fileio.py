@@ -8,13 +8,13 @@ COMPRESSED_EXTENSIONS = ("bz2", "gz", "xz")
 def _fobj_xz(filename, mode, *args, **kwargs):
     import lzma  # noqa
 
-    return lzma.LZMAFile(filename=filename, mode=mode, *args, **kwargs)
+    return lzma.LZMAFile(filename=str(filename), mode=mode, *args, **kwargs)
 
 
 def _fobj_gz(filename, mode, *args, **kwargs):
     import gzip  # noqa
 
-    return gzip.GzipFile(filename=filename, mode=mode, *args, **kwargs)
+    return gzip.GzipFile(filename=str(filename), mode=mode, *args, **kwargs)
 
 PY2 = PYTHON_VERSION < (3, 0, 0)
 
@@ -37,13 +37,13 @@ if PY2:
             def flush(self):
                 return
 
-        fobj = BZ2FileWrapper(filename=filename, mode=mode, *args, **kwargs)
+        fobj = BZ2FileWrapper(filename=str(filename), mode=mode, *args, **kwargs)
         return fobj
 else:
     def _fobj_bz2(filename, mode, *args, **kwargs):
         import bz2  # noqa
 
-        return bz2.BZ2File(filename=filename, mode=mode, *args, **kwargs)
+        return bz2.BZ2File(filename=str(filename), mode=mode, *args, **kwargs)
 
 
 def cfopen(file, mode="r", buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None,
@@ -97,7 +97,7 @@ def cfopen(file, mode="r", buffering=-1, encoding=None, errors=None, newline=Non
                 return io.TextIOWrapper(fobj_binary, encoding=encoding, errors=errors, newline=newline)
         else:
             return open(
-                file=file,
+                file=str(file),
                 mode=open_mode,
                 encoding=encoding,
                 errors=errors,
