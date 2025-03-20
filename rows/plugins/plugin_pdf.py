@@ -54,13 +54,16 @@ else:
         mss = ss / (n - 1)
         return math.sqrt(mss)
 
-try:
-    import fitz as pymupdf
+if PYTHON_VERSION >= (3, 7, 0):
+    try:
+        import fitz as pymupdf
 
-    pymupdf.TOOLS.mupdf_display_errors(False)
+        pymupdf.TOOLS.mupdf_display_errors(False)
 
-    pymupdf_imported = True
-except ImportError:
+        pymupdf_imported = True
+    except ImportError:
+        pymupdf_imported = False
+else:
     pymupdf_imported = False
 
 
