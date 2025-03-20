@@ -20,9 +20,9 @@ RUN bash -c 'echo -e "en_US.UTF-8 UTF-8\npt_BR.UTF-8 UTF-8" > /etc/locale.gen'
 # Upgrade and install required system packages
 RUN apt update \
   && apt upgrade -y \
-  && apt install --no-install-recommends -y build-essential libfreetype-dev libmagic1 libmupdf-dev libpq-dev \
-                                            libsnappy-dev libxml2-dev libxslt-dev libz-dev locales postgresql-client \
-                                            python3-dev wget \
+  && apt install --no-install-recommends -y build-essential libffi-dev libfreetype-dev libmagic1 libmupdf-dev \
+                                            libpq-dev libsnappy-dev libxml2-dev libxslt-dev libz-dev locales \
+                                            postgresql-client python3-dev wget \
   && apt purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt clean \
   && rm -rf /var/lib/apt/lists/*
