@@ -1,1 +1,3 @@
--e .
+dataclasses
+unicodecsv; python_version < '3.0'
+requests
