@@ -54,6 +54,16 @@ else:
     if not hasattr(magic, "detect_from_content"):
         # This is not the file-magic library
         magic = None
+    elif hasattr(magic, "MagicDetect"):
+        def fixed__del__(self):
+            if magic._close is None:
+                return
+            if self.mime_magic is not None:
+                self.mime_magic.close()
+            if self.none_magic is not None:
+                self.none_magic.close()
+        magic.MagicDetect.__del__ = fixed__del__
+
 
 if requests:
     chardet = requests.compat.chardet
