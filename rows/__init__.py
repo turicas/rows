@@ -18,9 +18,10 @@
 from __future__ import unicode_literals
 
 import rows.plugins as plugins
-from rows.localization import locale_context  # NOQA
-from rows.operations import join, transform, transpose  # NOQA
-from rows.table import FlexibleTable, Table  # NOQA
+from rows.localization import locale_context  # noqa
+from rows.operations import join, transform, transpose  # noqa
+from rows.table import FlexibleTable, Table  # noqa
+from rows.version import as_string as __version__  # noqa
 
 # General imports
 
@@ -75,4 +76,3 @@ if plugins.pdf:
     import_from_pdf = plugins.pdf.import_from_pdf
 
 
-__version__ = "0.5.0-dev0"

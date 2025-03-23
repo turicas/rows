@@ -4,9 +4,9 @@ import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from rows import __version__
-from rows.utils import subclasses
 from rows.compat import TEXT_TYPE
+from rows.utils import subclasses
+from rows.version import as_string as rows_version
 
 REGEXP_VERSION = re.compile("([0-9][a-z0-9.+-]+)")
 
@@ -51,7 +51,7 @@ class Downloader(object):
         if self._user_agent is None:
             # TODO: implement
             self._user_agent = "python/rows-{} ({} {})".format(
-                __version__, self.name, type(self).get_version()
+                rows_version, self.name, type(self).get_version()
             )
         return self._user_agent
 
