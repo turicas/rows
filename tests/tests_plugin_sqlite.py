@@ -59,7 +59,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
         assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
-    @mock.patch("rows.plugins.sqlite.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_sqlite_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"encoding": "test", "some_key": 123, "other": 456}
@@ -72,7 +72,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call[1].pop("meta")
         self.assertEqual(call[1], kwargs)
 
-    @mock.patch("rows.plugins.sqlite.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_sqlite_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -149,7 +149,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(len(result_table), 2 * len(utils.table))
         self.assert_table_equal(result_table, utils.table + utils.table)
 
-    @mock.patch("rows.plugins.sqlite.prepare_to_export")
+    @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_sqlite_uses_prepare_to_export(self, mocked_prepare_to_export):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)

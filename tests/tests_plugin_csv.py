@@ -59,7 +59,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertIs(rows.plugins.plugin_csv.import_from_csv, rows.import_from_csv)
         self.assertIs(rows.plugins.plugin_csv.export_to_csv, rows.export_to_csv)
 
-    @mock.patch("rows.plugins.plugin_csv.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
@@ -68,7 +68,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
-    @mock.patch("rows.plugins.plugin_csv.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -83,7 +83,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
-    @mock.patch("rows.plugins.plugin_csv.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_discover_dialect(self, mocked_create_table):
         data, lines = make_csv_data(
             quote_char="'", field_delimiter=";", line_delimiter="\r\n"
@@ -157,7 +157,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[2].field1, 5)
         self.assertEqual(table[2].field2, 6)
 
-    @mock.patch("rows.plugins.plugin_csv.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_force_dialect(self, mocked_create_table):
         data, lines = make_csv_data(
             quote_char="'", field_delimiter="\t", line_delimiter="\r\n"
@@ -251,7 +251,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertDictEqual(table[1].jsoncolumn1, {"c": 44})
         self.assertDictEqual(table[1].jsoncolumn2, {"d": 45})
 
-    @mock.patch("rows.plugins.plugin_csv.serialize")
+    @mock.patch("rows.plugins.utils.serialize")
     def test_export_to_csv_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)

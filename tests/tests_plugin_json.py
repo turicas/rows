@@ -46,7 +46,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertIs(rows.import_from_json, rows.plugins.plugin_json.import_from_json)
         self.assertIs(rows.export_to_json, rows.plugins.plugin_json.export_to_json)
 
-    @mock.patch("rows.plugins.plugin_json.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_json_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
@@ -55,7 +55,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
-    @mock.patch("rows.plugins.plugin_json.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_json_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -74,7 +74,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 call_args, field_ordering=False, expected_meta=self.expected_meta
             )
 
-    @mock.patch("rows.plugins.plugin_json.prepare_to_export")
+    @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_json_uses_prepare_to_export(self, mocked_prepare_to_export):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)

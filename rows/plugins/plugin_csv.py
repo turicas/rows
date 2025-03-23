@@ -19,12 +19,8 @@ from __future__ import unicode_literals
 
 import csv
 from io import BytesIO, TextIOWrapper, StringIO
-from itertools import islice
 
-from rows import fields
-from rows.fields import make_header
-from rows.plugins.utils import create_table, ipartition, serialize
-from rows.utils import Source, detect_local_source, open_compressed
+from rows.utils import Source
 from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
 
 
@@ -114,6 +110,7 @@ else:
 # TODO: check if it impacts in memory usage.
 # TODO: may add option to change it by passing a parameter to import/export.
 csv.field_size_limit(16777216)
+csv.register_dialect("excel-semicolon", excel_semicolon)
 
 
 def fix_dialect(dialect):
@@ -135,6 +132,8 @@ def fix_file(csv_reader, csv_writer, logger=None):
     `csv_reader` and `csv_writer` must be `csv.reader` and `csv.writer`
     instances or compatible objects (read/write lists)
     """
+    from rows.fields import make_header
+
     total, written, fixed, n_col, last_row = 0, 0, 0, None, None
     for row in csv_reader:
         total += 1
@@ -175,9 +174,6 @@ def fix_file(csv_reader, csv_writer, logger=None):
     }
 
 
-csv.register_dialect("excel-semicolon", excel_semicolon)
-
-
 def read_sample(fobj, sample):
     """Read `sample` bytes from `fobj` and return the cursor to where it was."""
     # TODO: what if object is not seekable? Like in bz2
@@ -200,6 +196,8 @@ def import_from_csv(
     If a file-like object is provided it MUST be in binary mode, like in
     `open(filename, mode='rb')`.
     """
+    from rows.plugins.utils import create_table
+
     source = Source.from_file(
         filename_or_fobj, plugin_name="csv", mode="rb", encoding=encoding
     )
@@ -240,6 +238,7 @@ def export_to_csv(
     If not filename/fobj is provided, the function returns a string with CSV
     contents.
     """
+    from rows.plugins.utils import ipartition, serialize
     # TODO: will work only if table.fields is OrderedDict
     # TODO: should use fobj? What about creating a method like json.dumps?
 
@@ -310,6 +309,8 @@ class CsvInspector(object):
         self._max_samples = max_samples
 
     def _read_sample(self, binary=False):
+        from rows.utils import open_compressed
+
         if binary:
             if self._sample_binary is None:
                 fobj = open_compressed(self.filename, mode="rb")
@@ -327,6 +328,8 @@ class CsvInspector(object):
     @property
     def encoding(self):
         if self._encoding is None:
+            from rows.utils import detect_local_source
+
             source = detect_local_source(self.filename, self._read_sample(binary=True))
             self._encoding = source.encoding
         return self._encoding
@@ -341,8 +344,6 @@ class CsvInspector(object):
     @property
     def field_names(self):
         if self._field_names is None:
-            import csv
-
             reader = csv.reader(
                 StringIO(self._read_sample(binary=False)),
                 dialect=self.dialect,
@@ -353,8 +354,9 @@ class CsvInspector(object):
     @property
     def schema(self):
         if self._schema is None:
-            import csv
             import itertools
+
+            from rows import fields
 
             reader = csv.reader(
                 StringIO(self._read_sample(binary=False)),

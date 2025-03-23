@@ -17,36 +17,18 @@
 
 from __future__ import unicode_literals
 
-import datetime
 import sqlite3
-import string
 from pathlib import Path
 
-import rows.fields as fields
-from rows.fields import make_unique_name
-from rows.plugins.utils import create_table, ipartition, prepare_to_export
 from rows.utils import Source
 from rows.compat import BINARY_TYPE, TEXT_TYPE
 
-SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
-SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS "{table_name}" ({field_types})'
-SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
-SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) VALUES ({placeholders})'
-SQLITE_TYPES = {
-    fields.BinaryField: "BLOB",
-    fields.BoolField: "INTEGER",
-    fields.DateField: "TEXT",
-    fields.DatetimeField: "TEXT",
-    fields.DecimalField: "REAL",
-    fields.FloatField: "REAL",
-    fields.IntegerField: "INTEGER",
-    fields.PercentField: "REAL",
-    fields.TextField: "TEXT",
-}
-DEFAULT_TYPE = "BLOB"
-
 
 def _python_to_sqlite(field_types):
+    import datetime
+
+    from rows import fields
+
     def convert_value(field_type, value):
         if field_type in (
             fields.BinaryField,
@@ -122,13 +104,10 @@ def _valid_table_name(name):
     - Letters can be capitalized or not
     - Acceps letters, numbers and _
     """
-    if name[0] not in "_" + string.ascii_letters or not set(name).issubset(
-        "_" + string.ascii_letters + string.digits
-    ):
-        return False
-
-    else:
-        return True
+    return (
+        name[0] in "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        and set(name).issubset(set("_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))
+    )
 
 
 def import_from_sqlite(
@@ -140,6 +119,8 @@ def import_from_sqlite(
     **kwargs
 ):
     """Return a rows.Table with data from SQLite database."""
+    from rows.plugins.utils import create_table
+
     source = get_source(filename_or_connection)
     connection = source.fobj
     # TODO: add PRAGMA journal_mode=WAL (may save old state)
@@ -151,6 +132,7 @@ def import_from_sqlite(
         if not _valid_table_name(table_name):
             raise ValueError("Invalid table name: {}".format(table_name))
 
+        SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
         query = SQL_SELECT_ALL.format(table_name=table_name)
 
     if query_args is None:
@@ -175,6 +157,22 @@ def export_to_sqlite(
     *args,
     **kwargs
 ):
+    from rows import fields
+    from rows.plugins.utils import ipartition, prepare_to_export
+
+    SQLITE_TYPES = {
+        fields.BinaryField: "BLOB",
+        fields.BoolField: "INTEGER",
+        fields.DateField: "TEXT",
+        fields.DatetimeField: "TEXT",
+        fields.DecimalField: "REAL",
+        fields.FloatField: "REAL",
+        fields.IntegerField: "INTEGER",
+        fields.PercentField: "REAL",
+        fields.TextField: "TEXT",
+    }
+    DEFAULT_TYPE = "BLOB"
+
     # TODO: should add transaction support?
     prepared_table = prepare_to_export(table, *args, **kwargs)
     source = get_source(filename_or_connection)
@@ -182,8 +180,9 @@ def export_to_sqlite(
     cursor = connection.cursor()
 
     if table_name is None:
+        SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
         table_names = [item[0] for item in cursor.execute(SQL_TABLE_NAMES)]
-        table_name = make_unique_name(
+        table_name = fields.make_unique_name(
             table_name_format.format(index=1),
             existing_names=table_names,
             name_format=table_name_format,
@@ -199,10 +198,12 @@ def export_to_sqlite(
         "{} {}".format(field_name, SQLITE_TYPES.get(field_type, DEFAULT_TYPE))
         for field_name, field_type in zip(field_names, field_types)
     ]
+    SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS "{table_name}" ({field_types})'
     cursor.execute(
         SQL_CREATE_TABLE.format(table_name=table_name, field_types=", ".join(columns))
     )
 
+    SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) VALUES ({placeholders})'
     insert_sql = SQL_INSERT.format(
         table_name=table_name,
         field_names=", ".join(field_names),

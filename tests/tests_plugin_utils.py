@@ -339,30 +339,6 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             ]
             self.assertEqual(values, row)
 
-    def test_make_header_should_add_underscore_if_starts_with_number(self):
-        result = plugins_utils.make_header(["123", "456", "123"])
-        expected_result = ["field_123", "field_456", "field_123_2"]
-        self.assertEqual(result, expected_result)
-
-    def test_make_header_should_not_ignore_permit_not(self):
-        result = plugins_utils.make_header(["abc", "^qwe", "rty"], permit_not=True)
-        expected_result = ["abc", "^qwe", "rty"]
-        self.assertEqual(result, expected_result)
-
-    def test_make_header_prefix(self):
-        result = plugins_utils.make_header(["abc", "123"])
-        expected_result = ["abc", "field_123"]
-        self.assertEqual(result, expected_result)
-
-        result = plugins_utils.make_header(["abc", "123"], prefix="table_")
-        expected_result = ["abc", "table_123"]
-        self.assertEqual(result, expected_result)
-
-    def test_make_header_max_size(self):
-        result = plugins_utils.make_header(["test", "another test", "another string"], max_size=8)
-        expected_result = ["test", "another", "anothe_2"]
-        self.assertEqual(result, expected_result)
-
     def test_make_unique_name(self):
         name = "test"
         existing_names = []

@@ -17,25 +17,19 @@
 
 from __future__ import unicode_literals
 
-from collections import OrderedDict
-from itertools import chain, islice
-from os import unlink
-from pathlib import Path
-
-from rows.fields import get_items
-# 'slug' and 'make_unique_name' are required here to maintain backwards compatibility
-from rows.fields import slug, make_unique_name  # noqa
-from rows.fields import TextField, detect_types, make_header
-from rows.table import FlexibleTable, Table
-from rows.compat import PYTHON_VERSION
-
-if PYTHON_VERSION < (3, 0, 0):
-    from collections import Iterator
-else:
-    from collections.abc import Iterator
+# `slug` and `make_unique_name` are required here to maintain backwards compatibility
+# TODO: add warnings about `make_header`, `make_unique_name` and `slug` deprecation (from here)
+from rows.fields import make_header, make_unique_name, slug  # noqa
 
 
 def ipartition(iterable, partition_size):
+    from rows.compat import PYTHON_VERSION
+
+    if PYTHON_VERSION < (3, 0, 0):
+        from collections import Iterator
+    else:
+        from collections.abc import Iterator
+
     if not isinstance(iterable, Iterator):
         iterator = iter(iterable)
     else:
@@ -76,6 +70,13 @@ def create_table(
       resulting fields will seek its order
     - `fields` must always be in the same order as the data
     """
+    from collections import OrderedDict
+    from itertools import chain, islice
+    from os import unlink
+    from pathlib import Path
+
+    from rows.fields import TextField, detect_types, get_items, make_header
+    from rows.table import Table
 
     table_rows = iter(data)
     force_types = force_types or {}
@@ -172,6 +173,9 @@ def create_table(
 
 
 def prepare_to_export(table, export_fields=None, *args, **kwargs):
+    from rows.fields import make_header
+    from rows.table import FlexibleTable, Table
+
     # TODO: optimize for more used cases (export_fields=None)
     table_type = type(table)
     if table_type not in (FlexibleTable, Table):

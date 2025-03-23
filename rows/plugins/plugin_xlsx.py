@@ -17,22 +17,21 @@
 
 from __future__ import unicode_literals
 
-from decimal import Decimal
-from io import BytesIO, UnsupportedOperation
-from numbers import Number
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
-from openpyxl.cell.read_only import EmptyCell
 
-from rows import fields
-from rows.plugins.utils import create_table, prepare_to_export
 from rows.utils import Source
 from rows.compat import TEXT_TYPE
 
 
 def _cell_to_python(cell):
     """Convert a PyOpenXL's `Cell` object to the corresponding Python object."""
+    from decimal import Decimal
+    from numbers import Number
+
+    from openpyxl.cell.read_only import EmptyCell
+
     data_type, value = cell.data_type, cell.value
 
     if type(cell) is EmptyCell:
@@ -87,6 +86,7 @@ def import_from_xlsx(
 
     workbook_kwargs will be passed to openpyxl.load_workbook
     """
+    from rows.plugins.utils import create_table
 
     workbook_kwargs = workbook_kwargs or {}
     workbook_kwargs["read_only"] = workbook_kwargs.get("read_only", True)
@@ -132,31 +132,29 @@ def import_from_xlsx(
     return create_table(table_rows, meta=metadata, *args, **kwargs)
 
 
-FORMATTING_STYLES = {
-    fields.DateField: "YYYY-MM-DD",
-    fields.DatetimeField: "YYYY-MM-DD HH:MM:SS",
-    fields.PercentField: "0.00%",
-}
-
-
 def _python_to_cell(field_types):
+    from rows import fields
+
+    FORMATTING_STYLES = {
+        fields.DateField: "YYYY-MM-DD",
+        fields.DatetimeField: "YYYY-MM-DD HH:MM:SS",
+        fields.PercentField: "0.00%",
+    }
+    KNOWN_FIELDS = (
+        fields.BoolField,
+        fields.DateField,
+        fields.DatetimeField,
+        fields.DecimalField,
+        fields.FloatField,
+        fields.IntegerField,
+        fields.PercentField,
+        fields.TextField,
+    )
+
     def convert_value(field_type, value):
-
         number_format = FORMATTING_STYLES.get(field_type, None)
-
-        if field_type not in (
-            fields.BoolField,
-            fields.DateField,
-            fields.DatetimeField,
-            fields.DecimalField,
-            fields.FloatField,
-            fields.IntegerField,
-            fields.PercentField,
-            fields.TextField,
-        ):
-            # BinaryField, DatetimeField, JSONField or unknown
+        if field_type not in KNOWN_FIELDS:  # BinaryField, DatetimeField, JSONField or unknown
             value = field_type.serialize(value)
-
         return value, number_format
 
     def convert_row(row):
@@ -176,6 +174,8 @@ def define_sheet_name(existing_names):
 
 
 def is_existing_spreadsheet(source):
+    from io import UnsupportedOperation
+
     if source.uri is not None:  # filename was given
         if not source.uri.exists():
             # TODO: if file doesn't exist and we open with mode="a+b" it will
@@ -196,6 +196,9 @@ def is_existing_spreadsheet(source):
 
 def export_to_xlsx(table, filename_or_fobj=None, sheet_name=None, *args, **kwargs):
     """Export the rows.Table to XLSX file and return the saved file."""
+    from io import BytesIO
+
+    from rows.plugins.utils import prepare_to_export
 
     return_result = False
     if filename_or_fobj is None:

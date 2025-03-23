@@ -430,6 +430,30 @@ class FieldUtilsTestCase(unittest.TestCase):
         self.assertEqual(fields.camel_to_snake("this/is\ta\ntest"), "this_is_a_test"
         )
 
+    def test_make_header_should_add_underscore_if_starts_with_number(self):
+        result = fields.make_header(["123", "456", "123"])
+        expected_result = ["field_123", "field_456", "field_123_2"]
+        self.assertEqual(result, expected_result)
+
+    def test_make_header_should_not_ignore_permit_not(self):
+        result = fields.make_header(["abc", "^qwe", "rty"], permit_not=True)
+        expected_result = ["abc", "^qwe", "rty"]
+        self.assertEqual(result, expected_result)
+
+    def test_make_header_prefix(self):
+        result = fields.make_header(["abc", "123"])
+        expected_result = ["abc", "field_123"]
+        self.assertEqual(result, expected_result)
+
+        result = fields.make_header(["abc", "123"], prefix="table_")
+        expected_result = ["abc", "table_123"]
+        self.assertEqual(result, expected_result)
+
+    def test_make_header_max_size(self):
+        result = fields.make_header(["test", "another test", "another string"], max_size=8)
+        expected_result = ["test", "another", "anothe_2"]
+        self.assertEqual(result, expected_result)
+
     def test_detect_types_no_sample(self):
         expected = {key: fields.TextField for key in self.expected.keys()}
         result = fields.detect_types(self.fields, [])

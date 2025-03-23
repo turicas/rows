@@ -53,7 +53,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
         assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
-    @mock.patch("rows.plugins.txt.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_txt_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
@@ -76,7 +76,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         }
         self.assertDictEqual(expected_meta, meta)
 
-    @mock.patch("rows.plugins.txt.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_txt_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -91,7 +91,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
-    @mock.patch("rows.plugins.txt.serialize")
+    @mock.patch("rows.plugins.utils.serialize")
     def test_export_to_txt_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
@@ -190,12 +190,11 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         try:
             from imp import reload
         except ImportError:
-            reload = None
+            from importlib import reload
         import rows.plugins.txt
 
         original_txt_plugin = rows.plugins.txt
-        if reload is not None:
-            reload(rows.plugins.txt)
+        reload(rows.plugins.txt)
         rows.import_from_txt = rows.plugins.txt.import_from_txt
         rows.export_to_txt = rows.plugins.txt.export_to_txt
         original_txt_plugin.FRAME_SENTINEL = rows.plugins.txt.FRAME_SENTINEL
@@ -232,7 +231,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self._test_import_from_txt_works_with_custom_frame("None")
 
     def test__parse_col_positions(self):
-        result1 = rows.plugins.txt._parse_col_positions("ASCII", "|----|----|")
+        result1 = rows.plugins.txt._parse_col_positions("ascii", "|----|----|")
         self.assertEqual(result1, [0, 5, 10])
-        result2 = rows.plugins.txt._parse_col_positions("None", "  col1   col2  ")
+        result2 = rows.plugins.txt._parse_col_positions("none", "  col1   col2  ")
         self.assertEqual(result2, [0, 7, 14])
