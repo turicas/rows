@@ -26,9 +26,10 @@ from collections import OrderedDict
 import mock
 
 import rows
-import rows.plugins.xls
 import tests.utils as utils
 from rows.utils import Source
+
+ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_xls, rows.export_to_xls  # Lazy functions (just aliases)
 
 
 def date_to_datetime(value):
@@ -47,8 +48,13 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def test_imports(self):
-        self.assertIs(rows.import_from_xls, rows.plugins.xls.import_from_xls)
-        self.assertIs(rows.export_to_xls, rows.plugins.xls.export_to_xls)
+        # Force the plugin to load
+        original_import, original_export = rows.plugins.xls.import_from_xls, rows.plugins.xls.export_to_xls
+        assert id(ALIAS_IMPORT) != id(original_import)
+        assert id(ALIAS_EXPORT) != id(original_export)
+        new_alias_import, new_alias_export = rows.import_from_xls, rows.export_to_xls
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+        assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
     @mock.patch("rows.plugins.xls.create_table")
     def test_import_from_xls_uses_create_table(self, mocked_create_table):

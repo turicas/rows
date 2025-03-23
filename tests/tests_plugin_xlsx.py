@@ -27,10 +27,10 @@ from io import BytesIO
 import mock
 
 import rows
-import rows.plugins.xlsx
 import tests.utils as utils
 from rows.utils import Source
 
+ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_xlsx, rows.export_to_xlsx  # Lazy functions (just aliases)
 
 class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
@@ -51,8 +51,13 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         return filename
 
     def test_imports(self):
-        self.assertIs(rows.import_from_xlsx, rows.plugins.xlsx.import_from_xlsx)
-        self.assertIs(rows.export_to_xlsx, rows.plugins.xlsx.export_to_xlsx)
+        # Force the plugin to load
+        original_import, original_export = rows.plugins.xlsx.import_from_xlsx, rows.plugins.xlsx.export_to_xlsx
+        assert id(ALIAS_IMPORT) != id(original_import)
+        assert id(ALIAS_EXPORT) != id(original_export)
+        new_alias_import, new_alias_export = rows.import_from_xlsx, rows.export_to_xlsx
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+        assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
     @mock.patch("rows.plugins.xlsx.create_table")
     def test_import_from_xlsx_uses_create_table(self, mocked_create_table):

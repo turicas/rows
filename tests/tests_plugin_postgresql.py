@@ -25,7 +25,6 @@ from textwrap import dedent
 import mock
 
 import rows
-import rows.plugins.postgresql
 import rows.plugins.utils
 import tests.utils as utils
 from rows import fields
@@ -34,6 +33,7 @@ from rows.utils import Source
 from rows.compat import PYTHON_VERSION
 
 
+ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_postgresql, rows.export_to_postgresql  # Lazy functions (just aliases)
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -70,12 +70,13 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     @unittest.skipIf(DATABASE_URL is None, "postgres service is not running")
     def test_imports(self):
-        self.assertIs(
-            rows.import_from_postgresql, rows.plugins.postgresql.import_from_postgresql
-        )
-        self.assertIs(
-            rows.export_to_postgresql, rows.plugins.postgresql.export_to_postgresql
-        )
+        # Force the plugin to load
+        original_import, original_export = rows.plugins.postgresql.import_from_postgresql, rows.plugins.postgresql.export_to_postgresql
+        assert id(ALIAS_IMPORT) != id(original_import)
+        assert id(ALIAS_EXPORT) != id(original_export)
+        new_alias_import, new_alias_export = rows.import_from_postgresql, rows.export_to_postgresql
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+        assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
     @unittest.skipIf(DATABASE_URL is None, "postgres service is not running")
     @mock.patch("rows.plugins.postgresql.create_table")

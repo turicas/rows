@@ -26,11 +26,11 @@ from pathlib import Path
 import mock
 
 import rows
-import rows.plugins.txt
 import tests.utils as utils
 from rows.utils import Source
 from rows.compat import TEXT_TYPE
 
+ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_txt, rows.export_to_txt  # Lazy functions (just aliases)
 
 class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
@@ -45,8 +45,13 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def test_imports(self):
-        self.assertIs(rows.import_from_txt, rows.plugins.txt.import_from_txt)
-        self.assertIs(rows.export_to_txt, rows.plugins.txt.export_to_txt)
+        # Force the plugin to load
+        original_import, original_export = rows.plugins.txt.import_from_txt, rows.plugins.txt.export_to_txt
+        assert id(ALIAS_IMPORT) != id(original_import)
+        assert id(ALIAS_EXPORT) != id(original_export)
+        new_alias_import, new_alias_export = rows.import_from_txt, rows.export_to_txt
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+        assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
     @mock.patch("rows.plugins.txt.create_table")
     def test_import_from_txt_uses_create_table(self, mocked_create_table):

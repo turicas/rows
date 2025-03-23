@@ -461,7 +461,9 @@ class PostgresCopy(object):
         access_method=None,
         callback=None,
     ):
-        inspector = CsvInspector(filename, chunk_size=self.chunk_size, max_samples=self.max_samples, encoding=encoding, dialect=dialect)
+        inspector = CsvInspector(
+            filename, chunk_size=self.chunk_size, max_samples=self.max_samples, encoding=encoding, dialect=dialect
+        )
         encoding = encoding or inspector.encoding
         dialect = dialect or inspector.dialect
         schema = schema or inspector.schema

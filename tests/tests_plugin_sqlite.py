@@ -25,12 +25,12 @@ from collections import OrderedDict
 import mock
 
 import rows
-import rows.plugins.sqlite
 import rows.plugins.utils
 import tests.utils as utils
 from rows import fields
 from rows.utils import Source
 
+ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_sqlite, rows.export_to_sqlite  # Lazy functions (just aliases)
 
 class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
@@ -51,8 +51,13 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def test_imports(self):
-        self.assertIs(rows.import_from_sqlite, rows.plugins.sqlite.import_from_sqlite)
-        self.assertIs(rows.export_to_sqlite, rows.plugins.sqlite.export_to_sqlite)
+        # Force the plugin to load
+        original_import, original_export = rows.plugins.sqlite.import_from_sqlite, rows.plugins.sqlite.export_to_sqlite
+        assert id(ALIAS_IMPORT) != id(original_import)
+        assert id(ALIAS_EXPORT) != id(original_export)
+        new_alias_import, new_alias_export = rows.import_from_sqlite, rows.export_to_sqlite
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+        assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
     @mock.patch("rows.plugins.sqlite.create_table")
     def test_import_from_sqlite_uses_create_table(self, mocked_create_table):

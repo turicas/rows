@@ -1155,41 +1155,39 @@ sqlite2csv = sqlite_to_csv
 
 def pgimport(filename, *args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import pgimport as original_function
+    from rows.plugins import postgresql
 
-    return original_function(filename_or_fobj=filename, *args, **kwargs)
+    return postgresql.pgimport(filename_or_fobj=filename, *args, **kwargs)
 
 
 def pgexport(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import pgexport as original_function
+    from rows.plugins import postgresql
 
-    return original_function(*args, **kwargs)
+    return postgresql.pgexport(*args, **kwargs)
 
 
 def get_psql_command(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import get_psql_command as original_function
+    from rows.plugins import postgresql
 
-    return original_function(*args, **kwargs)
+    return postgresql.get_psql_command(*args, **kwargs)
 
 
 def get_psql_copy_command(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import get_psql_copy_command as original_function
+    from rows.plugins import postgresql
 
-    return original_function(*args, **kwargs)
+    return postgresql.get_psql_copy_command(*args, **kwargs)
 
 
 def pg_create_table_sql(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import pg_create_table_sql as original_function
-
-    return original_function(*args, **kwargs)
+    from rows.plugins import postgresql
+    return postgresql.pg_create_table_sql(*args, **kwargs)
 
 
 def pg_execute_sql(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import pg_execute_sql as original_function
-
-    return original_function(*args, **kwargs)
+    from rows.plugins import postgresql
+    return postgresql.pg_execute_sql(*args, **kwargs)

@@ -25,9 +25,9 @@ from collections import OrderedDict
 import mock
 
 import rows
-import rows.plugins.dicts
 import tests.utils as utils
 
+ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_dicts, rows.export_to_dicts  # Lazy functions (just aliases)
 
 class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
@@ -39,8 +39,13 @@ class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):
     ]
 
     def test_imports(self):
-        self.assertIs(rows.import_from_dicts, rows.plugins.dicts.import_from_dicts)
-        self.assertIs(rows.export_to_dicts, rows.plugins.dicts.export_to_dicts)
+        # Force the plugin to load
+        original_import, original_export = rows.plugins.dicts.import_from_dicts, rows.plugins.dicts.export_to_dicts
+        assert id(ALIAS_IMPORT) != id(original_import)
+        assert id(ALIAS_EXPORT) != id(original_export)
+        new_alias_import, new_alias_export = rows.import_from_dicts, rows.export_to_dicts
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+        assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
     @mock.patch("rows.plugins.dicts.create_table")
     def test_import_from_dicts_uses_create_table(self, mocked_create_table):

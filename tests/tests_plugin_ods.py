@@ -23,9 +23,10 @@ from decimal import Decimal
 import mock
 
 import rows
-import rows.plugins.ods
 import tests.utils as utils
 from rows.utils import Source
+
+ALIAS_IMPORT = rows.import_from_ods  # Lazy function (just aliases)
 
 
 class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -40,7 +41,11 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def test_imports(self):
-        self.assertIs(rows.import_from_ods, rows.plugins.ods.import_from_ods)
+        # Force the plugin to load
+        original_import = rows.plugins.ods.import_from_ods
+        assert id(ALIAS_IMPORT) != id(original_import)
+        new_alias_import = rows.import_from_ods
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
 
     @mock.patch("rows.plugins.ods.create_table")
     def test_import_from_ods_uses_create_table(self, mocked_create_table):

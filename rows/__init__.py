@@ -17,62 +17,79 @@
 
 from __future__ import unicode_literals
 
-import rows.plugins as plugins
+from rows import plugins
+from rows.fileio import cfopen  # noqa
 from rows.localization import locale_context  # noqa
 from rows.operations import join, transform, transpose  # noqa
 from rows.table import FlexibleTable, Table  # noqa
 from rows.version import as_string as __version__  # noqa
 
+
+def _set_lazy_function(plugin_name, function_name):
+    """
+    Set `import_from_*`/`export_to_*` attribute to rows module with an alias lazy function (only if it doesn't exist)
+
+    The function will call the plugin-related function, but the plugin will be imported only when the function is
+    called, on-demand (lazily).
+    """
+    import sys
+
+    if hasattr(sys.modules[__name__], function_name):
+        return
+
+    docstring = (
+        "Function to be called from a lazy loaded module. See `rows.plugins.{}.{}`".format(plugin_name, function_name)
+    )
+
+    def func(*args, **kwargs):
+        plugin = getattr(plugins, plugin_name)
+        func = getattr(plugin, function_name)
+        return func(*args, **kwargs)
+    func.__doc__ = docstring
+
+    setattr(sys.modules[__name__], function_name, func)
+
+
 # General imports
-
-
 # Don't have dependencies or dependencies installed on `install_requires`
 
-import_from_json = plugins.json.import_from_json
-export_to_json = plugins.json.export_to_json
-
-import_from_dicts = plugins.dicts.import_from_dicts
-export_to_dicts = plugins.dicts.export_to_dicts
-
-import_from_csv = plugins.csv.import_from_csv
-export_to_csv = plugins.csv.export_to_csv
-
-import_from_txt = plugins.txt.import_from_txt
-export_to_txt = plugins.txt.export_to_txt
-
-export_to_html = plugins.html.export_to_html
+_set_lazy_function("csv", "export_to_csv")
+_set_lazy_function("csv", "import_from_csv")
+_set_lazy_function("dicts", "export_to_dicts")
+_set_lazy_function("dicts", "import_from_dicts")
+_set_lazy_function("html", "export_to_html")
+_set_lazy_function("json", "export_to_json")
+_set_lazy_function("json", "import_from_json")
+_set_lazy_function("txt", "export_to_txt")
+_set_lazy_function("txt", "import_from_txt")
 
 # Have dependencies
 
-if plugins.html.has_lxml:
-    import_from_html = plugins.html.import_from_html
+if plugins.xpath is not None:
+    _set_lazy_function("html", "import_from_html")
+    _set_lazy_function("xpath", "import_from_xpath")
 
-if plugins.xpath:
-    import_from_xpath = plugins.xpath.import_from_xpath
+if plugins.ods is not None:
+    _set_lazy_function("ods", "import_from_ods")
 
-if plugins.ods:
-    import_from_ods = plugins.ods.import_from_ods
+if plugins.sqlite is not None:
+    _set_lazy_function("sqlite", "import_from_sqlite")
+    _set_lazy_function("sqlite", "export_to_sqlite")
 
-if plugins.sqlite:
-    import_from_sqlite = plugins.sqlite.import_from_sqlite
-    export_to_sqlite = plugins.sqlite.export_to_sqlite
+if plugins.xls is not None:
+    _set_lazy_function("xls", "import_from_xls")
+    _set_lazy_function("xls", "export_to_xls")
 
-if plugins.xls:
-    import_from_xls = plugins.xls.import_from_xls
-    export_to_xls = plugins.xls.export_to_xls
+if plugins.xlsx is not None:
+    _set_lazy_function("xlsx", "import_from_xlsx")
+    _set_lazy_function("xlsx", "export_to_xlsx")
 
-if plugins.xlsx:
-    import_from_xlsx = plugins.xlsx.import_from_xlsx
-    export_to_xlsx = plugins.xlsx.export_to_xlsx
+if plugins.parquet is not None:
+    _set_lazy_function("parquet", "import_from_parquet")
 
-if plugins.parquet:
-    import_from_parquet = plugins.parquet.import_from_parquet
+if plugins.postgresql is not None:
+    _set_lazy_function("postgresql", "import_from_postgresql")
+    _set_lazy_function("postgresql", "export_to_postgresql")
 
-if plugins.postgresql:
-    import_from_postgresql = plugins.postgresql.import_from_postgresql
-    export_to_postgresql = plugins.postgresql.export_to_postgresql
-
-if plugins.pdf:
-    import_from_pdf = plugins.pdf.import_from_pdf
-
-
+if plugins.pdf is not None:
+    _set_lazy_function("pdf", "import_from_pdf")

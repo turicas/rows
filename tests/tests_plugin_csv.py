@@ -55,8 +55,9 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def test_imports(self):
-        self.assertIs(rows.import_from_csv, rows.plugins.plugin_csv.import_from_csv)
-        self.assertIs(rows.export_to_csv, rows.plugins.plugin_csv.export_to_csv)
+        # The order must be this one to force loading the lazy module (first the real function, then the alias)
+        self.assertIs(rows.plugins.plugin_csv.import_from_csv, rows.import_from_csv)
+        self.assertIs(rows.plugins.plugin_csv.export_to_csv, rows.export_to_csv)
 
     @mock.patch("rows.plugins.plugin_csv.create_table")
     def test_import_from_csv_uses_create_table(self, mocked_create_table):

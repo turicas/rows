@@ -835,9 +835,9 @@ def command_schema(
 @click.argument("source", required=True)
 def csv_inspect(encoding, dialect, samples, source):
     import csv
-    from rows.plugins.plugin_csv import CsvInspector
+    from rows.plugins import csv as rows_csv
 
-    inspector = CsvInspector(source, encoding=encoding, dialect=dialect, max_samples=samples)
+    inspector = rows_csv.CsvInspector(source, encoding=encoding, dialect=dialect, max_samples=samples)
 
     click.echo("encoding = {}".format(repr(inspector.encoding)))
 
@@ -878,9 +878,9 @@ def command_csv_fix(log_filename, log_level, input_dialect, input_encoding,
     from tqdm import tqdm
 
     from rows.fileio import cfopen
-    from rows.plugins.plugin_csv import CsvInspector, fix_file
+    from rows.plugins import csv as rows_csv
 
-    inspector = CsvInspector(input_filename)
+    inspector = rows_csv.CsvInspector(input_filename)
     input_encoding = input_encoding or inspector.encoding
     input_dialect = input_dialect or inspector.dialect
 
@@ -914,7 +914,7 @@ def command_csv_fix(log_filename, log_level, input_dialect, input_encoding,
     reader = csv.reader(fobj_in, dialect=input_dialect)
     writer = csv.writer(fobj_out, dialect=output_dialect)
     reader = reader if logger is not None else tqdm(reader, desc="Converting file")
-    fix_file(reader, writer, logger=logger)
+    rows_csv.fix_file(reader, writer, logger=logger)
 
 
 @cli.command(name="csv-to-sqlite", help="Convert one or more CSV files to SQLite")
@@ -934,7 +934,7 @@ def command_csv_to_sqlite(
     batch_size, samples, input_encoding, dialect, schemas, sources, output
 ):
     from rows.fields import make_header
-    from rows.plugins.plugin_csv import CsvInspector
+    from rows.plugins import csv as rows_csv
     from rows.utils import ProgressBar, csv_to_sqlite
     # TODO: add --quiet
     # TODO: check if all filenames exist (if not, exit with error)
@@ -949,7 +949,9 @@ def command_csv_to_sqlite(
         prefix = "[{filename} -> {db_filename}#{tablename}]".format(
             db_filename=output.name, tablename=table_name, filename=filename.name
         )
-        inspector = CsvInspector(TEXT_TYPE(filename), encoding=input_encoding, dialect=dialect, schema=schema, max_samples=samples)
+        inspector = rows_csv.CsvInspector(
+            TEXT_TYPE(filename), encoding=input_encoding, dialect=dialect, schema=schema, max_samples=samples
+        )
         if not schema:
             pre_prefix = "{} (detecting schema)".format(prefix)
         else:
@@ -1027,7 +1029,7 @@ def command_pgimport(
     from collections import OrderedDict
 
     from rows.fields import TextField, make_header
-    from rows.plugins.plugin_csv import CsvInspector
+    from rows.plugins import csv as rows_csv
     from rows.utils import ProgressBar, pgimport, uncompressed_size
 
     # TODO: implement parameter to import CSVs with no header on the first line
@@ -1079,7 +1081,7 @@ def command_pgimport(
         progress_bar.original_total = total_size
         progress_bar.bit_updates = 0
 
-    inspector = CsvInspector(source, encoding=input_encoding, dialect=dialect)
+    inspector = rows_csv.CsvInspector(source, encoding=input_encoding, dialect=dialect)
     input_encoding = input_encoding or inspector.encoding
     dialect = dialect or inspector.dialect
 
@@ -1165,10 +1167,10 @@ def command_pg2pg(
     table_name_to,
 ):
     from rows.utils import ProgressBar
-    from rows.plugins.postgresql import pg2pg
+    from rows.plugins import postgresql as rows_postgresql
 
     progress_bar = ProgressBar(prefix="Importing data", unit="bytes")
-    import_meta = pg2pg(
+    import_meta = rows_postgresql.pg2pg(
         database_uri_from=database_uri_from,
         database_uri_to=database_uri_to,
         table_name_from=table_name_or_query_from,
@@ -1203,7 +1205,7 @@ def command_pdf_to_text(
 
     from rows.fileio import cfopen
     from rows.utils import download_file
-    from rows.plugins.pdf import extract_intervals, number_of_pages, pdf_to_text
+    from rows.plugins import pdf as rows_pdf
 
     input_options = parse_options(input_option)
     input_options["backend"] = backend or input_options.get("backend", None)
@@ -1211,7 +1213,7 @@ def command_pdf_to_text(
     # Define page range
     input_options["page_numbers"] = pages or input_options.get("page_numbers", None)
     if input_options["page_numbers"]:
-        input_options["page_numbers"] = extract_intervals(input_options["page_numbers"])
+        input_options["page_numbers"] = rows_pdf.extract_intervals(input_options["page_numbers"])
 
     # Define if output is file or stdout
     if output:
@@ -1229,12 +1231,12 @@ def command_pdf_to_text(
         source = result.uri
         downloaded = True
 
-    reader = pdf_to_text(source, **input_options)
+    reader = rows_pdf.pdf_to_text(source, **input_options)
     if progress:  # Calculate total number of pages and create a progress bar
         if input_options["page_numbers"]:
             total_pages = len(input_options["page_numbers"])
         else:
-            total_pages = number_of_pages(source, backend=input_options["backend"])
+            total_pages = rows_pdf.number_of_pages(source, backend=input_options["backend"])
         reader = tqdm(reader, desc="Extracting text", total=total_pages)
 
     for page in reader:
@@ -1272,7 +1274,7 @@ def csv_merge(
 
     from rows.fields import make_header, slug
     from rows.fileio import cfopen
-    from rows.plugins.plugin_csv import CsvInspector
+    from rows.plugins import csv as rows_csv
 
     # TODO: add option to preserve original key names
     # TODO: add --quiet
@@ -1283,7 +1285,7 @@ def csv_merge(
     metadata = defaultdict(dict)
     final_header = []
     for filename in tqdm(sources, desc="Detecting dialects and headers"):
-        inspector = CsvInspector(filename, chunk_size=sample_size, encoding=input_encoding)
+        inspector = rows_csv.CsvInspector(filename, chunk_size=sample_size, encoding=input_encoding)
         metadata[filename]["dialect"] = inspector.dialect
 
         # Get header
@@ -1374,13 +1376,13 @@ def csv_clean(
 
     from rows.fields import make_header
     from rows.fileio import cfopen
-    from rows.plugins.plugin_csv import CsvInspector
+    from rows.plugins import csv as rows_csv
 
     # TODO: add option to preserve original key names
     # TODO: add --quiet
     # TODO: fix if destination is empty
 
-    inspector = CsvInspector(source, chunk_size=sample_size, encoding=input_encoding)
+    inspector = rows_csv.CsvInspector(source, chunk_size=sample_size, encoding=input_encoding)
     dialect = inspector.dialect
     header = make_header(inspector.field_names)
     input_encoding = input_encoding or inspector.encoding
@@ -1446,9 +1448,9 @@ def csv_row_count(input_encoding, buffer_size, dialect, sample_size, source):
     import csv
 
     from rows.fileio import cfopen
-    from rows.plugins.plugin_csv import CsvInspector
+    from rows.plugins import csv as rows_csv
 
-    inspector = CsvInspector(source, chunk_size=sample_size, encoding=input_encoding)
+    inspector = rows_csv.CsvInspector(source, chunk_size=sample_size, encoding=input_encoding)
     dialect = dialect or inspector.dialect
     input_encoding = input_encoding or inspector.encoding
 

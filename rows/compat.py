@@ -1,4 +1,4 @@
-"Minimal things we need to get rid of `six` dependency"
+"""Helper objects to make compatibility with older versions or external tools easier"""
 import sys
 
 
@@ -10,3 +10,12 @@ if PYTHON_VERSION < (3, 0, 0):
 else:
     TEXT_TYPE = str
     BINARY_TYPE = bytes
+
+
+def library_installed(module_name):
+    if PYTHON_VERSION >= (3, 0, 0):
+        from importlib.util import find_spec
+    else:
+        from imp import find_module as find_spec
+
+    return bool(find_spec(module_name))

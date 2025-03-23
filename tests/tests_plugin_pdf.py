@@ -23,10 +23,12 @@ import unittest
 import pytest
 
 import rows
-import rows.plugins.plugin_pdf as pdf
 import tests.utils as utils
 from rows.compat import PYTHON_VERSION
 
+ALIAS_IMPORT = rows.import_from_pdf
+
+import rows.plugins.plugin_pdf as pdf
 
 class PDFTestCase(utils.RowsTestMixIn):
 
@@ -35,7 +37,11 @@ class PDFTestCase(utils.RowsTestMixIn):
     plugin_name = "pdf"
 
     def test_imports(self):
-        self.assertIs(rows.import_from_pdf, pdf.import_from_pdf)
+        # Force the plugin to load
+        original_import = rows.plugins.pdf.import_from_pdf
+        assert id(ALIAS_IMPORT) != id(original_import)
+        new_alias_import = rows.import_from_pdf
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
 
     def test_real_data_1(self):
         filename = "tests/data/balneabilidade-26-2010"

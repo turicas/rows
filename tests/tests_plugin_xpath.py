@@ -26,8 +26,9 @@ from pathlib import Path
 import mock
 
 import rows
-import rows.plugins.xpath
 import tests.utils as utils
+
+ALIAS_IMPORT = rows.import_from_xpath  # Lazy function (just aliases)
 
 
 class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -56,7 +57,11 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.files_to_delete = []
 
     def test_imports(self):
-        self.assertIs(rows.import_from_xpath, rows.plugins.xpath.import_from_xpath)
+        # Force the plugin to load
+        original_import = rows.plugins.xpath.import_from_xpath
+        assert id(ALIAS_IMPORT) != id(original_import)
+        new_alias_import = rows.import_from_xpath
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
 
     def test_import_from_xpath_filename(self):
         table = rows.import_from_xpath(
