@@ -24,40 +24,7 @@ import string
 import subprocess
 from pathlib import Path
 
-from psycopg2 import connect as pgconnect
-
-import rows.fields as fields
-from rows.plugins.plugin_csv import CsvInspector
-from rows.plugins.utils import create_table, ipartition, prepare_to_export
-from rows.utils import Source, detect_local_source, execute_command, open_compressed
 from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
-
-POSTGRESQL_TYPES = {
-    fields.BinaryField: "BYTEA",
-    fields.BoolField: "BOOLEAN",
-    fields.DateField: "DATE",
-    fields.DatetimeField: "TIMESTAMP(0) WITHOUT TIME ZONE",
-    fields.DecimalField: "NUMERIC",
-    fields.FloatField: "REAL",
-    fields.IntegerField: "BIGINT",  # TODO: detect when it's really needed
-    fields.JSONField: "JSONB",
-    fields.PercentField: "REAL",
-    fields.TextField: "TEXT",
-    fields.UUIDField: "UUID",
-}
-DEFAULT_POSTGRESQL_TYPE = "BYTEA"
-SQL_TABLE_NAMES = """
-    SELECT
-        tablename
-    FROM pg_tables
-    WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
-"""
-SQL_CREATE_TABLE = (
-    "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types}){post_fields}'
-)
-SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
-SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) ' "VALUES ({placeholders})"
-DEFAULT_TYPE = "BYTEA"
 
 
 def get_psql_command(
@@ -151,6 +118,23 @@ def get_psql_copy_command(
 
 
 def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
+    from rows import fields
+
+    POSTGRESQL_TYPES = {
+        fields.BinaryField: "BYTEA",
+        fields.BoolField: "BOOLEAN",
+        fields.DateField: "DATE",
+        fields.DatetimeField: "TIMESTAMP(0) WITHOUT TIME ZONE",
+        fields.DecimalField: "NUMERIC",
+        fields.FloatField: "REAL",
+        fields.IntegerField: "BIGINT",  # TODO: detect when it's really needed
+        fields.JSONField: "JSONB",
+        fields.PercentField: "REAL",
+        fields.TextField: "TEXT",
+        fields.UUIDField: "UUID",
+    }
+    DEFAULT_POSTGRESQL_TYPE = "BYTEA"
+
     access_method = TEXT_TYPE(access_method or "").strip().lower()
     field_names = list(schema.keys())
     field_types = list(schema.values())
@@ -159,6 +143,9 @@ def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
         '"{}" {}'.format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
         for name, type_ in zip(field_names, field_types)
     ]
+    SQL_CREATE_TABLE = (
+        "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types}){post_fields}'
+    )
     return SQL_CREATE_TABLE.format(
         pre_table="" if not unlogged else "UNLOGGED ",
         post_table=" IF NOT EXISTS",
@@ -171,10 +158,14 @@ def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
 
 
 def pg_execute_psql(database_uri, sql):
+    from rows.utils import execute_command
+
     return execute_command(get_psql_command(sql, database_uri=database_uri))
 
 
 def _python_to_postgresql(field_types):
+    from rows import fields
+
     def convert_value(field_type, value):
         if field_type in (
             fields.BinaryField,
@@ -203,6 +194,9 @@ def _python_to_postgresql(field_types):
 
 
 def get_source(connection_or_uri):
+    from psycopg2 import connect as pgconnect
+
+    from rows.utils import Source
 
     if isinstance(connection_or_uri, (BINARY_TYPE, TEXT_TYPE)):
         connection = pgconnect(connection_or_uri)
@@ -254,11 +248,13 @@ def import_from_postgresql(
     *args,
     **kwargs
 ):
+    from rows.plugins.utils import create_table
 
     if query is None:
         if not _valid_table_name(table_name):
             raise ValueError("Invalid table name: {}".format(table_name))
 
+        SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
         query = SQL_SELECT_ALL.format(table_name=table_name)
 
     if query_args is None:
@@ -290,7 +286,15 @@ def export_to_postgresql(
     *args,
     **kwargs
 ):
+    from rows import fields
+    from rows.plugins.utils import ipartition, prepare_to_export
     # TODO: should add transaction support?
+    SQL_TABLE_NAMES = """
+        SELECT
+            tablename
+        FROM pg_tables
+        WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+    """
 
     if table_name is not None and not _valid_table_name(table_name):
         raise ValueError("Invalid table name: {}".format(table_name))
@@ -314,6 +318,7 @@ def export_to_postgresql(
     # TODO: add option to table access method (columnar, for example)
     cursor.execute(pg_create_table_sql(table.fields, table_name))
 
+    SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) ' "VALUES ({placeholders})"
     insert_sql = SQL_INSERT.format(
         table_name=table_name,
         field_names=", ".join(field_names),
@@ -461,7 +466,10 @@ class PostgresCopy(object):
         access_method=None,
         callback=None,
     ):
-        inspector = CsvInspector(
+        from rows.plugins import csv as rows_csv
+        from rows.utils import open_compressed
+
+        inspector = rows_csv.CsvInspector(
             filename, chunk_size=self.chunk_size, max_samples=self.max_samples, encoding=encoding, dialect=dialect
         )
         encoding = encoding or inspector.encoding
@@ -639,6 +647,7 @@ def pgexport(
 
     Required: psql command
     """
+    from rows.utils import open_compressed
     # TODO: integrate with PostgresCopy
 
     # TODO: add logging to the process
@@ -691,6 +700,8 @@ def pgexport(
 
 
 def get_create_table_from_query(database_uri, table_name_or_query, table_name):
+    from psycopg2 import connect as pgconnect
+
     if " " in table_name_or_query:
         import random
         alias = "".join(random.choice(string.ascii_lowercase) for _ in range(10))
@@ -744,6 +755,7 @@ def pg2pg(
 
     Required: psql command
     """
+    from psycopg2 import connect as pgconnect
 
     # TODO: if table already exists, check whether the types are the same from
     # expected query result

@@ -47,7 +47,7 @@ class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
         assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
-    @mock.patch("rows.plugins.dicts.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_dicts_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}

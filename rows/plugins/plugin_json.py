@@ -20,10 +20,7 @@ from __future__ import unicode_literals
 import json
 from io import BytesIO, TextIOWrapper
 
-from rows import fields
-from rows.plugins.utils import create_table, prepare_to_export
 from rows.utils import Source
-from rows.compat import PYTHON_VERSION
 
 
 def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
@@ -32,6 +29,7 @@ def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
     If a file-like object is provided it MUST be open in text (non-binary) mode
     on Python 3 and could be open in both binary or text mode on Python 2.
     """
+    from rows.plugins.utils import create_table
 
     source = Source.from_file(
         filename_or_fobj, mode="r", plugin_name="json", encoding=encoding
@@ -55,6 +53,8 @@ def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
 
 
 def _convert(value, field_type, *args, **kwargs):
+    from rows import fields
+
     if value is None or field_type in (
         fields.BinaryField,
         fields.BoolField,
@@ -80,6 +80,8 @@ def export_to_json(
     If a file-like object is provided it MUST be open in binary mode (like in
     `open('myfile.json', mode='wb')`).
     """
+    from rows.plugins.utils import prepare_to_export
+    from rows.compat import PYTHON_VERSION
 
     return_data, should_close = False, None
     if filename_or_fobj is None:

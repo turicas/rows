@@ -17,14 +17,11 @@
 
 from __future__ import unicode_literals
 
-import math
-import re
 import tempfile
 
 from cached_property import cached_property
 
-from rows.plugins.utils import create_table
-from rows.utils import Source, subclasses
+from rows.utils import Source
 from rows.compat import PYTHON_VERSION, TEXT_TYPE
 
 
@@ -85,7 +82,6 @@ except ImportError:
     PDFMINER_TEXT_TYPES, PDFMINER_ALL_TYPES = None, None
 
 
-REGEXP_BBOX = re.compile("bbox ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+)")
 
 def extract_intervals(text, repeat=False, sort=True):
     """
@@ -378,8 +374,11 @@ class PyMuPDFTesseractBackend(PyMuPDFBackend):
         self.preserve_groups = preserve_groups
 
     def page_objects(self, page, dpi=300, alpha=True, lang=None, remove_empty=True, merge_x=True):
+        import re
         import pytesseract
         from lxml.html import document_fromstring
+
+        REGEXP_BBOX = re.compile("bbox ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+)")
 
         with tempfile.NamedTemporaryFile(suffix=".png") as tmp:
             pix = page.get_pixmap(dpi=dpi, alpha=alpha)
@@ -647,9 +646,11 @@ def contains_or_overlap(a, b):
 
 
 def distance_center(a, b):
+    from math import sqrt
+
     a_x, a_y = a.x0 + (a.x1 - a.x0) / 2, a.y0 + (a.y1 - a.y0) / 2
     b_x, b_y = b.x0 + (b.x1 - b.x0) / 2, b.y0 + (b.y1 - b.y0) / 2
-    return math.sqrt((a_x - b_x) ** 2 + (a_y - b_y) ** 2)
+    return sqrt((a_x - b_x) ** 2 + (a_y - b_y) ** 2)
 
 
 def closest_object(objects, value):
@@ -965,6 +966,8 @@ class RectsBoundariesAlgorithm(ExtractionAlgorithm):
 
 
 def algorithms():
+    from rows.utils import subclasses
+
     return {Class.name: Class for Class in subclasses(ExtractionAlgorithm)}
 
 
@@ -992,6 +995,8 @@ def get_algorithm(algorithm):
 
 
 def backends():
+    from rows.utils import subclasses
+
     return {Class.name: Class for Class in subclasses(PDFBackend)}
 
 
@@ -1074,6 +1079,7 @@ def import_from_pdf(
     *args,
     **kwargs
 ):
+    from rows.plugins.utils import create_table
 
     if isinstance(page_numbers, TEXT_TYPE):
         page_numbers = extract_intervals(page_numbers)
@@ -1105,13 +1111,14 @@ LINE_WIDTHS = {
 
 def plot_objects(objects, width=None, height=None, background_color=(255, 255, 255), object_colors=OBJECT_COLORS,
                  line_widths=LINE_WIDTHS):
-    import math
+    from math import ceil
+
     from PIL import Image, ImageDraw
 
     if width is None:
-        width = math.ceil(max(obj.x1 for obj in objects))
+        width = ceil(max(obj.x1 for obj in objects))
     if height is None:
-        height = math.ceil(max(obj.y1 for obj in objects))
+        height = ceil(max(obj.y1 for obj in objects))
 
     img = Image.new("RGB", (width, height), color=background_color)
     draw = ImageDraw.Draw(img)

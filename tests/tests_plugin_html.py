@@ -91,7 +91,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(len(table), 1)
         self.assertEqual(table[0].f1, 42)
 
-    @mock.patch("rows.plugins.plugin_html.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_html_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
@@ -119,7 +119,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_html(temp.name)
         self.assert_table_equal(table, utils.table)
 
-    @mock.patch("rows.plugins.plugin_html.serialize")
+    @mock.patch("rows.plugins.utils.serialize")
     def test_export_to_html_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
@@ -318,7 +318,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[0].f2, "<i>r0f2</i>")
         self.assertEqual(table[0].f3, "<i>r0f3</i>")
 
-    @mock.patch("rows.plugins.plugin_html.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_preserve_html_and_not_skip_header(self, mocked_create_table):
         filename = "tests/data/table-with-sections.html"
 

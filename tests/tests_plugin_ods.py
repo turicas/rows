@@ -47,7 +47,7 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         new_alias_import = rows.import_from_ods
         assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
 
-    @mock.patch("rows.plugins.ods.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_ods_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"encoding": "test", "some_key": 123, "other": 456}
@@ -56,7 +56,7 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
-    @mock.patch("rows.plugins.ods.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_ods_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 

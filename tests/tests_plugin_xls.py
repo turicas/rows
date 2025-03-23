@@ -56,7 +56,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
         assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
-    @mock.patch("rows.plugins.xls.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_xls_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
@@ -65,7 +65,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
-    @mock.patch("rows.plugins.xls.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_xls_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -105,7 +105,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_xls(temp.name)
         self.assert_table_equal(table, utils.table)
 
-    @mock.patch("rows.plugins.xls.prepare_to_export")
+    @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_xls_uses_prepare_to_export(self, mocked_prepare_to_export):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
@@ -134,7 +134,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table2 = rows.import_from_xls(filename)
         self.assert_table_equal(table, table2)
 
-    @mock.patch("rows.plugins.xls.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_start_and_end_row(self, mocked_create_table):
         rows.import_from_xls(
             self.filename, start_row=6, end_row=8, start_column=6, end_column=8

@@ -23,12 +23,12 @@ import unittest
 from textwrap import dedent
 
 import mock
+from psycopg2 import connect as pgconnect
 
 import rows
 import rows.plugins.utils
 import tests.utils as utils
 from rows import fields
-from rows.plugins.postgresql import pgconnect
 from rows.utils import Source
 from rows.compat import PYTHON_VERSION
 
@@ -49,9 +49,15 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def get_table_names(self):
+        SQL_TABLE_NAMES = """
+            SELECT
+                tablename
+            FROM pg_tables
+            WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+        """
         connection = pgconnect(DATABASE_URL)
         cursor = connection.cursor()
-        cursor.execute(rows.plugins.postgresql.SQL_TABLE_NAMES)
+        cursor.execute(SQL_TABLE_NAMES)
         header = [item[0] for item in cursor.description]
         result = [dict(zip(header, row))["tablename"] for row in cursor.fetchall()]
         cursor.close()
@@ -79,7 +85,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
     @unittest.skipIf(DATABASE_URL is None, "postgres service is not running")
-    @mock.patch("rows.plugins.postgresql.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_postgresql_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"encoding": "test", "some_key": 123, "other": 456}
@@ -101,7 +107,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
     @unittest.skipIf(DATABASE_URL is None, "postgres service is not running")
-    @mock.patch("rows.plugins.postgresql.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_postgresql_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
         connection, table_name = rows.export_to_postgresql(
@@ -210,7 +216,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(result_table, expected_table)
 
     @unittest.skipIf(DATABASE_URL is None, "postgres service is not running")
-    @mock.patch("rows.plugins.postgresql.prepare_to_export")
+    @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_postgresql_prepare_to_export(self, mocked_prepare_to_export):
         encoding = "iso-8859-15"
         kwargs = {"test": 123, "parameter": 3.14}

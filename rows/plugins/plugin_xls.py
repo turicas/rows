@@ -17,57 +17,39 @@
 
 from __future__ import unicode_literals
 
-import datetime
-import os
-from io import BytesIO
-
-import xlrd
-import xlwt
-
-import rows.fields as fields
-from rows.plugins.utils import create_table, prepare_to_export
+from rows import fields
 from rows.utils import Source
 from rows.compat import TEXT_TYPE
 
-CELL_TYPES = {
-    xlrd.XL_CELL_BLANK: fields.TextField,
-    xlrd.XL_CELL_DATE: fields.DatetimeField,
-    xlrd.XL_CELL_ERROR: None,
-    xlrd.XL_CELL_TEXT: fields.TextField,
-    xlrd.XL_CELL_BOOLEAN: fields.BoolField,
-    xlrd.XL_CELL_EMPTY: None,
-    xlrd.XL_CELL_NUMBER: fields.FloatField,
-}
-
-
-# TODO: add more formatting styles for other types such as currency
-# TODO: styles may be influenced by locale
-FORMATTING_STYLES = {
-    fields.DateField: xlwt.easyxf(num_format_str="yyyy-mm-dd"),
-    fields.DatetimeField: xlwt.easyxf(num_format_str="yyyy-mm-dd hh:mm:ss"),
-    fields.PercentField: xlwt.easyxf(num_format_str="0.00%"),
-}
-
 
 def _python_to_xls(field_types):
+    import xlwt
+
+    # TODO: add more formatting styles for other types such as currency
+    # TODO: styles may be influenced by locale
+    FORMATTING_STYLES = {
+        fields.DateField: xlwt.easyxf(num_format_str="yyyy-mm-dd"),
+        fields.DatetimeField: xlwt.easyxf(num_format_str="yyyy-mm-dd hh:mm:ss"),
+        fields.PercentField: xlwt.easyxf(num_format_str="0.00%"),
+    }
+    KNOWN_TYPES = (
+        fields.BinaryField,
+        fields.BoolField,
+        fields.DateField,
+        fields.DatetimeField,
+        fields.DecimalField,
+        fields.FloatField,
+        fields.IntegerField,
+        fields.PercentField,
+        fields.TextField,
+    )
+
     def convert_value(field_type, value):
         data = {}
         if field_type in FORMATTING_STYLES:
             data["style"] = FORMATTING_STYLES[field_type]
-
-        if field_type in (
-            fields.BinaryField,
-            fields.BoolField,
-            fields.DateField,
-            fields.DatetimeField,
-            fields.DecimalField,
-            fields.FloatField,
-            fields.IntegerField,
-            fields.PercentField,
-            fields.TextField,
-        ):
+        if field_type in KNOWN_TYPES:
             return value, data
-
         else:  # don't know this field
             return field_type.serialize(value), data
 
@@ -82,6 +64,19 @@ def _python_to_xls(field_types):
 
 def cell_value(sheet, row, col):
     """Return the cell value of the table passed by argument, based in row and column."""
+    import datetime
+
+    import xlrd
+
+    CELL_TYPES = {
+        xlrd.XL_CELL_BLANK: fields.TextField,
+        xlrd.XL_CELL_DATE: fields.DatetimeField,
+        xlrd.XL_CELL_ERROR: None,
+        xlrd.XL_CELL_TEXT: fields.TextField,
+        xlrd.XL_CELL_BOOLEAN: fields.BoolField,
+        xlrd.XL_CELL_EMPTY: None,
+        xlrd.XL_CELL_NUMBER: fields.FloatField,
+    }
     cell = sheet.cell(row, col)
     field_type = CELL_TYPES[cell.ctype]
 
@@ -144,6 +139,8 @@ def cell_value(sheet, row, col):
 
 
 def get_table_start(sheet):
+    import xlrd
+
     empty_cell_type = xlrd.empty_cell.ctype
     start_column, start_row = 0, 0
     for col in range(sheet.ncols):
@@ -158,6 +155,10 @@ def get_table_start(sheet):
 
 
 def sheet_names(filename_or_fobj):
+    import os
+
+    import xlrd
+
     # TODO: setup/teardown must be methods of a class so we can reuse them
     source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="xls")
     source.fobj.close()
@@ -181,6 +182,10 @@ def import_from_xls(
     **kwargs
 ):
     """Return a rows.Table created from imported XLS file."""
+    import os
+    import xlrd
+
+    from rows.plugins.utils import create_table
 
     source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="xls")
     source.fobj.close()
@@ -226,6 +231,12 @@ def import_from_xls(
 
 def export_to_xls(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kwargs):
     """Export the rows.Table to XLS file and return the saved file."""
+    from io import BytesIO
+
+    import xlwt
+
+    from rows.plugins.utils import prepare_to_export
+
 
     workbook = xlwt.Workbook()
     sheet = workbook.add_sheet(sheet_name)
