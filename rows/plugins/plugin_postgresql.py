@@ -398,7 +398,10 @@ class PostgresCopy(object):
                 # will be different from `len(data)`. Since the progress bar
                 # reports the uncompressed size of the file we must report
                 # progress based on original data read, not on data written.
-                total_written += process.stdin.write(data.replace(b"\x00", b""))
+                data_to_write = data.replace(b"\x00", b"")
+                process.stdin.write(data_to_write)
+                total_written += len(data_to_write)
+                # TODO: move to `total_written += process.stdin.write(data_to_write)` after py27 deprecation
                 total_read += len(data)
                 if callback:
                     callback(len(data), total_read)
@@ -797,7 +800,8 @@ def pg2pg(
             stderr=subprocess.PIPE,
         )
         while data != b"":
-            written = process_input.stdin.write(data)
+            process_input.stdin.write(data)
+            written = len(data)  # TODO: move to `written = process_input.stdin.write(data)` after py27 deprecation
             total_written += written
             if callback:
                 callback(written, total_written)
