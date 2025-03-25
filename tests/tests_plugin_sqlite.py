@@ -31,6 +31,7 @@ from rows import fields
 from rows.utils import Source
 
 ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_sqlite, rows.export_to_sqlite  # Lazy functions (just aliases)
+exported_utils_table = list(rows.plugins.utils.prepare_to_export(utils.table))
 
 class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
@@ -155,9 +156,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.files_to_delete.append(temp.name)
         encoding = "iso-8859-15"
         kwargs = {"test": 123, "parameter": 3.14}
-        mocked_prepare_to_export.return_value = iter(
-            rows.plugins.utils.prepare_to_export(utils.table)
-        )
+        mocked_prepare_to_export.return_value = iter(exported_utils_table)
 
         rows.export_to_sqlite(utils.table, temp.name, encoding=encoding, **kwargs)
         self.assertTrue(mocked_prepare_to_export.called)
