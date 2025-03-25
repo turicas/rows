@@ -20,7 +20,6 @@ from __future__ import unicode_literals
 import csv
 import io
 import itertools
-import string
 import subprocess
 from pathlib import Path
 
@@ -221,24 +220,6 @@ def get_source(connection_or_uri):
     return source
 
 
-def _valid_table_name(name):
-    """Verify if a given table name is valid for `rows`
-
-    Rules:
-    - Should start with a letter or '_'
-    - Letters can be capitalized or not
-    - Accepts letters, numbers and _
-    """
-
-    if name[0] not in "_" + string.ascii_letters or not set(name).issubset(
-        "_" + string.ascii_letters + string.digits
-    ):
-        return False
-
-    else:
-        return True
-
-
 def import_from_postgresql(
     connection_or_uri,
     table_name="table1",
@@ -248,10 +229,10 @@ def import_from_postgresql(
     *args,
     **kwargs
 ):
-    from rows.plugins.utils import create_table
+    from rows.plugins.utils import create_table, valid_table_name
 
     if query is None:
-        if not _valid_table_name(table_name):
+        if not valid_table_name(table_name):
             raise ValueError("Invalid table name: {}".format(table_name))
 
         SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
@@ -287,7 +268,8 @@ def export_to_postgresql(
     **kwargs
 ):
     from rows import fields
-    from rows.plugins.utils import ipartition, prepare_to_export
+    from rows.plugins.utils import ipartition, prepare_to_export, valid_table_name
+
     # TODO: should add transaction support?
     SQL_TABLE_NAMES = """
         SELECT
@@ -296,7 +278,7 @@ def export_to_postgresql(
         WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
     """
 
-    if table_name is not None and not _valid_table_name(table_name):
+    if table_name is not None and not valid_table_name(table_name):
         raise ValueError("Invalid table name: {}".format(table_name))
 
     source = get_source(connection_or_uri)
@@ -703,8 +685,9 @@ def get_create_table_from_query(database_uri, table_name_or_query, table_name):
     from psycopg2 import connect as pgconnect
 
     if " " in table_name_or_query:
+        # Assume it's a query, but could be a table with space in the name also (if you're doing it, you're wrong)
         import random
-        alias = "".join(random.choice(string.ascii_lowercase) for _ in range(10))
+        alias = "".join(random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(10))
         query = """SELECT * FROM ({}) AS "{}" LIMIT 0""".format(table_name_or_query, alias)
     else:
         query = "SELECT * FROM {} LIMIT 0".format(table_name_or_query)
@@ -724,6 +707,7 @@ def get_create_table_from_query(database_uri, table_name_or_query, table_name):
         for row in [dict(zip(header, values)) for values in cursor.fetchall()]
     }
     cursor.close()
+    conn.close()
 
     columns = [(column.name, type_name_by_oid[column.type_code]) for column in columns]
     column_types = ['''"{}" {}'''.format(name, type) for name, type in columns]

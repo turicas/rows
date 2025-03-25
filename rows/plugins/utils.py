@@ -48,6 +48,20 @@ def ipartition(iterable, partition_size):
             yield data
 
 
+def valid_table_name(name):
+    """Verify if a given table name is valid for `rows`.
+
+    Rules:
+    - Should start with a letter or '_'
+    - Letters can be capitalized or not
+    - Acceps letters, numbers and _
+    """
+    return (
+        name[0] in "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        and set(name).issubset(set("_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))
+    )
+
+
 def create_table(
     data,
     meta=None,

@@ -96,20 +96,6 @@ def get_source(filename_or_connection):
     return source
 
 
-def _valid_table_name(name):
-    """Verify if a given table name is valid for `rows`.
-
-    Rules:
-    - Should start with a letter or '_'
-    - Letters can be capitalized or not
-    - Acceps letters, numbers and _
-    """
-    return (
-        name[0] in "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        and set(name).issubset(set("_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))
-    )
-
-
 def import_from_sqlite(
     filename_or_connection,
     table_name="table1",
@@ -119,7 +105,7 @@ def import_from_sqlite(
     **kwargs
 ):
     """Return a rows.Table with data from SQLite database."""
-    from rows.plugins.utils import create_table
+    from rows.plugins.utils import create_table, valid_table_name
 
     source = get_source(filename_or_connection)
     connection = source.fobj
@@ -129,7 +115,7 @@ def import_from_sqlite(
     cursor = connection.cursor()
 
     if query is None:
-        if not _valid_table_name(table_name):
+        if not valid_table_name(table_name):
             raise ValueError("Invalid table name: {}".format(table_name))
 
         SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
@@ -158,7 +144,7 @@ def export_to_sqlite(
     **kwargs
 ):
     from rows import fields
-    from rows.plugins.utils import ipartition, prepare_to_export
+    from rows.plugins.utils import ipartition, prepare_to_export, valid_table_name
 
     SQLITE_TYPES = {
         fields.BinaryField: "BLOB",
@@ -189,7 +175,7 @@ def export_to_sqlite(
             start=1,
         )
 
-    elif not _valid_table_name(table_name):
+    elif not valid_table_name(table_name):
         raise ValueError("Invalid table name: {}".format(table_name))
 
     field_names = next(prepared_table)
