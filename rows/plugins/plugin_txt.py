@@ -114,7 +114,6 @@ FRAMES = {
         "VERTICAL AND HORIZONTAL": "╬",
     },
 }
-FRAME_SENTINEL = object()
 
 def _clean_style_name(name):
     return name.lower().strip()
@@ -166,7 +165,7 @@ def _max_column_sizes(field_names, table_rows):
 
 
 def import_from_txt(
-    filename_or_fobj, encoding="utf-8", frame_style=FRAME_SENTINEL, *args, **kwargs
+    filename_or_fobj, encoding="utf-8", frame_style=None, *args, **kwargs
 ):
     """Return a rows.Table created from imported TXT file."""
     from rows.plugins.utils import create_table
@@ -186,7 +185,7 @@ def import_from_txt(
     )
     raw_contents = source.fobj.read().decode(encoding).rstrip("\n")
 
-    if frame_style is FRAME_SENTINEL:
+    if frame_style is None:
         frame_style = _guess_frame_style(raw_contents)
     else:
         frame_style = _parse_frame_style(frame_style)
