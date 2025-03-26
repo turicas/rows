@@ -332,12 +332,7 @@ class PyMuPDFBackend(PDFBackend):
         # TODO: should consider using `dir` and `wmode` from line dict (`obj`)?
         #       `dir` is already considered in the calculation below:
         bbox = pymupdf.Rect(*obj["bbox"]) * page.rotation_matrix
-        text = " ".join(
-            [
-                "\n".join(line.strip() for line in span["text"].splitlines())
-                for span in obj["spans"]
-            ]
-        )
+        text = "\n".join(line.strip() for line in "".join(span["text"] for span in obj["spans"]).splitlines())
         # TODO: may use glyph's height instead of object's bbox (more info:
         # <https://pymupdf.readthedocs.io/en/latest/textpage.html#span-dictionary>)
         return TextObject(
