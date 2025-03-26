@@ -24,6 +24,7 @@ from collections import OrderedDict
 from pathlib import Path
 
 import mock
+import pytest
 
 import rows
 import tests.utils as utils
@@ -119,15 +120,41 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
             content = fobj.read()
         self.assertEqual(content[-10:].count(b"\n"), 1)
 
-    def test_export_to_txt_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
-        # TODO: may test file contents
-        temp = tempfile.NamedTemporaryFile(delete=False)
+    def test_export_to_txt_fobj_binary(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
-        rows.export_to_txt(utils.table, temp.file, encoding="utf-8")
-
+        fobj = temp.file
+        result = rows.export_to_txt(utils.table, fobj, encoding="utf-8")
+        assert result is fobj
+        assert not fobj.closed
+        # TODO: test file contents instead of this side-effect
         table = rows.import_from_txt(temp.name, encoding="utf-8")
         self.assert_table_equal(table, utils.table)
+
+    def test_export_to_txt_fobj_text(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        result = rows.export_to_txt(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
+        # TODO: test file contents instead of this side-effect
+        table = rows.import_from_txt(temp.name, encoding="utf-8")
+        self.assert_table_equal(table, utils.table)
+
+    def test_export_to_txt_fobj_text_with_encoding(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        with pytest.raises(ValueError, match="export_to_txt must not receive an encoding when file is in text mode"):
+            rows.export_to_txt(utils.table, fobj, encoding="utf-8")
+
+    def test_export_to_txt_fobj_binary_without_encoding(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        with pytest.raises(ValueError, match="export_to_txt must receive an encoding when file is in binary mode"):
+            rows.export_to_txt(utils.table, fobj, encoding=None)
 
     def test_issue_168(self):
         temp = tempfile.NamedTemporaryFile(delete=False)

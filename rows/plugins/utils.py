@@ -231,3 +231,17 @@ def serialize(table, *args, **kwargs):
             field_type.serialize(value, *args, **kwargs)
             for value, field_type in zip(row, field_types)
         ]
+
+def is_binary_file(fobj):
+    from io import BytesIO
+
+    # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
+    return isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode)
+
+
+def is_fobj(obj):
+    from pathlib import Path
+
+    from rows.compat import BINARY_TYPE, TEXT_TYPE
+
+    return obj is not None and not isinstance(obj, (TEXT_TYPE, BINARY_TYPE, Path)) and hasattr(obj, "read")

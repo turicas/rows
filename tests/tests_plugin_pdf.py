@@ -17,7 +17,9 @@
 
 from __future__ import unicode_literals
 
+import io
 import re
+import tempfile
 import unittest
 
 import pytest
@@ -42,6 +44,12 @@ class PDFTestCase(utils.RowsTestMixIn):
         assert id(ALIAS_IMPORT) != id(original_import)
         new_alias_import = rows.import_from_pdf
         assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+
+    def test_import_from_pdf_fobj_text(self):
+        with pytest.raises(ValueError, match="import_from_pdf must not receive a file-like object in text mode"):
+            with tempfile.NamedTemporaryFile(suffix=".pdf", mode="r") as tmp:
+                fobj = io.TextIOWrapper(tmp.file, encoding="utf-8")
+                rows.import_from_pdf(fobj)
 
     def test_real_data_1(self):
         filename = "tests/data/balneabilidade-26-2010"

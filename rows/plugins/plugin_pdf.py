@@ -1074,7 +1074,10 @@ def import_from_pdf(
     *args,
     **kwargs
 ):
-    from rows.plugins.utils import create_table
+    from rows.plugins.utils import create_table, is_fobj, is_binary_file
+
+    if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
+        raise ValueError("import_from_pdf must not receive a file-like object in text mode")
 
     if isinstance(page_numbers, TEXT_TYPE):
         page_numbers = extract_intervals(page_numbers)

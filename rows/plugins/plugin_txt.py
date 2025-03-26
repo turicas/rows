@@ -247,12 +247,18 @@ def export_to_txt(
     the output to be parseable. Otherwise, the generated table will look
     prettier but can not be imported back.
     """
-    from rows.plugins.utils import serialize
+    from rows.plugins.utils import is_binary_file, is_fobj, serialize
 
     return_data, should_close = False, None
     if filename_or_fobj is None:
         filename_or_fobj = BytesIO()
         return_data = should_close = True
+    elif is_fobj(filename_or_fobj):
+        is_binary = is_binary_file(filename_or_fobj)
+        if is_binary and encoding is None:
+            raise ValueError("export_to_txt must receive an encoding when file is in binary mode")
+        elif not is_binary and encoding is not None:
+            raise ValueError("export_to_txt must not receive an encoding when file is in text mode")
 
     source = Source.from_file(
         filename_or_fobj,

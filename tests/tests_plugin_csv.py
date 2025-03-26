@@ -26,6 +26,7 @@ from io import BytesIO
 from textwrap import dedent
 
 import mock
+import pytest
 
 import rows
 import rows.plugins.plugin_csv
@@ -267,26 +268,43 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(call[1], kwargs)
 
     def test_export_to_csv_filename(self):
-        # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         rows.export_to_csv(utils.table, temp.name)
-
+        # TODO: test file contents instead of this side-effect
         table = rows.import_from_csv(temp.name)
         self.assert_table_equal(table, utils.table)
-
         temp.file.seek(0)
         result = temp.file.read()
         export_in_memory = rows.export_to_csv(utils.table, None)
         self.assertEqual(result, export_in_memory)
 
-    def test_export_to_csv_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
-        # TODO: may test file contents
-        temp = tempfile.NamedTemporaryFile(delete=False)
+    def test_export_to_csv_fobj_binary(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
-        rows.export_to_csv(utils.table, temp.file)
+        fobj = temp.file
+        result = rows.export_to_csv(utils.table, fobj, encoding="utf-8")
+        assert result is fobj
+        assert not fobj.closed
+        # TODO: test file contents instead of this side-effect
+        table = rows.import_from_csv(temp.name)
+        self.assert_table_equal(table, utils.table)
 
+    def test_export_to_csv_fobj_binary_without_encoding(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        with pytest.raises(ValueError, match="export_to_csv must receive an encoding when file is in binary mode"):
+            rows.export_to_csv(utils.table, fobj, encoding=None)
+
+    def test_export_to_csv_fobj_text(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        result = rows.export_to_csv(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
+        # TODO: test file contents instead of this side-effect
         table = rows.import_from_csv(temp.name)
         self.assert_table_equal(table, utils.table)
 

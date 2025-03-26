@@ -17,11 +17,14 @@
 
 from __future__ import unicode_literals
 
+import io
 import unittest
+import tempfile
 from collections import OrderedDict
 from pathlib import Path
 
 import mock
+import pytest
 
 import rows
 
@@ -172,13 +175,25 @@ class PluginParquetTestCase(unittest.TestCase):
         self.assertEqual(source.uri, Path(self.filename))
 
     @mock.patch("rows.plugins.plugin_parquet.create_table")
+    def test_import_from_parquet_fobj_binary(self, mocked_create_table):
+        with open(self.filename, mode="rb") as fobj:
+            rows.import_from_parquet(fobj)
+        args = mocked_create_table.call_args[0][0]
+        self.assertEqual(args, DATA)
+
+    def test_import_from_parquet_fobj_text(self):
+        with pytest.raises(ValueError, match="import_from_parquet must not receive a file-like object in text mode"):
+            with tempfile.NamedTemporaryFile(suffix=".parquet", mode="r") as tmp:
+                fobj = io.TextIOWrapper(tmp.file, encoding="utf-8")
+                rows.import_from_parquet(fobj)
+
+    @mock.patch("rows.plugins.plugin_parquet.create_table")
     def test_import_from_parquet_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
         # import using filename
         rows.import_from_parquet(self.filename)
         args = mocked_create_table.call_args[0][0]
-
         self.assertEqual(args, DATA)
 
     # TODO: test all supported field types

@@ -24,6 +24,7 @@ import unittest
 from collections import Counter, OrderedDict, defaultdict
 
 import mock
+import pytest
 
 import rows
 import tests.utils as utils
@@ -97,13 +98,25 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_json(temp.name)
         self.assert_table_equal(table, utils.table)
 
-    def test_export_to_json_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
-        # TODO: may test file contents
+    def test_export_to_json_fobj_binary(self):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
-        rows.export_to_json(utils.table, temp.file)
+        fobj = temp.file
+        result = rows.export_to_json(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
+        # TODO: test file contents instead of this side-effect
+        table = rows.import_from_json(temp.name)
+        self.assert_table_equal(table, utils.table)
 
+    def test_export_to_json_fobj_text(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        result = rows.export_to_json(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
+        # TODO: test file contents instead of this side-effect
         table = rows.import_from_json(temp.name)
         self.assert_table_equal(table, utils.table)
 

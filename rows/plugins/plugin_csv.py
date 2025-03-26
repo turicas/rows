@@ -196,22 +196,19 @@ def import_from_csv(
     If a file-like object is provided it MUST be in binary mode, like in
     `open(filename, mode='rb')`.
     """
-    from rows.plugins.utils import create_table
+    from rows.plugins.utils import create_table, is_binary_file
 
-    source = Source.from_file(
-        filename_or_fobj, plugin_name="csv", mode="rb", encoding=encoding
-    )
+    source = Source.from_file(filename_or_fobj, plugin_name="csv", mode="rb", encoding=encoding)
 
     if dialect is None:
-        dialect = discover_dialect(
-            sample=read_sample(source.fobj, sample_size), encoding=source.encoding
-        )
+        dialect = discover_dialect(sample=read_sample(source.fobj, sample_size), encoding=source.encoding)
 
     fobj = source.fobj
     if not PY2:
-        if isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode):
-            # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
+        if is_binary_file(fobj):
             fobj = TextIOWrapper(fobj, encoding=encoding)
+            # TODO: how to detach in this case, so we preventing from having the file object closed when TextIOWrapper
+            # is garbage-collected?
         reader = csv.reader(fobj, dialect=dialect)
     else:
         reader = _csv_reader(fobj, dialect=dialect, encoding=encoding)
@@ -238,14 +235,17 @@ def export_to_csv(
     If not filename/fobj is provided, the function returns a string with CSV
     contents.
     """
-    from rows.plugins.utils import ipartition, serialize
+    from rows.plugins.utils import ipartition, is_binary_file, is_fobj, serialize
     # TODO: will work only if table.fields is OrderedDict
     # TODO: should use fobj? What about creating a method like json.dumps?
 
+    orig_filename_or_fobj = filename_or_fobj
     return_data, should_close = False, None
     if filename_or_fobj is None:
         filename_or_fobj = BytesIO()
         return_data = should_close = True
+    elif is_fobj(filename_or_fobj) and is_binary_file(filename_or_fobj) and encoding is None:
+        raise ValueError("export_to_csv must receive an encoding when file is in binary mode")
 
     source = Source.from_file(
         filename_or_fobj,
@@ -255,14 +255,14 @@ def export_to_csv(
         should_close=should_close,
     )
 
-    # TODO: may use `io.BufferedWriter` instead of `ipartition` so user can
-    # choose the real size (in Bytes) when to flush to the file system, instead
-    # number of rows
+    # TODO: may use `io.BufferedWriter` instead of `ipartition` so user can choose the real size (in Bytes) when to
+    # flush to the file system, instead number of rows
     fobj = source.fobj
+    should_detach = False
     if not PY2:
-        if isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode):
-            # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
+        if is_binary_file(fobj):
             fobj = TextIOWrapper(fobj, encoding=encoding)
+            should_detach = True
         writer = csv.writer(fobj, dialect=dialect)
     else:
         writer = _CsvWriter(fobj, dialect=dialect, encoding=encoding)
@@ -285,11 +285,13 @@ def export_to_csv(
         source.fobj.seek(0)
         result = source.fobj.read()
     else:
-        result = fobj
+        result = orig_filename_or_fobj if is_fobj(orig_filename_or_fobj) else fobj
         fobj.flush()
 
     if source.should_close:
         fobj.close()
+    elif should_detach:
+        fobj.detach()
 
     return result
 

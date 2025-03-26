@@ -29,14 +29,13 @@ def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
     If a file-like object is provided it MUST be open in text (non-binary) mode
     on Python 3 and could be open in both binary or text mode on Python 2.
     """
-    from rows.plugins.utils import create_table
+    from rows.plugins.utils import create_table, is_binary_file
 
     source = Source.from_file(
         filename_or_fobj, mode="r", plugin_name="json", encoding=encoding
     )
     fobj = source.fobj
-    if isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode):
-        # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
+    if is_binary_file(fobj):
         fobj = TextIOWrapper(fobj, encoding=encoding)
 
     # JSON should always use UTF-8, UTF-16 or UTF-32 encodings.
@@ -72,17 +71,16 @@ def _convert(value, field_type, *args, **kwargs):
         return field_type.serialize(value, *args, **kwargs)
 
 
-def export_to_json(
-    table, filename_or_fobj=None, encoding="utf-8", indent=None, *args, **kwargs
-):
+def export_to_json(table, filename_or_fobj=None, encoding="utf-8", indent=None, *args, **kwargs):
     """Export a `rows.Table` to a JSON file or file-like object.
 
     If a file-like object is provided it MUST be open in binary mode (like in
     `open('myfile.json', mode='wb')`).
     """
-    from rows.plugins.utils import prepare_to_export
-    from rows.compat import PYTHON_VERSION
+    from rows.plugins.utils import is_binary_file, is_fobj, prepare_to_export
+    from rows.compat import BINARY_TYPE
 
+    orig_filename_or_fobj = filename_or_fobj
     return_data, should_close = False, None
     if filename_or_fobj is None:
         filename_or_fobj = BytesIO()
@@ -109,12 +107,9 @@ def export_to_json(
     ]
 
     json_data = json.dumps(data, indent=indent)
-    if PYTHON_VERSION >= (3, 0, 0):  # In Python 3 `json.dumps` returns a non-encoded value
+    result_must_be_encoded = return_data or not is_fobj(orig_filename_or_fobj) or is_binary_file(orig_filename_or_fobj)
+    if result_must_be_encoded and not isinstance(json_data, BINARY_TYPE):
         json_data = json_data.encode(encoding)
-
-    if indent is not None:
-        # clean up empty spaces at the end of lines
-        json_data = b"\n".join(line.rstrip() for line in json_data.splitlines())
 
     if return_data:
         result = json_data
