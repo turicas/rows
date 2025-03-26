@@ -24,6 +24,7 @@ import unittest
 from collections import OrderedDict
 
 import mock
+import pytest
 
 import rows
 import tests.utils as utils
@@ -94,16 +95,24 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         export_in_memory = rows.export_to_xls(utils.table, None)
         self.assertEqual(result, export_in_memory)
 
-    def test_export_to_xls_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
-        # TODO: may test file contents
+    def test_export_to_xls_fobj_binary(self):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
-        rows.export_to_xls(utils.table, temp.file)
-        temp.file.close()
-
+        fobj = temp.file
+        result = rows.export_to_xls(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
+        fobj.close()
+        # TODO: test file contents instead of this side-effect
         table = rows.import_from_xls(temp.name)
         self.assert_table_equal(table, utils.table)
+
+    def test_export_to_xls_fobj_text(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        with pytest.raises(ValueError, match="export_to_xls must receive a file-object open in binary mode"):
+            rows.export_to_xls(utils.table, fobj)
 
     @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_xls_uses_prepare_to_export(self, mocked_prepare_to_export):

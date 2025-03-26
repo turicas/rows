@@ -21,10 +21,12 @@ import unittest
 from decimal import Decimal
 
 import mock
+import pytest
 
 import rows
 import tests.utils as utils
 from rows.utils import Source
+from rows.fileio import cfopen
 
 ALIAS_IMPORT = rows.import_from_ods  # Lazy function (just aliases)
 
@@ -57,19 +59,24 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(result, 42)
 
     @mock.patch("rows.plugins.utils.create_table")
-    def test_import_from_ods_retrieve_desired_data(self, mocked_create_table):
+    def test_import_from_ods_retrieve_desired_data_filename(self, mocked_create_table):
         mocked_create_table.return_value = 42
-
-        # import using filename
         rows.import_from_ods(self.filename)
         call_args = mocked_create_table.call_args_list[0]
         self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
-        # import using fobj
-        with open(self.filename, "rb") as fobj:
+    @mock.patch("rows.plugins.utils.create_table")
+    def test_import_from_ods_retrieve_desired_data_fobj_binary(self, mocked_create_table):
+        mocked_create_table.return_value = 42
+        with cfopen(self.filename, "rb") as fobj:
             rows.import_from_ods(fobj)
-            call_args = mocked_create_table.call_args_list[1]
+            call_args = mocked_create_table.call_args_list[0]
             self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
+
+    def test_import_from_ods_retrieve_desired_data_fobj_text(self):
+        with pytest.raises(ValueError, match="import_from_ods must not receive a file-like object open in text mode"):
+            with cfopen(self.filename, "r", encoding="utf-8") as fobj:
+                rows.import_from_ods(fobj)
 
     def test_meta_name(self):
         result = rows.import_from_ods(self.filename)

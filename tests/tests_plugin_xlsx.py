@@ -25,6 +25,7 @@ from decimal import Decimal
 from io import BytesIO
 
 import mock
+import pytest
 
 import rows
 import tests.utils as utils
@@ -97,15 +98,22 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result_table = rows.import_from_xlsx(result_fobj)
         self.assert_table_equal(result_table, utils.table)
 
-    def test_export_to_xlsx_fobj(self):
+    def test_export_to_xlsx_fobj_binary(self):
         filename = self.get_temp_filename()
         fobj = open(filename, "wb")
-
-        rows.export_to_xlsx(utils.table, fobj)
+        result = rows.export_to_xlsx(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
         fobj.close()
-
+        # TODO: test file contents instead of this side-effect
         table = rows.import_from_xlsx(filename)
         self.assert_table_equal(table, utils.table)
+
+    def test_export_to_xlsx_fobj_text(self):
+        filename = self.get_temp_filename()
+        fobj = open(filename, "w")
+        with pytest.raises(ValueError, match="export_to_xlsx must receive a file-object open in binary mode"):
+            rows.export_to_xlsx(utils.table, fobj)
 
     @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_xlsx_uses_prepare_to_export(self, mocked_prepare_to_export):

@@ -47,6 +47,11 @@ PARQUET_TO_ROWS = {
 
 def import_from_parquet(filename_or_fobj, *args, **kwargs):
     """Import data from a Parquet file and return with rows.Table."""
+    from rows.plugins.utils import is_fobj, is_binary_file
+
+    if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
+        raise ValueError("import_from_parquet must not receive a file-like object in text mode")
+
     source = Source.from_file(filename_or_fobj, plugin_name="parquet", mode="rb")
 
     # TODO: should look into `schema.converted_type` also

@@ -235,8 +235,10 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kw
 
     import xlwt
 
-    from rows.plugins.utils import prepare_to_export
+    from rows.plugins.utils import is_fobj, is_binary_file, prepare_to_export
 
+    if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
+        raise ValueError("export_to_xls must receive a file-object open in binary mode")
 
     workbook = xlwt.Workbook()
     sheet = workbook.add_sheet(sheet_name)

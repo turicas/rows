@@ -24,6 +24,7 @@ from io import BytesIO
 from pathlib import Path
 from textwrap import dedent
 
+import pytest
 import mock
 
 import rows
@@ -72,9 +73,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
             table = rows.import_from_html(fobj, encoding=self.encoding)
         self.assert_table_equal(table, utils.table)
 
-        expected_meta = {
-            "imported_from": "html",
-        }
+        expected_meta = {"imported_from": "html"}
         meta = table.meta.copy()
         source = meta.pop("source")
         self.assertEqual(meta, expected_meta)
@@ -104,17 +103,29 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         rows.export_to_html(utils.table, temp.name)
-
         # TODO: test file contents instead of collateral effect
         table = rows.import_from_html(temp.name)
         self.assert_table_equal(table, utils.table)
 
-    def test_export_to_html_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
+    def test_export_to_html_fobj_binary(self):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
-        rows.export_to_html(utils.table, temp.file)
+        fobj = temp.file
+        result = rows.export_to_html(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
+        # TODO: test file contents instead of collateral effect
+        table = rows.import_from_html(temp.name)
+        self.assert_table_equal(table, utils.table)
 
+    def test_export_to_html_fobj_text(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        result = rows.export_to_html(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
+        fobj.close()
         # TODO: test file contents instead of collateral effect
         table = rows.import_from_html(temp.name)
         self.assert_table_equal(table, utils.table)

@@ -18,7 +18,7 @@
 from __future__ import unicode_literals
 
 from rows.utils import Source
-from rows.compat import PYTHON_VERSION, TEXT_TYPE
+from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
 
 if PYTHON_VERSION < (3, 0, 0):
     from HTMLParser import HTMLParser  # noqa
@@ -110,17 +110,16 @@ def import_from_html(
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_html(
-    table, filename_or_fobj=None, encoding="utf-8", caption=False, *args, **kwargs
-):
+def export_to_html(table, filename_or_fobj=None, encoding="utf-8", caption=False, *args, **kwargs):
     """Export and return rows.Table data to HTML file."""
     from io import BytesIO
     if PYTHON_VERSION < (3, 0, 0):
         from cgi import escape  # noqa
     else:
         from html import escape  # noqa
-    from rows.plugins.utils import serialize
+    from rows.plugins.utils import is_binary_file, is_fobj, serialize
 
+    orig_filename_or_fobj = filename_or_fobj
     return_data, should_close = False, None
     if filename_or_fobj is None:
         filename_or_fobj = BytesIO()
@@ -151,7 +150,11 @@ def export_to_html(
             result.extend(["      <td> ", escape(value), " </td>\n"])
         result.append("    </tr>\n\n")
     result.append("  </tbody>\n\n</table>\n")
-    html = "".join(result).encode(encoding)
+    html = "".join(result)
+
+    result_must_be_encoded = return_data or not is_fobj(orig_filename_or_fobj) or is_binary_file(orig_filename_or_fobj)
+    if result_must_be_encoded and not isinstance(html, BINARY_TYPE):
+        html = html.encode(encoding)
 
     if return_data:
         result = html
