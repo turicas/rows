@@ -58,7 +58,7 @@ class PDFTestCase(utils.RowsTestMixIn):
             ends_before="*Variação em pontos percentuais.",
         )
         expected = rows.import_from_csv(filename + ".csv")
-        self.assertEqual(list(expected), list(result))
+        assert list(expected) == list(result)
 
     def test_real_data_3(self):
         filename = "tests/data/eleicoes-tcesp-161-162.pdf"
