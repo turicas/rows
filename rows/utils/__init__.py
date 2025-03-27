@@ -23,6 +23,12 @@ from rows.fileio import COMPRESSED_EXTENSIONS, cfopen
 from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
 
 
+if PYTHON_VERSION < (3, 0, 0):
+    def str_repr(string):
+        return (b"'" + string.replace("'", "\\'").encode("utf-8") + b"'").decode("utf-8")
+else:
+    str_repr = repr
+
 # TODO: should get this information from the plugins
 TEXT_PLAIN = {
     "txt": "text/txt",
@@ -858,7 +864,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
     name is taken from file name).
     """
     import json
-    from collections import defaultdict
+    from collections import OrderedDict, defaultdict
 
     from rows import fields as rows_fields
     # Detect field features
@@ -935,17 +941,26 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
         from rows import plugins
 
         data = []
-        for field_name, metadata in field_metadata.items():
+        for field_name in table.field_names:
+            metadata = field_metadata[field_name]
             if field_name not in export_fields:
                 continue
             if "choices" in metadata:
                 metadata["choices"] = json.dumps(sorted(metadata["choices"]))
-            base = {
-                "field_name": field_name,
-                "field_type": metadata["type"].__name__.replace("Field", "").lower(),
-            }
-            base.update({key: value for key, value in metadata.items() if key != "type"})
-            data.append(base)
+            data.append(
+                OrderedDict([
+                    ("field_name", field_name),
+                    ("field_type", metadata["type"].__name__.replace("Field", "").lower()),
+                    ("null", metadata.get("null")),
+                    ("min", metadata.get("min")),
+                    ("max", metadata.get("max")),
+                    ("subtype", metadata.get("subtype")),
+                    ("decimal_places", metadata.get("decimal_places")),
+                    ("max_digits", metadata.get("max_digits")),
+                    ("max_length", metadata.get("max_length")),
+                    ("choices", metadata.get("choices")),
+                ])
+            )
         table = plugins.dicts.import_from_dicts(data)
         if output_format == "txt":
             return plugins.txt.export_to_txt(table)
@@ -971,9 +986,10 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
         }
         choices_sql = []
         fields = []
-        for field_name, metadata in field_metadata.items():
+        for field_name in table.field_names:
             if field_name not in export_fields:
                 continue
+            metadata = field_metadata[field_name]
             sql_type = sql_fields[metadata["type"]]
             if sql_type == "DECIMAL":
                 sql_type += "({}, {})".format(metadata["max_digits"], metadata["decimal_places"])
@@ -988,7 +1004,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                         enum_name = "enum_{}".format(field_name)
                         choices_sql.append(
                             """CREATE TYPE "{}" AS ENUM ({}\n);""".format(
-                                enum_name, ",".join("\n  " + repr(value) for value in sorted(field_choices))
+                                enum_name, ",".join("\n  " + str_repr(value) for value in sorted(field_choices))
                             )
                         )
                         sql_type = enum_name
@@ -1039,15 +1055,16 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             "class {}(models.Model):".format(table_name),
         ]
         model_choices = []
-        for field_name, metadata in field_metadata.items():
+        for field_name in table.field_names:
             if field_name not in export_fields:
                 continue
+            metadata = field_metadata[field_name]
             django_type_name = django_fields[metadata["type"]]
-            comment = {}
-            options = {
-                "null": metadata["null"],
-                "blank": metadata["null"],
-            }
+            comment = OrderedDict()
+            options = OrderedDict([
+                ("null", metadata["null"]),
+                ("blank", metadata["null"]),
+            ])
             for key in ("max_length", "decimal_places", "max_digits"):
                 if key in metadata:
                     options[key] = metadata[key]
@@ -1066,7 +1083,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                             "    {} = (\n        {},\n    )".format(
                                 choices_name,
                                 ",\n        ".join(
-                                    "({}, {})".format(index, repr(value))
+                                    "({}, {})".format(index, str_repr(value))
                                     for index, value in enumerate(sorted(field_choices))
                                 )
                             )
