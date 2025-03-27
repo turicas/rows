@@ -100,24 +100,24 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result = rows.utils.generate_schema(
             table=table, export_fields=export_fields, output_format=fmt, max_choices=max_choices
         )
-        self.assertEqual(expected.strip(), result.strip())
+        assert expected.strip() == result.strip()
 
     def test_generate_schema_txt(self):
         expected = dedent(
             """
-            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+
-            |    field_name   | field_type |  null |  min  |  max   | subtype  | decimal_places | max_digits | max_length |
-            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+
-            |     bool_column |       bool |  true |       |        |          |                |            |            |
-            |  integer_column |    integer |  true |   1.0 |    6.0 | SMALLINT |                |            |            |
-            |    float_column |      float |  true | 1.234 |   9.87 |          |                |            |            |
-            |  decimal_column |    decimal |  true | 1.234 |   9.87 |          |              6 |         10 |            |
-            |  percent_column |    decimal |  true |  0.01 | 0.1364 |          |              4 |          8 |            |
-            |     date_column |       date |  true |       |        |          |                |            |            |
-            | datetime_column |   datetime |  true |       |        |          |                |            |            |
-            |  unicode_column |       text |  true |       |        |  VARCHAR |                |            |          8 |
-            |     json_column |       json | false |       |        |          |                |            |            |
-            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+
+            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+---------+
+            |    field_name   | field_type |  null |  min  |  max   | subtype  | decimal_places | max_digits | max_length | choices |
+            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+---------+
+            |     bool_column |       bool |  true |       |        |          |                |            |            |         |
+            |  integer_column |    integer |  true |   1.0 |    6.0 | SMALLINT |                |            |            |         |
+            |    float_column |      float |  true | 1.234 |   9.87 |          |                |            |            |         |
+            |  decimal_column |    decimal |  true | 1.234 |   9.87 |          |              6 |         10 |            |         |
+            |  percent_column |    decimal |  true |  0.01 | 0.1364 |          |              4 |          8 |            |         |
+            |     date_column |       date |  true |       |        |          |                |            |            |         |
+            | datetime_column |   datetime |  true |       |        |          |                |            |            |         |
+            |  unicode_column |       text |  true |       |        |  VARCHAR |                |            |          8 |         |
+            |     json_column |       json | false |       |        |          |                |            |            |         |
+            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+---------+
         """
         )
         self.assert_generate_schema("txt", expected)
@@ -233,12 +233,12 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_generate_schema_restricted_fields(self):
         expected = dedent(
             """
-            +-------------+------------+-------+
-            |  field_name | field_type |  null |
-            +-------------+------------+-------+
-            | bool_column |       bool |  true |
-            | json_column |       json | false |
-            +-------------+------------+-------+
+            +-------------+------------+-------+-----+-----+---------+----------------+------------+------------+---------+
+            |  field_name | field_type |  null | min | max | subtype | decimal_places | max_digits | max_length | choices |
+            +-------------+------------+-------+-----+-----+---------+----------------+------------+------------+---------+
+            | bool_column |       bool |  true |     |     |         |                |            |            |         |
+            | json_column |       json | false |     |     |         |                |            |            |         |
+            +-------------+------------+-------+-----+-----+---------+----------------+------------+------------+---------+
         """
         )
         self.assert_generate_schema(
