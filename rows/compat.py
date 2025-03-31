@@ -43,3 +43,19 @@ def library_installed(module_name):
             return False
         else:
             return True
+
+
+def ipython_env():
+    if not _library_installed("IPython"):
+        return None
+
+    from IPython import get_ipython
+
+    obj = get_ipython()
+    name = obj.__class__.__name__
+    if name == "TerminalInteractiveShell":
+        return "terminal"
+    elif name == "ZMQInteractiveShell":
+        return "notebook"
+    else:  # ?
+        return None
