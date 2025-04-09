@@ -55,6 +55,7 @@ DEFAULT_BUFFER_SIZE = 8 * 1024 * 1024
 DEFAULT_INPUT_ENCODING = "utf-8"
 DEFAULT_OUTPUT_ENCODING = "utf-8"
 DEFAULT_SAMPLE_SIZE = 1024 * 1024
+DEFAULT_SAMPLE_ROWS = 5000  # TODO: change to 20480 (like DuckDB) or 10000 (like polars)?
 HOME_PATH = Path(os.path.expanduser("~"))
 CACHE_PATH = HOME_PATH / ".cache" / "rows" / "http"
 
@@ -570,7 +571,7 @@ def create_complete_query(query, table_names):
 @click.option(
     "--samples",
     type=int,
-    default=5000,
+    default=DEFAULT_SAMPLE_ROWS,
     help="Number of rows to determine the field types (0 = all)",
 )
 @click.option(
@@ -722,7 +723,7 @@ def parse_comma_separated(ctx, param, value):
 @click.option(
     "--samples",
     type=int,
-    default=5000,
+    default=DEFAULT_SAMPLE_ROWS,
     help="Number of rows to determine the field types (0 = all)",
 )
 @click.option(
@@ -829,7 +830,7 @@ def command_schema(
 @click.option(
     "--samples",
     type=int,
-    default=5000,
+    default=DEFAULT_SAMPLE_ROWS,
     help="Number of rows to determine the field types (0 = all)",
 )
 @click.argument("source", required=True)
@@ -922,7 +923,7 @@ def command_csv_fix(log_filename, log_level, input_dialect, input_encoding,
 @click.option(
     "--samples",
     type=int,
-    default=5000,
+    default=DEFAULT_SAMPLE_ROWS,
     help="Number of rows to determine the field types (0 = all)",
 )
 @click.option("--input-encoding", default=None)
