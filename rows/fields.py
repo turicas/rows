@@ -190,10 +190,10 @@ class BoolField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(BoolField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if isinstance(value, cls.TYPE):
             return value
-
+        elif is_null(value):
+            return None
         value = as_string(value).lower()
         if value in cls.TRUE_VALUES:
             return True
@@ -224,16 +224,16 @@ class IntegerField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(IntegerField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if isinstance(value, cls.TYPE):
             return value
+        elif is_null(value):
+            return None
         elif isinstance(value, float):
             new_value = int(value)
             if new_value != value:
                 raise ValueError("It's float, not integer")
             else:
                 value = new_value
-
         value = as_string(value)
         return int(value) if SHOULD_NOT_USE_LOCALE else locale.atoi(value)
 
@@ -259,15 +259,12 @@ class FloatField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(FloatField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if isinstance(value, cls.TYPE):
             return value
-
+        elif is_null(value):
+            return None
         value = as_string(value)
-        if SHOULD_NOT_USE_LOCALE:
-            return float(value)
-        else:
-            return locale.atof(value)
+        return float(value) if SHOULD_NOT_USE_LOCALE else locale.atof(value)
 
 
 class DecimalField(Field):
@@ -298,9 +295,10 @@ class DecimalField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(DecimalField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if isinstance(value, cls.TYPE):
             return value
+        elif is_null(value):
+            return None
         elif type(value) in (int, float):
             return Decimal(TEXT_TYPE(value))
 
@@ -396,12 +394,12 @@ class DateField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(DateField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        # TODO: add locale support?
+        if isinstance(value, cls.TYPE):
             return value
-
+        elif is_null(value):
+            return None
         value = as_string(value)
-
         dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
         return dt_object.date()
 
@@ -426,10 +424,10 @@ class DatetimeField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(DatetimeField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if isinstance(value, cls.TYPE):
             return value
-
+        elif is_null(value):
+            return None
         value = as_string(value)
         # TODO: may use iso8601
         groups = cls.DATETIME_REGEXP.findall(value)
@@ -474,10 +472,9 @@ class EmailField(TextField):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(EmailField, cls).deserialize(value)
-        if value is None or not value.strip():
+        if value is None or is_null(value):
             return None
-
+        value = as_string(value)
         result = cls.EMAIL_REGEXP.findall(value)
         if not result:
             value_error(value, cls)
