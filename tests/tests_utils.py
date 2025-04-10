@@ -306,7 +306,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             dedent(
                 """
         field_name,field_type
-        f1,text,
+        f1,text
         f2,decimal
         f3,custom1
         f4,custom2

@@ -224,6 +224,32 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[2].field2, 1.23)
         self.assertEqual(table[2].field_2, "Justen")
 
+    def test_create_table_optimization_is_the_same_as_extending(self):
+        # TODO: do the same for FlexibleTable when `create_table` accepts it (or other kinds of table classes)
+        header = ["f1", "f2", "f3"]
+        table_rows = [
+            ["1", "3.14", "Álvaro"],
+            ["2", "2.71", "turicas"],
+            ["3", "1.23", "Justen"],
+        ]
+        table_1 = plugins_utils.create_table([header] + table_rows)
+        table_2 = rows.Table(fields=table_1.fields.copy())
+        table_2.extend(dict(zip(header, row)) for row in table_rows)
+        assert table_1._rows == table_2._rows
+
+    def test_create_table_optimization_is_the_same_as_extending_custom_fields(self):
+        # TODO: do the same for FlexibleTable when `create_table` accepts it (or other kinds of table classes)
+        header = ["f1", "f2", "f3"]
+        table_rows = [
+            ["1", "3.14", "Álvaro"],
+            ["2", "2.71", "turicas"],
+            ["3", "1.23", "Justen"],
+        ]
+        table_1 = plugins_utils.create_table([header] + table_rows, import_fields=["f3", "f2"])
+        table_2 = rows.Table(fields=table_1.fields.copy())
+        table_2.extend({"f3": row[2], "f2": row[1]} for row in table_rows)
+        assert table_1._rows == table_2._rows
+
     def test_prepare_to_export_all_fields(self):
         result = plugins_utils.prepare_to_export(utils.table, export_fields=None)
 

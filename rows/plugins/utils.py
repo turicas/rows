@@ -164,7 +164,6 @@ def create_table(
     if max_rows is not None and max_rows > 0:
         table_rows = islice(table_rows, max_rows)
 
-    # TODO: may unroll the loop of adding rows to the table to avoid calling `append` and `_make_row` repeatedly
     diff = set(import_fields) - set(header)
     if diff:
         field_names = ", ".join('"{}"'.format(field) for field in diff)
@@ -172,13 +171,26 @@ def create_table(
     fields = OrderedDict(
         [(field_name, fields[field_name]) for field_name in import_fields]
     )
+    field_types = list(fields.values())
 
     table = Table(fields=fields, meta=meta)
     if list(header) == list(import_fields):  # Add rows directly, no need to get specific indices
-        table.extend(dict(zip(import_fields, row)) for row in table_rows)
+        table._rows.extend(
+            tuple([
+                field_type.deserialize(value)
+                for field_type, value in zip(field_types, row)
+            ])
+            for row in table_rows
+        )
     else:
-        get_row = get_items(*map(header.index, import_fields))
-        table.extend(dict(zip(import_fields, get_row(row))) for row in table_rows)
+        field_indices = list(map(header.index, import_fields))
+        table._rows.extend(
+            tuple([
+                field_type.deserialize(row[index])
+                for index, field_type in zip(field_indices, field_types)
+            ])
+            for row in table_rows
+        )
 
     source = table.meta.get("source", None)
     if source is not None:
