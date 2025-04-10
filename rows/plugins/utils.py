@@ -197,10 +197,10 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
 
     if export_fields is None:
         # we use already slugged-fieldnames
-        export_fields = table.field_names
+        export_fields = tuple(table.field_names)
     else:
         # we need to slug all the field names
-        export_fields = make_header(export_fields)
+        export_fields = tuple(make_header(export_fields))
 
     table_field_names = table.field_names
     diff = set(export_fields) - set(table_field_names)
@@ -211,12 +211,16 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
     yield export_fields
 
     if table_type is Table:
-        field_indexes = list(map(table_field_names.index, export_fields))
-        for row in table._rows:
-            yield [row[field_index] for field_index in field_indexes]
+        if list(table_field_names) == list(export_fields):  # Yield directly the stored rows
+            for row in table._rows:
+                yield row
+        else:
+            field_indexes = tuple(map(table_field_names.index, export_fields))
+            for row in table._rows:
+                yield tuple([row[field_index] for field_index in field_indexes])
     elif table_type is FlexibleTable:
         for row in table._rows:
-            yield [row[field_name] for field_name in export_fields]
+            yield tuple([row[field_name] for field_name in export_fields])
 
 
 def serialize(table, *args, **kwargs):

@@ -227,7 +227,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_prepare_to_export_all_fields(self):
         result = plugins_utils.prepare_to_export(utils.table, export_fields=None)
 
-        self.assertEqual(list(utils.table.fields.keys()), next(result))
+        self.assertEqual(tuple(utils.table.fields.keys()), next(result))
 
         for row in utils.table._rows:
             self.assertEqual(row, next(result))
@@ -242,10 +242,10 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         random.shuffle(some_fields)
         result = plugins_utils.prepare_to_export(utils.table, export_fields=some_fields)
 
-        self.assertEqual(some_fields, next(result))
+        self.assertEqual(tuple(some_fields), next(result))
 
         for row in utils.table:
-            expected_row = [getattr(row, field_name) for field_name in some_fields]
+            expected_row = tuple([getattr(row, field_name) for field_name in some_fields])
             self.assertEqual(expected_row, next(result))
 
         with self.assertRaises(StopIteration):
@@ -271,12 +271,12 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         for row in utils.table:
             flexible.append(row._asdict())
 
-        field_names = list(flexible.fields.keys())
+        field_names = tuple(flexible.fields.keys())
         prepared = plugins_utils.prepare_to_export(flexible)
         self.assertEqual(next(prepared), field_names)
 
         for row, expected_row in zip(prepared, flexible._rows):
-            values = [expected_row[field_name] for field_name in field_names]
+            values = tuple([expected_row[field_name] for field_name in field_names])
             self.assertEqual(values, row)
 
     def test_prepare_to_export_with_FlexibleTable_and_export_fields(self):
@@ -289,14 +289,14 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             )
 
         field_names = list(flexible.fields.keys())
-        export_fields = field_names[: len(field_names) // 2]
+        export_fields = tuple(field_names[: len(field_names) // 2])
         prepared = plugins_utils.prepare_to_export(
             flexible, export_fields=export_fields
         )
         self.assertEqual(next(prepared), export_fields)
 
         for row, expected_row in zip(prepared, flexible._rows):
-            values = [expected_row[field_name] for field_name in export_fields]
+            values = tuple([expected_row[field_name] for field_name in export_fields])
             self.assertEqual(values, row)
 
     def test_prepare_to_export_wrong_obj_type(self):
@@ -330,7 +330,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_serialize(self):
         result = plugins_utils.serialize(utils.table)
         field_types = list(utils.table.fields.values())
-        self.assertEqual(next(result), list(utils.table.fields.keys()))
+        self.assertEqual(next(result), tuple(utils.table.fields.keys()))
 
         for row, expected_row in zip(result, utils.table._rows):
             values = [

@@ -147,11 +147,12 @@ class Table(MutableSequence):
         )
 
     def _make_row(self, row):
-        # TODO: should be able to customize row type (namedtuple, dict etc.)
-        return [
+        # Python tuple creation from list comprehesion is faster than from generator expression:
+        # <https://gist.github.com/turicas/f28c110d931c437f5b952040ec2c1da1>
+        return tuple([
             field_type.deserialize(row.get(field_name, None))
             for field_name, field_type in self.fields.items()
-        ]
+        ])
 
     def append(self, row):
         """Add a row to the table. Should be a dict"""
@@ -201,12 +202,17 @@ class Table(MutableSequence):
             self.Row = namedtuple("Row", self.field_names)
 
             if is_new_field:
-                for row, value in zip(self._rows, values):
-                    row.append(field_type.deserialize(value))
+                for (row_index, row), value in zip(enumerate(self._rows), values):
+                    self._rows[row_index] = tuple(list(row) + [field_type.deserialize(value)])
             else:
                 field_index = self.field_names.index(field_name)
-                for row, value in zip(self._rows, values):
-                    row[field_index] = field_type.deserialize(value)
+                for (row_index, row), value in zip(enumerate(self._rows), values):
+                    self._rows[row_index] = tuple(
+                        [
+                            row_value if field_index != col_index else field_type.deserialize(value)
+                            for col_index, row_value in enumerate(row)
+                        ]
+                    )
         else:
             raise ValueError("Unsupported key type: {}".format(type(key).__name__))
 
@@ -222,8 +228,8 @@ class Table(MutableSequence):
 
             del self.fields[key]
             self.Row = namedtuple("Row", self.field_names)
-            for row in self._rows:
-                row.pop(field_index)
+            for index, row in enumerate(self._rows):
+                self._rows[index] = tuple([value for col_index, value in enumerate(row) if col_index != field_index])
         else:
             raise ValueError("Unsupported key type: {}".format(type(key).__name__))
 
