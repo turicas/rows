@@ -665,24 +665,44 @@ class TypeDetector(object):
         self._samples = []
         self._skip = skip_indexes or tuple()
 
-    def check_type(self, index, value):
-        for type_ in self._possible_types[index][:]:
-            if not is_null(value):
-                self._is_empty[index] = False
-            try:
-                type_.deserialize(value)
-            except (ValueError, TypeError):
-                self._possible_types[index].remove(type_)
-
     def process_row(self, row):
         for index, value in enumerate(row):
             if index in self._skip:
                 continue
-            self.check_type(index, value)
+            for type_ in self._possible_types[index][:]:
+                if self._is_empty[index] and not is_null(value):
+                    self._is_empty[index] = False
+                try:
+                    type_.deserialize(value)
+                except (ValueError, TypeError):
+                    self._possible_types[index].remove(type_)
 
-    def feed(self, data):
-        for row in data:
-            self.process_row(row)
+    # TODO: create two kinds of `feed`: by row and by column (some formats will have it by column)
+
+    def feed(self, data, batch_size=512):
+        if not isinstance(data, list):
+            data = list(data)  # Must have all values in memory and indexable
+        if not data:
+            return
+        indices = [index for index in range(len(data[0])) if index not in self._skip]
+        if not indices:
+            return
+
+        skip, possible_types, is_empty = self._skip, self._possible_types, self._is_empty
+        # TODO: add cache for checks
+        while data:
+            for col_index in indices:
+                col_values = [row[col_index] for row in data[:batch_size]]
+                if is_empty[col_index] and any(not is_null(value) for value in col_values):
+                    is_empty[col_index] = False
+                for type_ in possible_types[col_index][:]:
+                    for value in col_values:
+                        try:
+                            type_.deserialize(value)
+                        except (ValueError, TypeError):
+                            possible_types[col_index].remove(type_)
+                            break
+            data = data[batch_size:]
 
     def priority(self, *field_types):
         """Decide the priority between each possible type"""

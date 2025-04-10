@@ -491,6 +491,8 @@ class FieldUtilsTestCase(unittest.TestCase):
         expected = fields.TextField
         self.assertEqual(result, expected)
 
+    # TODO: add tests for `TypeDetector` using many kinds of unhashable objects
+
     def test_precedence(self):
         field_types = [
             ("bool", fields.BoolField),
