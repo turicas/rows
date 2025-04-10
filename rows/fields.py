@@ -62,6 +62,43 @@ REGEXP_WORD_BOUNDARY = re.compile("(\\w\\b)")
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 SLUG_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
 
+_cache_resize_len = 31000
+_cacheable_types = (TEXT_TYPE, BINARY_TYPE, int, float, bool, type(None), datetime.date, datetime.datetime, uuid.UUID)
+_max_cache_size = 32000
+_deserialization_cache = {}
+_deserialization_error = object()
+
+def cached_type_deserialize(type_, value, true_behavior=True):
+    """
+    LFU cache for type deserialization
+
+    Calls `type_.deserialize(value)`. When `true_behavior` is `True`, exception is raised if value can't be
+    deserialized; returns `_deserialization_error` sentinel, otherwise.
+    Will only cache values that can be hashed and on `_cacheable_types`.
+    """
+    global _deserialization_cache
+
+    should_cache = isinstance(value, _cacheable_types)
+    cache_key = hash((type_, type(value), value)) if should_cache else None
+    if not should_cache or cache_key not in _deserialization_cache:
+        try:
+            result = type_.deserialize(value)
+        except (ValueError, TypeError):
+            if true_behavior:
+                raise
+            return _deserialization_error
+        else:
+            if should_cache:
+                _deserialization_cache[cache_key] = [result, 1]
+                if len(_deserialization_cache) == _max_cache_size:
+                    min_freq = _deserialization_cache[sorted(_deserialization_cache.keys(), key=lambda key: _deserialization_cache[key][1])[_cache_resize_len]][1]
+                    _deserialization_cache = {k: v for k, v in _deserialization_cache.items() if v[1] > min_freq}
+    else:
+        result, _ = _deserialization_cache[cache_key]
+        _deserialization_cache[cache_key][1] += 1
+    return result
+
+
 def value_error(value, cls):
     value = repr(value)
     if len(value) > 50:
@@ -672,9 +709,7 @@ class TypeDetector(object):
             for type_ in self._possible_types[index][:]:
                 if self._is_empty[index] and not is_null(value):
                     self._is_empty[index] = False
-                try:
-                    type_.deserialize(value)
-                except (ValueError, TypeError):
+                if cached_type_deserialize(type_, value, true_behavior=False) is _deserialization_error:
                     self._possible_types[index].remove(type_)
 
     # TODO: create two kinds of `feed`: by row and by column (some formats will have it by column)
@@ -689,19 +724,17 @@ class TypeDetector(object):
             return
 
         skip, possible_types, is_empty = self._skip, self._possible_types, self._is_empty
-        # TODO: add cache for checks
         while data:
             for col_index in indices:
                 col_values = [row[col_index] for row in data[:batch_size]]
                 if is_empty[col_index] and any(not is_null(value) for value in col_values):
                     is_empty[col_index] = False
                 for type_ in possible_types[col_index][:]:
-                    for value in col_values:
-                        try:
-                            type_.deserialize(value)
-                        except (ValueError, TypeError):
-                            possible_types[col_index].remove(type_)
-                            break
+                    if any(
+                        cached_type_deserialize(type_, value, true_behavior=False) is _deserialization_error
+                        for value in col_values
+                    ):
+                        possible_types[col_index].remove(type_)
             data = data[batch_size:]
 
     def priority(self, *field_types):

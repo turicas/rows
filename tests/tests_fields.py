@@ -542,6 +542,39 @@ class FieldUtilsTestCase(unittest.TestCase):
         }
         self.assertDictEqual(result, expected)
 
+    def test_type_deserialize_cache(self):
+        from rows.fields import _deserialization_error, cached_type_deserialize
+        fields._deserialization_cache = {}
+        len_before = 0
+
+        # If `Field.deserialize` raises an exception, it should not be cached
+        assert cached_type_deserialize(fields.BoolField, "xxx", true_behavior=False) is _deserialization_error
+        assert len(fields._deserialization_cache) == len_before
+        assert cached_type_deserialize(fields.IntegerField, "xxx", true_behavior=False) is _deserialization_error
+        assert len(fields._deserialization_cache) == len_before
+
+        # Values which result in `hash(value) == 0` must not be confused if from different types
+        types_values = [
+            (fields.BoolField, False),
+            (fields.IntegerField, 0),
+            (fields.FloatField, 0.0),
+            (fields.TextField, ""),
+            (fields.UUIDField, uuid.UUID(int=0)),
+        ]
+        len_expected = len_before
+        for type_, value in types_values:
+            assert cached_type_deserialize(type_, value, true_behavior=False) == value
+            len_expected += 1
+            assert len(fields._deserialization_cache) == len_expected
+        for type_, value in types_values:
+            for other_type, other_value in types_values:
+                if type_ == other_type or value == other_value:  # Skip equal types and 0 vs 0.0
+                    continue
+                assert (
+                    cached_type_deserialize(type_, value, true_behavior=False) !=
+                    cached_type_deserialize(type_, other_value, true_behavior=False)
+                )
+
 
 class FieldsFunctionsTestCase(unittest.TestCase):
     def test_is_null(self):

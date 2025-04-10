@@ -68,7 +68,7 @@ def create_table(
     fields=None,
     skip_header=True,
     import_fields=None,
-    samples=None,
+    samples=None,  # TODO: change to a fixed value, like 20480
     force_types=None,
     max_rows=None,
     *args,
@@ -89,7 +89,7 @@ def create_table(
     from os import unlink
     from pathlib import Path
 
-    from rows.fields import TextField, detect_types, get_items, make_header
+    from rows.fields import TextField, cached_type_deserialize, detect_types, get_items, make_header
     from rows.table import Table
 
     table_rows = iter(data)
@@ -174,10 +174,11 @@ def create_table(
     field_types = list(fields.values())
 
     table = Table(fields=fields, meta=meta)
+    # What if we deserialize only when the data is read from the Table (not from the plugin)?
     if list(header) == list(import_fields):  # Add rows directly, no need to get specific indices
         table._rows.extend(
             tuple([
-                field_type.deserialize(value)
+                cached_type_deserialize(field_type, value)
                 for field_type, value in zip(field_types, row)
             ])
             for row in table_rows
@@ -186,7 +187,7 @@ def create_table(
         field_indices = list(map(header.index, import_fields))
         table._rows.extend(
             tuple([
-                field_type.deserialize(row[index])
+                cached_type_deserialize(field_type, row[index])
                 for index, field_type in zip(field_indices, field_types)
             ])
             for row in table_rows

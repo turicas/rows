@@ -147,10 +147,12 @@ class Table(MutableSequence):
         )
 
     def _make_row(self, row):
+        from rows.fields import cached_type_deserialize
+
         # Python tuple creation from list comprehesion is faster than from generator expression:
         # <https://gist.github.com/turicas/f28c110d931c437f5b952040ec2c1da1>
         return tuple([
-            field_type.deserialize(row.get(field_name, None))
+            cached_type_deserialize(field_type, row.get(field_name, None))
             for field_name, field_type in self.fields.items()
         ])
 
@@ -184,7 +186,7 @@ class Table(MutableSequence):
         if key_type == int:
             self._rows[key] = self._make_row(value)
         elif key_type is TEXT_TYPE:
-            from rows import fields
+            from rows.fields import cached_type_deserialize, detect_types, slug
 
             values = list(value)  # I'm not lazy, sorry
             if len(values) != len(self):
@@ -193,23 +195,21 @@ class Table(MutableSequence):
                     "Table length ({})".format(len(values), len(self))
                 )
 
-            field_name = fields.slug(key)
+            field_name = slug(key)
             is_new_field = field_name not in self.field_names
-            field_type = fields.detect_types(
-                [field_name], [[value] for value in values]
-            )[field_name]
+            field_type = detect_types([field_name], [[value] for value in values])[field_name]
             self.fields[field_name] = field_type
             self.Row = namedtuple("Row", self.field_names)
 
             if is_new_field:
                 for (row_index, row), value in zip(enumerate(self._rows), values):
-                    self._rows[row_index] = tuple(list(row) + [field_type.deserialize(value)])
+                    self._rows[row_index] = tuple(list(row) + [cached_type_deserialize(field_type, value)])
             else:
                 field_index = self.field_names.index(field_name)
                 for (row_index, row), value in zip(enumerate(self._rows), values):
                     self._rows[row_index] = tuple(
                         [
-                            row_value if field_index != col_index else field_type.deserialize(value)
+                            row_value if field_index != col_index else cached_type_deserialize(field_type, value)
                             for col_index, row_value in enumerate(row)
                         ]
                     )
@@ -290,14 +290,14 @@ class FlexibleTable(Table):
         self.Row = namedtuple("Row", self.field_names)
 
     def _make_row(self, row):
-        from rows import fields
+        from rows.fields import cached_type_deserialize, identify_type
 
         for field_name in row.keys():
             if field_name not in self.field_names:
-                self._add_field(field_name, fields.identify_type(row[field_name]))
+                self._add_field(field_name, identify_type(row[field_name]))
 
         return {
-            field_name: field_type.deserialize(row.get(field_name, None))
+            field_name: cached_type_deserialize(field_type, row.get(field_name, None))
             for field_name, field_type in self.fields.items()
         }
 
