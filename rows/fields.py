@@ -684,6 +684,14 @@ DEFAULT_TYPES = (
 )
 
 
+def _unique_list_values(values):
+    result = []
+    for value in values:
+        if value not in result:
+            result.append(value)
+    return result
+
+
 class TypeDetector(object):
     """Detect data types based on a list of Field classes"""
 
@@ -726,7 +734,7 @@ class TypeDetector(object):
         skip, possible_types, is_empty = self._skip, self._possible_types, self._is_empty
         while data:
             for col_index in indices:
-                col_values = [row[col_index] for row in data[:batch_size]]
+                col_values = _unique_list_values(row[col_index] for row in data[:batch_size])
                 if is_empty[col_index] and any(not is_null(value) for value in col_values):
                     is_empty[col_index] = False
                 for type_ in possible_types[col_index][:]:
