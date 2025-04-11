@@ -949,6 +949,7 @@ def command_csv_to_sqlite(
         prefix = "[{filename} -> {db_filename}#{tablename}]".format(
             db_filename=output.name, tablename=table_name, filename=filename.name
         )
+        # TODO: CsvInspector will be called inside `csv2sqlite` also, so it's a waste of time here
         inspector = rows_csv.CsvInspector(
             TEXT_TYPE(filename), encoding=input_encoding, dialect=dialect, schema=schema, max_samples=samples
         )

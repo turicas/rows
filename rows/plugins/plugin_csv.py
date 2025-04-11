@@ -297,8 +297,10 @@ def export_to_csv(
 
 
 class CsvInspector(object):
-    def __init__(self, filename, encoding=None, dialect=None, schema=None,
-            chunk_size=1 * 1024 * 1024, max_samples=5000):
+    def __init__(
+        self, filename, encoding=None, dialect=None, schema=None, chunk_size=1 * 1024 * 1024, max_samples=5000
+    ):
+        # TODO: replace default `max_samples` with a global value (used also on CLI and `create_table`)
         self.filename = filename
         self._encoding = encoding
         self._field_names = None
@@ -365,7 +367,9 @@ class CsvInspector(object):
                 dialect=self.dialect,
             )
             self._field_names = [field_name for field_name in next(reader)]
-            self._schema = fields.detect_types(
-                self._field_names, itertools.islice(reader, self._max_samples)
-            )
+            csv_rows = list(itertools.islice(reader, self._max_samples))
+            # `_read_sample` will read a fixed amount of bytes and this could lead to the last row being cut in the
+            # middle of a cell, so the last row must be discarded.
+            # TODO: add a test for this
+            self._schema = fields.detect_types(self._field_names, csv_rows[:-1])
         return self._schema
