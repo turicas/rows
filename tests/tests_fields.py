@@ -88,14 +88,14 @@ class FieldsTestCase(unittest.TestCase):
         self.assertEqual(fields.BoolField.TYPE, (bool,))
         self.assertEqual(fields.BoolField.serialize(None), "")
 
-        false_values = ("False", "false", "no", False)
+        false_values = ("False", "false", "f", "no", False)
         for value in false_values:
             self.assertIs(fields.BoolField.deserialize(value), False)
 
         self.assertIs(fields.BoolField.deserialize(None), None)
         self.assertEqual(fields.BoolField.deserialize(""), None)
 
-        true_values = ("True", "true", "yes", True)
+        true_values = ("True", "true", "t", "yes", True)
         for value in true_values:
             self.assertIs(fields.BoolField.deserialize(value), True)
 

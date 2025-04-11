@@ -180,8 +180,8 @@ class BoolField(Field):
 
     TYPE = (bool,)
     SERIALIZED_VALUES = {True: "true", False: "false", None: ""}
-    TRUE_VALUES = ("true", "yes")
-    FALSE_VALUES = ("false", "no")
+    TRUE_VALUES = ("true", "t", "yes")
+    FALSE_VALUES = ("false", "f", "no")
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
