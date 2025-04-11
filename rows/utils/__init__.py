@@ -20,7 +20,7 @@ from __future__ import unicode_literals
 from io import BufferedReader
 
 from rows.fileio import COMPRESSED_EXTENSIONS, cfopen
-from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
+from rows.compat import BINARY_TYPE, DEFAULT_SAMPLE_ROWS, PYTHON_VERSION, TEXT_TYPE
 
 
 if PYTHON_VERSION < (3, 0, 0):
@@ -634,7 +634,7 @@ def open_compressed(*args, **kwargs):
 def csv_to_sqlite(
     input_filename,
     output_filename,
-    samples=None,
+    samples=DEFAULT_SAMPLE_ROWS,
     dialect=None,
     batch_size=10000,
     encoding=None,

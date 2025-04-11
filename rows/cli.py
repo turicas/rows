@@ -48,14 +48,13 @@ from rows.utils import (
     sqlite_to_csv,
     uncompressed_size,
 )
-from rows.compat import TEXT_TYPE
+from rows.compat import DEFAULT_SAMPLE_ROWS, TEXT_TYPE
 from rows.version import as_string as rows_version
 
 DEFAULT_BUFFER_SIZE = 8 * 1024 * 1024
 DEFAULT_INPUT_ENCODING = "utf-8"
 DEFAULT_OUTPUT_ENCODING = "utf-8"
 DEFAULT_SAMPLE_SIZE = 1024 * 1024
-DEFAULT_SAMPLE_ROWS = 5000  # TODO: change to 20480 (like DuckDB) or 10000 (like polars)?
 HOME_PATH = Path(os.path.expanduser("~"))
 CACHE_PATH = HOME_PATH / ".cache" / "rows" / "http"
 

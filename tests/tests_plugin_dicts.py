@@ -60,7 +60,7 @@ class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         call = mocked_create_table.call_args
         kwargs["meta"] = {"imported_from": "dicts"}
-        kwargs["samples"] = None
+        kwargs["samples"] = rows.compat.DEFAULT_SAMPLE_ROWS
         self.assertEqual(call[1], kwargs)
 
     def test_import_from_dicts_return_desired_data(self):

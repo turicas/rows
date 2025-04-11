@@ -17,8 +17,9 @@
 
 from __future__ import unicode_literals
 
+from rows.compat import DEFAULT_SAMPLE_ROWS
 
-def import_from_dicts(data, samples=None, *args, **kwargs):
+def import_from_dicts(data, samples=DEFAULT_SAMPLE_ROWS, *args, **kwargs):
     """Import data from a iterable of dicts
 
     The algorithm will use the `samples` first `dict`s to determine the field

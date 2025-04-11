@@ -2,6 +2,8 @@
 import sys
 
 
+DEFAULT_SAMPLE_ROWS = 20480  # Number of rows to sample from files when no schema is provided
+
 PYTHON_VERSION = (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
 
 if PYTHON_VERSION < (3, 0, 0):

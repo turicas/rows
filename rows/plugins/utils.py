@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 # `slug` and `make_unique_name` are required here to maintain backwards compatibility
 # TODO: add warnings about `make_header`, `make_unique_name` and `slug` deprecation (from here)
+from rows.compat import DEFAULT_SAMPLE_ROWS
 from rows.fields import make_header, make_unique_name, slug  # noqa
 
 
@@ -68,7 +69,7 @@ def create_table(
     fields=None,
     skip_header=True,
     import_fields=None,
-    samples=None,  # TODO: change to a fixed value, like 20480
+    samples=DEFAULT_SAMPLE_ROWS,
     force_types=None,
     max_rows=None,
     *args,

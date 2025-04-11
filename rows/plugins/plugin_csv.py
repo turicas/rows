@@ -21,7 +21,7 @@ import csv
 from io import BytesIO, TextIOWrapper, StringIO
 
 from rows.utils import Source
-from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
+from rows.compat import BINARY_TYPE, DEFAULT_SAMPLE_ROWS, PYTHON_VERSION, TEXT_TYPE
 
 
 PY2 = PYTHON_VERSION < (3, 0, 0)
@@ -298,9 +298,9 @@ def export_to_csv(
 
 class CsvInspector(object):
     def __init__(
-        self, filename, encoding=None, dialect=None, schema=None, chunk_size=1 * 1024 * 1024, max_samples=5000
+        self, filename, encoding=None, dialect=None, schema=None, chunk_size=1 * 1024 * 1024,
+        max_samples=DEFAULT_SAMPLE_ROWS,
     ):
-        # TODO: replace default `max_samples` with a global value (used also on CLI and `create_table`)
         self.filename = filename
         self._encoding = encoding
         self._field_names = None

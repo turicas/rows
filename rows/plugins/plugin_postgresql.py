@@ -23,7 +23,7 @@ import itertools
 import subprocess
 from pathlib import Path
 
-from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
+from rows.compat import BINARY_TYPE, DEFAULT_SAMPLE_ROWS, PYTHON_VERSION, TEXT_TYPE
 
 
 def get_psql_command(
@@ -328,7 +328,7 @@ class PostgresCopy(object):
     # TODO: add logging to the process
     # TODO: detect when error ocurred and interrupt the process immediatly
 
-    def __init__(self, database_uri, chunk_size=8388608, max_samples=10000):
+    def __init__(self, database_uri, chunk_size=8388608, max_samples=DEFAULT_SAMPLE_ROWS):
         self.database_uri = database_uri
         self.chunk_size = chunk_size
         self.max_samples = max_samples
@@ -562,7 +562,7 @@ def pgimport(
     has_header=True,
     skip_rows=0,
     chunk_size=8388608,
-    max_samples=10000,
+    max_samples=DEFAULT_SAMPLE_ROWS,
     create_table=True,
     unlogged=False,
     access_method=None,
