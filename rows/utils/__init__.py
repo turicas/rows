@@ -433,6 +433,19 @@ def _disable_urllib3_warnings():
             # old versions of urllib3 or requests
             pass
 
+if PYTHON_VERSION < (3, 0, 0):
+    from cgi import parse_header
+else:
+    def parse_header(value):
+        from email.message import Message
+
+        msg = Message()
+        msg["content-type"] = value
+        params = msg.get_params()
+        mime_type = params[0][0] if params and params[0] else None
+        options = dict(params[1:]) if len(params) > 1 else {}
+        return (mime_type, options)
+
 
 def download_file(
     uri,
@@ -448,7 +461,6 @@ def download_file(
     user_agent=None
 ):
     # TODO: add ability to continue download
-    import cgi
     import os
     import tempfile
     from pathlib import Path
@@ -482,10 +494,10 @@ def download_file(
     real_filename, encoding, mime_type = uri, None, None
     headers = response.headers
     if "content-type" in headers:
-        mime_type, options = cgi.parse_header(headers["content-type"])
+        mime_type, options = parse_header(headers["content-type"])
         encoding = options.get("charset", encoding)
     if "content-disposition" in headers:
-        _, options = cgi.parse_header(headers["content-disposition"])
+        _, options = parse_header(headers["content-disposition"])
         real_filename = options.get("filename", real_filename)
 
     if filename is None:
@@ -528,8 +540,10 @@ def download_file(
         encoding = source.encoding
     else:
         extension, plugin_name, encoding = None, None, None
-        if mime_type:
-            extension = mime_type.split("/")[-1]
+    if not extension and mime_type:
+        extension = mime_type.split("/")[-1].lower().strip()
+        if extension == "gzip":
+            extension = "gz"
 
     if filename is None:
         filename = tmp.name
@@ -537,14 +551,17 @@ def download_file(
             filename += "." + extension
         # TODO: use pathlib instead
         os.rename(tmp.name, filename)
+    else:
+        extension = filename.split(".")[-1].lower().strip()
 
     return Source(
         uri=filename,
         plugin_name=plugin_name,
         encoding=encoding,
         should_delete=True,
+        compressed=extension in COMPRESSED_EXTENSIONS,
         is_file=True,
-        local=False,
+        local=True,  # We just downloaded it!
     )
 
 
