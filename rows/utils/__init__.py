@@ -650,7 +650,7 @@ def csv_to_sqlite(
     from collections import OrderedDict
 
     from rows.plugins.plugin_csv import CsvInspector
-    from rows.plugins.sqlite import export_to_sqlite
+    from rows.plugins.plugin_sqlite import export_to_sqlite
     from rows.plugins.utils import make_header
     from rows.table import Table
 

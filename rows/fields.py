@@ -76,10 +76,11 @@ def cached_type_deserialize(type_, value, true_behavior=True):
     deserialized; returns `_deserialization_error` sentinel, otherwise.
     Will only cache values that can be hashed and on `_cacheable_types`.
     """
+    from locale import getlocale
     global _deserialization_cache
 
     should_cache = isinstance(value, _cacheable_types)
-    cache_key = hash((type_, type(value), value)) if should_cache else None
+    cache_key = hash((type_, type(value), value, SHOULD_NOT_USE_LOCALE or getlocale())) if should_cache else None
     if not should_cache or cache_key not in _deserialization_cache:
         try:
             result = type_.deserialize(value)
