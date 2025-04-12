@@ -229,6 +229,7 @@ def import_from_postgresql(
     *args,
     **kwargs
 ):
+    from itertools import chain
     from rows.plugins.utils import create_table, valid_table_name
 
     if query is None:
@@ -246,7 +247,7 @@ def import_from_postgresql(
 
     cursor = connection.cursor()
     cursor.execute(query, query_args)
-    table_rows = list(cursor.fetchall())  # TODO: make it lazy
+    table_rows = cursor.fetchall()
     header = [TEXT_TYPE(info[0]) for info in cursor.description]
     cursor.close()
     connection.commit()  # WHY?
@@ -254,7 +255,7 @@ def import_from_postgresql(
     meta = {"imported_from": "postgresql", "source": source}
     if close_connection or (close_connection is None and source.should_close):
         connection.close()
-    return create_table([header] + table_rows, meta=meta, *args, **kwargs)
+    return create_table(chain([header], table_rows), meta=meta, *args, **kwargs)
 
 
 def export_to_postgresql(

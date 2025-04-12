@@ -216,13 +216,13 @@ def import_from_xls(
     )
     end_column = min(end_column if end_column is not None else max_column, max_column)
 
-    table_rows = [
+    table_rows = (
         [
             cell_value(sheet, row_index, column_index)
             for column_index in range(start_column, end_column + 1)
         ]
         for row_index in range(start_row, end_row + 1)
-    ]
+    )
 
     devnull.close()
     meta = {"imported_from": "xls", "source": source, "name": sheet.name}

@@ -105,6 +105,8 @@ def import_from_sqlite(
     **kwargs
 ):
     """Return a rows.Table with data from SQLite database."""
+    from itertools import chain
+
     from rows.plugins.utils import create_table, valid_table_name
 
     source = get_source(filename_or_connection)
@@ -124,13 +126,11 @@ def import_from_sqlite(
     if query_args is None:
         query_args = tuple()
 
-    table_rows = list(cursor.execute(query, query_args))  # TODO: may be lazy
+    table_rows = cursor.execute(query, query_args)
     header = [TEXT_TYPE(info[0]) for info in cursor.description]
-    cursor.close()
-    # TODO: should close connection also?
 
     meta = {"imported_from": "sqlite", "source": source}
-    return create_table([header] + table_rows, meta=meta, *args, **kwargs)
+    return create_table(chain([header], table_rows), meta=meta, *args, **kwargs)
 
 
 def export_to_sqlite(

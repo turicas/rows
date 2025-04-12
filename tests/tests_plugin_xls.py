@@ -156,7 +156,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             ["13.64%", "2015-08-18", "2015-08-18T22:21:33"],
             ["13.14%", "2015-03-04", "2015-03-04T16:00:01"],
         ]
-        self.assertEqual(expected_data, call_args[0][0])
+        self.assertEqual(expected_data, list(call_args[0][0]))
 
     def test_zero_date(self):
         table = rows.import_from_xls(

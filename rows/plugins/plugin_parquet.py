@@ -47,6 +47,7 @@ PARQUET_TO_ROWS = {
 
 def import_from_parquet(filename_or_fobj, *args, **kwargs):
     """Import data from a Parquet file and return with rows.Table."""
+    from itertools import chain
     from rows.plugins.utils import is_fobj, is_binary_file
 
     if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
@@ -63,9 +64,8 @@ def import_from_parquet(filename_or_fobj, *args, **kwargs):
         ]
     )
     header = list(types.keys())
-    table_rows = list(parquet.reader(source.fobj))  # TODO: be lazy
-
+    table_rows = parquet.reader(source.fobj)
     meta = {"imported_from": "parquet", "source": source}
     return create_table(
-        [header] + table_rows, meta=meta, force_types=types, *args, **kwargs
+        chain([header], table_rows), meta=meta, force_types=types, *args, **kwargs
     )

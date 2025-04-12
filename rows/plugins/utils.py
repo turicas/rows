@@ -106,8 +106,11 @@ def create_table(
 
         if samples is not None:
             sample_rows = list(islice(table_rows, 0, samples))
-            table_rows = chain(sample_rows, table_rows)
-        else:
+            if len(sample_rows) < samples:  # Read all the data
+                table_rows = sample_rows
+            else:
+                table_rows = chain(sample_rows, table_rows)
+        else:  # Read the whole table
             if max_rows is not None and max_rows > 0:
                 sample_rows = table_rows = list(islice(table_rows, max_rows))
             else:
@@ -163,6 +166,7 @@ def create_table(
             [(field_name, fields[key]) for field_name, key in zip(header, fields)]
         )
     if max_rows is not None and max_rows > 0:
+        # TODO: transform in list if data is already read
         table_rows = islice(table_rows, max_rows)
 
     diff = set(import_fields) - set(header)

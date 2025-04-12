@@ -178,8 +178,8 @@ class PluginParquetTestCase(unittest.TestCase):
     def test_import_from_parquet_fobj_binary(self, mocked_create_table):
         with open(self.filename, mode="rb") as fobj:
             rows.import_from_parquet(fobj)
-        args = mocked_create_table.call_args[0][0]
-        self.assertEqual(args, DATA)
+            called_data = list(mocked_create_table.call_args[0][0])
+        self.assertEqual(called_data, DATA)
 
     def test_import_from_parquet_fobj_text(self):
         with pytest.raises(ValueError, match="import_from_parquet must not receive a file-like object in text mode"):
@@ -193,7 +193,7 @@ class PluginParquetTestCase(unittest.TestCase):
 
         # import using filename
         rows.import_from_parquet(self.filename)
-        args = mocked_create_table.call_args[0][0]
-        self.assertEqual(args, DATA)
+        called_data = list(mocked_create_table.call_args[0][0])
+        self.assertEqual(called_data, DATA)
 
     # TODO: test all supported field types

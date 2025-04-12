@@ -86,13 +86,17 @@ def import_from_xlsx(
 
     workbook_kwargs will be passed to openpyxl.load_workbook
     """
-    from rows.plugins.utils import create_table
+    from rows.plugins.utils import create_table, is_fobj
+
+
+    should_close = True
+    if isinstance(filename_or_fobj, Path):
+        filename_or_fobj = TEXT_TYPE(filename_or_fobj)
+    elif is_fobj(filename_or_fobj):
+        should_close = False
 
     workbook_kwargs = workbook_kwargs or {}
     workbook_kwargs["read_only"] = workbook_kwargs.get("read_only", True)
-
-    if isinstance(filename_or_fobj, Path):
-        filename_or_fobj = TEXT_TYPE(filename_or_fobj)
     workbook = load_workbook(filename_or_fobj, **workbook_kwargs)
     if sheet_name is None:
         sheet_name = workbook.sheetnames[sheet_index]
@@ -112,24 +116,22 @@ def import_from_xlsx(
     end_row = end_row if end_row is not None else max_row
     start_column = start_column if start_column is not None else min_column
     end_column = end_column if end_column is not None else max_column
-    table_rows = []
-    is_empty = lambda row: all(cell is None for cell in row)
-    selected_rows = sheet.iter_rows(
-        min_row=start_row + 1 if start_row is not None else None,
-        max_row=end_row + 1 if end_row is not None else None,
-        min_col=start_column + 1 if start_column is not None else None,
-        max_col=end_column + 1 if end_column is not None else None,
-    )
-    for row in selected_rows:
-        row = [_cell_to_python(cell) for cell in row]
-        if not is_empty(row):
-            table_rows.append(row)
 
-    source = Source.from_file(filename_or_fobj, plugin_name="xlsx")
-    source.fobj.close()
+    def row_generator():
+        for row in sheet.iter_rows(
+            min_row=start_row + 1 if start_row is not None else None,
+            max_row=end_row + 1 if end_row is not None else None,
+            min_col=start_column + 1 if start_column is not None else None,
+            max_col=end_column + 1 if end_column is not None else None,
+        ):
+            new = [_cell_to_python(cell) for cell in row]
+            if not all(cell is None for cell in new):
+                yield new
+
+    source = Source.from_file(filename_or_fobj, plugin_name="xlsx", should_close=should_close)
     # TODO: pass a parameter to Source.from_file so it won't open the file
     metadata = {"imported_from": "xlsx", "source": source, "name": sheet_name}
-    return create_table(table_rows, meta=metadata, *args, **kwargs)
+    return create_table(row_generator(), meta=metadata, *args, **kwargs)
 
 
 def _python_to_cell(field_types):

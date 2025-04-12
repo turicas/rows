@@ -75,14 +75,16 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         # import using filename
         rows.import_from_xlsx(self.filename)
-        call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
+        args, kwargs = mocked_create_table.call_args_list[0]
+        args = [list(x) for x in args]
+        self.assert_create_table_data((args, kwargs), expected_meta=self.expected_meta)
 
         # import using fobj
         with open(self.filename, "rb") as fobj:
             rows.import_from_xlsx(fobj)
-        call_args = mocked_create_table.call_args_list[1]
-        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
+            args, kwargs = mocked_create_table.call_args_list[1]
+            args = [list(x) for x in args]
+            self.assert_create_table_data((args, kwargs), expected_meta=self.expected_meta)
 
     def test_export_to_xlsx_filename(self):
         filename = self.get_temp_filename()
@@ -153,7 +155,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
             [7.89, 7.89, "13.64%", datetime.datetime(2015, 8, 18, 0, 0)],
             [9.87, 9.87, "13.14%", datetime.datetime(2015, 3, 4, 0, 0)],
         ]
-        self.assertEqual(expected_data, call_args[0][0])
+        self.assertEqual(expected_data, list(call_args[0][0]))
 
     def test_issue_290_can_read_sheet(self):
         rows.import_from_xlsx("tests/data/text_in_percent_cell.xlsx")
