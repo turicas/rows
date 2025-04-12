@@ -631,6 +631,7 @@ def import_from_uri(
 
 def export_to_uri(table, uri, *args, **kwargs):
     "Given a `rows.Table` and an URI, detects plugin (from URI) and exports"
+    import rows
 
     # TODO: support '-' also
     plugin_name = plugin_name_by_uri(uri)

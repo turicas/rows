@@ -755,13 +755,16 @@ def command_schema(
     source,
     output,
 ):
-    import rows
+    from rows import fields as rows_fields, locale_context
     from rows.fileio import cfopen
     from rows.utils import detect_source, generate_schema, import_from_source
 
     if not Path(source).exists():
         click.echo("ERROR: file '{}' not found.".format(source), err=True)
         sys.exit(3)
+
+    field_names = fields
+    fields = rows_fields
 
     input_options = parse_options(input_option)
     progress = not quiet
@@ -773,22 +776,22 @@ def command_schema(
     )
 
     samples = samples if samples > 0 else None
-    import_fields = _get_import_fields(fields, fields_exclude)
+    import_fields = _get_import_fields(field_names, fields_exclude)
 
     if detect_all_types:
         field_types_names = [
-            field_name for field_name in rows.fields.__all__ if field_name not in ("Field", "FloatField")
+            field_name for field_name in fields.__all__ if field_name not in ("Field", "FloatField")
         ]
     else:
         field_types_names = [
             FieldClass.__name__
-            for FieldClass in rows.fields.DEFAULT_TYPES
-            if FieldClass not in (rows.fields.Field, rows.fields.FloatField)
+            for FieldClass in fields.DEFAULT_TYPES
+            if FieldClass not in (fields.Field, fields.FloatField)
         ]
-    field_types = [getattr(rows.fields, field_name) for field_name in field_types_names]
+    field_types = [getattr(fields, field_name) for field_name in field_types_names]
 
     if input_locale is not None:
-        with rows.locale_context(input_locale):
+        with locale_context(input_locale):
             table = import_from_source(
                 source_info,
                 input_encoding,
