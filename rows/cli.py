@@ -1592,7 +1592,7 @@ def csv_clean(
     output_fobj.close()
 
     if in_place:
-        os.rename(destination, source)
+        os.rename(TEXT_TYPE(destination.absolute()), source)
         os.rmdir(TEXT_TYPE(temp_path))
 
 

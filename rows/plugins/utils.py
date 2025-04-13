@@ -241,10 +241,19 @@ def serialize(table, *args, **kwargs):
         ]
 
 def is_binary_file(fobj):
+    from gzip import GzipFile
     from io import BytesIO
 
+    from rows.compat import TEXT_TYPE
+
     # TODO: probabaly there's a better way to check if a file-like object is open in binary or text mode
-    return isinstance(fobj, BytesIO) or (hasattr(fobj, "mode") and "b" in fobj.mode)
+    if isinstance(fobj, BytesIO):
+        return True
+    has_mode = hasattr(fobj, "mode")
+    if has_mode and isinstance(fobj, GzipFile) and isinstance(fobj.mode, int):
+        # `gzip.GzipFile.mode` in Python 3.5 is an integer
+        return True
+    return has_mode and "b" in TEXT_TYPE(fobj.mode)
 
 
 def is_fobj(obj):
