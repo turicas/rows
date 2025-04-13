@@ -29,6 +29,7 @@ PY2 = PYTHON_VERSION < (3, 0, 0)
 if PY2:
 
     def _csv_reader(fobj, dialect, encoding):
+        encoding = encoding or "utf-8"  # TODO: may change this behavior
         for row in csv.reader(fobj, dialect=dialect):
             yield [value.decode(encoding) for value in row]
 

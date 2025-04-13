@@ -318,6 +318,53 @@ def export_to_postgresql(
     return connection, table_name
 
 
+def _convert_encoding(encoding):
+    import codecs
+    try:
+        normalized = codecs.lookup(encoding).name
+    except LookupError:
+        return None
+
+    mapping = {
+        "ascii": "SQL_ASCII",
+        "utf-8": "UTF8",
+        "iso8859-1": "LATIN1",
+        "iso8859-2": "LATIN2",
+        "iso8859-3": "LATIN3",
+        "iso8859-4": "LATIN4",
+        "iso8859-5": "ISO_8859_5",
+        "iso8859-6": "ISO_8859_6",
+        "iso8859-7": "ISO_8859_7",
+        "iso8859-8": "ISO_8859_8",
+        "iso8859-9": "LATIN5",
+        "iso8859-10": "LATIN6",
+        "iso8859-13": "LATIN7",
+        "iso8859-14": "LATIN8",
+        "iso8859-15": "LATIN9",
+        "iso8859-16": "LATIN10",
+        "cp1250": "WIN1250",
+        "cp1251": "WIN1251",
+        "cp1252": "WIN1252",
+        "cp1253": "WIN1253",
+        "cp1254": "WIN1254",
+        "cp1255": "WIN1255",
+        "cp1256": "WIN1256",
+        "cp1257": "WIN1257",
+        "cp1258": "WIN1258",
+        "koi8-r": "KOI8R",
+        "koi8-u": "KOI8U",
+        "utf-8-sig": "UTF8",
+        "euc_jp": "EUC_JP",
+        "euc_kr": "EUC_KR",
+        "gbk": "GBK",
+        "gb18030": "GB18030",
+        "big5": "BIG5",
+        "shift_jis": "SJIS",
+        "johab": "JOHAB",
+    }
+    return mapping.get(normalized)
+
+
 class PostgresCopy(object):
     """Import data from CSV into PostgreSQL using the fastest method
 
@@ -333,13 +380,6 @@ class PostgresCopy(object):
         self.database_uri = database_uri
         self.chunk_size = chunk_size
         self.max_samples = max_samples
-
-    def _convert_encoding(self, encoding):
-        pg_encoding = encoding
-        if pg_encoding in ("us-ascii", "ascii"):
-            # TODO: convert all possible encodings
-            pg_encoding = "SQL_ASCII"
-        return pg_encoding
 
     def _import(
         self,
@@ -357,7 +397,7 @@ class PostgresCopy(object):
             database_uri=self.database_uri,
             dialect=dialect,
             direction="FROM",
-            encoding=self._convert_encoding(encoding),
+            encoding=_convert_encoding(encoding) or "UTF8",  # TODO: may change this behavior
             header=field_names,
             table_name_or_query=table_name,
             is_query=False,
