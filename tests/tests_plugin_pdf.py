@@ -32,6 +32,18 @@ ALIAS_IMPORT = rows.import_from_pdf
 
 import rows.plugins.plugin_pdf as pdf
 
+
+if PYTHON_VERSION >= (3, 7, 0):
+    try:
+        import fitz as pymupdf
+
+        pymupdf_imported = True
+    except ImportError:
+        pymupdf_imported = False
+else:
+    pymupdf_imported = False
+
+
 class PDFTestCase(utils.RowsTestMixIn):
 
     backend = "<to-be-set>"
@@ -125,7 +137,7 @@ class PDFTestCase(utils.RowsTestMixIn):
         self.assertTrue(first_page.startswith(expected_start))
 
 
-@pytest.mark.skipif(PYTHON_VERSION < (3, 7, 0), reason="pymupdf not supported on Python < 3.7")
+@pytest.mark.skipif(not pymupdf_imported, reason="pymupdf not supported (Python < 3.7) or not installed")
 class PyMuPDFTestCase(PDFTestCase, unittest.TestCase):
 
     backend = "pymupdf"

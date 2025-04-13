@@ -28,6 +28,14 @@ import pytest
 
 import rows
 
+
+try:
+    import parquet
+
+    parquet_imported = True
+except ImportError:
+    parquet_imported = False
+
 DATA = [
     ["nation_key", "name", "region_key", "comment_col"],
     [0, b"ALGERIA", 0, b" haggle. carefully final deposits detect slyly agai"],
@@ -138,6 +146,7 @@ DATA = [
 ]
 
 
+@pytest.mark.skipif(not parquet_imported, reason="parquet not installed")
 class PluginParquetTestCase(unittest.TestCase):
 
     plugin_name = "parquet"
