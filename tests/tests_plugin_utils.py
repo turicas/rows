@@ -328,19 +328,17 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_prepare_to_export_wrong_obj_type(self):
         """`prepare_to_export` raises exception if obj isn't `*Table`"""
 
-        expected_message = "Table type not recognized"
-
         with self.assertRaises(ValueError) as exception_context:
             next(plugins_utils.prepare_to_export(1))
-        self.assertEqual(exception_context.exception.args[0], expected_message)
+        self.assertEqual(exception_context.exception.args[0], "Table type 'int' not recognized")
 
         with self.assertRaises(ValueError) as exception_context:
             next(plugins_utils.prepare_to_export(42.0))
-        self.assertEqual(exception_context.exception.args[0], expected_message)
+        self.assertEqual(exception_context.exception.args[0], "Table type 'float' not recognized")
 
         with self.assertRaises(ValueError) as exception_context:
             next(plugins_utils.prepare_to_export([list("abc"), [1, 2, 3]]))
-        self.assertEqual(exception_context.exception.args[0], expected_message)
+        self.assertEqual(exception_context.exception.args[0], "Table type 'list' not recognized")
 
     @mock.patch("rows.plugins.utils.prepare_to_export", return_value=iter([[], [], []]))
     def test_serialize_should_call_prepare_to_export(self, mocked_prepare_to_export):

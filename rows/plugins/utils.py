@@ -72,6 +72,7 @@ def create_table(
     samples=DEFAULT_SAMPLE_ROWS,
     force_types=None,
     max_rows=None,
+    mode=None,
     *args,
     **kwargs
 ):
@@ -178,10 +179,9 @@ def create_table(
     )
     field_types = list(fields.values())
 
-    table = Table(fields=fields, meta=meta)
     # What if we deserialize only when the data is read from the Table (not from the plugin)?
     if list(header) == list(import_fields):  # Add rows directly, no need to get specific indices
-        table._rows.extend(
+        table_rows = (
             tuple([
                 cached_type_deserialize(field_type, value)
                 for field_type, value in zip(field_types, row)
@@ -190,32 +190,24 @@ def create_table(
         )
     else:
         field_indices = list(map(header.index, import_fields))
-        table._rows.extend(
+        table_rows = (
             tuple([
                 cached_type_deserialize(field_type, row[index])
                 for index, field_type in zip(field_indices, field_types)
             ])
             for row in table_rows
         )
-
-    source = table.meta.get("source", None)
-    if source is not None:
-        if source.should_close:
-            source.fobj.close()
-        if source.should_delete and Path(source.uri).exists():
-            unlink(source.uri)
-
+    table = Table(fields=fields, meta=meta, data=table_rows, mode=mode)
     return table
 
 
 def prepare_to_export(table, export_fields=None, *args, **kwargs):
     from rows.fields import make_header
-    from rows.table import FlexibleTable, Table
+    from rows.table import Table
 
     # TODO: optimize for more used cases (export_fields=None)
-    table_type = type(table)
-    if table_type not in (FlexibleTable, Table):
-        raise ValueError("Table type not recognized")
+    if not isinstance(table, Table):
+        raise ValueError("Table type '{}' not recognized".format(type(table).__name__))
 
     if export_fields is None:
         # we use already slugged-fieldnames
@@ -231,18 +223,8 @@ def prepare_to_export(table, export_fields=None, *args, **kwargs):
         raise ValueError("Invalid field names: {}".format(field_names))
 
     yield export_fields
-
-    if table_type is Table:
-        if list(table_field_names) == list(export_fields):  # Yield directly the stored rows
-            for row in table._rows:
-                yield row
-        else:
-            field_indexes = tuple(map(table_field_names.index, export_fields))
-            for row in table._rows:
-                yield tuple([row[field_index] for field_index in field_indexes])
-    elif table_type is FlexibleTable:
-        for row in table._rows:
-            yield tuple([row[field_name] for field_name in export_fields])
+    for row in table.export(field_names=export_fields):
+        yield row
 
 
 def serialize(table, *args, **kwargs):
