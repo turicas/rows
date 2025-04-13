@@ -452,6 +452,7 @@ class PostgresCopy(object):
         access_method=None,
         callback=None,
     ):
+        from rows.fields import make_header
         from rows.plugins import csv as rows_csv
         from rows.utils import open_compressed
 
@@ -469,15 +470,23 @@ class PostgresCopy(object):
         else:
             csv_field_names = inspector.field_names
             field_names = list(schema.keys())
-            if not set(csv_field_names).issubset(set(field_names)):
+            cleaned_csv_field_names = make_header(csv_field_names)
+            valid_csv_field_names = set(csv_field_names).issubset(set(field_names))
+            valid_cleaned_csv_field_names = set(cleaned_csv_field_names).issubset(set(field_names))
+            if not valid_csv_field_names and not valid_cleaned_csv_field_names:
                 raise ValueError(
                     "CSV field names are not a subset of schema field names ({} versus {})".format(
                         set(csv_field_names), set(field_names)
                     )
                 )
-            field_names = [
-                field for field in csv_field_names if field in field_names
-            ]
+            elif valid_csv_field_names:
+                field_names = [
+                    field for field in csv_field_names if field in field_names
+                ]
+            elif valid_cleaned_csv_field_names:
+                field_names = [
+                    field for field in cleaned_csv_field_names if field in field_names
+                ]
 
         if create_table:
             # If we need to create the table, it creates based on schema

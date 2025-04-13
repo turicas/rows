@@ -1101,6 +1101,7 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
 @click.option("--skip-rows", "-S", type=int, default=0)
 @click.option("--dialect", "-d", default=None)
 @click.option("--schema", "-s", default=None)
+@click.option("--original-field-names", "-o", is_flag=True)
 @click.option("--unlogged", "-u", is_flag=True)
 @click.option("--access-method", "-a")
 @click.option(
@@ -1120,6 +1121,7 @@ def command_pgimport(
     skip_rows,
     dialect,
     schema,
+    original_field_names,
     unlogged,
     access_method,
     sample_size,
@@ -1218,6 +1220,16 @@ def command_pgimport(
         if _tqdm_available:
             progress_bar.description = "Detecting schema"
         schemas = [inspector.schema]
+    original_schema, schema = schema, schemas[0]
+
+    if not original_field_names:
+        header = make_header(schema.keys())
+        schema = OrderedDict(
+            [
+                (header_name, field_type)
+                for (header_name, (_, field_type)) in zip(header, schema.items())
+            ]
+        )
 
     # So we can finally import it!
     import_meta = pgimport(
@@ -1229,7 +1241,7 @@ def command_pgimport(
         database_uri=database_uri,
         create_table=not no_create_table,
         table_name=table_name,
-        schema=schemas[0],
+        schema=schema,
         unlogged=unlogged,
         access_method=access_method,
         callback=progress_bar_update,
