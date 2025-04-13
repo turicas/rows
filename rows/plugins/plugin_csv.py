@@ -324,6 +324,7 @@ class CsvInspector(object):
 
         else:
             if self._sample_unicode is None:
+                # TODO: may add a skip on some bytes, since the chunk read could end in the middle of a character
                 fobj = open_compressed(self.filename, mode="r", encoding=self.encoding)
                 self._sample_unicode = fobj.read(self._chunk_size).replace("\x00", "")
                 fobj.close()

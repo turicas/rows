@@ -51,10 +51,11 @@ from rows.utils import (
 from rows.compat import DEFAULT_SAMPLE_ROWS, TEXT_TYPE
 from rows.version import as_string as rows_version
 
+# TODO: move constants to compat?
 DEFAULT_BUFFER_SIZE = 8 * 1024 * 1024
 DEFAULT_INPUT_ENCODING = "utf-8"
 DEFAULT_OUTPUT_ENCODING = "utf-8"
-DEFAULT_SAMPLE_SIZE = 1024 * 1024
+DEFAULT_SAMPLE_SIZE = 8 * 1024 * 1024
 HOME_PATH = Path(os.path.expanduser("~"))
 CACHE_PATH = HOME_PATH / ".cache" / "rows" / "http"
 
@@ -71,7 +72,6 @@ def parse_options(options):
 
 
 def _import_table(source, encoding, verify_ssl=True, progress=True, *args, **kwargs):
-    # TODO: may use import_from_uri instead
     import requests.exceptions
 
     from rows.utils import import_from_uri
@@ -193,6 +193,12 @@ def cli(http_cache, http_cache_path):
 @click.option("--fields", help="A comma-separated list of fields to import")
 @click.option("--fields-exclude", help="A comma-separated list of fields to exclude")
 @click.option(
+    "--samples",
+    type=int,
+    default=DEFAULT_SAMPLE_ROWS,
+    help="Number of rows to determine the field types (0 = all)",
+)
+@click.option(
     "--input-option",
     "-i",
     multiple=True,
@@ -216,6 +222,7 @@ def convert(
     order_by,
     fields,
     fields_exclude,
+    samples,
     input_option,
     output_option,
     quiet,
@@ -246,6 +253,8 @@ def convert(
                 verify_ssl=verify_ssl,
                 import_fields=import_fields,
                 progress=progress,
+                samples=samples,
+                mode="stream" if order_by is None else "eager",
                 **input_options
             )
     else:
@@ -255,6 +264,8 @@ def convert(
             verify_ssl=verify_ssl,
             import_fields=import_fields,
             progress=progress,
+            samples=samples,
+            mode="stream" if order_by is None else "eager",
             **input_options
         )
 
@@ -300,6 +311,12 @@ def convert(
     "--fields-exclude",
     help="A comma-separated list of fields to exclude when exporting",
 )
+@click.option(
+    "--samples",
+    type=int,
+    default=DEFAULT_SAMPLE_ROWS,
+    help="Number of rows to determine the field types (0 = all)",
+)
 @click.argument("keys")
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("destination")
@@ -312,6 +329,7 @@ def join(
     order_by,
     fields,
     fields_exclude,
+    samples,
     keys,
     sources,
     destination,
@@ -329,12 +347,12 @@ def join(
     if input_locale is not None:
         with rows.locale_context(input_locale):
             tables = [
-                _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl)
+                _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl, samples=samples)
                 for source in sources
             ]
     else:
         tables = [
-            _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl)
+            _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl, samples=samples)
             for source in sources
         ]
 
@@ -373,6 +391,12 @@ def join(
 @click.option("--order-by")
 @click.option("--fields", help="A comma-separated list of fields to import")
 @click.option("--fields-exclude", help="A comma-separated list of fields to exclude")
+@click.option(
+    "--samples",
+    type=int,
+    default=DEFAULT_SAMPLE_ROWS,
+    help="Number of rows to determine the field types (0 = all)",
+)
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("destination")
 def sum_(
@@ -384,6 +408,7 @@ def sum_(
     order_by,
     fields,
     fields_exclude,
+    samples,
     sources,
     destination,
 ):
@@ -402,6 +427,7 @@ def sum_(
                     encoding=input_encoding,
                     verify_ssl=verify_ssl,
                     import_fields=import_fields,
+                    samples=samples,
                 )
                 for source in sources
             ]
@@ -412,6 +438,7 @@ def sum_(
                 encoding=input_encoding,
                 verify_ssl=verify_ssl,
                 import_fields=import_fields,
+                samples=samples,
             )
             for source in sources
         ]
@@ -453,6 +480,12 @@ def sum_(
 @click.option(
     "--frame-style", default="ascii", help="Options: ascii, single, double, none"
 )
+@click.option(
+    "--samples",
+    type=int,
+    default=DEFAULT_SAMPLE_ROWS,
+    help="Number of rows to determine the field types (0 = all)",
+)
 @click.option("--table-index", default=0)
 @click.option("--verify-ssl", type=bool, default=True)
 @click.option("--fields", help="A comma-separated list of fields to import")
@@ -467,6 +500,7 @@ def print_(
     input_option,
     output_locale,
     frame_style,
+    samples,
     table_index,
     verify_ssl,
     fields,
@@ -501,6 +535,7 @@ def print_(
                 verify_ssl=verify_ssl,
                 index=table_index,
                 import_fields=import_fields,
+                samples=samples,
                 progress=progress,
                 **input_options
             )
@@ -511,6 +546,7 @@ def print_(
             verify_ssl=verify_ssl,
             index=table_index,
             import_fields=import_fields,
+            samples=samples,
             progress=progress,
             **input_options
         )
@@ -619,20 +655,21 @@ def query(
         source = detect_source(sources[0], verify_ssl=verify_ssl, progress=progress)
 
         if source.plugin_name in ("sqlite", "postgresql"):
+            # TODO: add "queryable" as a plugin capability -- and if it's OK for using SQL
             # Optimization: query the db directly
             result = import_from_source(
-                source, input_encoding, query=query, samples=samples
+                source, input_encoding, query=query, samples=samples, mode="stream"
             )
         else:
             if input_locale is not None:
                 with rows.locale_context(input_locale):
-                    table = import_from_source(source, input_encoding, samples=samples)
+                    table = import_from_source(source, input_encoding, samples=samples, mode="stream")
             else:
-                table = import_from_source(source, input_encoding, samples=samples)
+                table = import_from_source(source, input_encoding, samples=samples, mode="stream")
 
             sqlite_connection = sqlite3.Connection(":memory:")
             rows.export_to_sqlite(table, sqlite_connection, table_name="table1")
-            result = rows.import_from_sqlite(sqlite_connection, query=query)
+            result = rows.import_from_sqlite(sqlite_connection, query=query, samples=samples, mode="stream")
 
     else:
         # TODO: if all sources are SQLite we can also optimize the import
@@ -644,6 +681,7 @@ def query(
                         encoding=input_encoding,
                         verify_ssl=verify_ssl,
                         samples=samples,
+                        mode="stream",
                         progress=progress,
                     )
                     for source in sources
@@ -655,6 +693,7 @@ def query(
                     encoding=input_encoding,
                     verify_ssl=verify_ssl,
                     samples=samples,
+                    mode="stream",
                     progress=progress,
                 )
                 for source in sources
@@ -799,6 +838,7 @@ def command_schema(
                 samples=samples,
                 import_fields=import_fields,
                 max_rows=samples,
+                mode="eager",
                 field_types=field_types,
                 **input_options
             )
@@ -810,6 +850,7 @@ def command_schema(
             samples=samples,
             import_fields=import_fields,
             max_rows=samples,
+            mode="eager",
             field_types=field_types,
             **input_options
         )
@@ -825,6 +866,7 @@ def command_schema(
     content = generate_schema(table, export_fields, output_format, max_choices=max_choices,
                               exclude_choices=exclude_choices)
     output_fobj.write(content.encode("utf-8"))
+
 
 @cli.command(name="csv-inspect", help="Identifies encoding, dialect and schema")
 @click.option("--encoding", default=None)
@@ -952,7 +994,6 @@ def command_csv_to_sqlite(
         prefix = "[{filename} -> {db_filename}#{tablename}]".format(
             db_filename=output.name, tablename=table_name, filename=filename.name
         )
-        # TODO: CsvInspector will be called inside `csv2sqlite` also, so it's a waste of time here
         inspector = rows_csv.CsvInspector(
             TEXT_TYPE(filename), encoding=input_encoding, dialect=dialect, schema=schema, max_samples=samples
         )
@@ -1014,6 +1055,13 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
 @click.option("--schema", "-s", default=None)
 @click.option("--unlogged", "-u", is_flag=True)
 @click.option("--access-method", "-a")
+@click.option(
+    "--sample-size",
+    type=int,
+    default=DEFAULT_SAMPLE_SIZE,
+    help="Number of bytes to read from CSV to define encoding, dialect and field types",
+)
+@click.option("--sample-size", default=DEFAULT_SAMPLE_SIZE)
 @click.argument("source", required=True)
 @click.argument("database_uri", required=True)
 @click.argument("table_name", required=True)
@@ -1026,6 +1074,7 @@ def command_pgimport(
     schema,
     unlogged,
     access_method,
+    sample_size,
     source,
     database_uri,
     table_name,
@@ -1085,7 +1134,7 @@ def command_pgimport(
         progress_bar.original_total = total_size
         progress_bar.bit_updates = 0
 
-    inspector = rows_csv.CsvInspector(source, encoding=input_encoding, dialect=dialect)
+    inspector = rows_csv.CsvInspector(source, encoding=input_encoding, dialect=dialect, chunk_size=sample_size)
     input_encoding = input_encoding or inspector.encoding
     dialect = dialect or inspector.dialect
 
