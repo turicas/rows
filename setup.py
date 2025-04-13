@@ -22,22 +22,24 @@ from setuptools import find_packages, setup
 
 
 utils_requirements = ["requests", "requests-cache", "tqdm"]
+pdfminer_requirements = [
+    "cached-property",
+    "pdfminer.six == 20191110; python_version == '2.7'",
+    "pdfminer.six == 20201018; python_version == '3.5'",
+    "pdfminer.six == 20221105; python_version == '3.6'",
+    "pdfminer.six == 20221105; python_version == '3.7'",
+    "pdfminer.six; python_version >= '3.8'"
+]
 EXTRA_REQUIREMENTS = {
-    "cli": ["click"] + utils_requirements,
+    "cli": ["click"],
+    "cli-extra": ["click"] + utils_requirements,
     "csv": [],
     "detect": ["file-magic; python_version >= '3.0'"],
     "html": ["lxml"],  # apt: libxslt-dev libxml2-dev
     "ods": ["lxml"],
     "parquet": ["parquet"],
-    "pdf": ["cached-property", "pymupdf >= 1.16.8; python_version >= '3.7'"],
-    "pdf-pdfminer.six": [
-        "cached-property",
-        "pdfminer.six == 20191110; python_version == '2.7'",
-        "pdfminer.six == 20201018; python_version == '3.5'",
-        "pdfminer.six == 20221105; python_version == '3.6'",
-        "pdfminer.six == 20221105; python_version == '3.7'",
-        "pdfminer.six; python_version >= '3.8'"
-    ],
+    "pdf": pdfminer_requirements,
+    "pdf-pdfminer.six": pdfminer_requirements,
     "pdf-pymupdf": ["cached-property", "pymupdf"],
     "postgresql": ["psycopg2-binary"],
     "utils": utils_requirements,
@@ -47,8 +49,8 @@ EXTRA_REQUIREMENTS = {
 }
 EXTRA_REQUIREMENTS["all"] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = [
-    "requests",
-] + EXTRA_REQUIREMENTS["csv"]
+    "pathlib; python_version < '3.0'",
+]
 LONG_DESCRIPTION = """
 No matter in which format your tabular data is: rows will import it,
 automatically detect types and give you high-level Python objects so you can

@@ -32,23 +32,7 @@ import rows
 from rows.fields import make_header, TextField
 from rows.fileio import cfopen
 from rows.plugins.plugin_csv import CsvInspector, fix_file
-from rows.utils import (
-    COMPRESSED_EXTENSIONS,
-    ProgressBar,
-    csv_to_sqlite,
-    detect_source,
-    download_file,
-    export_to_uri,
-    generate_schema,
-    import_from_source,
-    import_from_uri,
-    load_schema,
-    pgexport,
-    pgimport,
-    sqlite_to_csv,
-    uncompressed_size,
-)
-from rows.compat import DEFAULT_SAMPLE_ROWS, TEXT_TYPE
+from rows.compat import DEFAULT_SAMPLE_ROWS, TEXT_TYPE, library_installed
 from rows.version import as_string as rows_version
 
 # TODO: move constants to compat?
@@ -71,9 +55,18 @@ def parse_options(options):
     return options_dict
 
 
-def _import_table(source, encoding, verify_ssl=True, progress=True, *args, **kwargs):
-    import requests.exceptions
+_tqdm_available = library_installed("tqdm")
 
+def _tqdm_if_available(*args, **kwargs):
+    if _tqdm_available:
+        from tqdm import tqdm
+
+        return tqdm(*args, **kwargs)
+
+    return args[0]  # Iterable
+
+
+def _import_table(source, encoding, verify_ssl=True, progress=True, timeout=10, *args, **kwargs):
     from rows.utils import import_from_uri
 
     uri = source.uri if hasattr(source, "uri") else source
@@ -87,13 +80,17 @@ def _import_table(source, encoding, verify_ssl=True, progress=True, *args, **kwa
             *args,
             **kwargs
         )
-    except requests.exceptions.SSLError:
-        click.echo(
-            "ERROR: SSL verification failed! "
-            "Use `--verify-ssl=no` if you want to ignore.",
-            err=True,
-        )
-        sys.exit(2)
+    except Exception as exception:
+        from rows.utils import response_exception_type
+
+        exp_type = response_exception_type(exception)
+        if exp_type is not None:
+            if exp_type == "ssl":
+                click.echo("ERROR: SSL verification failed! Use `--verify-ssl=no` if you want to ignore.", err=True)
+            elif exp_type == "timeout":
+                click.echo("ERROR: timeout! Use `--timeout=X` if you want to change.", err=True)
+            sys.exit(2)
+        raise
     else:
         return table
 
@@ -189,6 +186,7 @@ def cli(http_cache, http_cache_path):
 @click.option("--input-locale")
 @click.option("--output-locale")
 @click.option("--verify-ssl", type=bool, default=True)
+@click.option("--timeout", type=int, default=10)
 @click.option("--order-by")
 @click.option("--fields", help="A comma-separated list of fields to import")
 @click.option("--fields-exclude", help="A comma-separated list of fields to exclude")
@@ -219,6 +217,7 @@ def convert(
     input_locale,
     output_locale,
     verify_ssl,
+    timeout,
     order_by,
     fields,
     fields_exclude,
@@ -234,7 +233,7 @@ def convert(
 
     input_options = parse_options(input_option)
     output_options = parse_options(output_option)
-    progress = not quiet
+    progress = not quiet and _tqdm_available
 
     input_encoding = input_encoding or input_options.get("encoding", None)
     source_info = None
@@ -251,6 +250,7 @@ def convert(
                 source_info or source,
                 encoding=input_encoding,
                 verify_ssl=verify_ssl,
+                timeout=timeout,
                 import_fields=import_fields,
                 progress=progress,
                 samples=samples,
@@ -262,6 +262,7 @@ def convert(
             source_info or source,
             encoding=input_encoding,
             verify_ssl=verify_ssl,
+            timeout=timeout,
             import_fields=import_fields,
             progress=progress,
             samples=samples,
@@ -300,11 +301,13 @@ def convert(
     help="Join tables from `source` URIs using `key(s)` to group "
     "rows and save into `destination`"
 )
+@click.option("--quiet", "-q", is_flag=True)
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
 @click.option("--output-locale")
 @click.option("--verify-ssl", type=bool, default=True)
+@click.option("--timeout", type=int, default=10)
 @click.option("--order-by")
 @click.option("--fields", help="A comma-separated list of fields to export")
 @click.option(
@@ -321,11 +324,13 @@ def convert(
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("destination")
 def join(
+    quiet,
     input_encoding,
     output_encoding,
     input_locale,
     output_locale,
     verify_ssl,
+    timeout,
     order_by,
     fields,
     fields_exclude,
@@ -340,6 +345,7 @@ def join(
 
     # TODO: detect input_encoding for all sources
     input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
+    progress = not quiet and _tqdm_available
 
     export_fields = _get_import_fields(fields, fields_exclude)
     keys = make_header(keys.split(","), permit_not=False)
@@ -347,12 +353,26 @@ def join(
     if input_locale is not None:
         with rows.locale_context(input_locale):
             tables = [
-                _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl, samples=samples)
+                _import_table(
+                    source,
+                    encoding=input_encoding,
+                    verify_ssl=verify_ssl,
+                    timeout=timeout,
+                    samples=samples,
+                    progress=progress
+                )
                 for source in sources
             ]
     else:
         tables = [
-            _import_table(source, encoding=input_encoding, verify_ssl=verify_ssl, samples=samples)
+            _import_table(
+                source,
+                encoding=input_encoding,
+                verify_ssl=verify_ssl,
+                timeout=timeout,
+                samples=samples,
+                progress=progress
+            )
             for source in sources
         ]
 
@@ -383,11 +403,13 @@ def join(
 @cli.command(
     name="sum", help="Sum tables from `source` URIs and save into `destination`"
 )
+@click.option("--quiet", "-q", is_flag=True)
 @click.option("--input-encoding", default=None)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--input-locale")
 @click.option("--output-locale")
 @click.option("--verify-ssl", type=bool, default=True)
+@click.option("--timeout", type=int, default=10)
 @click.option("--order-by")
 @click.option("--fields", help="A comma-separated list of fields to import")
 @click.option("--fields-exclude", help="A comma-separated list of fields to exclude")
@@ -400,11 +422,13 @@ def join(
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("destination")
 def sum_(
+    quiet,
     input_encoding,
     output_encoding,
     input_locale,
     output_locale,
     verify_ssl,
+    timeout,
     order_by,
     fields,
     fields_exclude,
@@ -417,6 +441,7 @@ def sum_(
 
     # TODO: detect input_encoding for all sources
     input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
+    progress = not quiet and _tqdm_available
 
     import_fields = _get_import_fields(fields, fields_exclude)
     if input_locale is not None:
@@ -426,8 +451,10 @@ def sum_(
                     source,
                     encoding=input_encoding,
                     verify_ssl=verify_ssl,
+                    timeout=timeout,
                     import_fields=import_fields,
                     samples=samples,
+                    progress=progress,
                 )
                 for source in sources
             ]
@@ -437,8 +464,10 @@ def sum_(
                 source,
                 encoding=input_encoding,
                 verify_ssl=verify_ssl,
+                timeout=timeout,
                 import_fields=import_fields,
                 samples=samples,
+                progress=progress,
             )
             for source in sources
         ]
@@ -488,6 +517,7 @@ def sum_(
 )
 @click.option("--table-index", default=0)
 @click.option("--verify-ssl", type=bool, default=True)
+@click.option("--timeout", type=int, default=10)
 @click.option("--fields", help="A comma-separated list of fields to import")
 @click.option("--fields-exclude", help="A comma-separated list of fields to exclude")
 @click.option("--order-by")
@@ -503,6 +533,7 @@ def print_(
     samples,
     table_index,
     verify_ssl,
+    timeout,
     fields,
     fields_exclude,
     order_by,
@@ -515,7 +546,7 @@ def print_(
     from rows.utils import detect_source
 
     input_options = parse_options(input_option)
-    progress = not quiet
+    progress = not quiet and _tqdm_available
     input_encoding = input_encoding or input_options.get("encoding", None)
     source_info = None
     if input_encoding is None:
@@ -533,6 +564,7 @@ def print_(
                 source_info or source,
                 encoding=input_encoding,
                 verify_ssl=verify_ssl,
+                timeout=timeout,
                 index=table_index,
                 import_fields=import_fields,
                 samples=samples,
@@ -544,6 +576,7 @@ def print_(
             source_info or source,
             encoding=input_encoding,
             verify_ssl=verify_ssl,
+            timeout=timeout,
             index=table_index,
             import_fields=import_fields,
             samples=samples,
@@ -603,6 +636,7 @@ def create_complete_query(query, table_names):
 @click.option("--input-locale")
 @click.option("--output-locale")
 @click.option("--verify-ssl", type=bool, default=True)
+@click.option("--timeout", type=int, default=10)
 @click.option(
     "--samples",
     type=int,
@@ -628,6 +662,7 @@ def query(
     input_locale,
     output_locale,
     verify_ssl,
+    timeout,
     samples,
     input_option,
     output,
@@ -645,7 +680,7 @@ def query(
     # TODO: support multiple input options
     # TODO: detect input_encoding for all sources
     input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
-    progress = not quiet
+    progress = not quiet and _tqdm_available
 
     samples = samples if samples > 0 else None
     table_names = ["table{}".format(index) for index in range(1, len(sources) + 1)]
@@ -680,6 +715,7 @@ def query(
                         source,
                         encoding=input_encoding,
                         verify_ssl=verify_ssl,
+                        timeout=timeout,
                         samples=samples,
                         mode="stream",
                         progress=progress,
@@ -692,6 +728,7 @@ def query(
                     source,
                     encoding=input_encoding,
                     verify_ssl=verify_ssl,
+                    timeout=timeout,
                     samples=samples,
                     mode="stream",
                     progress=progress,
@@ -806,7 +843,7 @@ def command_schema(
     fields = rows_fields
 
     input_options = parse_options(input_option)
-    progress = not quiet
+    progress = not quiet and _tqdm_available
     source_info = detect_source(uri=source, verify_ssl=verify_ssl, progress=progress)
     input_encoding = (
         input_encoding
@@ -920,7 +957,6 @@ def command_csv_fix(log_filename, log_level, input_dialect, input_encoding,
     import csv
     import io
     import logging
-    from tqdm import tqdm
 
     from rows.fileio import cfopen
     from rows.plugins import csv as rows_csv
@@ -958,7 +994,7 @@ def command_csv_fix(log_filename, log_level, input_dialect, input_encoding,
 
     reader = csv.reader(fobj_in, dialect=input_dialect)
     writer = csv.writer(fobj_out, dialect=output_dialect)
-    reader = reader if logger is not None else tqdm(reader, desc="Converting file")
+    reader = reader if logger is not None else _tqdm_if_available(reader, desc="Converting file")
     rows_csv.fix_file(reader, writer, logger=logger)
 
 
@@ -1001,7 +1037,12 @@ def command_csv_to_sqlite(
             pre_prefix = "{} (detecting schema)".format(prefix)
         else:
             pre_prefix = "{} (reading schema)".format(prefix)
-        progress_bar = ProgressBar(prefix=prefix, pre_prefix=pre_prefix)
+        if _tqdm_available:
+            progress_bar = ProgressBar(prefix=prefix, pre_prefix=pre_prefix)
+            progress_bar_update = progress_bar.update
+        else:
+            def progress_bar_update(*args, **kwargs):
+                pass
         csv_to_sqlite(
             TEXT_TYPE(filename),
             TEXT_TYPE(output),
@@ -1009,11 +1050,12 @@ def command_csv_to_sqlite(
             table_name=table_name,
             samples=samples,
             batch_size=batch_size,
-            callback=progress_bar.update,
+            callback=progress_bar_update,
             encoding=inspector.encoding,
             schema=inspector.schema,
         )
-        progress_bar.close()
+        if _tqdm_available:
+            progress_bar.close()
 
 
 @cli.command(name="sqlite-to-csv", help="Convert a SQLite table into CSV")
@@ -1034,16 +1076,22 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
         tablename=table_name,
         filename=output_filename.name,
     )
-    progress_bar = ProgressBar(prefix=prefix, pre_prefix="")
+    if _tqdm_available:
+        progress_bar = ProgressBar(prefix=prefix, pre_prefix="")
+        progress_bar_update = progress_bar.update
+    else:
+        def progress_bar_update(*args, **kwargs):
+            pass
     sqlite_to_csv(
         input_filename=TEXT_TYPE(input_filename),
         table_name=table_name,
         dialect=dialect,
         output_filename=TEXT_TYPE(output_filename),
         batch_size=batch_size,
-        callback=progress_bar.update,
+        callback=progress_bar_update,
     )
-    progress_bar.close()
+    if _tqdm_available:
+        progress_bar.close()
 
 
 @cli.command(name="pgimport", help="Import a CSV file into a PostgreSQL table")
@@ -1081,9 +1129,15 @@ def command_pgimport(
 ):
     from collections import OrderedDict
 
+    from rows.compat import PYTHON_VERSION
     from rows.fields import TextField, make_header
     from rows.plugins import csv as rows_csv
     from rows.utils import ProgressBar, pgimport, uncompressed_size
+
+    if PYTHON_VERSION < (3, 0, 0):
+        NotFoundError = OSError
+    else:
+        NotFoundError = FileNotFoundError
 
     # TODO: implement parameter to import CSVs with no header on the first line
     #       (if schema is not provided, must use field_1, field_2, ...)
@@ -1099,40 +1153,48 @@ def command_pgimport(
         sys.exit(5)
 
     # First, detect file size
-    class CustomProgressBar(ProgressBar):
-        def update(self, *args, **kwargs):
-            # TODO: update total when finish (total = n)?
-            super().update(*args, **kwargs)
-            if (
-                self.progress.total is not None
-                and self.progress.n > self.progress.total
-            ):
-                # The total size reached a level above the detected one,
-                # probabaly an error on gzip (it has only 32 bits to store
-                # uncompressed size, so if uncompressed size is greater than
-                # 4GiB, it will have truncated data). If this happens, we
-                # update the total by adding a bit `1` to left of the original
-                # size (in bits). It may not be the correct uncompressed size
-                # (more than one bit could be truncated, so the process will
-                # repeat. For more details, see comments on
-                # `rows.utils.uncompressed_size`.
-                self.progress.total = (1 << self.bit_updates) ^ self.original_total
-                self.bit_updates += 1
+    if _tqdm_available:
 
-    progress_bar = CustomProgressBar(
-        prefix="Importing data", pre_prefix="Detecting file size", unit="bytes"
-    )
+        class CustomProgressBar(ProgressBar):
+            def update(self, *args, **kwargs):
+                # TODO: update total when finish (total = n)?
+                super().update(*args, **kwargs)
+                if (
+                    self.progress.total is not None
+                    and self.progress.n > self.progress.total
+                ):
+                    # The total size reached a level above the detected one,
+                    # probabaly an error on gzip (it has only 32 bits to store
+                    # uncompressed size, so if uncompressed size is greater than
+                    # 4GiB, it will have truncated data). If this happens, we
+                    # update the total by adding a bit `1` to left of the original
+                    # size (in bits). It may not be the correct uncompressed size
+                    # (more than one bit could be truncated, so the process will
+                    # repeat. For more details, see comments on
+                    # `rows.utils.uncompressed_size`.
+                    self.progress.total = (1 << self.bit_updates) ^ self.original_total
+                    self.bit_updates += 1
+
+        progress_bar = CustomProgressBar(
+            prefix="Importing data", pre_prefix="Detecting file size", unit="bytes"
+        )
+        progress_bar_update = progress_bar.update
+    else:
+        def progress_bar_update(*args, **kwargs):
+            pass
     compressed_size = os.stat(source).st_size
+    total_size = None
     try:
         total_size = uncompressed_size(source)
-    except (FileNotFoundError, ValueError):
+    except (NotFoundError, ValueError):
         total_size = compressed_size
     finally:
-        progress_bar.total = (
-            total_size if total_size > compressed_size else compressed_size
-        )
-        progress_bar.original_total = total_size
-        progress_bar.bit_updates = 0
+        if _tqdm_available:
+            progress_bar.total = (
+                total_size if total_size is not None and total_size > compressed_size else compressed_size
+            )
+            progress_bar.original_total = total_size
+            progress_bar.bit_updates = 0
 
     inspector = rows_csv.CsvInspector(source, encoding=input_encoding, dialect=dialect, chunk_size=sample_size)
     input_encoding = input_encoding or inspector.encoding
@@ -1141,7 +1203,8 @@ def command_pgimport(
     # Then, define its schema
     schema = TEXT_TYPE(schema or "").strip()
     if schema:
-        progress_bar.description = "Reading schema"
+        if _tqdm_available:
+            progress_bar.description = "Reading schema"
         if schema == ":text:":
             schemas = [OrderedDict([
                 (field_name, TextField)
@@ -1152,7 +1215,8 @@ def command_pgimport(
         else:
             schemas = _get_schemas_for_inputs(schema, [source])
     else:
-        progress_bar.description = "Detecting schema"
+        if _tqdm_available:
+            progress_bar.description = "Detecting schema"
         schemas = [inspector.schema]
 
     # So we can finally import it!
@@ -1168,10 +1232,11 @@ def command_pgimport(
         schema=schemas[0],
         unlogged=unlogged,
         access_method=access_method,
-        callback=progress_bar.update,
+        callback=progress_bar_update,
     )
-    progress_bar.description = "{} rows imported".format(import_meta["rows_imported"])
-    progress_bar.close()
+    if _tqdm_available:
+        progress_bar.description = "{} rows imported".format(import_meta["rows_imported"])
+        progress_bar.close()
 
 
 @cli.command(name="pgexport", help="Export a PostgreSQL table into a CSV file")
@@ -1187,7 +1252,12 @@ def command_pgexport(
     from rows.utils import ProgressBar, pgexport
     # TODO: add --quiet
 
-    updater = ProgressBar(prefix="Exporting data", unit="bytes")
+    if _tqdm_available:
+        progress_bar = ProgressBar(prefix="Exporting data", unit="bytes")
+        progress_bar_update = progress_bar.update
+    else:
+        def progress_bar_update(*args, **kwargs):
+            pass
     pgexport(
         database_uri=database_uri,
         table_name_or_query=table_name,
@@ -1195,9 +1265,10 @@ def command_pgexport(
         filename=destination,
         encoding=output_encoding,
         dialect=dialect,
-        callback=updater.update,
+        callback=progress_bar_update,
     )
-    updater.close()
+    if _tqdm_available:
+        progress_bar.close()
 
 
 @cli.command(name="pg2pg", help="Copy data from one PostgreSQL instance to another")
@@ -1222,29 +1293,38 @@ def command_pg2pg(
     from rows.utils import ProgressBar
     from rows.plugins import postgresql as rows_postgresql
 
-    progress_bar = ProgressBar(prefix="Importing data", unit="bytes")
+    if _tqdm_available:
+        progress_bar = ProgressBar(prefix="Importing data", unit="bytes")
+        progress_bar_update = progress_bar.update
+    else:
+        def progress_bar_update(*args, **kwargs):
+            pass
+
     import_meta = rows_postgresql.pg2pg(
         database_uri_from=database_uri_from,
         database_uri_to=database_uri_to,
         table_name_from=table_name_or_query_from,
         table_name_to=table_name_to,
         chunk_size=chunk_size,
-        callback=progress_bar.update,
+        callback=progress_bar_update,
         encoding=encoding,
         create_table=not no_create_table,
         binary=binary,
     )
-    progress_bar.description = "{} rows imported".format(import_meta["rows_imported"])
-    progress_bar.close()
+    if _tqdm_available:
+        progress_bar.description = "{} rows imported".format(import_meta["rows_imported"])
+        progress_bar.close()
 
 
 @cli.command(name="pdf-to-text", help="Extract text from a PDF")
+@click.option("--verify-ssl", type=bool, default=True)
 @click.option(
     "--input-option",
     "-i",
     multiple=True,
     help="Custom (import) plugin key=value custom option (can be specified multiple times)",
 )
+@click.option("--timeout", type=int, default=10)
 @click.option("--output-encoding", default="utf-8")
 @click.option("--quiet", "-q", is_flag=True)
 @click.option("--backend", default=None)
@@ -1252,13 +1332,15 @@ def command_pg2pg(
 @click.argument("source", required=True)
 @click.argument("output", required=False)
 def command_pdf_to_text(
-    input_option, output_encoding, quiet, backend, pages, source, output
+    verify_ssl, timeout, input_option, output_encoding, quiet, backend, pages, source, output
 ):
-    from tqdm import tqdm
-
     from rows.fileio import cfopen
     from rows.utils import download_file
     from rows.plugins import pdf as rows_pdf
+
+    if rows_pdf is None:
+        click.echo("No PDF backends available - install rows[pdf]", err=True)
+        sys.exit(3)
 
     input_options = parse_options(input_option)
     input_options["backend"] = backend or input_options.get("backend", None)
@@ -1275,12 +1357,24 @@ def command_pdf_to_text(
     else:
         write = click.echo
         quiet = True
-    progress = not quiet
+    progress = not quiet and _tqdm_available
 
     # Download the file if source is an HTTP URL
     downloaded = False
     if source.lower().startswith("http:") or source.lower().startswith("https:"):
-        result = download_file(source, progress=progress, detect=False)
+        try:
+            result = download_file(source, progress=progress, detect=False, verify_ssl=verify_ssl, timeout=timeout)
+        except Exception as exception:
+            from rows.utils import response_exception_type
+
+            exp_type = response_exception_type(exception)
+            if exp_type is not None:
+                if exp_type == "ssl":
+                    click.echo("ERROR: SSL verification failed! Use `--verify-ssl=no` if you want to ignore.", err=True)
+                elif exp_type == "timeout":
+                    click.echo("ERROR: timeout! Use `--timeout=X` if you want to change.", err=True)
+                sys.exit(2)
+            raise
         source = result.uri
         downloaded = True
 
@@ -1290,7 +1384,7 @@ def command_pdf_to_text(
             total_pages = len(input_options["page_numbers"])
         else:
             total_pages = rows_pdf.number_of_pages(source, backend=input_options["backend"])
-        reader = tqdm(reader, desc="Extracting text", total=total_pages)
+        reader = _tqdm_if_available(reader, desc="Extracting text", total=total_pages)
 
     for page in reader:
         write(page)
@@ -1323,8 +1417,6 @@ def csv_merge(
     import csv
     from collections import defaultdict
 
-    from tqdm import tqdm
-
     from rows.fields import make_header, slug
     from rows.fileio import cfopen
     from rows.plugins import csv as rows_csv
@@ -1337,7 +1429,7 @@ def csv_merge(
 
     metadata = defaultdict(dict)
     final_header = []
-    for filename in tqdm(sources, desc="Detecting dialects and headers"):
+    for filename in _tqdm_if_available(sources, desc="Detecting dialects and headers"):
         inspector = rows_csv.CsvInspector(filename, chunk_size=sample_size, encoding=input_encoding)
         metadata[filename]["dialect"] = inspector.dialect
 
@@ -1360,14 +1452,15 @@ def csv_merge(
                 final_header.append(field_name_slug)
     # TODO: is it needed to use make_header here?
 
-    progress_bar = tqdm(desc="Exporting data")
+    progress_bar = _tqdm_if_available(desc="Exporting data") if _tqdm_available else None
     output_fobj = cfopen(
         destination, mode="w", encoding=output_encoding, buffering=buffer_size
     )
     writer = csv.writer(output_fobj)
     writer.writerow(final_header)
     for index, filename in enumerate(sources):
-        progress_bar.desc = "Exporting data {}/{}".format(index + 1, len(sources))
+        if progress_bar is not None:
+            progress_bar.desc = "Exporting data {}/{}".format(index + 1, len(sources))
         meta = metadata[filename]
         field_indexes = [
             meta["header"].index(field_name) if field_name in meta["header"] else None
@@ -1388,10 +1481,12 @@ def csv_merge(
             if remove_empty_lines and not any(new_row):
                 continue
             writer.writerow(new_row)
-            progress_bar.update()
+            if progress_bar is not None:
+                progress_bar.update()
         meta["fobj"].close()
     output_fobj.close()
-    progress_bar.close()
+    if progress_bar is not None:
+        progress_bar.close()
 
 
 @cli.command(name="csv-clean")
@@ -1425,8 +1520,6 @@ def csv_clean(
     import csv
     import tempfile
 
-    from tqdm import tqdm
-
     from rows.fields import make_header
     from rows.fileio import cfopen
     from rows.plugins import csv as rows_csv
@@ -1447,7 +1540,7 @@ def csv_clean(
         reader = csv.reader(fobj, dialect=dialect)
         next(reader)  # Skip header
         empty_columns = list(header)
-        for row in tqdm(reader, desc="Detecting empty columns"):
+        for row in _tqdm_if_available(reader, desc="Detecting empty columns"):
             row = [value.strip() for value in row]
             if not any(row):  # Empty row
                 continue
@@ -1478,7 +1571,7 @@ def csv_clean(
     )
     writer = csv.writer(output_fobj, dialect=csv.excel)
     writer.writerow(create_new_row(header))
-    for row in tqdm(reader, desc="Converting file"):
+    for row in _tqdm_if_available(reader, desc="Converting file"):
         row = create_new_row(row)
         if not any(row):  # Empty row
             continue
@@ -1543,8 +1636,6 @@ def csv_split(
     """
     import csv
 
-    from tqdm import tqdm
-
     from rows.fileio import cfopen
     from rows.utils import COMPRESSED_EXTENSIONS
 
@@ -1563,7 +1654,7 @@ def csv_split(
     reader = csv.reader(input_fobj)
     header = next(reader)
     if not quiet:
-        reader = tqdm(reader)
+        reader = _tqdm_if_available(reader)
     for index, row in enumerate(reader):
         if index % lines == 0:
             if output_fobj is not None:
@@ -1591,7 +1682,7 @@ def list_sheets(source):
         # TODO: support for 'sheet_names' should be introspected from plugins
         click.echo("ERROR: file type '{}' not supported.".format(extension), err=True)
         sys.exit(30)
-    elif extension not in dir(rows.plugins):
+    elif extension not in dir(rows.plugins) or getattr(rows.plugins, extension) is None:
         click.echo("ERROR: extension '{}' not installed.".format(extension), err=True)
         sys.exit(30)
 

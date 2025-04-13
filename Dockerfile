@@ -22,7 +22,7 @@ RUN apt update \
   && apt upgrade -y \
   && apt install --no-install-recommends -y build-essential libffi-dev libfreetype-dev libmagic1 libmupdf-dev \
                                             libpq-dev libsnappy-dev libxml2-dev libxslt-dev libz-dev locales \
-                                            postgresql-client python3-dev wget \
+                                            postgresql-client python3-dev sqlite3 wget \
   && apt purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt clean \
   && rm -rf /var/lib/apt/lists/*

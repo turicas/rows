@@ -373,7 +373,10 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
     parts = filename.split(".")
     extension = parts[-1].lower() if len(parts) > 1 else None
     if extension in COMPRESSED_EXTENSIONS:
+        compressed = True
         extension = parts[-2].lower() if len(parts) > 2 else None
+    else:
+        compressed = False
 
     if chardet and not encoding:
         encoding = chardet.detect(content)["encoding"] or encoding
@@ -394,7 +397,7 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
     if encoding == "binary":
         encoding = None
 
-    return Source(uri=path, plugin_name=plugin_name, encoding=encoding)
+    return Source(uri=path, plugin_name=plugin_name, encoding=encoding, compressed=compressed)
 
 
 def local_file(path, sample_size=1048576):
@@ -447,6 +450,151 @@ else:
         return (mime_type, options)
 
 
+def response_exception_type(exception):
+    """Checks if exception is SSL or timeout error even if requests is not installed"""
+    from rows.compat import library_installed
+
+    if PYTHON_VERSION < (3, 0, 0):
+        from urllib2 import URLError
+    else:
+        from urllib.request import URLError
+
+    if isinstance(exception, URLError):
+        text = TEXT_TYPE(exception).lower()
+        if "certificate_verify_failed" in text:
+            return "ssl"
+        elif "timed out" in text:
+            return "timeout"
+
+    elif library_installed("requests"):
+        from requests.exceptions import SSLError, Timeout
+
+        if isinstance(exception, SSLError):
+            return "ssl"
+        elif isinstance(exception, Timeout):
+            return "timeout"
+
+    return None  # Could not determine
+
+def _download_file_stdlib(
+    uri,
+    filename=None,
+    verify_ssl=True,
+    timeout=5,
+    progress=False,
+    detect=False,
+    chunk_size=8192,
+    sample_size=1048576,
+    retries=3,
+    progress_pattern="Downloading file",
+    user_agent=None
+):
+    # TODO: add ability to continue download
+    import os
+    import ssl
+    import tempfile
+    from pathlib import Path
+
+    from rows.version import as_string as rows_version
+
+    # TODO: unify with `download_file`
+
+    if user_agent is None:
+        user_agent = "python/rows-{} (Python {})".format(rows_version, PYTHON_VERSION)
+
+    if PYTHON_VERSION < (3, 0, 0):
+        from urllib2 import Request, urlopen
+    else:
+        from urllib.request import Request, urlopen
+
+    request = Request(uri, headers={"User-Agent": user_agent})
+    if not verify_ssl:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        response = urlopen(request, context=ctx, timeout=timeout)
+    else:
+        response = urlopen(request, timeout=timeout)
+
+    if response.getcode() >= 400:
+        raise RuntimeError("HTTP response: {}".format(response.getcode()))
+
+    # Get data from headers (if available) to help plugin + encoding detection
+    real_filename, encoding, mime_type = uri, None, None
+    headers = response.headers
+    if "content-type" in headers:
+        mime_type, options = parse_header(headers["content-type"])
+        encoding = options.get("charset", encoding)
+    if "content-disposition" in headers:
+        _, options = parse_header(headers["content-disposition"])
+        real_filename = options.get("filename", real_filename)
+
+    if filename is None:
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        fobj = cfopen(tmp.name, mode="wb")
+    else:
+        fobj = cfopen(filename, mode="wb")
+
+    if progress:
+        total = response.headers.get("content-length", None)
+        total = int(total) if total else None
+        progress_bar = ProgressBar(
+            prefix=progress_pattern.format(
+                uri=uri,
+                filename=Path(fobj.name),
+                mime_type=mime_type,
+                encoding=encoding,
+            ),
+            total=total,
+            unit="bytes",
+        )
+
+    # TODO: implement stream reading
+    data = response.read()
+    fobj.write(data)
+    fobj.close()
+    if progress:
+        progress_bar.update(len(data))
+        progress_bar.close()
+
+    # Detect file type and rename temporary file to have the correct extension
+    sample_data = data[:sample_size]
+    if detect:
+        # TODO: check if will work for compressed files
+        source = detect_local_source(real_filename, sample_data, mime_type, encoding)
+        extension = extension_by_source(source, mime_type)
+        last_extension = real_filename.split(".")[-1].lower()
+        if source.compressed and last_extension in COMPRESSED_EXTENSIONS and extension not in COMPRESSED_EXTENSIONS:
+            extension += "." + last_extension
+        plugin_name = source.plugin_name
+        encoding = source.encoding
+    else:
+        extension, plugin_name, encoding = None, None, None
+    if not extension and mime_type:
+        extension = mime_type.split("/")[-1].lower().strip()
+        if extension == "gzip":
+            extension = "gz"
+
+    if filename is None:
+        filename = tmp.name
+        if extension:
+            filename += "." + extension
+        # TODO: use pathlib instead
+        os.rename(tmp.name, filename)
+    else:
+        extension = filename.split(".")[-1].lower().strip()
+
+    return Source(
+        uri=filename,
+        plugin_name=plugin_name,
+        encoding=encoding,
+        should_delete=True,
+        compressed=extension in COMPRESSED_EXTENSIONS,
+        is_file=True,
+        local=True,  # We just downloaded it!
+    )
+
+
 def download_file(
     uri,
     filename=None,
@@ -460,6 +608,23 @@ def download_file(
     progress_pattern="Downloading file",
     user_agent=None
 ):
+    from rows.compat import library_installed
+
+    if not library_installed("requests"):
+        return _download_file_stdlib(
+            uri,
+            filename=filename,
+            verify_ssl=verify_ssl,
+            timeout=timeout,
+            progress=progress,
+            detect=detect,
+            chunk_size=chunk_size,
+            sample_size=sample_size,
+            retries=retries,
+            progress_pattern=progress_pattern,
+            user_agent=user_agent,
+        )
+
     # TODO: add ability to continue download
     import os
     import tempfile
@@ -536,6 +701,9 @@ def download_file(
         # TODO: check if will work for compressed files
         source = detect_local_source(real_filename, sample_data, mime_type, encoding)
         extension = extension_by_source(source, mime_type)
+        last_extension = real_filename.split(".")[-1].lower()
+        if source.compressed and last_extension in COMPRESSED_EXTENSIONS and extension not in COMPRESSED_EXTENSIONS:
+            extension += "." + last_extension
         plugin_name = source.plugin_name
         encoding = source.encoding
     else:
@@ -605,7 +773,7 @@ def import_from_source(source, default_encoding, *args, **kwargs):
         kwargs.get("encoding", None) or source.encoding or default_encoding
     )
 
-    if not hasattr(plugins, plugin_name):
+    if not plugin_name or not hasattr(plugins, plugin_name):
         raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
     plugin = getattr(plugins, plugin_name)
     try:
@@ -822,11 +990,16 @@ def execute_command(command, timeout=30.0, encoding="utf-8"):
     """Execute a command and return its output"""
     import shlex
     import subprocess
-    import typing
+    from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
 
-    if isinstance(command, typing.Text):
+    if PYTHON_VERSION < (3, 0, 0):
+        from collections import Sequence
+    else:
+        from collections.abc import Sequence
+
+    if isinstance(command, (BINARY_TYPE, TEXT_TYPE)):
         command = shlex.split(command)
-    elif not isinstance(command, typing.Sequence):
+    elif not isinstance(command, Sequence):
         raise ValueError("Unknown command type: {}".format(type(command)))
     process = subprocess.Popen(
         command,

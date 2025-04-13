@@ -80,6 +80,7 @@ else:
         # a character which has more than one byte, we're going to have an
         # `UnicodeDecodeError`. This `while` avoid this problem by removing the
         # last byte until this error stops.
+        encoding = encoding or "utf-8"  # TODO: may change this behavior
         finished = False
         while not finished:
             try:
@@ -337,6 +338,8 @@ class CsvInspector(object):
 
             source = detect_local_source(self.filename, self._read_sample(binary=True))
             self._encoding = source.encoding
+        if self._encoding is None:
+            self._encoding = "utf-8"  # TODO: may change this behavior
         return self._encoding
 
     @property

@@ -4,11 +4,16 @@ import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from rows.compat import TEXT_TYPE
+from rows.compat import PYTHON_VERSION, TEXT_TYPE
 from rows.utils import subclasses
 from rows.version import as_string as rows_version
 
 REGEXP_VERSION = re.compile("([0-9][a-z0-9.+-]+)")
+
+if PYTHON_VERSION < (3, 0, 0):
+    NotFoundError = OSError
+else:
+    NotFoundError = FileNotFoundError
 
 
 class Download(object):
@@ -42,7 +47,7 @@ class Downloader(object):
         self._user_agent = user_agent
 
         if type(self).get_version() is None:
-            raise FileNotFoundError(
+            raise NotFoundError(
                 "Command not found: {}".format(self.version_command[0])
             )
 
@@ -78,7 +83,7 @@ class Downloader(object):
                 )
                 stdout, stderr = process.communicate()
                 result = REGEXP_VERSION.findall(stdout.splitlines()[0])
-            except FileNotFoundError:
+            except NotFoundError:
                 cls._version = None
             else:
                 cls._version = result[0]

@@ -421,11 +421,11 @@ class PostgresCopy(object):
                     rows_imported = int(line.replace(b"COPY ", b"").strip())
                     break
 
-        except FileNotFoundError:
+        except NotFoundError:
             fobj.close()
             raise
 
-        except BrokenPipeError:
+        except BrokenError:
             fobj.close()
             # TODO: decode with correct encoding
             raise RuntimeError(process.stderr.read().decode("utf-8"))
@@ -671,11 +671,11 @@ def pgexport(
             # TODO: decode with correct encoding
             raise RuntimeError(stderr.decode("utf-8"))
 
-    except FileNotFoundError:
+    except NotFoundError:
         fobj.close()
         raise
 
-    except BrokenPipeError:
+    except BrokenError:
         fobj.close()
         # TODO: decode with correct encoding
         raise RuntimeError(process.stderr.read().decode("utf-8"))
@@ -719,13 +719,11 @@ def get_create_table_from_query(database_uri, table_name_or_query, table_name):
 
 
 if PYTHON_VERSION < (3, 0, 0):
-
-    class FileNotFoundError(OSError):
-        pass
-
-    class BrokenPipeError(IOError):
-        pass
-
+    NotFoundError = OSError
+    BrokenError = IOError
+else:
+    NotFoundError = FileNotFoundError
+    BrokenError = BrokenPipeError
 
 def pg2pg(
     database_uri_from,
@@ -826,10 +824,10 @@ def pg2pg(
                 rows_imported = int(line.replace(b"COPY ", b"").strip())
                 break
 
-    except FileNotFoundError:
+    except NotFoundError:
         raise
 
-    except BrokenPipeError:
+    except BrokenError:
         # TODO: get also from process_output
         raise RuntimeError(process_input.stderr.read().decode("utf-8"))
 
