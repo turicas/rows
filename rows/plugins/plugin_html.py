@@ -17,41 +17,21 @@
 
 from __future__ import unicode_literals
 
-from io import BytesIO
-
-import six
-
-try:
-    from lxml.etree import strip_tags
-    from lxml.etree import tostring as to_string
-    from lxml.html import document_fromstring
-except ImportError:
-    has_lxml = False
-else:
-    has_lxml = True
-
-from rows.plugins.utils import create_table, serialize
 from rows.utils import Source
+from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
 
-try:
-    from HTMLParser import HTMLParser  # Python 2
-
+if PYTHON_VERSION < (3, 0, 0):
+    from HTMLParser import HTMLParser  # noqa
     unescape = HTMLParser().unescape
-except:
-    import html  # Python 3
-
-    unescape = html.unescape
-
-
-try:
-    from html import escape  # Python 3
-except:
-    from cgi import escape  # Python 2
+else:
+    from html import unescape  # noqa
 
 
 def _get_content(element):
+    from lxml.etree import tostring as to_string
+
     return (element.text if element.text is not None else "") + "".join(
-        to_string(child, encoding=six.text_type) for child in element.getchildren()
+        to_string(child, encoding=TEXT_TYPE) for child in element.getchildren()
     )
 
 
@@ -81,6 +61,10 @@ def import_from_html(
     **kwargs
 ):
     """Return rows.Table from HTML file."""
+    from lxml.etree import strip_tags
+    from lxml.html import document_fromstring
+
+    from rows.plugins.utils import create_table
 
     source = Source.from_file(
         filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding
@@ -126,11 +110,16 @@ def import_from_html(
     return create_table(table_rows, meta=meta, *args, **kwargs)
 
 
-def export_to_html(
-    table, filename_or_fobj=None, encoding="utf-8", caption=False, *args, **kwargs
-):
+def export_to_html(table, filename_or_fobj=None, encoding="utf-8", caption=False, *args, **kwargs):
     """Export and return rows.Table data to HTML file."""
+    from io import BytesIO
+    if PYTHON_VERSION < (3, 0, 0):
+        from cgi import escape  # noqa
+    else:
+        from html import escape  # noqa
+    from rows.plugins.utils import is_binary_file, is_fobj, serialize
 
+    orig_filename_or_fobj = filename_or_fobj
     return_data, should_close = False, None
     if filename_or_fobj is None:
         filename_or_fobj = BytesIO()
@@ -161,7 +150,11 @@ def export_to_html(
             result.extend(["      <td> ", escape(value), " </td>\n"])
         result.append("    </tr>\n\n")
     result.append("  </tbody>\n\n</table>\n")
-    html = "".join(result).encode(encoding)
+    html = "".join(result)
+
+    result_must_be_encoded = return_data or not is_fobj(orig_filename_or_fobj) or is_binary_file(orig_filename_or_fobj)
+    if result_must_be_encoded and not isinstance(html, BINARY_TYPE):
+        html = html.encode(encoding)
 
     if return_data:
         result = html
@@ -180,13 +173,14 @@ def _extract_node_text(node):
     """Extract text from a given lxml node."""
 
     texts = map(
-        six.text_type.strip, map(six.text_type, map(unescape, node.xpath(".//text()")))
+        TEXT_TYPE.strip, map(TEXT_TYPE, map(unescape, node.xpath(".//text()")))
     )
     return " ".join(text for text in texts if text)
 
 
 def count_tables(filename_or_fobj, encoding="utf-8", table_tag="table"):
     """Read a file passed by arg and return your table HTML tag count."""
+    from lxml.html import document_fromstring
 
     source = Source.from_file(
         filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding
@@ -204,6 +198,7 @@ def count_tables(filename_or_fobj, encoding="utf-8", table_tag="table"):
 
 def tag_to_dict(html):
     """Extract tag's attributes into a `dict`."""
+    from lxml.html import document_fromstring
 
     element = document_fromstring(html).xpath("//html/body/child::*")[0]
     attributes = dict(element.attrib)
@@ -213,11 +208,13 @@ def tag_to_dict(html):
 
 def extract_text(html):
     """Extract text from a given HTML."""
+    from lxml.html import document_fromstring
 
     return _extract_node_text(document_fromstring(html))
 
 
 def extract_links(html):
     """Extract the href values from a given HTML (returns a list of strings)."""
+    from lxml.html import document_fromstring
 
     return document_fromstring(html).xpath(".//@href")

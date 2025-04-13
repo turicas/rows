@@ -24,10 +24,12 @@ from io import BytesIO
 from pathlib import Path
 
 import mock
+import pytest
 
 import rows
-import rows.plugins.xpath
 import tests.utils as utils
+
+ALIAS_IMPORT = rows.import_from_xpath  # Lazy function (just aliases)
 
 
 class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -56,52 +58,62 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.files_to_delete = []
 
     def test_imports(self):
-        self.assertIs(rows.import_from_xpath, rows.plugins.xpath.import_from_xpath)
+        # Force the plugin to load
+        original_import = rows.plugins.xpath.import_from_xpath
+        assert id(ALIAS_IMPORT) != id(original_import)
+        new_alias_import = rows.import_from_xpath
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
 
     def test_import_from_xpath_filename(self):
-        table = rows.import_from_xpath(
-            self.filename, encoding=self.encoding, **self.kwargs
-        )
-
+        table = rows.import_from_xpath(self.filename, encoding=self.encoding, **self.kwargs)
         meta = table.meta.copy()
         source = meta.pop("source")
         self.assertEqual(source.uri, Path(self.filename))
-
-        expected_meta = {
-            "imported_from": "xpath",
-        }
+        expected_meta = {"imported_from": "xpath"}
         self.assertEqual(meta, expected_meta)
-
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         fobj = temp.file
-        rows.export_to_csv(table, fobj)
+        fobj2 = rows.export_to_csv(table, fobj)
         fobj.seek(0)
         table = rows.import_from_csv(fobj)
-
         self.assert_table_equal(table, self.expected_table)
 
-    def test_import_from_xpath_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
+    def test_import_from_xpath_fobj_binary(self):
         with open(self.filename, mode="rb") as fobj:
             table = rows.import_from_xpath(fobj, encoding=self.encoding, **self.kwargs)
-
         meta = table.meta.copy()
         source = meta.pop("source")
         self.assertEqual(source.uri, Path(self.filename))
-
-        expected_meta = {
-            "imported_from": "xpath",
-        }
+        expected_meta = {"imported_from": "xpath"}
         self.assertEqual(meta, expected_meta)
-
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         fobj = temp.file
         rows.export_to_csv(table, fobj)
         fobj.seek(0)
         table = rows.import_from_csv(fobj)
+        self.assert_table_equal(table, self.expected_table)
 
+    def test_import_from_xpath_fobj_binary_without_encoding(self):
+        with open(self.filename, mode="rb") as fobj:
+            with pytest.raises(ValueError, match="import_from_xpath must receive an encoding when file is in binary mode"):
+                rows.import_from_xpath(fobj, encoding=None, **self.kwargs)
+
+    def test_import_from_xpath_fobj_text(self):
+        with open(self.filename, mode="r") as fobj:
+            table = rows.import_from_xpath(fobj, encoding=self.encoding, **self.kwargs)
+        meta = table.meta.copy()
+        source = meta.pop("source")
+        self.assertEqual(source.uri, Path(self.filename))
+        expected_meta = {"imported_from": "xpath"}
+        self.assertEqual(meta, expected_meta)
+        temp = tempfile.NamedTemporaryFile(delete=False)
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        rows.export_to_csv(table, fobj)
+        fobj.seek(0)
+        table = rows.import_from_csv(fobj)
         self.assert_table_equal(table, self.expected_table)
 
     def test_import_from_xpath_unescape_and_extract_text(self):

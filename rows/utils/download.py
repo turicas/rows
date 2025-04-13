@@ -1,27 +1,30 @@
 import re
 import subprocess
 import warnings
-from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from rows import __version__
+from rows.compat import PYTHON_VERSION, TEXT_TYPE
 from rows.utils import subclasses
+from rows.version import as_string as rows_version
 
 REGEXP_VERSION = re.compile("([0-9][a-z0-9.+-]+)")
 
+if PYTHON_VERSION < (3, 0, 0):
+    NotFoundError = OSError
+else:
+    NotFoundError = FileNotFoundError
 
-@dataclass
-class Download:
-    url: str
-    filename: Path = None
 
-    def __post_init__(self):
+class Download(object):
+    def __init__(self, url, filename=None):
+        self.url = url  # str
+        self.filename = filename  # Path
         if self.filename is not None and not isinstance(self.filename, Path):
             self.filename = Path(self.filename)
 
 
-class Downloader:
+class Downloader(object):
     name = None
     version_command = None
 
@@ -44,7 +47,7 @@ class Downloader:
         self._user_agent = user_agent
 
         if type(self).get_version() is None:
-            raise FileNotFoundError(
+            raise NotFoundError(
                 "Command not found: {}".format(self.version_command[0])
             )
 
@@ -53,7 +56,7 @@ class Downloader:
         if self._user_agent is None:
             # TODO: implement
             self._user_agent = "python/rows-{} ({} {})".format(
-                __version__, self.name, type(self).get_version()
+                rows_version, self.name, type(self).get_version()
             )
         return self._user_agent
 
@@ -80,7 +83,7 @@ class Downloader:
                 )
                 stdout, stderr = process.communicate()
                 result = REGEXP_VERSION.findall(stdout.splitlines()[0])
-            except FileNotFoundError:
+            except NotFoundError:
                 cls._version = None
             else:
                 cls._version = result[0]
@@ -100,7 +103,8 @@ class Downloader:
             filename = download.filename
             if self.path is not None and filename.is_absolute():
                 warnings.warn(
-                    f"filename {repr(str(filename))} cannot be absolute when downloader path is set (will be saved in downloader root path)", RuntimeWarning
+                    "filename {} cannot be absolute when downloader path is set (will be saved in downloader root path)".format(repr(TEXT_TYPE(filename)))
+                    , RuntimeWarning
                 )
                 filename = filename.name
             full_filename = save_path / filename
@@ -173,15 +177,15 @@ class WgetDownloader(Downloader):
         if self._disable_ipv6:
             cmd.append("--inet4-only")
         if self._timeout is not None:
-            cmd.extend(["--timeout", str(self._timeout)])
+            cmd.extend(["--timeout", TEXT_TYPE(self._timeout)])
         if self._continue_paused:  # -c
             cmd.append("--continue")
         if self._max_tries:  # -t
-            cmd.extend(["--tries", str(self._max_tries)])
+            cmd.extend(["--tries", TEXT_TYPE(self._max_tries)])
         if filename is not None:  # -O
-            cmd.extend(["--output-document", str(path / filename)])
+            cmd.extend(["--output-document", TEXT_TYPE(path / filename)])
         else:
-            cmd.extend(["--directory-prefix", str(path)])
+            cmd.extend(["--directory-prefix", TEXT_TYPE(path)])
         cmd.append(url)
         self._commands.append(cmd)
 
@@ -199,7 +203,7 @@ class Aria2cDownloader(Downloader):
         max_connections_per_download=4,
         split_download_parts=4,
         *args,
-        **kwargs,
+        **kwargs
     ):
         """
         method can be:
@@ -225,21 +229,21 @@ class Aria2cDownloader(Downloader):
         if self._disable_ipv6:
             parameters.append("--disable-ipv6")
         if self._timeout is not None:
-            parameters.extend(["--connect-timeout", str(self._timeout)])
+            parameters.extend(["--connect-timeout", TEXT_TYPE(self._timeout)])
         if self._continue_paused:  # -c
             parameters.append("--continue")
         if self._max_concurrent_downloads is not None:  # -j
             parameters.extend(
-                ["--max-concurrent-downloads", str(self._max_concurrent_downloads)]
+                ["--max-concurrent-downloads", TEXT_TYPE(self._max_concurrent_downloads)]
             )
         if self._max_connections_per_download is not None:  # -x
             parameters.extend(
-                ["--max-connection-per-server", str(self._max_connections_per_download)]
+                ["--max-connection-per-server", TEXT_TYPE(self._max_connections_per_download)]
             )
         if self._split_download_parts is not None:  # -s
-            parameters.extend(["--split", str(self._split_download_parts)])
+            parameters.extend(["--split", TEXT_TYPE(self._split_download_parts)])
         if self._max_tries is not None:
-            parameters.extend(["--max-tries", str(self._max_tries)])
+            parameters.extend(["--max-tries", TEXT_TYPE(self._max_tries)])
         return parameters
 
     def _add_download(self, url, path, filename=None):
@@ -247,12 +251,9 @@ class Aria2cDownloader(Downloader):
             self._aria2c_downloads.append((url, path, filename))
 
         elif self.method == "commands":
-            cmd = [
-                "aria2c",
-                *self._build_parameters(),
-                "--dir",
-                str(path),
-            ]
+            cmd = ["aria2c"]
+            cmd.extend(self._build_parameters())
+            cmd.extend(["--dir", TEXT_TYPE(path)])
             if filename is not None:
                 cmd.extend(["--out", filename])
             cmd.append(url)
@@ -266,20 +267,17 @@ class Aria2cDownloader(Downloader):
             )
             with open(tmp.name, mode="w") as output:
                 for url, path, filename in self._aria2c_downloads:
-                    data = f"{url}\n" f"  dir={str(path)}\n"
+                    data = "{}\n".format(url) + "  dir={}\n".format(TEXT_TYPE(path))
                     if filename is not None:
                         # TODO: path not working when filename =
                         # dir1/dir2/filename (instead of only filename)?
-                        data += f"  out={filename}\n"
-                    output.write(f"{data}\n")
+                        data += "  out={}\n".format(filename)
+                    output.write("{}\n".format(data))
             self._temp_filename = Path(tmp.name)
 
-            cmd = [
-                "aria2c",
-                *self._build_parameters(),
-                "--input-file",
-                tmp.name,
-            ]
+            cmd = ["aria2c"]
+            cmd.extend(self._build_parameters())
+            cmd.extend(["--input-file", tmp.name])
             return [cmd]
 
         elif self.method == "commands":

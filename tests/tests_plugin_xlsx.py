@@ -25,12 +25,13 @@ from decimal import Decimal
 from io import BytesIO
 
 import mock
+import pytest
 
 import rows
-import rows.plugins.xlsx
 import tests.utils as utils
 from rows.utils import Source
 
+ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_xlsx, rows.export_to_xlsx  # Lazy functions (just aliases)
 
 class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
@@ -44,19 +45,22 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def get_temp_filename(self):
-        temp = tempfile.NamedTemporaryFile(
-            suffix=f".{self.file_extension}", delete=False
-        )
+        temp = tempfile.NamedTemporaryFile(suffix="." + self.file_extension, delete=False)
         filename = temp.name
         temp.close()
         self.files_to_delete.append(filename)
         return filename
 
     def test_imports(self):
-        self.assertIs(rows.import_from_xlsx, rows.plugins.xlsx.import_from_xlsx)
-        self.assertIs(rows.export_to_xlsx, rows.plugins.xlsx.export_to_xlsx)
+        # Force the plugin to load
+        original_import, original_export = rows.plugins.xlsx.import_from_xlsx, rows.plugins.xlsx.export_to_xlsx
+        assert id(ALIAS_IMPORT) != id(original_import)
+        assert id(ALIAS_EXPORT) != id(original_export)
+        new_alias_import, new_alias_export = rows.import_from_xlsx, rows.export_to_xlsx
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+        assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
-    @mock.patch("rows.plugins.xlsx.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_xlsx_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"encoding": "iso-8859-15", "some_key": 123, "other": 456}
@@ -65,20 +69,22 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
-    @mock.patch("rows.plugins.xlsx.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_xlsx_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
         # import using filename
         rows.import_from_xlsx(self.filename)
-        call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
+        args, kwargs = mocked_create_table.call_args_list[0]
+        args = [list(x) for x in args]
+        self.assert_create_table_data((args, kwargs), expected_meta=self.expected_meta)
 
         # import using fobj
         with open(self.filename, "rb") as fobj:
             rows.import_from_xlsx(fobj)
-        call_args = mocked_create_table.call_args_list[1]
-        self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
+            args, kwargs = mocked_create_table.call_args_list[1]
+            args = [list(x) for x in args]
+            self.assert_create_table_data((args, kwargs), expected_meta=self.expected_meta)
 
     def test_export_to_xlsx_filename(self):
         filename = self.get_temp_filename()
@@ -94,17 +100,24 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result_table = rows.import_from_xlsx(result_fobj)
         self.assert_table_equal(result_table, utils.table)
 
-    def test_export_to_xlsx_fobj(self):
+    def test_export_to_xlsx_fobj_binary(self):
         filename = self.get_temp_filename()
         fobj = open(filename, "wb")
-
-        rows.export_to_xlsx(utils.table, fobj)
+        result = rows.export_to_xlsx(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
         fobj.close()
-
+        # TODO: test file contents instead of this side-effect
         table = rows.import_from_xlsx(filename)
         self.assert_table_equal(table, utils.table)
 
-    @mock.patch("rows.plugins.xlsx.prepare_to_export")
+    def test_export_to_xlsx_fobj_text(self):
+        filename = self.get_temp_filename()
+        fobj = open(filename, "w")
+        with pytest.raises(ValueError, match="export_to_xlsx must receive a file-object open in binary mode"):
+            rows.export_to_xlsx(utils.table, fobj)
+
+    @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_xlsx_uses_prepare_to_export(self, mocked_prepare_to_export):
         filename = self.get_temp_filename()
 
@@ -129,7 +142,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table2 = rows.import_from_xlsx(filename)
         self.assert_table_equal(table, table2)
 
-    @mock.patch("rows.plugins.xlsx.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_start_and_end_row(self, mocked_create_table):
         rows.import_from_xlsx(
             self.filename, start_row=6, end_row=8, start_column=4, end_column=7
@@ -142,7 +155,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
             [7.89, 7.89, "13.64%", datetime.datetime(2015, 8, 18, 0, 0)],
             [9.87, 9.87, "13.14%", datetime.datetime(2015, 3, 4, 0, 0)],
         ]
-        self.assertEqual(expected_data, call_args[0][0])
+        self.assertEqual(expected_data, list(call_args[0][0]))
 
     def test_issue_290_can_read_sheet(self):
         rows.import_from_xlsx("tests/data/text_in_percent_cell.xlsx")

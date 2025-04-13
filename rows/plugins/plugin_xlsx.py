@@ -17,20 +17,21 @@
 
 from __future__ import unicode_literals
 
-from decimal import Decimal
-from io import BytesIO, UnsupportedOperation
-from numbers import Number
+from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
-from openpyxl.cell.read_only import EmptyCell
 
-from rows import fields
-from rows.plugins.utils import create_table, prepare_to_export
 from rows.utils import Source
+from rows.compat import TEXT_TYPE
 
 
 def _cell_to_python(cell):
     """Convert a PyOpenXL's `Cell` object to the corresponding Python object."""
+    from decimal import Decimal
+    from numbers import Number
+
+    from openpyxl.cell.read_only import EmptyCell
+
     data_type, value = cell.data_type, cell.value
 
     if type(cell) is EmptyCell:
@@ -41,12 +42,12 @@ def _cell_to_python(cell):
         return False
 
     elif cell.number_format.lower() == "yyyy-mm-dd":
-        return str(value).split(" 00:00:00")[0]
+        return TEXT_TYPE(value).split(" 00:00:00")[0]
     elif cell.number_format.lower() == "yyyy-mm-dd hh:mm:ss":
-        return str(value).split(".")[0]
+        return TEXT_TYPE(value).split(".")[0]
 
     elif cell.number_format.endswith("%") and isinstance(value, Number):
-        value = Decimal(str(value))
+        value = Decimal(TEXT_TYPE(value))
         return "{:%}".format(value)
 
     elif value is None:
@@ -60,6 +61,8 @@ def sheet_names(filename_or_fobj, workbook_kwargs=None):
     workbook_kwargs = workbook_kwargs or {}
     workbook_kwargs["read_only"] = workbook_kwargs.get("read_only", True)
 
+    if isinstance(filename_or_fobj, Path):
+        filename_or_fobj = TEXT_TYPE(filename_or_fobj)
     workbook = load_workbook(filename_or_fobj, **workbook_kwargs)
     result = workbook.sheetnames
     workbook.close()
@@ -77,16 +80,23 @@ def import_from_xlsx(
     end_column=None,
     workbook_kwargs=None,
     *args,
-    **kwargs,
+    **kwargs
 ):
     """Return a rows.Table created from imported XLSX file.
 
     workbook_kwargs will be passed to openpyxl.load_workbook
     """
+    from rows.plugins.utils import create_table, is_fobj
+
+
+    should_close = True
+    if isinstance(filename_or_fobj, Path):
+        filename_or_fobj = TEXT_TYPE(filename_or_fobj)
+    elif is_fobj(filename_or_fobj):
+        should_close = False
 
     workbook_kwargs = workbook_kwargs or {}
     workbook_kwargs["read_only"] = workbook_kwargs.get("read_only", True)
-
     workbook = load_workbook(filename_or_fobj, **workbook_kwargs)
     if sheet_name is None:
         sheet_name = workbook.sheetnames[sheet_index]
@@ -106,51 +116,47 @@ def import_from_xlsx(
     end_row = end_row if end_row is not None else max_row
     start_column = start_column if start_column is not None else min_column
     end_column = end_column if end_column is not None else max_column
-    table_rows = []
-    is_empty = lambda row: all(cell is None for cell in row)
-    selected_rows = sheet.iter_rows(
-        min_row=start_row + 1 if start_row is not None else None,
-        max_row=end_row + 1 if end_row is not None else None,
-        min_col=start_column + 1 if start_column is not None else None,
-        max_col=end_column + 1 if end_column is not None else None,
-    )
-    for row in selected_rows:
-        row = [_cell_to_python(cell) for cell in row]
-        if not is_empty(row):
-            table_rows.append(row)
 
-    source = Source.from_file(filename_or_fobj, plugin_name="xlsx")
-    source.fobj.close()
+    def row_generator():
+        for row in sheet.iter_rows(
+            min_row=start_row + 1 if start_row is not None else None,
+            max_row=end_row + 1 if end_row is not None else None,
+            min_col=start_column + 1 if start_column is not None else None,
+            max_col=end_column + 1 if end_column is not None else None,
+        ):
+            new = [_cell_to_python(cell) for cell in row]
+            if not all(cell is None for cell in new):
+                yield new
+
+    source = Source.from_file(filename_or_fobj, plugin_name="xlsx", should_close=should_close)
     # TODO: pass a parameter to Source.from_file so it won't open the file
     metadata = {"imported_from": "xlsx", "source": source, "name": sheet_name}
-    return create_table(table_rows, meta=metadata, *args, **kwargs)
-
-
-FORMATTING_STYLES = {
-    fields.DateField: "YYYY-MM-DD",
-    fields.DatetimeField: "YYYY-MM-DD HH:MM:SS",
-    fields.PercentField: "0.00%",
-}
+    return create_table(row_generator(), meta=metadata, *args, **kwargs)
 
 
 def _python_to_cell(field_types):
+    from rows import fields
+
+    FORMATTING_STYLES = {
+        fields.DateField: "YYYY-MM-DD",
+        fields.DatetimeField: "YYYY-MM-DD HH:MM:SS",
+        fields.PercentField: "0.00%",
+    }
+    KNOWN_FIELDS = (
+        fields.BoolField,
+        fields.DateField,
+        fields.DatetimeField,
+        fields.DecimalField,
+        fields.FloatField,
+        fields.IntegerField,
+        fields.PercentField,
+        fields.TextField,
+    )
+
     def convert_value(field_type, value):
-
         number_format = FORMATTING_STYLES.get(field_type, None)
-
-        if field_type not in (
-            fields.BoolField,
-            fields.DateField,
-            fields.DatetimeField,
-            fields.DecimalField,
-            fields.FloatField,
-            fields.IntegerField,
-            fields.PercentField,
-            fields.TextField,
-        ):
-            # BinaryField, DatetimeField, JSONField or unknown
+        if field_type not in KNOWN_FIELDS:  # BinaryField, DatetimeField, JSONField or unknown
             value = field_type.serialize(value)
-
         return value, number_format
 
     def convert_row(row):
@@ -164,12 +170,14 @@ def _python_to_cell(field_types):
 
 def define_sheet_name(existing_names):
     for counter in range(1, 1024 * 1024):
-        new_name = f"Sheet{counter}"
+        new_name = "Sheet{}".format(counter)
         if new_name not in existing_names:
             return new_name
 
 
 def is_existing_spreadsheet(source):
+    from io import UnsupportedOperation
+
     if source.uri is not None:  # filename was given
         if not source.uri.exists():
             # TODO: if file doesn't exist and we open with mode="a+b" it will
@@ -190,6 +198,12 @@ def is_existing_spreadsheet(source):
 
 def export_to_xlsx(table, filename_or_fobj=None, sheet_name=None, *args, **kwargs):
     """Export the rows.Table to XLSX file and return the saved file."""
+    from io import BytesIO
+
+    from rows.plugins.utils import is_fobj, is_binary_file, prepare_to_export
+
+    if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
+        raise ValueError("export_to_xlsx must receive a file-object open in binary mode")
 
     return_result = False
     if filename_or_fobj is None:
@@ -198,6 +212,8 @@ def export_to_xlsx(table, filename_or_fobj=None, sheet_name=None, *args, **kwarg
     source = Source.from_file(filename_or_fobj, mode="a+b", plugin_name="xlsx")
 
     if is_existing_spreadsheet(source):
+        if isinstance(filename_or_fobj, Path):
+            filename_or_fobj = TEXT_TYPE(filename_or_fobj)
         workbook = load_workbook(filename_or_fobj)
         if sheet_name is None:
             sheet_name = define_sheet_name(workbook.sheetnames)
@@ -230,7 +246,7 @@ def export_to_xlsx(table, filename_or_fobj=None, sheet_name=None, *args, **kwarg
         # For some reason the `ZipFile` inside
         # `openpyxl.workbook.workbook.save_workbook` was not creating the
         # contents correctly when a fobj is passed, so filename is forced.
-        workbook.save(source.uri)
+        workbook.save(TEXT_TYPE(source.uri))
     else:
         workbook.save(source.fobj)
     source.fobj.flush()

@@ -17,71 +17,111 @@
 
 from __future__ import unicode_literals
 
-import re
-import unicodedata
-from collections import defaultdict
 from io import BytesIO
 
-from rows.plugins.utils import create_table, serialize
 from rows.utils import Source
 
-single_frame_prefix = "BOX DRAWINGS LIGHT"
-double_frame_prefix = "BOX DRAWINGS DOUBLE"
-frame_parts = [
-    name.strip()
-    for name in """
-    VERTICAL, HORIZONTAL, DOWN AND RIGHT, DOWN AND LEFT,
-    UP AND RIGHT, UP AND LEFT, VERTICAL AND LEFT, VERTICAL AND RIGHT,
-    DOWN AND HORIZONTAL, UP AND HORIZONTAL,
-    VERTICAL AND HORIZONTAL""".split(
-        ","
+
+def _generate_frames():
+    """Used only to generate the fixed FRAMES variable, so don't waste time when importing"""
+    import unicodedata
+
+    single_frame_prefix = "BOX DRAWINGS LIGHT"
+    double_frame_prefix = "BOX DRAWINGS DOUBLE"
+    frame_parts = (
+        "VERTICAL",
+        "HORIZONTAL",
+        "DOWN AND RIGHT",
+        "DOWN AND LEFT",
+        "UP AND RIGHT",
+        "UP AND LEFT",
+        "VERTICAL AND LEFT",
+        "VERTICAL AND RIGHT",
+        "DOWN AND HORIZONTAL",
+        "UP AND HORIZONTAL",
+        "VERTICAL AND HORIZONTAL"
     )
-]
-
-# Rendered characters inserted in comments
-# for grepping/visualization purposes.
-
-# ['│', '─', '┌', '┐', '└', '┘', '┤', '├', '┬', '┴', '┼']
-SINGLE_FRAME = {
-    name.strip(): unicodedata.lookup(" ".join((single_frame_prefix, name.strip())))
-    for name in frame_parts
-}
-
-# ['║', '═', '╔', '╗', '╚', '╝', '╣', '╠', '╦', '╩', '╬']
-DOUBLE_FRAME = {
-    name.strip(): unicodedata.lookup(" ".join((double_frame_prefix, name.strip())))
-    for name in frame_parts
-}
-
-ASCII_FRAME = {name: "+" for name in frame_parts}
-ASCII_FRAME["HORIZONTAL"] = "-"
-ASCII_FRAME["VERTICAL"] = "|"
-
-NONE_FRAME = defaultdict(lambda: " ")
+    SINGLE_FRAME = {
+        name: unicodedata.lookup(single_frame_prefix + " " + name)
+        for name in frame_parts
+    }
+    DOUBLE_FRAME = {
+        name: unicodedata.lookup(double_frame_prefix + " " + name)
+        for name in frame_parts
+    }
+    ASCII_FRAME = {name: "+" for name in frame_parts}
+    ASCII_FRAME["HORIZONTAL"] = "-"
+    ASCII_FRAME["VERTICAL"] = "|"
+    NONE_FRAME = {name: " " for name in frame_parts}
+    return {
+        "none": NONE_FRAME,
+        "ascii": ASCII_FRAME,
+        "single": SINGLE_FRAME,
+        "double": DOUBLE_FRAME,
+    }
 
 FRAMES = {
-    "none": NONE_FRAME,
-    "ascii": ASCII_FRAME,
-    "single": SINGLE_FRAME,
-    "double": DOUBLE_FRAME,
+    "none": {
+        "VERTICAL": " ",
+        "HORIZONTAL": " ",
+        "DOWN AND RIGHT": " ",
+        "DOWN AND LEFT": " ",
+        "UP AND RIGHT": " ",
+        "UP AND LEFT": " ",
+        "VERTICAL AND LEFT": " ",
+        "VERTICAL AND RIGHT": " ",
+        "DOWN AND HORIZONTAL": " ",
+        "UP AND HORIZONTAL": " ",
+        "VERTICAL AND HORIZONTAL": " ",
+    },
+    "ascii": {
+        "VERTICAL": "|",
+        "HORIZONTAL": "-",
+        "DOWN AND RIGHT": "+",
+        "DOWN AND LEFT": "+",
+        "UP AND RIGHT": "+",
+        "UP AND LEFT": "+",
+        "VERTICAL AND LEFT": "+",
+        "VERTICAL AND RIGHT": "+",
+        "DOWN AND HORIZONTAL": "+",
+        "UP AND HORIZONTAL": "+",
+        "VERTICAL AND HORIZONTAL": "+",
+    },
+    "single": {
+        "VERTICAL": "│",
+        "HORIZONTAL": "─",
+        "DOWN AND RIGHT": "┌",
+        "DOWN AND LEFT": "┐",
+        "UP AND RIGHT": "└",
+        "UP AND LEFT": "┘",
+        "VERTICAL AND LEFT": "┤",
+        "VERTICAL AND RIGHT": "├",
+        "DOWN AND HORIZONTAL": "┬",
+        "UP AND HORIZONTAL": "┴",
+        "VERTICAL AND HORIZONTAL": "┼",
+    },
+    "double": {
+        "VERTICAL": "║",
+        "HORIZONTAL": "═",
+        "DOWN AND RIGHT": "╔",
+        "DOWN AND LEFT": "╗",
+        "UP AND RIGHT": "╚",
+        "UP AND LEFT": "╝",
+        "VERTICAL AND LEFT": "╣",
+        "VERTICAL AND RIGHT": "╠",
+        "DOWN AND HORIZONTAL": "╦",
+        "UP AND HORIZONTAL": "╩",
+        "VERTICAL AND HORIZONTAL": "╬",
+    },
 }
 
-del single_frame_prefix, double_frame_prefix, frame_parts
-del NONE_FRAME, ASCII_FRAME, SINGLE_FRAME, DOUBLE_FRAME
-
-FRAME_SENTINEL = object()
-
+def _clean_style_name(name):
+    return name.lower().strip()
 
 def _parse_frame_style(frame_style):
-    if frame_style is None:
-        frame_style = "None"
-    try:
-        FRAMES[frame_style.lower()]
-    except KeyError:
-        raise ValueError(
-            "Invalid frame style '{}'. Use one of 'None', "
-            "'ASCII', 'single' or 'double'.".format(frame_style)
-        )
+    frame_style = _clean_style_name(frame_style) if frame_style is not None else "none"
+    if frame_style not in FRAMES:
+        raise ValueError("Invalid frame style {}. Use one of: {}.".format(repr(frame_style), ", ".join(FRAMES.keys())))
     return frame_style
 
 
@@ -90,20 +130,20 @@ def _guess_frame_style(contents):
     for frame_style, frame_dict in FRAMES.items():
         if first_line_chars <= set(frame_dict.values()):
             return frame_style
-    return "None"
+    return "none"
 
 
 def _parse_col_positions(frame_style, header_line):
     """Find the position for each column separator in the given line
 
-    If frame_style is 'None', this won work
-    for column names that _start_ with whitespace
-    (which includes non-lefthand aligned column titles)
+    If frame_style is 'none', this won't work for column names that _start_ with whitespace (which includes
+    non-lefthand aligned column titles)
     """
+    import re
 
-    separator = re.escape(FRAMES[frame_style.lower()]["VERTICAL"])
+    separator = re.escape(FRAMES[frame_style]["VERTICAL"])
 
-    if frame_style == "None":
+    if frame_style == "none":
         separator = r"[\s]{2}[^\s]"
         # Matches two whitespaces followed by a non-whitespace.
         # Our column headers are serated by 3 spaces by default.
@@ -111,7 +151,7 @@ def _parse_col_positions(frame_style, header_line):
     col_positions = []
     # Abuse regexp engine to anotate vertical-separator positions:
     re.sub(separator, lambda group: col_positions.append(group.start()), header_line)
-    if frame_style == "None":
+    if frame_style == "none":
         col_positions.append(len(header_line) - 1)
     return col_positions
 
@@ -125,9 +165,10 @@ def _max_column_sizes(field_names, table_rows):
 
 
 def import_from_txt(
-    filename_or_fobj, encoding="utf-8", frame_style=FRAME_SENTINEL, *args, **kwargs
+    filename_or_fobj, encoding="utf-8", frame_style=None, *args, **kwargs
 ):
     """Return a rows.Table created from imported TXT file."""
+    from rows.plugins.utils import create_table
 
     # TODO: (maybe)
     # enable parsing of non-fixed-width-columns
@@ -144,7 +185,7 @@ def import_from_txt(
     )
     raw_contents = source.fobj.read().decode(encoding).rstrip("\n")
 
-    if frame_style is FRAME_SENTINEL:
+    if frame_style is None:
         frame_style = _guess_frame_style(raw_contents)
     else:
         frame_style = _parse_frame_style(frame_style)
@@ -152,7 +193,7 @@ def import_from_txt(
     contents = raw_contents.splitlines()
     del raw_contents
 
-    if frame_style != "None":
+    if frame_style != "none":
         contents = contents[1:-1]
         del contents[1]
     else:
@@ -182,7 +223,7 @@ def export_to_txt(
     table,
     filename_or_fobj=None,
     encoding=None,
-    frame_style="ASCII",
+    frame_style="ascii",
     safe_none_frame=True,
     *args,
     **kwargs
@@ -193,24 +234,31 @@ def export_to_txt(
     filename or file-like object).
 
     `encoding` could be `None` if no filename/file-like object is specified,
-    then the return type will be `six.text_type`.
+    then the return type will be `TEXT_TYPE` (depends on Python 2 vs 3).
     `frame_style`: will select the frame style to be printed around data.
-    Valid values are: ('None', 'ASCII', 'single', 'double') - ASCII is default.
+    Valid values are: ('none', 'ascii', 'single', 'double') - ascii is default.
     Warning: no checks are made to check the desired encoding allows the
     characters needed by single and double frame styles.
 
     `safe_none_frame`: bool, defaults to True. Affects only output with
-    frame_style == "None":
+    frame_style == "none":
     column titles are left-aligned and have
     whitespace replaced for "_".  This enables
     the output to be parseable. Otherwise, the generated table will look
     prettier but can not be imported back.
     """
+    from rows.plugins.utils import is_binary_file, is_fobj, serialize
 
     return_data, should_close = False, None
     if filename_or_fobj is None:
         filename_or_fobj = BytesIO()
         return_data = should_close = True
+    elif is_fobj(filename_or_fobj):
+        is_binary = is_binary_file(filename_or_fobj)
+        if is_binary and encoding is None:
+            raise ValueError("export_to_txt must receive an encoding when file is in binary mode")
+        elif not is_binary and encoding is not None:
+            raise ValueError("export_to_txt must not receive an encoding when file is in text mode")
 
     source = Source.from_file(
         filename_or_fobj,
@@ -221,7 +269,7 @@ def export_to_txt(
     )
 
     frame_style = _parse_frame_style(frame_style)
-    frame = FRAMES[frame_style.lower()]
+    frame = FRAMES[frame_style]
 
     # TODO: will work only if table.fields is OrderedDict
     serialized_table = serialize(table, *args, **kwargs)
@@ -231,7 +279,7 @@ def export_to_txt(
 
     dashes = [frame["HORIZONTAL"] * (max_sizes[field] + 2) for field in field_names]
 
-    if frame_style != "None" or not safe_none_frame:
+    if frame_style != "none" or not safe_none_frame:
         header = [field.center(max_sizes[field]) for field in field_names]
     else:
         header = [
@@ -259,7 +307,7 @@ def export_to_txt(
     )
 
     result = []
-    if frame_style != "None":
+    if frame_style != "none":
         result += [top_split_line]
     result += [header, body_split_line]
 
@@ -271,7 +319,7 @@ def export_to_txt(
         row_data = " {} ".format(frame["VERTICAL"]).join(values)
         result.append("{0} {1} {0}".format(frame["VERTICAL"], row_data))
 
-    if frame_style != "None":
+    if frame_style != "none":
         result.append(botton_split_line)
     result.append("")
     data = "\n".join(result)

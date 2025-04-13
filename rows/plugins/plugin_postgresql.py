@@ -20,44 +20,10 @@ from __future__ import unicode_literals
 import csv
 import io
 import itertools
-import string
 import subprocess
 from pathlib import Path
 
-import six
-from psycopg2 import connect as pgconnect
-
-import rows.fields as fields
-from rows.plugins.plugin_csv import CsvInspector
-from rows.plugins.utils import create_table, ipartition, prepare_to_export
-from rows.utils import Source, detect_local_source, execute_command, open_compressed
-
-POSTGRESQL_TYPES = {
-    fields.BinaryField: "BYTEA",
-    fields.BoolField: "BOOLEAN",
-    fields.DateField: "DATE",
-    fields.DatetimeField: "TIMESTAMP(0) WITHOUT TIME ZONE",
-    fields.DecimalField: "NUMERIC",
-    fields.FloatField: "REAL",
-    fields.IntegerField: "BIGINT",  # TODO: detect when it's really needed
-    fields.JSONField: "JSONB",
-    fields.PercentField: "REAL",
-    fields.TextField: "TEXT",
-    fields.UUIDField: "UUID",
-}
-DEFAULT_POSTGRESQL_TYPE = "BYTEA"
-SQL_TABLE_NAMES = """
-    SELECT
-        tablename
-    FROM pg_tables
-    WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
-"""
-SQL_CREATE_TABLE = (
-    "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types}){post_fields}'
-)
-SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
-SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) ' "VALUES ({placeholders})"
-DEFAULT_TYPE = "BYTEA"
+from rows.compat import BINARY_TYPE, DEFAULT_SAMPLE_ROWS, PYTHON_VERSION, TEXT_TYPE
 
 
 def get_psql_command(
@@ -101,7 +67,7 @@ def get_psql_copy_command(
     force_null=True,
 ):
     # TODO: implement WHERE (copy FROM)
-    output_format = str(output_format or "").strip().upper()
+    output_format = TEXT_TYPE(output_format or "").strip().upper()
     direction = direction.upper()
     if direction not in ("FROM", "TO"):
         raise ValueError('`direction` must be one of: "FROM", "TO"')
@@ -115,7 +81,7 @@ def get_psql_copy_command(
     if header is None:
         header = ""
     else:
-        header = ", ".join(f'"{field_name}"' for field_name in header)
+        header = ", ".join('"{}"'.format(field_name) for field_name in header)
         header = "({header}) ".format(header=header)
 
     inside_with = []
@@ -151,7 +117,24 @@ def get_psql_copy_command(
 
 
 def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
-    access_method = str(access_method or "").strip().lower()
+    from rows import fields
+
+    POSTGRESQL_TYPES = {
+        fields.BinaryField: "BYTEA",
+        fields.BoolField: "BOOLEAN",
+        fields.DateField: "DATE",
+        fields.DatetimeField: "TIMESTAMP(0) WITHOUT TIME ZONE",
+        fields.DecimalField: "NUMERIC",
+        fields.FloatField: "REAL",
+        fields.IntegerField: "BIGINT",  # TODO: detect when it's really needed
+        fields.JSONField: "JSONB",
+        fields.PercentField: "REAL",
+        fields.TextField: "TEXT",
+        fields.UUIDField: "UUID",
+    }
+    DEFAULT_POSTGRESQL_TYPE = "BYTEA"
+
+    access_method = TEXT_TYPE(access_method or "").strip().lower()
     field_names = list(schema.keys())
     field_types = list(schema.values())
 
@@ -159,6 +142,9 @@ def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
         '"{}" {}'.format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
         for name, type_ in zip(field_names, field_types)
     ]
+    SQL_CREATE_TABLE = (
+        "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types}){post_fields}'
+    )
     return SQL_CREATE_TABLE.format(
         pre_table="" if not unlogged else "UNLOGGED ",
         post_table=" IF NOT EXISTS",
@@ -171,10 +157,14 @@ def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
 
 
 def pg_execute_psql(database_uri, sql):
+    from rows.utils import execute_command
+
     return execute_command(get_psql_command(sql, database_uri=database_uri))
 
 
 def _python_to_postgresql(field_types):
+    from rows import fields
+
     def convert_value(field_type, value):
         if field_type in (
             fields.BinaryField,
@@ -203,8 +193,11 @@ def _python_to_postgresql(field_types):
 
 
 def get_source(connection_or_uri):
+    from psycopg2 import connect as pgconnect
 
-    if isinstance(connection_or_uri, (six.binary_type, six.text_type)):
+    from rows.utils import Source
+
+    if isinstance(connection_or_uri, (BINARY_TYPE, TEXT_TYPE)):
         connection = pgconnect(connection_or_uri)
         uri = connection_or_uri
         input_is_uri = should_close = True
@@ -227,24 +220,6 @@ def get_source(connection_or_uri):
     return source
 
 
-def _valid_table_name(name):
-    """Verify if a given table name is valid for `rows`
-
-    Rules:
-    - Should start with a letter or '_'
-    - Letters can be capitalized or not
-    - Accepts letters, numbers and _
-    """
-
-    if name[0] not in "_" + string.ascii_letters or not set(name).issubset(
-        "_" + string.ascii_letters + string.digits
-    ):
-        return False
-
-    else:
-        return True
-
-
 def import_from_postgresql(
     connection_or_uri,
     table_name="table1",
@@ -252,13 +227,16 @@ def import_from_postgresql(
     query_args=None,
     close_connection=None,
     *args,
-    **kwargs,
+    **kwargs
 ):
+    from itertools import chain
+    from rows.plugins.utils import create_table, valid_table_name
 
     if query is None:
-        if not _valid_table_name(table_name):
+        if not valid_table_name(table_name):
             raise ValueError("Invalid table name: {}".format(table_name))
 
+        SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
         query = SQL_SELECT_ALL.format(table_name=table_name)
 
     if query_args is None:
@@ -269,15 +247,15 @@ def import_from_postgresql(
 
     cursor = connection.cursor()
     cursor.execute(query, query_args)
-    table_rows = list(cursor.fetchall())  # TODO: make it lazy
-    header = [six.text_type(info[0]) for info in cursor.description]
+    table_rows = cursor.fetchall()
+    header = [TEXT_TYPE(info[0]) for info in cursor.description]
     cursor.close()
     connection.commit()  # WHY?
 
     meta = {"imported_from": "postgresql", "source": source}
     if close_connection or (close_connection is None and source.should_close):
         connection.close()
-    return create_table([header] + table_rows, meta=meta, *args, **kwargs)
+    return create_table(chain([header], table_rows), meta=meta, *args, **kwargs)
 
 
 def export_to_postgresql(
@@ -288,11 +266,20 @@ def export_to_postgresql(
     batch_size=100,
     close_connection=None,
     *args,
-    **kwargs,
+    **kwargs
 ):
-    # TODO: should add transaction support?
+    from rows import fields
+    from rows.plugins.utils import ipartition, prepare_to_export, valid_table_name
 
-    if table_name is not None and not _valid_table_name(table_name):
+    # TODO: should add transaction support?
+    SQL_TABLE_NAMES = """
+        SELECT
+            tablename
+        FROM pg_tables
+        WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+    """
+
+    if table_name is not None and not valid_table_name(table_name):
         raise ValueError("Invalid table name: {}".format(table_name))
 
     source = get_source(connection_or_uri)
@@ -314,6 +301,7 @@ def export_to_postgresql(
     # TODO: add option to table access method (columnar, for example)
     cursor.execute(pg_create_table_sql(table.fields, table_name))
 
+    SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) ' "VALUES ({placeholders})"
     insert_sql = SQL_INSERT.format(
         table_name=table_name,
         field_names=", ".join(field_names),
@@ -330,7 +318,54 @@ def export_to_postgresql(
     return connection, table_name
 
 
-class PostgresCopy:
+def _convert_encoding(encoding):
+    import codecs
+    try:
+        normalized = codecs.lookup(encoding).name
+    except LookupError:
+        return None
+
+    mapping = {
+        "ascii": "SQL_ASCII",
+        "utf-8": "UTF8",
+        "iso8859-1": "LATIN1",
+        "iso8859-2": "LATIN2",
+        "iso8859-3": "LATIN3",
+        "iso8859-4": "LATIN4",
+        "iso8859-5": "ISO_8859_5",
+        "iso8859-6": "ISO_8859_6",
+        "iso8859-7": "ISO_8859_7",
+        "iso8859-8": "ISO_8859_8",
+        "iso8859-9": "LATIN5",
+        "iso8859-10": "LATIN6",
+        "iso8859-13": "LATIN7",
+        "iso8859-14": "LATIN8",
+        "iso8859-15": "LATIN9",
+        "iso8859-16": "LATIN10",
+        "cp1250": "WIN1250",
+        "cp1251": "WIN1251",
+        "cp1252": "WIN1252",
+        "cp1253": "WIN1253",
+        "cp1254": "WIN1254",
+        "cp1255": "WIN1255",
+        "cp1256": "WIN1256",
+        "cp1257": "WIN1257",
+        "cp1258": "WIN1258",
+        "koi8-r": "KOI8R",
+        "koi8-u": "KOI8U",
+        "utf-8-sig": "UTF8",
+        "euc_jp": "EUC_JP",
+        "euc_kr": "EUC_KR",
+        "gbk": "GBK",
+        "gb18030": "GB18030",
+        "big5": "BIG5",
+        "shift_jis": "SJIS",
+        "johab": "JOHAB",
+    }
+    return mapping.get(normalized)
+
+
+class PostgresCopy(object):
     """Import data from CSV into PostgreSQL using the fastest method
 
     Required: psql command
@@ -341,17 +376,10 @@ class PostgresCopy:
     # TODO: add logging to the process
     # TODO: detect when error ocurred and interrupt the process immediatly
 
-    def __init__(self, database_uri, chunk_size=8388608, max_samples=10000):
+    def __init__(self, database_uri, chunk_size=8388608, max_samples=DEFAULT_SAMPLE_ROWS):
         self.database_uri = database_uri
         self.chunk_size = chunk_size
         self.max_samples = max_samples
-
-    def _convert_encoding(self, encoding):
-        pg_encoding = encoding
-        if pg_encoding in ("us-ascii", "ascii"):
-            # TODO: convert all possible encodings
-            pg_encoding = "SQL_ASCII"
-        return pg_encoding
 
     def _import(
         self,
@@ -369,7 +397,7 @@ class PostgresCopy:
             database_uri=self.database_uri,
             dialect=dialect,
             direction="FROM",
-            encoding=self._convert_encoding(encoding),
+            encoding=_convert_encoding(encoding) or "UTF8",  # TODO: may change this behavior
             header=field_names,
             table_name_or_query=table_name,
             is_query=False,
@@ -411,7 +439,10 @@ class PostgresCopy:
                 # will be different from `len(data)`. Since the progress bar
                 # reports the uncompressed size of the file we must report
                 # progress based on original data read, not on data written.
-                total_written += process.stdin.write(data.replace(b"\x00", b""))
+                data_to_write = data.replace(b"\x00", b"")
+                process.stdin.write(data_to_write)
+                total_written += len(data_to_write)
+                # TODO: move to `total_written += process.stdin.write(data_to_write)` after py27 deprecation
                 total_read += len(data)
                 if callback:
                     callback(len(data), total_read)
@@ -430,11 +461,11 @@ class PostgresCopy:
                     rows_imported = int(line.replace(b"COPY ", b"").strip())
                     break
 
-        except FileNotFoundError:
+        except NotFoundError:
             fobj.close()
             raise
 
-        except BrokenPipeError:
+        except BrokenError:
             fobj.close()
             # TODO: decode with correct encoding
             raise RuntimeError(process.stderr.read().decode("utf-8"))
@@ -461,11 +492,17 @@ class PostgresCopy:
         access_method=None,
         callback=None,
     ):
-        inspector = CsvInspector(filename, chunk_size=self.chunk_size, max_samples=self.max_samples, encoding=encoding, dialect=dialect)
+        from rows.fields import make_header
+        from rows.plugins import csv as rows_csv
+        from rows.utils import open_compressed
+
+        inspector = rows_csv.CsvInspector(
+            filename, chunk_size=self.chunk_size, max_samples=self.max_samples, encoding=encoding, dialect=dialect
+        )
         encoding = encoding or inspector.encoding
         dialect = dialect or inspector.dialect
         schema = schema or inspector.schema
-        if isinstance(dialect, six.text_type):
+        if isinstance(dialect, TEXT_TYPE):
             dialect = csv.get_dialect(dialect)
 
         if not has_header:
@@ -473,13 +510,23 @@ class PostgresCopy:
         else:
             csv_field_names = inspector.field_names
             field_names = list(schema.keys())
-            if not set(csv_field_names).issubset(set(field_names)):
+            cleaned_csv_field_names = make_header(csv_field_names)
+            valid_csv_field_names = set(csv_field_names).issubset(set(field_names))
+            valid_cleaned_csv_field_names = set(cleaned_csv_field_names).issubset(set(field_names))
+            if not valid_csv_field_names and not valid_cleaned_csv_field_names:
                 raise ValueError(
-                    f"CSV field names are not a subset of schema field names ({set(csv_field_names)} versus {set(field_names)})"
+                    "CSV field names are not a subset of schema field names ({} versus {})".format(
+                        set(csv_field_names), set(field_names)
+                    )
                 )
-            field_names = [
-                field for field in csv_field_names if field in field_names
-            ]
+            elif valid_csv_field_names:
+                field_names = [
+                    field for field in csv_field_names if field in field_names
+                ]
+            elif valid_cleaned_csv_field_names:
+                field_names = [
+                    field for field in cleaned_csv_field_names if field in field_names
+                ]
 
         if create_table:
             # If we need to create the table, it creates based on schema
@@ -522,7 +569,7 @@ class PostgresCopy:
         access_method=None,
         callback=None,
     ):
-        if isinstance(dialect, six.text_type):
+        if isinstance(dialect, TEXT_TYPE):
             dialect = csv.get_dialect(dialect)
         # TODO: add `else` to check if `dialect` is instace of correct class
 
@@ -565,7 +612,7 @@ def pgimport(
     has_header=True,
     skip_rows=0,
     chunk_size=8388608,
-    max_samples=10000,
+    max_samples=DEFAULT_SAMPLE_ROWS,
     create_table=True,
     unlogged=False,
     access_method=None,
@@ -577,7 +624,7 @@ def pgimport(
     """
 
     # TODO: add warning if table already exists and create_table=True
-    if isinstance(dialect, six.text_type):
+    if isinstance(dialect, TEXT_TYPE):
         dialect = csv.get_dialect(dialect)
 
     pgcopy = PostgresCopy(
@@ -586,7 +633,7 @@ def pgimport(
         max_samples=max_samples,
     )
 
-    if isinstance(filename_or_fobj, (six.binary_type, six.text_type, Path)):
+    if isinstance(filename_or_fobj, (BINARY_TYPE, TEXT_TYPE, Path)):
         return pgcopy.import_from_filename(
             filename=filename_or_fobj,
             table_name=table_name,
@@ -635,10 +682,11 @@ def pgexport(
 
     Required: psql command
     """
+    from rows.utils import open_compressed
     # TODO: integrate with PostgresCopy
 
     # TODO: add logging to the process
-    if isinstance(dialect, six.text_type):
+    if isinstance(dialect, TEXT_TYPE):
         dialect = csv.get_dialect(dialect)
 
     # Prepare the `psql` command to be executed to export data
@@ -672,11 +720,11 @@ def pgexport(
             # TODO: decode with correct encoding
             raise RuntimeError(stderr.decode("utf-8"))
 
-    except FileNotFoundError:
+    except NotFoundError:
         fobj.close()
         raise
 
-    except BrokenPipeError:
+    except BrokenError:
         fobj.close()
         # TODO: decode with correct encoding
         raise RuntimeError(process.stderr.read().decode("utf-8"))
@@ -687,12 +735,15 @@ def pgexport(
 
 
 def get_create_table_from_query(database_uri, table_name_or_query, table_name):
+    from psycopg2 import connect as pgconnect
+
     if " " in table_name_or_query:
+        # Assume it's a query, but could be a table with space in the name also (if you're doing it, you're wrong)
         import random
-        alias = "".join(random.choice(string.ascii_lowercase) for _ in range(10))
-        query = f"""SELECT * FROM ({table_name_or_query}) AS "{alias}" LIMIT 0"""
+        alias = "".join(random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(10))
+        query = """SELECT * FROM ({}) AS "{}" LIMIT 0""".format(table_name_or_query, alias)
     else:
-        query = f"SELECT * FROM {table_name_or_query} LIMIT 0"
+        query = "SELECT * FROM {} LIMIT 0".format(table_name_or_query)
 
     conn = pgconnect(database_uri)
     cursor = conn.cursor()
@@ -709,11 +760,19 @@ def get_create_table_from_query(database_uri, table_name_or_query, table_name):
         for row in [dict(zip(header, values)) for values in cursor.fetchall()]
     }
     cursor.close()
+    conn.close()
 
     columns = [(column.name, type_name_by_oid[column.type_code]) for column in columns]
-    column_types = [f'''"{name}" {type}''' for name, type in columns]
-    return f"""CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join(column_types)})"""
+    column_types = ['''"{}" {}'''.format(name, type) for name, type in columns]
+    return """CREATE TABLE IF NOT EXISTS "{}" ({})""".format(table_name, ", ".join(column_types))
 
+
+if PYTHON_VERSION < (3, 0, 0):
+    NotFoundError = OSError
+    BrokenError = IOError
+else:
+    NotFoundError = FileNotFoundError
+    BrokenError = BrokenPipeError
 
 def pg2pg(
     database_uri_from,
@@ -731,6 +790,7 @@ def pg2pg(
 
     Required: psql command
     """
+    from psycopg2 import connect as pgconnect
 
     # TODO: if table already exists, check whether the types are the same from
     # expected query result
@@ -745,7 +805,7 @@ def pg2pg(
         conn.close()
 
     # Prepare the `psql` command to be executed to export data
-    output_sql = table_name_from if " " in table_name_from else f'''SELECT * FROM "{table_name_from}"'''
+    output_sql = table_name_from if " " in table_name_from else '''SELECT * FROM "{}"'''.format(table_name_from)
     if not binary:
         copy_params = {"encoding": encoding, "dialect": dialect}
     else:
@@ -756,7 +816,7 @@ def pg2pg(
         header=None,  # Needed when direction = 'TO'
         table_name_or_query=output_sql,
         is_query=True,
-        **copy_params,
+        **copy_params
     )
     rows_imported, total_written = 0, 0
 
@@ -779,7 +839,7 @@ def pg2pg(
             table_name_or_query=table_name_to,
             is_query=False,
             has_header=True,
-            **copy_params,
+            **copy_params
         )
         process_input = subprocess.Popen(
             command_input,
@@ -788,7 +848,8 @@ def pg2pg(
             stderr=subprocess.PIPE,
         )
         while data != b"":
-            written = process_input.stdin.write(data)
+            process_input.stdin.write(data)
+            written = len(data)  # TODO: move to `written = process_input.stdin.write(data)` after py27 deprecation
             total_written += written
             if callback:
                 callback(written, total_written)
@@ -812,10 +873,10 @@ def pg2pg(
                 rows_imported = int(line.replace(b"COPY ", b"").strip())
                 break
 
-    except FileNotFoundError:
+    except NotFoundError:
         raise
 
-    except BrokenPipeError:
+    except BrokenError:
         # TODO: get also from process_output
         raise RuntimeError(process_input.stderr.read().decode("utf-8"))
 

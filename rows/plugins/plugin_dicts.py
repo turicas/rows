@@ -17,17 +17,17 @@
 
 from __future__ import unicode_literals
 
-from itertools import chain
+from rows.compat import DEFAULT_SAMPLE_ROWS
 
-from rows.plugins.utils import create_table
-
-
-def import_from_dicts(data, samples=None, *args, **kwargs):
+def import_from_dicts(data, samples=DEFAULT_SAMPLE_ROWS, *args, **kwargs):
     """Import data from a iterable of dicts
 
     The algorithm will use the `samples` first `dict`s to determine the field
     names (if `samples` is `None` all `dict`s will be used).
     """
+    from itertools import chain
+
+    from rows.plugins.utils import create_table
 
     data = iter(data)
 

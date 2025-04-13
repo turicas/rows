@@ -25,12 +25,13 @@ from collections import OrderedDict
 import mock
 
 import rows
-import rows.plugins.sqlite
 import rows.plugins.utils
 import tests.utils as utils
 from rows import fields
 from rows.utils import Source
 
+ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_sqlite, rows.export_to_sqlite  # Lazy functions (just aliases)
+exported_utils_table = list(rows.plugins.utils.prepare_to_export(utils.table))
 
 class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
@@ -51,10 +52,15 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def test_imports(self):
-        self.assertIs(rows.import_from_sqlite, rows.plugins.sqlite.import_from_sqlite)
-        self.assertIs(rows.export_to_sqlite, rows.plugins.sqlite.export_to_sqlite)
+        # Force the plugin to load
+        original_import, original_export = rows.plugins.sqlite.import_from_sqlite, rows.plugins.sqlite.export_to_sqlite
+        assert id(ALIAS_IMPORT) != id(original_import)
+        assert id(ALIAS_EXPORT) != id(original_export)
+        new_alias_import, new_alias_export = rows.import_from_sqlite, rows.export_to_sqlite
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+        assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
-    @mock.patch("rows.plugins.sqlite.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_sqlite_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"encoding": "test", "some_key": 123, "other": 456}
@@ -67,7 +73,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         call[1].pop("meta")
         self.assertEqual(call[1], kwargs)
 
-    @mock.patch("rows.plugins.sqlite.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_sqlite_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -144,15 +150,13 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(len(result_table), 2 * len(utils.table))
         self.assert_table_equal(result_table, utils.table + utils.table)
 
-    @mock.patch("rows.plugins.sqlite.prepare_to_export")
+    @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_sqlite_uses_prepare_to_export(self, mocked_prepare_to_export):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         encoding = "iso-8859-15"
         kwargs = {"test": 123, "parameter": 3.14}
-        mocked_prepare_to_export.return_value = iter(
-            rows.plugins.utils.prepare_to_export(utils.table)
-        )
+        mocked_prepare_to_export.return_value = iter(exported_utils_table)
 
         rows.export_to_sqlite(utils.table, temp.name, encoding=encoding, **kwargs)
         self.assertTrue(mocked_prepare_to_export.called)

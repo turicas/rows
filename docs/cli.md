@@ -159,7 +159,7 @@ Options:
 
 - `--batch-size=INTEGER`: number of rows to batch insert into SQLite (default:
   `10000`)
-- `--samples=INTEGER`: number of sample rows to detect schema (default: `5000`)
+- `--samples=INTEGER`: number of sample rows to detect schema (default: `rows.compat.DEFAULT_SAMPLE_ROWS`)
 - `--input-encoding=TEXT`: input encoding (default: `utf-8`)
 - `--dialect=TEXT`: CSV dialect to be used (default: will detect automatically)
 - `--schemas=TEXT`: comma-separated list of schema files (default: will detect
@@ -373,7 +373,7 @@ Options:
   floats etc. (default: `C`)
 - `--verify-ssl=BOOLEAN`: Verify SSL certificate, if source is downloaded via
   HTTPS (default: `true`)
-- `--samples=INTEGER`: number of sample rows to detect schema (default: `5000`)
+- `--samples=INTEGER`: number of sample rows to detect schema (default: `rows.compat.DEFAULT_SAMPLE_ROWS`)
 - `--output=TEXT`: filename to outputs - will use file extension to define
   which plugin to use (default: standard output, plugin text)
 - `--frame-style=TEXT`: frame style to "draw" the table; options: `ascii`,
@@ -433,7 +433,7 @@ Options:
   fields)
 - `--fields-exclude=TEXT`: A comma-separated list of fields to exclude when
   exporting (default: none)
-- `--samples=INTEGER`: number of sample rows to detect schema (default: `5000`)
+- `--samples=INTEGER`: number of sample rows to detect schema (default: `rows.compat.DEFAULT_SAMPLE_ROWS`)
 
 
 Example:

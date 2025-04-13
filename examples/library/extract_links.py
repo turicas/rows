@@ -5,9 +5,9 @@ from __future__ import unicode_literals
 from io import BytesIO
 
 import requests
-import six
 
 import rows
+from rows.compat import TEXT_TYPE  # Python 2 vs Python 3
 
 extract_links = rows.plugins.html.extract_links
 extract_text = rows.plugins.html.extract_text
@@ -27,7 +27,7 @@ def transform(row, table):
     data = row._asdict()
     data["links"] = " ".join(extract_links(row.project))
     for key, value in data.items():
-        if isinstance(value, six.text_type):
+        if isinstance(value, TEXT_TYPE):
             data[key] = extract_text(value)
     return data
 

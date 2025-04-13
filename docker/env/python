@@ -1,0 +1,3 @@
+# Environment variables for `python` services
+
+DATABASE_URL="postgres://postgres:verysecret@postgres:5432/postgres"

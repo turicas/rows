@@ -9,7 +9,7 @@ data = b"""f1,f2,f3
 3,3,"<nl quoted>\n</nl>"
 4,3,"<nl quoted escaped>\\\n</nl>"
 5,3,"<nl quoted escaped-literal>\\n</nl>"
-6,4,\.
+6,4,\\.
 7,1,another test
 9,5,"<cr quoted>\r</cr>"
 10,5,"<cr quoted escaped>\\\r</cr>"

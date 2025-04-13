@@ -24,11 +24,13 @@ import unittest
 from collections import OrderedDict
 
 import mock
+import pytest
 
 import rows
-import rows.plugins.xls
 import tests.utils as utils
 from rows.utils import Source
+
+ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_xls, rows.export_to_xls  # Lazy functions (just aliases)
 
 
 def date_to_datetime(value):
@@ -47,10 +49,15 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def test_imports(self):
-        self.assertIs(rows.import_from_xls, rows.plugins.xls.import_from_xls)
-        self.assertIs(rows.export_to_xls, rows.plugins.xls.export_to_xls)
+        # Force the plugin to load
+        original_import, original_export = rows.plugins.xls.import_from_xls, rows.plugins.xls.export_to_xls
+        assert id(ALIAS_IMPORT) != id(original_import)
+        assert id(ALIAS_EXPORT) != id(original_export)
+        new_alias_import, new_alias_export = rows.import_from_xls, rows.export_to_xls
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+        assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
-    @mock.patch("rows.plugins.xls.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_xls_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
@@ -59,7 +66,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
-    @mock.patch("rows.plugins.xls.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_xls_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -88,18 +95,26 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         export_in_memory = rows.export_to_xls(utils.table, None)
         self.assertEqual(result, export_in_memory)
 
-    def test_export_to_xls_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
-        # TODO: may test file contents
+    def test_export_to_xls_fobj_binary(self):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
-        rows.export_to_xls(utils.table, temp.file)
-        temp.file.close()
-
+        fobj = temp.file
+        result = rows.export_to_xls(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
+        fobj.close()
+        # TODO: test file contents instead of this side-effect
         table = rows.import_from_xls(temp.name)
         self.assert_table_equal(table, utils.table)
 
-    @mock.patch("rows.plugins.xls.prepare_to_export")
+    def test_export_to_xls_fobj_text(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        with pytest.raises(ValueError, match="export_to_xls must receive a file-object open in binary mode"):
+            rows.export_to_xls(utils.table, fobj)
+
+    @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_xls_uses_prepare_to_export(self, mocked_prepare_to_export):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
@@ -128,7 +143,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table2 = rows.import_from_xls(filename)
         self.assert_table_equal(table, table2)
 
-    @mock.patch("rows.plugins.xls.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_start_and_end_row(self, mocked_create_table):
         rows.import_from_xls(
             self.filename, start_row=6, end_row=8, start_column=6, end_column=8
@@ -141,7 +156,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             ["13.64%", "2015-08-18", "2015-08-18T22:21:33"],
             ["13.14%", "2015-03-04", "2015-03-04T16:00:01"],
         ]
-        self.assertEqual(expected_data, call_args[0][0])
+        self.assertEqual(expected_data, list(call_args[0][0]))
 
     def test_zero_date(self):
         table = rows.import_from_xls(

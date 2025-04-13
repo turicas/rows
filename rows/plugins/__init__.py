@@ -15,48 +15,94 @@
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import dicts as dicts  # NOQA
-from . import plugin_csv as csv  # NOQA
-from . import plugin_html as html  # NOQA
-from . import plugin_json as json  # NOQA
-from . import txt as txt  # NOQA
+from rows.compat import library_installed as _library_installed
 
-try:
-    from . import xpath as xpath
-except ImportError:
+
+class _LazyModule(object):
+
+    def __init__(self, name, module_dot_notation, root_function_names=None):
+        self.name = name
+        self.module_dot_notation = module_dot_notation
+        self.root_function_names = root_function_names
+
+    def _load_module(self):
+        import sys
+        from importlib import import_module
+
+        module = import_module(self.module_dot_notation)
+        setattr(sys.modules[__name__], self.name, module)
+        rows_module = sys.modules.get("rows")
+        if rows_module and self.root_function_names is not None:
+            for func_name in self.root_function_names:
+                setattr(rows_module, func_name, getattr(module, func_name))
+        return module
+
+    def __dir__(self):
+        module = self._load_module()
+        return dir(module)
+
+    def __getattr__(self, name):
+        module = self._load_module()
+        return getattr(module, name)
+
+
+def _define_lazy_module(name, module_dot_notation, root_function_names=None):
+    import sys
+
+    this_module = sys.modules[__name__]
+    if hasattr(this_module, name):
+        return
+    setattr(this_module, name, _LazyModule(name, module_dot_notation, root_function_names))
+
+
+_define_lazy_module("csv", "rows.plugins.plugin_csv", ("import_from_csv", "export_to_csv"))
+_define_lazy_module("dicts", "rows.plugins.plugin_dicts", ("import_from_dicts", "export_to_dicts"))
+_define_lazy_module("json", "rows.plugins.plugin_json", ("import_from_json", "export_to_json"))
+_define_lazy_module("txt", "rows.plugins.plugin_txt", ("import_from_txt", "export_to_txt"))
+
+if _library_installed("lxml"):
+    _define_lazy_module("ods", "rows.plugins.plugin_ods", ("import_from_ods",))
+    _define_lazy_module("xpath", "rows.plugins.plugin_xpath", ("import_from_xpath",))
+    _define_lazy_module("html", "rows.plugins.plugin_html", ("import_from_html", "export_to_html"))
+else:
+    _define_lazy_module("html", "rows.plugins.plugin_html", ("export_to_html"))
+    ods = None
     xpath = None
 
-try:
-    from . import ods as ods
-except ImportError:
-    ods = None
-
-try:
-    from . import sqlite as sqlite
-except ImportError:
-    sqlite = None
-
-try:
-    from . import xls as xls
-except ImportError:
-    xls = None
-
-try:
-    from . import xlsx as xlsx
-except ImportError:
-    xlsx = None
-
-try:
-    from . import plugin_parquet as parquet
-except ImportError:
+if _library_installed("parquet"):
+    _define_lazy_module("parquet", "rows.plugins.plugin_parquet", ("import_from_parquet",))
+else:
     parquet = None
 
-try:
-    from . import postgresql as postgresql
-except ImportError:
+if _library_installed("cached_property") and (_library_installed("pdfminer") or _library_installed("fitz")):
+    _define_lazy_module("pdf", "rows.plugins.plugin_pdf", ("import_from_pdf",))
+else:
+    pdf = None
+
+if _library_installed("psycopg2"):
+    _define_lazy_module("postgresql", "rows.plugins.plugin_postgresql", ("import_from_postgresql", "export_to_postgresql"))
+else:
     postgresql = None
 
-try:
-    from . import plugin_pdf as pdf
-except ImportError:
-    pdf = None
+if _library_installed("sqlite3"):
+    _define_lazy_module("sqlite", "rows.plugins.plugin_sqlite", ("import_from_sqlite", "export_to_sqlite"))
+else:
+    sqlite = None
+
+_has_xlrd = _library_installed("xlrd")
+_has_xlwt = _library_installed("xlwt")
+if _has_xlrd and _has_xlwt:
+    _xls_functions = ("import_from_xls", "export_to_xls")
+elif _has_xlrd:
+    _xls_functions = ("import_from_xls",)
+elif _has_xlwt:
+    _xls_functions = ("export_to_xls",)
+if _has_xlrd or _has_xlwt:
+    _define_lazy_module("xls", "rows.plugins.plugin_xls", _xls_functions)
+else:
+    xls = None
+
+if _library_installed("openpyxl"):
+    _define_lazy_module("xlsx", "rows.plugins.plugin_xlsx", ("import_from_xlsx", "export_to_xlsx"))
+else:
+    xlsx = None

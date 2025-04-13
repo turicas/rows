@@ -24,12 +24,12 @@ import unittest
 from collections import OrderedDict
 
 import mock
-import six
 
 import rows
 import rows.plugins.utils as plugins_utils
 import tests.utils as utils
 from rows import fields
+from rows.compat import TEXT_TYPE
 
 
 class GenericUtilsTestCase(unittest.TestCase):
@@ -224,10 +224,36 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[2].field2, 1.23)
         self.assertEqual(table[2].field_2, "Justen")
 
+    def test_create_table_optimization_is_the_same_as_extending(self):
+        # TODO: do the same for FlexibleTable when `create_table` accepts it (or other kinds of table classes)
+        header = ["f1", "f2", "f3"]
+        table_rows = [
+            ["1", "3.14", "Álvaro"],
+            ["2", "2.71", "turicas"],
+            ["3", "1.23", "Justen"],
+        ]
+        table_1 = plugins_utils.create_table([header] + table_rows)
+        table_2 = rows.Table(fields=table_1.fields.copy())
+        table_2.extend(dict(zip(header, row)) for row in table_rows)
+        assert table_1._rows == table_2._rows
+
+    def test_create_table_optimization_is_the_same_as_extending_custom_fields(self):
+        # TODO: do the same for FlexibleTable when `create_table` accepts it (or other kinds of table classes)
+        header = ["f1", "f2", "f3"]
+        table_rows = [
+            ["1", "3.14", "Álvaro"],
+            ["2", "2.71", "turicas"],
+            ["3", "1.23", "Justen"],
+        ]
+        table_1 = plugins_utils.create_table([header] + table_rows, import_fields=["f3", "f2"])
+        table_2 = rows.Table(fields=table_1.fields.copy())
+        table_2.extend({"f3": row[2], "f2": row[1]} for row in table_rows)
+        assert table_1._rows == table_2._rows
+
     def test_prepare_to_export_all_fields(self):
         result = plugins_utils.prepare_to_export(utils.table, export_fields=None)
 
-        self.assertEqual(list(utils.table.fields.keys()), next(result))
+        self.assertEqual(tuple(utils.table.fields.keys()), next(result))
 
         for row in utils.table._rows:
             self.assertEqual(row, next(result))
@@ -242,10 +268,10 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         random.shuffle(some_fields)
         result = plugins_utils.prepare_to_export(utils.table, export_fields=some_fields)
 
-        self.assertEqual(some_fields, next(result))
+        self.assertEqual(tuple(some_fields), next(result))
 
         for row in utils.table:
-            expected_row = [getattr(row, field_name) for field_name in some_fields]
+            expected_row = tuple([getattr(row, field_name) for field_name in some_fields])
             self.assertEqual(expected_row, next(result))
 
         with self.assertRaises(StopIteration):
@@ -271,12 +297,12 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         for row in utils.table:
             flexible.append(row._asdict())
 
-        field_names = list(flexible.fields.keys())
+        field_names = tuple(flexible.fields.keys())
         prepared = plugins_utils.prepare_to_export(flexible)
         self.assertEqual(next(prepared), field_names)
 
         for row, expected_row in zip(prepared, flexible._rows):
-            values = [expected_row[field_name] for field_name in field_names]
+            values = tuple([expected_row[field_name] for field_name in field_names])
             self.assertEqual(values, row)
 
     def test_prepare_to_export_with_FlexibleTable_and_export_fields(self):
@@ -285,36 +311,34 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             # convertion to text_type is needed on Python 2 since namedtuples'
             # keys are bytes, not unicode
             flexible.append(
-                {six.text_type(key): value for key, value in row._asdict().items()}
+                {TEXT_TYPE(key): value for key, value in row._asdict().items()}
             )
 
         field_names = list(flexible.fields.keys())
-        export_fields = field_names[: len(field_names) // 2]
+        export_fields = tuple(field_names[: len(field_names) // 2])
         prepared = plugins_utils.prepare_to_export(
             flexible, export_fields=export_fields
         )
         self.assertEqual(next(prepared), export_fields)
 
         for row, expected_row in zip(prepared, flexible._rows):
-            values = [expected_row[field_name] for field_name in export_fields]
+            values = tuple([expected_row[field_name] for field_name in export_fields])
             self.assertEqual(values, row)
 
     def test_prepare_to_export_wrong_obj_type(self):
         """`prepare_to_export` raises exception if obj isn't `*Table`"""
 
-        expected_message = "Table type not recognized"
-
         with self.assertRaises(ValueError) as exception_context:
             next(plugins_utils.prepare_to_export(1))
-        self.assertEqual(exception_context.exception.args[0], expected_message)
+        self.assertEqual(exception_context.exception.args[0], "Table type 'int' not recognized")
 
         with self.assertRaises(ValueError) as exception_context:
             next(plugins_utils.prepare_to_export(42.0))
-        self.assertEqual(exception_context.exception.args[0], expected_message)
+        self.assertEqual(exception_context.exception.args[0], "Table type 'float' not recognized")
 
         with self.assertRaises(ValueError) as exception_context:
             next(plugins_utils.prepare_to_export([list("abc"), [1, 2, 3]]))
-        self.assertEqual(exception_context.exception.args[0], expected_message)
+        self.assertEqual(exception_context.exception.args[0], "Table type 'list' not recognized")
 
     @mock.patch("rows.plugins.utils.prepare_to_export", return_value=iter([[], [], []]))
     def test_serialize_should_call_prepare_to_export(self, mocked_prepare_to_export):
@@ -330,7 +354,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_serialize(self):
         result = plugins_utils.serialize(utils.table)
         field_types = list(utils.table.fields.values())
-        self.assertEqual(next(result), list(utils.table.fields.keys()))
+        self.assertEqual(next(result), tuple(utils.table.fields.keys()))
 
         for row, expected_row in zip(result, utils.table._rows):
             values = [
@@ -338,30 +362,6 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 for field_type, value in zip(field_types, expected_row)
             ]
             self.assertEqual(values, row)
-
-    def test_make_header_should_add_underscore_if_starts_with_number(self):
-        result = plugins_utils.make_header(["123", "456", "123"])
-        expected_result = ["field_123", "field_456", "field_123_2"]
-        self.assertEqual(result, expected_result)
-
-    def test_make_header_should_not_ignore_permit_not(self):
-        result = plugins_utils.make_header(["abc", "^qwe", "rty"], permit_not=True)
-        expected_result = ["abc", "^qwe", "rty"]
-        self.assertEqual(result, expected_result)
-
-    def test_make_header_prefix(self):
-        result = plugins_utils.make_header(["abc", "123"])
-        expected_result = ["abc", "field_123"]
-        self.assertEqual(result, expected_result)
-
-        result = plugins_utils.make_header(["abc", "123"], prefix="table_")
-        expected_result = ["abc", "table_123"]
-        self.assertEqual(result, expected_result)
-
-    def test_make_header_max_size(self):
-        result = plugins_utils.make_header(["test", "another test", "another string"], max_size=8)
-        expected_result = ["test", "another", "anothe_2"]
-        self.assertEqual(result, expected_result)
 
     def test_make_unique_name(self):
         name = "test"

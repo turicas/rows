@@ -18,9 +18,9 @@
 from __future__ import unicode_literals
 
 import logging
-from collections import OrderedDict
 
 from rows import fields
+from rows.compat import ORDERED_DICT
 from rows.plugins.utils import create_table
 from rows.utils import Source
 
@@ -47,10 +47,16 @@ PARQUET_TO_ROWS = {
 
 def import_from_parquet(filename_or_fobj, *args, **kwargs):
     """Import data from a Parquet file and return with rows.Table."""
+    from itertools import chain
+    from rows.plugins.utils import is_fobj, is_binary_file
+
+    if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
+        raise ValueError("import_from_parquet must not receive a file-like object in text mode")
+
     source = Source.from_file(filename_or_fobj, plugin_name="parquet", mode="rb")
 
     # TODO: should look into `schema.converted_type` also
-    types = OrderedDict(
+    types = ORDERED_DICT(
         [
             (schema.name, PARQUET_TO_ROWS[schema.type])
             for schema in parquet._read_footer(source.fobj).schema
@@ -58,9 +64,8 @@ def import_from_parquet(filename_or_fobj, *args, **kwargs):
         ]
     )
     header = list(types.keys())
-    table_rows = list(parquet.reader(source.fobj))  # TODO: be lazy
-
+    table_rows = parquet.reader(source.fobj)
     meta = {"imported_from": "parquet", "source": source}
     return create_table(
-        [header] + table_rows, meta=meta, force_types=types, *args, **kwargs
+        chain([header], table_rows), meta=meta, force_types=types, *args, **kwargs
     )

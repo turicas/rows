@@ -17,71 +17,19 @@
 
 from __future__ import unicode_literals
 
-import csv
-import io
-import json
-import os
-from collections import OrderedDict, defaultdict
-from dataclasses import dataclass
-from pathlib import Path
+from io import BufferedReader
 
-import six
+from rows.fileio import COMPRESSED_EXTENSIONS, cfopen
+from rows.compat import BINARY_TYPE, DEFAULT_SAMPLE_ROWS, PYTHON_VERSION, TEXT_TYPE
 
-try:
-    import requests
-    from requests.adapters import HTTPAdapter
-    from requests.packages.urllib3.util.retry import Retry
-except ImportError:
-    requests = None
-try:
-    from tqdm import tqdm
-except ImportError:
-    tqdm = None
 
-import rows
-from rows.plugins.utils import make_header
-
-try:
-    import lzma
-except ImportError:
-    lzma = None
-try:
-    import bz2
-except ImportError:
-    bz2 = None
-
-try:
-    from urlparse import urlparse  # Python 2
-except ImportError:
-    from urllib.parse import urlparse  # Python 3
-
-try:
-    import magic
-except (ImportError, TypeError):
-    magic = None
+if PYTHON_VERSION < (3, 0, 0):
+    def str_repr(string):
+        return (b"'" + string.replace("'", "\\'").encode("utf-8") + b"'").decode("utf-8")
 else:
-    if not hasattr(magic, "detect_from_content"):
-        # This is not the file-magic library
-        magic = None
-
-if requests:
-    chardet = requests.compat.chardet
-    try:
-        import urllib3
-    except ImportError:
-        from requests.packages import urllib3
-    else:
-        try:
-            urllib3.disable_warnings()
-        except AttributeError:
-            # old versions of urllib3 or requests
-            pass
-else:
-    chardet = None
-
+    str_repr = repr
 
 # TODO: should get this information from the plugins
-COMPRESSED_EXTENSIONS = ("gz", "xz", "bz2")
 TEXT_PLAIN = {
     "txt": "text/txt",
     "text": "text/txt",
@@ -149,6 +97,7 @@ def estimate_gzip_uncompressed_size(filename):
         counting the resulting bytes.  Although this can take much more time,
         nowadays the correctness pros seem to outweigh the performance cons.
     """
+    import os
     import struct
 
     compressed_size = os.stat(filename).st_size
@@ -185,8 +134,10 @@ def subclasses(cls):
     )
 
 
-class ProgressBar:
+class ProgressBar(object):
     def __init__(self, prefix, pre_prefix="", total=None, unit=" rows"):
+        from tqdm import tqdm
+
         self.prefix = prefix
         self.progress = tqdm(
             desc=pre_prefix, total=total, unit=unit, unit_scale=True, dynamic_ncols=True
@@ -236,19 +187,24 @@ class ProgressBar:
         self.progress.close()
 
 
-@dataclass
 class Source(object):
     "Define a source to import a `rows.Table`"
 
-    uri: (str, Path)
-    plugin_name: str
-    encoding: str
-    fobj: object = None
-    compressed: bool = None
-    should_delete: bool = False
-    should_close: bool = False
-    is_file: bool = None
-    local: bool = None
+    def __init__(self, uri, plugin_name, encoding, fobj=None, compressed=None, should_delete=None, should_close=None,
+                 is_file=None, local=None):
+        self.uri = uri  # str, Path
+        self.plugin_name = plugin_name  # str
+        self.encoding = encoding  # str
+        self.fobj = fobj  # object?
+        self.compressed = compressed  # bool
+        self.should_delete = should_delete  # bool
+        self.should_close = should_close  # bool
+        self.is_file = is_file  # bool
+        self.local = local  # bool
+
+    # TODO: may add a general way to get the decoded version of the file-like object
+
+    # TODO: add `__del__` and call `self.fobj.close()` if `fobj is None and self.should_close`
 
     @classmethod
     def from_file(
@@ -264,20 +220,25 @@ class Source(object):
         local=True,
     ):
         """Create a `Source` from a filename or fobj"""
+        from pathlib import Path
+
+        # TODO: this method may encapsulate `io.TextIOWrapper` if `filename_or_fobj` is a file-like object open in
+        # binary mode and `mode` does not have `"b"` on it.
 
         if isinstance(filename_or_fobj, Source):
             return filename_or_fobj
 
-        elif isinstance(filename_or_fobj, (six.binary_type, six.text_type, Path)):
-            fobj = open_compressed(filename_or_fobj, mode=mode)
+        elif isinstance(filename_or_fobj, (BINARY_TYPE, TEXT_TYPE, Path)):
+            binary_mode = TEXT_TYPE("b") in TEXT_TYPE(mode)
             filename = filename_or_fobj
+            fobj = cfopen(filename, mode=mode, encoding=None if binary_mode else encoding)
             should_close = True if should_close is None else should_close
 
         else:  # Don't know exactly what is, assume file-like object
             fobj = filename_or_fobj
             filename = getattr(fobj, "name", None)
             if not isinstance(
-                filename, (six.binary_type, six.text_type)
+                filename, (BINARY_TYPE, TEXT_TYPE)
             ):  # BytesIO object
                 filename = None
             should_close = False if should_close is None else should_close
@@ -300,6 +261,12 @@ class Source(object):
 
 def plugin_name_by_uri(uri):
     "Return the plugin name based on the URI"
+    import os
+
+    if PYTHON_VERSION < (3, 0, 0):
+        from urlparse import urlparse
+    else:
+        from urllib.parse import urlparse
 
     # TODO: parse URIs like 'sqlite://' also
     # TODO: integrate this function with detect_source
@@ -365,17 +332,51 @@ def plugin_name_by_mime_type(mime_type, mime_name, file_extension):
         normalize_mime_type(mime_type, mime_name, file_extension), None
     )
 
+def _try_to_import_file_magic():
+    try:
+        import magic
+    except (AttributeError, ImportError, TypeError):
+        magic = None
+    else:
+        if not hasattr(magic, "detect_from_content"):
+            # This is not the file-magic library
+            magic = None
+        elif hasattr(magic, "MagicDetect"):
+            def fixed__del__(self):
+                if magic._close is None:
+                    return
+                if self.mime_magic is not None:
+                    self.mime_magic.close()
+                if self.none_magic is not None:
+                    self.none_magic.close()
+            magic.MagicDetect.__del__ = fixed__del__
+    return magic
+
+def _try_to_import_chardet():
+    try:
+        from requests.compat import chardet
+    except ImportError:
+        chardet = None
+
+    return chardet
+
 
 def detect_local_source(path, content, mime_type=None, encoding=None):
+    import os
+
+    chardet = _try_to_import_chardet()
+    magic = _try_to_import_file_magic()
 
     # TODO: may add sample_size
-
     # TODO: use pathlib instead
     filename = os.path.basename(path)
     parts = filename.split(".")
     extension = parts[-1].lower() if len(parts) > 1 else None
     if extension in COMPRESSED_EXTENSIONS:
+        compressed = True
         extension = parts[-2].lower() if len(parts) > 2 else None
+    else:
+        compressed = False
 
     if chardet and not encoding:
         encoding = chardet.detect(content)["encoding"] or encoding
@@ -396,14 +397,14 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
     if encoding == "binary":
         encoding = None
 
-    return Source(uri=path, plugin_name=plugin_name, encoding=encoding)
+    return Source(uri=path, plugin_name=plugin_name, encoding=encoding, compressed=compressed)
 
 
 def local_file(path, sample_size=1048576):
     # TODO: may change sample_size
     if path.split(".")[-1].lower() in COMPRESSED_EXTENSIONS:
         compressed = True
-        fobj = open_compressed(path, mode="rb")
+        fobj = cfopen(path, mode="rb")
         content = fobj.read(sample_size)
         fobj.close()
     else:
@@ -423,6 +424,176 @@ def local_file(path, sample_size=1048576):
         local=True,
     )
 
+def _disable_urllib3_warnings():
+    try:
+        import urllib3
+    except ImportError:
+        from requests.packages import urllib3
+    else:
+        try:
+            urllib3.disable_warnings()
+        except AttributeError:
+            # old versions of urllib3 or requests
+            pass
+
+if PYTHON_VERSION < (3, 0, 0):
+    from cgi import parse_header
+else:
+    def parse_header(value):
+        from email.message import Message
+
+        msg = Message()
+        msg["content-type"] = value
+        params = msg.get_params()
+        mime_type = params[0][0] if params and params[0] else None
+        options = dict(params[1:]) if len(params) > 1 else {}
+        return (mime_type, options)
+
+
+def response_exception_type(exception):
+    """Checks if exception is SSL or timeout error even if requests is not installed"""
+    from rows.compat import library_installed
+
+    if PYTHON_VERSION < (3, 0, 0):
+        from urllib2 import URLError
+    else:
+        from urllib.request import URLError
+
+    if isinstance(exception, URLError):
+        text = TEXT_TYPE(exception).lower()
+        if "certificate_verify_failed" in text:
+            return "ssl"
+        elif "timed out" in text:
+            return "timeout"
+
+    elif library_installed("requests"):
+        from requests.exceptions import SSLError, Timeout
+
+        if isinstance(exception, SSLError):
+            return "ssl"
+        elif isinstance(exception, Timeout):
+            return "timeout"
+
+    return None  # Could not determine
+
+def _download_file_stdlib(
+    uri,
+    filename=None,
+    verify_ssl=True,
+    timeout=5,
+    progress=False,
+    detect=False,
+    chunk_size=8192,
+    sample_size=1048576,
+    retries=3,
+    progress_pattern="Downloading file",
+    user_agent=None
+):
+    # TODO: add ability to continue download
+    import os
+    import ssl
+    import tempfile
+    from pathlib import Path
+
+    from rows.version import as_string as rows_version
+
+    # TODO: unify with `download_file`
+
+    if user_agent is None:
+        user_agent = "python/rows-{} (Python {})".format(rows_version, PYTHON_VERSION)
+
+    if PYTHON_VERSION < (3, 0, 0):
+        from urllib2 import Request, urlopen
+    else:
+        from urllib.request import Request, urlopen
+
+    request = Request(uri, headers={"User-Agent": user_agent})
+    if not verify_ssl:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        response = urlopen(request, context=ctx, timeout=timeout)
+    else:
+        response = urlopen(request, timeout=timeout)
+
+    if response.getcode() >= 400:
+        raise RuntimeError("HTTP response: {}".format(response.getcode()))
+
+    # Get data from headers (if available) to help plugin + encoding detection
+    real_filename, encoding, mime_type = uri, None, None
+    headers = response.headers
+    if "content-type" in headers:
+        mime_type, options = parse_header(headers["content-type"])
+        encoding = options.get("charset", encoding)
+    if "content-disposition" in headers:
+        _, options = parse_header(headers["content-disposition"])
+        real_filename = options.get("filename", real_filename)
+
+    if filename is None:
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        fobj = cfopen(tmp.name, mode="wb")
+    else:
+        fobj = cfopen(filename, mode="wb")
+
+    if progress:
+        total = response.headers.get("content-length", None)
+        total = int(total) if total else None
+        progress_bar = ProgressBar(
+            prefix=progress_pattern.format(
+                uri=uri,
+                filename=Path(fobj.name),
+                mime_type=mime_type,
+                encoding=encoding,
+            ),
+            total=total,
+            unit="bytes",
+        )
+
+    # TODO: implement stream reading
+    data = response.read()
+    fobj.write(data)
+    fobj.close()
+    if progress:
+        progress_bar.update(len(data))
+        progress_bar.close()
+
+    # Detect file type and rename temporary file to have the correct extension
+    sample_data = data[:sample_size]
+    if detect:
+        # TODO: check if will work for compressed files
+        source = detect_local_source(real_filename, sample_data, mime_type, encoding)
+        extension = extension_by_source(source, mime_type)
+        last_extension = real_filename.split(".")[-1].lower()
+        if source.compressed and last_extension in COMPRESSED_EXTENSIONS and extension not in COMPRESSED_EXTENSIONS:
+            extension += "." + last_extension
+        plugin_name = source.plugin_name
+        encoding = source.encoding
+    else:
+        extension, plugin_name, encoding = None, None, None
+    if not extension and mime_type:
+        extension = mime_type.split("/")[-1].lower().strip()
+        if extension == "gzip":
+            extension = "gz"
+
+    if filename is None:
+        filename = tmp.name
+        if extension:
+            filename += "." + extension
+        # TODO: use pathlib instead
+        os.rename(tmp.name, filename)
+    else:
+        extension = filename.split(".")[-1].lower().strip()
+
+    return Source(
+        uri=filename,
+        plugin_name=plugin_name,
+        encoding=encoding,
+        should_delete=True,
+        compressed=extension in COMPRESSED_EXTENSIONS,
+        is_file=True,
+        local=True,  # We just downloaded it!
+    )
+
 
 def download_file(
     uri,
@@ -437,12 +608,38 @@ def download_file(
     progress_pattern="Downloading file",
     user_agent=None
 ):
+    from rows.compat import library_installed
+
+    if not library_installed("requests"):
+        return _download_file_stdlib(
+            uri,
+            filename=filename,
+            verify_ssl=verify_ssl,
+            timeout=timeout,
+            progress=progress,
+            detect=detect,
+            chunk_size=chunk_size,
+            sample_size=sample_size,
+            retries=retries,
+            progress_pattern=progress_pattern,
+            user_agent=user_agent,
+        )
+
     # TODO: add ability to continue download
-    import cgi
+    import os
     import tempfile
+    from pathlib import Path
+
+    import requests
+    from requests.adapters import HTTPAdapter
+    from requests.packages.urllib3.util.retry import Retry
+
+    from rows.version import as_string as rows_version
+
+    _disable_urllib3_warnings()
 
     if user_agent is None:
-        user_agent = "python/rows-{} (requests {})".format(rows.__version__, requests.__version__)
+        user_agent = "python/rows-{} (requests {})".format(rows_version, requests.__version__)
     session = requests.Session()
     retry_adapter = HTTPAdapter(max_retries=Retry(total=retries, backoff_factor=1))
     session.mount("http://", retry_adapter)
@@ -462,17 +659,17 @@ def download_file(
     real_filename, encoding, mime_type = uri, None, None
     headers = response.headers
     if "content-type" in headers:
-        mime_type, options = cgi.parse_header(headers["content-type"])
+        mime_type, options = parse_header(headers["content-type"])
         encoding = options.get("charset", encoding)
     if "content-disposition" in headers:
-        _, options = cgi.parse_header(headers["content-disposition"])
+        _, options = parse_header(headers["content-disposition"])
         real_filename = options.get("filename", real_filename)
 
     if filename is None:
         tmp = tempfile.NamedTemporaryFile(delete=False)
-        fobj = open_compressed(tmp.name, mode="wb")
+        fobj = cfopen(tmp.name, mode="wb")
     else:
-        fobj = open_compressed(filename, mode="wb")
+        fobj = cfopen(filename, mode="wb")
 
     if progress:
         total = response.headers.get("content-length", None)
@@ -504,12 +701,17 @@ def download_file(
         # TODO: check if will work for compressed files
         source = detect_local_source(real_filename, sample_data, mime_type, encoding)
         extension = extension_by_source(source, mime_type)
+        last_extension = real_filename.split(".")[-1].lower()
+        if source.compressed and last_extension in COMPRESSED_EXTENSIONS and extension not in COMPRESSED_EXTENSIONS:
+            extension += "." + last_extension
         plugin_name = source.plugin_name
         encoding = source.encoding
     else:
         extension, plugin_name, encoding = None, None, None
-        if mime_type:
-            extension = mime_type.split("/")[-1]
+    if not extension and mime_type:
+        extension = mime_type.split("/")[-1].lower().strip()
+        if extension == "gzip":
+            extension = "gz"
 
     if filename is None:
         filename = tmp.name
@@ -517,14 +719,17 @@ def download_file(
             filename += "." + extension
         # TODO: use pathlib instead
         os.rename(tmp.name, filename)
+    else:
+        extension = filename.split(".")[-1].lower().strip()
 
     return Source(
         uri=filename,
         plugin_name=plugin_name,
         encoding=encoding,
         should_delete=True,
+        compressed=extension in COMPRESSED_EXTENSIONS,
         is_file=True,
-        local=False,
+        local=True,  # We just downloaded it!
     )
 
 
@@ -560,14 +765,19 @@ def detect_source(uri, verify_ssl, progress, timeout=5):
 def import_from_source(source, default_encoding, *args, **kwargs):
     "Import data described in a `rows.Source` into a `rows.Table`"
 
-    # TODO: test open_compressed
+    import rows.plugins as plugins
+
+    # TODO: test cfopen
     plugin_name = source.plugin_name
     kwargs["encoding"] = (
         kwargs.get("encoding", None) or source.encoding or default_encoding
     )
 
+    if not plugin_name or not hasattr(plugins, plugin_name):
+        raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
+    plugin = getattr(plugins, plugin_name)
     try:
-        import_function = getattr(rows, "import_from_{}".format(plugin_name))
+        import_function = getattr(plugin, "import_from_{}".format(plugin_name))
     except AttributeError:
         raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
     table = import_function(source.uri, *args, **kwargs)
@@ -589,6 +799,7 @@ def import_from_uri(
 
 def export_to_uri(table, uri, *args, **kwargs):
     "Given a `rows.Table` and an URI, detects plugin (from URI) and exports"
+    import rows
 
     # TODO: support '-' also
     plugin_name = plugin_name_by_uri(uri)
@@ -601,84 +812,15 @@ def export_to_uri(table, uri, *args, **kwargs):
     return export_function(table, uri, *args, **kwargs)
 
 
-# TODO: check https://docs.python.org/3.7/library/fileinput.html
-def open_compressed(
-    filename,
-    mode="r",
-    buffering=-1,
-    encoding=None,
-    errors=None,
-    newline=None,
-    closefd=True,
-    opener=None,
-):
-    """Return a text-based file object from a filename, even if compressed
-
-    NOTE: if the file is compressed, options like `buffering` are valid to the
-    compressed file-object (not the uncompressed file-object returned).
-    """
-
-    binary_mode = "b" in mode
-    if not binary_mode and "t" not in mode:
-        # For some reason, passing only mode='r' to bzip2 is equivalent
-        # to 'rb', not 'rt', so we force it here.
-        mode += "t"
-    if binary_mode and encoding:
-        raise ValueError("encoding should not be specified in binary mode")
-
-    extension = str(filename).split(".")[-1].lower()
-    mode_binary = mode.replace("t", "b")
-    get_fobj_binary = lambda: open(
-        filename,
-        mode=mode_binary,
-        buffering=buffering,
-        errors=errors,
-        newline=newline,
-        closefd=closefd,
-        opener=opener,
-    )
-    get_fobj_text = lambda: open(
-        filename,
-        mode=mode,
-        buffering=buffering,
-        encoding=encoding,
-        errors=errors,
-        newline=newline,
-        closefd=closefd,
-        opener=opener,
-    )
-    known_extensions = ("xz", "gz", "bz2")
-
-    if extension not in known_extensions:  # No compression
-        if binary_mode:
-            return get_fobj_binary()
-        else:
-            return get_fobj_text()
-
-    elif extension == "xz":
-        if lzma is None:
-            raise ModuleNotFoundError("lzma support is not installed")
-        fobj_binary = lzma.LZMAFile(get_fobj_binary(), mode=mode_binary)
-
-    elif extension == "gz":
-        import gzip
-        fobj_binary = gzip.GzipFile(fileobj=get_fobj_binary(), mode=mode_binary)
-
-    elif extension == "bz2":
-        if bz2 is None:
-            raise ModuleNotFoundError("bzip2 support is not installed")
-        fobj_binary = bz2.BZ2File(get_fobj_binary(), mode=mode_binary)
-
-    if binary_mode:
-        return fobj_binary
-    else:
-        return io.TextIOWrapper(fobj_binary, encoding=encoding)
+def open_compressed(*args, **kwargs):
+    # TODO: add warning deprecated
+    return cfopen(*args, **kwargs)
 
 
 def csv_to_sqlite(
     input_filename,
     output_filename,
-    samples=None,
+    samples=DEFAULT_SAMPLE_ROWS,
     dialect=None,
     batch_size=10000,
     encoding=None,
@@ -689,9 +831,14 @@ def csv_to_sqlite(
     schema=None,
 ):
     "Export a CSV file to SQLite, based on field type detection from samples"
+    import csv
     from itertools import islice
 
+    from rows.compat import ORDERED_DICT
     from rows.plugins.plugin_csv import CsvInspector
+    from rows.plugins.plugin_sqlite import export_to_sqlite
+    from rows.plugins.utils import make_header
+    from rows.table import Table
 
     # TODO: move to rows.plugins.plugin_sqlite
     # TODO: we may move all inspection (encoding, dialect etc.) to outside this
@@ -703,7 +850,7 @@ def csv_to_sqlite(
     inspector = CsvInspector(input_filename, chunk_size=chunk_size, max_samples=samples, encoding=encoding)
     encoding = encoding or inspector.encoding
     dialect = dialect or inspector.dialect
-    if isinstance(dialect, six.text_type):
+    if isinstance(dialect, TEXT_TYPE):
         dialect = csv.get_dialect(dialect)
     if schema is None:
         schema = inspector.schema
@@ -713,19 +860,19 @@ def csv_to_sqlite(
     # Create lazy table object to be converted
     # TODO: this lazyness feature will be incorported into the library soon so
     #       we can call here `rows.import_from_csv` instead of `csv.reader`.
-    fobj = open_compressed(input_filename, encoding=encoding)
+    fobj = cfopen(input_filename, encoding=encoding)
     csv_reader = csv.reader(fobj, dialect=dialect)
     original_header = next(csv_reader)
     header = make_header(original_header)
-    table = rows.Table(
-        fields=OrderedDict([
+    table = Table(
+        fields=ORDERED_DICT([
             (field, schema[original_field])
             for field, original_field in zip(header, original_header)
         ]))
     table._rows = csv_reader
 
     # Export to SQLite
-    result = rows.export_to_sqlite(
+    result = export_to_sqlite(
         table,
         output_filename,
         table_name=table_name,
@@ -740,19 +887,22 @@ def sqlite_to_csv(
     input_filename,
     table_name,
     output_filename,
-    dialect=csv.excel,
+    dialect="excel",
     batch_size=10000,
     encoding="utf-8",
     callback=None,
     query=None,
 ):
     """Export a table inside a SQLite database to CSV"""
+    import csv
     import sqlite3
+
+    from rows.plugins.utils import ipartition
 
     # TODO: should be able to specify fields
     # TODO: should be able to specify custom query
 
-    if isinstance(dialect, six.text_type):
+    if isinstance(dialect, TEXT_TYPE):
         dialect = csv.get_dialect(dialect)
 
     if query is None:
@@ -761,11 +911,11 @@ def sqlite_to_csv(
     cursor = connection.cursor()
     result = cursor.execute(query)
     header = [item[0] for item in cursor.description]
-    fobj = open_compressed(output_filename, mode="w", encoding=encoding)
+    fobj = cfopen(output_filename, mode="w", encoding=encoding)
     writer = csv.writer(fobj, dialect=dialect)
     writer.writerow(header)
     total_written = 0
-    for batch in rows.plugins.utils.ipartition(result, batch_size):
+    for batch in ipartition(result, batch_size):
         writer.writerows(batch)
         written = len(batch)
         total_written += written
@@ -774,7 +924,7 @@ def sqlite_to_csv(
     fobj.close()
 
 
-class CsvLazyDictWriter:
+class CsvLazyDictWriter(object):
     """Lazy CSV dict writer, with compressed output option
 
     This class is almost the same as `csv.DictWriter` with the following
@@ -807,13 +957,15 @@ class CsvLazyDictWriter:
             if getattr(self.filename_or_fobj, "read", None) is not None:
                 self._fobj = self.filename_or_fobj
             else:
-                self._fobj = open_compressed(
+                self._fobj = cfopen(
                     self.filename_or_fobj, mode="w", encoding=self.encoding
                 )
 
         return self._fobj
 
     def writerow(self, row):
+        import csv
+
         if self.writer is None:
             self.writer = csv.DictWriter(
                 self.fobj,
@@ -838,11 +990,16 @@ def execute_command(command, timeout=30.0, encoding="utf-8"):
     """Execute a command and return its output"""
     import shlex
     import subprocess
-    import typing
+    from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
 
-    if isinstance(command, typing.Text):
+    if PYTHON_VERSION < (3, 0, 0):
+        from collections import Sequence
+    else:
+        from collections.abc import Sequence
+
+    if isinstance(command, (BINARY_TYPE, TEXT_TYPE)):
         command = shlex.split(command)
-    elif not isinstance(command, typing.Sequence):
+    elif not isinstance(command, Sequence):
         raise ValueError("Unknown command type: {}".format(type(command)))
     process = subprocess.Popen(
         command,
@@ -850,7 +1007,10 @@ def execute_command(command, timeout=30.0, encoding="utf-8"):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    stdout, stderr = process.communicate(timeout=timeout)
+    if PYTHON_VERSION < (3, 0, 0):
+        stdout, stderr = process.communicate()
+    else:
+        stdout, stderr = process.communicate(timeout=timeout)
     if process.returncode > 0:
         stderr = stderr.decode(encoding)
         raise ValueError("Error executing command: {}".format(repr(stderr)))
@@ -868,7 +1028,7 @@ def uncompressed_size(filename):
     """
 
     # TODO: get filetype from file-magic, if available
-    if str(filename).lower().endswith(".xz"):
+    if TEXT_TYPE(filename).lower().endswith(".xz"):
         # TODO: move this approach to reading the file directly, as in gzip
         output = execute_command(["xz", "--list", filename])
         lines = output.splitlines()
@@ -880,7 +1040,7 @@ def uncompressed_size(filename):
         value = float(value.replace(",", ""))
         return int(value * MULTIPLIERS[unit])
 
-    elif str(filename).lower().endswith(".gz"):
+    elif TEXT_TYPE(filename).lower().endswith(".gz"):
         return estimate_gzip_uncompressed_size(filename)
 
     else:
@@ -894,7 +1054,11 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
     The table name and all fields names pass for a slugifying process (table
     name is taken from file name).
     """
+    import json
+    from collections import defaultdict
 
+    from rows import fields as rows_fields
+    from rows.compat import ORDERED_DICT
     # Detect field features
     # TODO: move this code to detect algorithm and for each plugin (if possible), so we have this metadata available on
     # all tables
@@ -906,9 +1070,9 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
         field_metadata[field_name] = {"type": field_type}
         values = table[field_name]
         field_metadata[field_name]["null"] = any(value in null_values for value in values)
-        if field_type is rows.fields.TextField:
+        if field_type is rows_fields.TextField:
             field_metadata[field_name]["max_length"] = max(1, max(len(value) for value in values if value is not None))
-            if any("\n" in value or len(value) > 65_533 for value in values):  # MySQL VARCHAR stores up to 65,533
+            if any("\n" in value or len(value) > 65533 for value in values):  # MySQL VARCHAR stores up to 65,533
                 field_metadata[field_name]["subtype"] = "TEXT"
             else:
                 field_metadata[field_name]["subtype"] = "VARCHAR"
@@ -923,20 +1087,21 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                 if field_choices is not None:
                     field_metadata[field_name]["choices"] = field_choices
 
-        elif field_type in (rows.fields.IntegerField, rows.fields.FloatField, rows.fields.DecimalField):
+        elif field_type in (rows_fields.IntegerField, rows_fields.FloatField, rows_fields.DecimalField):
             min_value = field_metadata[field_name]["min"] = min(value for value in values if value is not None)
             max_value = field_metadata[field_name]["max"] = max(value for value in values if value is not None)
-            if field_type is rows.fields.IntegerField:
-                if -32_768 <= min_value and 32_767 >= max_value:  # 2 bytes
+            if field_type is rows_fields.IntegerField:
+                # TODO: add TINYINT and MEDIUMINT? (MySQL)
+                if -32768 <= min_value and 32767 >= max_value:  # 2 bytes
                     field_metadata[field_name]["subtype"] = "SMALLINT"
-                elif -2_147_483_648 <= min_value and 2_147_483_647 >= max_value:  # 4 bytes
+                elif -2147483648 <= min_value and 2147483647 >= max_value:  # 4 bytes
                     field_metadata[field_name]["subtype"] = "INTEGER"
-                elif -9_223_372_036_854_775_808 <= min_value and 9_223_372_036_854_775_807 >= max_value:  # 8 bytes
+                elif -9223372036854775808 <= min_value and 9223372036854775807 >= max_value:  # 8 bytes
                     field_metadata[field_name]["subtype"] = "BIGINT"
-            if field_type is rows.fields.DecimalField:
+            if field_type is rows_fields.DecimalField:
                 max_left = max_right = 0
                 for value in values:
-                    value_str = str(value).strip("-")
+                    value_str = TEXT_TYPE(value).strip("-")
                     if "." in value_str:
                         left, right = value_str.split(".")
                     else:
@@ -968,17 +1133,25 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
         from rows import plugins
 
         data = []
-        for field_name, metadata in field_metadata.items():
+        for field_name in table.field_names:
+            metadata = field_metadata[field_name]
             if field_name not in export_fields:
                 continue
             if "choices" in metadata:
                 metadata["choices"] = json.dumps(sorted(metadata["choices"]))
             data.append(
-                {
-                    "field_name": field_name,
-                    "field_type": metadata["type"].__name__.replace("Field", "").lower(),
-                    **{key: value for key, value in metadata.items() if key != "type"},
-                }
+                ORDERED_DICT([
+                    ("field_name", field_name),
+                    ("field_type", metadata["type"].__name__.replace("Field", "").lower()),
+                    ("null", metadata.get("null")),
+                    ("min", metadata.get("min")),
+                    ("max", metadata.get("max")),
+                    ("subtype", metadata.get("subtype")),
+                    ("decimal_places", metadata.get("decimal_places")),
+                    ("max_digits", metadata.get("max_digits")),
+                    ("max_length", metadata.get("max_length")),
+                    ("choices", metadata.get("choices")),
+                ])
             )
         table = plugins.dicts.import_from_dicts(data)
         if output_format == "txt":
@@ -991,38 +1164,39 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
 
         # TODO: may use dict from rows.plugins.sqlite or postgresql
         sql_fields = {
-            rows.fields.BinaryField: "BLOB",
-            rows.fields.BoolField: "BOOL",
-            rows.fields.IntegerField: "INTEGER",
-            rows.fields.FloatField: "FLOAT",
-            rows.fields.PercentField: "FLOAT",
-            rows.fields.DateField: "DATE",
-            rows.fields.DatetimeField: "TIMESTAMP",
-            rows.fields.TextField: "TEXT",
-            rows.fields.DecimalField: "DECIMAL",
-            rows.fields.EmailField: "TEXT",
-            rows.fields.JSONField: "TEXT",
+            rows_fields.BinaryField: "BLOB",
+            rows_fields.BoolField: "BOOL",
+            rows_fields.IntegerField: "INTEGER",
+            rows_fields.FloatField: "FLOAT",
+            rows_fields.PercentField: "FLOAT",
+            rows_fields.DateField: "DATE",
+            rows_fields.DatetimeField: "TIMESTAMP",
+            rows_fields.TextField: "TEXT",
+            rows_fields.DecimalField: "DECIMAL",
+            rows_fields.EmailField: "TEXT",
+            rows_fields.JSONField: "TEXT",
         }
         choices_sql = []
         fields = []
-        for field_name, metadata in field_metadata.items():
+        for field_name in table.field_names:
             if field_name not in export_fields:
                 continue
+            metadata = field_metadata[field_name]
             sql_type = sql_fields[metadata["type"]]
             if sql_type == "DECIMAL":
                 sql_type += "({}, {})".format(metadata["max_digits"], metadata["decimal_places"])
             elif sql_type == "INTEGER":
                 sql_type = metadata["subtype"]
             elif sql_type == "TEXT":
-                if metadata["subtype"] == "VARCHAR":
-                    sql_type = f"VARCHAR({metadata['max_length']})"
+                if metadata.get("subtype") == "VARCHAR":
+                    sql_type = "VARCHAR({})".format(metadata["max_length"])
                 field_choices = metadata.get("choices")
                 if field_choices is not None:
                     if field_name not in reuse_choices:
                         enum_name = "enum_{}".format(field_name)
                         choices_sql.append(
                             """CREATE TYPE "{}" AS ENUM ({}\n);""".format(
-                                enum_name, ", ".join("\n  " + repr(value) for value in field_choices)
+                                enum_name, ",".join("\n  " + str_repr(value) for value in sorted(field_choices))
                             )
                         )
                         sql_type = enum_name
@@ -1052,17 +1226,17 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
 
     elif output_format == "django":
         django_fields = {
-            rows.fields.BinaryField: "BinaryField",
-            rows.fields.BoolField: "BooleanField",
-            rows.fields.IntegerField: "IntegerField",
-            rows.fields.FloatField: "FloatField",
-            rows.fields.PercentField: "DecimalField",
-            rows.fields.DateField: "DateField",
-            rows.fields.DatetimeField: "DateTimeField",
-            rows.fields.TextField: "TextField",
-            rows.fields.DecimalField: "DecimalField",
-            rows.fields.EmailField: "EmailField",
-            rows.fields.JSONField: "JSONField",
+            rows_fields.BinaryField: "BinaryField",
+            rows_fields.BoolField: "BooleanField",
+            rows_fields.IntegerField: "IntegerField",
+            rows_fields.FloatField: "FloatField",
+            rows_fields.PercentField: "DecimalField",
+            rows_fields.DateField: "DateField",
+            rows_fields.DatetimeField: "DateTimeField",
+            rows_fields.TextField: "TextField",
+            rows_fields.DecimalField: "DecimalField",
+            rows_fields.EmailField: "EmailField",
+            rows_fields.JSONField: "JSONField",
         }
         table_name = "".join(word.capitalize() for word in table.name.split("_"))
 
@@ -1073,15 +1247,16 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             "class {}(models.Model):".format(table_name),
         ]
         model_choices = []
-        for field_name, metadata in field_metadata.items():
+        for field_name in table.field_names:
             if field_name not in export_fields:
                 continue
+            metadata = field_metadata[field_name]
             django_type_name = django_fields[metadata["type"]]
-            comment = {}
-            options = {
-                "null": metadata["null"],
-                "blank": metadata["null"],
-            }
+            comment = ORDERED_DICT()
+            options = ORDERED_DICT([
+                ("null", metadata["null"]),
+                ("blank", metadata["null"]),
+            ])
             for key in ("max_length", "decimal_places", "max_digits"):
                 if key in metadata:
                     options[key] = metadata[key]
@@ -1097,10 +1272,10 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                         choices_name = "{}_CHOICES".format(field_name.upper())
                         options["choices"] = choices_name
                         model_choices.append(
-                            "    {} = (\n      {},\n    )".format(
+                            "    {} = (\n        {},\n    )".format(
                                 choices_name,
-                                ",\n      ".join(
-                                    "({}, {})".format(index, repr(value))
+                                ",\n        ".join(
+                                    "({}, {})".format(index, str_repr(value))
                                     for index, value in enumerate(sorted(field_choices))
                                 )
                             )
@@ -1165,6 +1340,8 @@ def load_schema(filename, context=None):
     `context` is a `dict` with field_type as key pointing to field class, like:
         {"text": rows.fields.TextField, "value": MyCustomField}
     """
+    from rows import fields as rows_fields
+    from rows.compat import ORDERED_DICT
     # TODO: load_schema must support Path objects
 
     table = import_from_uri(filename)
@@ -1173,28 +1350,29 @@ def load_schema(filename, context=None):
     assert "field_type" in field_names
 
     context = context or {
-        key.replace("Field", "").lower(): getattr(rows.fields, key)
-        for key in dir(rows.fields)
+        key.replace("Field", "").lower(): getattr(rows_fields, key)
+        for key in dir(rows_fields)
         if "Field" in key and key != "Field"
     }
-    return OrderedDict([(row.field_name, context[row.field_type]) for row in table])
+    return ORDERED_DICT([(row.field_name, context[row.field_type]) for row in table])
 
 
 def scale_number(n, divider=1000, suffix=None, multipliers="KMGTPEZ", decimal_places=2):
     suffix = suffix if suffix is not None else ""
     count = -1
+    divider = float(divider)
     while n >= divider:
         n /= divider
         count += 1
     multiplier = multipliers[count] if count > -1 else ""
     if not multiplier:
-        return str(n) + suffix
+        return TEXT_TYPE(n) + suffix
     else:
         fmt_str = "{{n:.{}f}}{{multiplier}}{{suffix}}".format(decimal_places)
         return fmt_str.format(n=n, multiplier=multiplier, suffix=suffix)
 
 
-class NotNullWrapper(io.BufferedReader):
+class NotNullWrapper(BufferedReader):
     """BufferedReader which removes NUL (`\x00`) from source stream"""
 
     def read(self, n):
@@ -1211,41 +1389,39 @@ sqlite2csv = sqlite_to_csv
 
 def pgimport(filename, *args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import pgimport as original_function
+    from rows.plugins import postgresql
 
-    return original_function(filename_or_fobj=filename, *args, **kwargs)
+    return postgresql.pgimport(filename_or_fobj=filename, *args, **kwargs)
 
 
 def pgexport(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import pgexport as original_function
+    from rows.plugins import postgresql
 
-    return original_function(*args, **kwargs)
+    return postgresql.pgexport(*args, **kwargs)
 
 
 def get_psql_command(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import get_psql_command as original_function
+    from rows.plugins import postgresql
 
-    return original_function(*args, **kwargs)
+    return postgresql.get_psql_command(*args, **kwargs)
 
 
 def get_psql_copy_command(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import get_psql_copy_command as original_function
+    from rows.plugins import postgresql
 
-    return original_function(*args, **kwargs)
+    return postgresql.get_psql_copy_command(*args, **kwargs)
 
 
 def pg_create_table_sql(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import pg_create_table_sql as original_function
-
-    return original_function(*args, **kwargs)
+    from rows.plugins import postgresql
+    return postgresql.pg_create_table_sql(*args, **kwargs)
 
 
 def pg_execute_sql(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
-    from rows.plugins.postgresql import pg_execute_sql as original_function
-
-    return original_function(*args, **kwargs)
+    from rows.plugins import postgresql
+    return postgresql.pg_execute_sql(*args, **kwargs)

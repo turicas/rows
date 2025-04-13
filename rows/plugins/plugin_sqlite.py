@@ -17,37 +17,18 @@
 
 from __future__ import unicode_literals
 
-import datetime
 import sqlite3
-import string
 from pathlib import Path
 
-import six
-
-import rows.fields as fields
-from rows.fields import make_unique_name
-from rows.plugins.utils import create_table, ipartition, prepare_to_export
 from rows.utils import Source
-
-SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
-SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS "{table_name}" ({field_types})'
-SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
-SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) VALUES ({placeholders})'
-SQLITE_TYPES = {
-    fields.BinaryField: "BLOB",
-    fields.BoolField: "INTEGER",
-    fields.DateField: "TEXT",
-    fields.DatetimeField: "TEXT",
-    fields.DecimalField: "REAL",
-    fields.FloatField: "REAL",
-    fields.IntegerField: "INTEGER",
-    fields.PercentField: "REAL",
-    fields.TextField: "TEXT",
-}
-DEFAULT_TYPE = "BLOB"
+from rows.compat import BINARY_TYPE, TEXT_TYPE
 
 
 def _python_to_sqlite(field_types):
+    import datetime
+
+    from rows import fields
+
     def convert_value(field_type, value):
         if field_type in (
             fields.BinaryField,
@@ -63,7 +44,7 @@ def _python_to_sqlite(field_types):
                 return None
             elif isinstance(value, (datetime.date, datetime.datetime)):
                 return value.isoformat()
-            elif isinstance(value, (six.binary_type, six.text_type)):
+            elif isinstance(value, (BINARY_TYPE, TEXT_TYPE)):
                 return value
             else:
                 raise ValueError("Cannot serialize date value: {}".format(repr(value)))
@@ -85,7 +66,7 @@ def _python_to_sqlite(field_types):
 
 def get_source(filename_or_connection):
 
-    if isinstance(filename_or_connection, (six.binary_type, six.text_type, Path)):
+    if isinstance(filename_or_connection, (BINARY_TYPE, TEXT_TYPE, Path)):
         connection = sqlite3.connect(filename_or_connection)
         uri = filename_or_connection
         input_is_uri = should_close = True
@@ -115,23 +96,6 @@ def get_source(filename_or_connection):
     return source
 
 
-def _valid_table_name(name):
-    """Verify if a given table name is valid for `rows`.
-
-    Rules:
-    - Should start with a letter or '_'
-    - Letters can be capitalized or not
-    - Acceps letters, numbers and _
-    """
-    if name[0] not in "_" + string.ascii_letters or not set(name).issubset(
-        "_" + string.ascii_letters + string.digits
-    ):
-        return False
-
-    else:
-        return True
-
-
 def import_from_sqlite(
     filename_or_connection,
     table_name="table1",
@@ -141,6 +105,10 @@ def import_from_sqlite(
     **kwargs
 ):
     """Return a rows.Table with data from SQLite database."""
+    from itertools import chain
+
+    from rows.plugins.utils import create_table, valid_table_name
+
     source = get_source(filename_or_connection)
     connection = source.fobj
     # TODO: add PRAGMA journal_mode=WAL (may save old state)
@@ -149,21 +117,20 @@ def import_from_sqlite(
     cursor = connection.cursor()
 
     if query is None:
-        if not _valid_table_name(table_name):
+        if not valid_table_name(table_name):
             raise ValueError("Invalid table name: {}".format(table_name))
 
+        SQL_SELECT_ALL = 'SELECT * FROM "{table_name}"'
         query = SQL_SELECT_ALL.format(table_name=table_name)
 
     if query_args is None:
         query_args = tuple()
 
-    table_rows = list(cursor.execute(query, query_args))  # TODO: may be lazy
-    header = [six.text_type(info[0]) for info in cursor.description]
-    cursor.close()
-    # TODO: should close connection also?
+    table_rows = cursor.execute(query, query_args)
+    header = [TEXT_TYPE(info[0]) for info in cursor.description]
 
     meta = {"imported_from": "sqlite", "source": source}
-    return create_table([header] + table_rows, meta=meta, *args, **kwargs)
+    return create_table(chain([header], table_rows), meta=meta, *args, **kwargs)
 
 
 def export_to_sqlite(
@@ -176,6 +143,22 @@ def export_to_sqlite(
     *args,
     **kwargs
 ):
+    from rows import fields
+    from rows.plugins.utils import ipartition, prepare_to_export, valid_table_name
+
+    SQLITE_TYPES = {
+        fields.BinaryField: "BLOB",
+        fields.BoolField: "INTEGER",
+        fields.DateField: "TEXT",
+        fields.DatetimeField: "TEXT",
+        fields.DecimalField: "REAL",
+        fields.FloatField: "REAL",
+        fields.IntegerField: "INTEGER",
+        fields.PercentField: "REAL",
+        fields.TextField: "TEXT",
+    }
+    DEFAULT_TYPE = "BLOB"
+
     # TODO: should add transaction support?
     prepared_table = prepare_to_export(table, *args, **kwargs)
     source = get_source(filename_or_connection)
@@ -183,15 +166,16 @@ def export_to_sqlite(
     cursor = connection.cursor()
 
     if table_name is None:
+        SQL_TABLE_NAMES = 'SELECT name FROM sqlite_master WHERE type="table"'
         table_names = [item[0] for item in cursor.execute(SQL_TABLE_NAMES)]
-        table_name = make_unique_name(
+        table_name = fields.make_unique_name(
             table_name_format.format(index=1),
             existing_names=table_names,
             name_format=table_name_format,
             start=1,
         )
 
-    elif not _valid_table_name(table_name):
+    elif not valid_table_name(table_name):
         raise ValueError("Invalid table name: {}".format(table_name))
 
     field_names = next(prepared_table)
@@ -200,10 +184,12 @@ def export_to_sqlite(
         "{} {}".format(field_name, SQLITE_TYPES.get(field_type, DEFAULT_TYPE))
         for field_name, field_type in zip(field_names, field_types)
     ]
+    SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS "{table_name}" ({field_types})'
     cursor.execute(
         SQL_CREATE_TABLE.format(table_name=table_name, field_types=", ".join(columns))
     )
 
+    SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) VALUES ({placeholders})'
     insert_sql = SQL_INSERT.format(
         table_name=table_name,
         field_names=", ".join(field_names),

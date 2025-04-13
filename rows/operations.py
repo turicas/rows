@@ -17,8 +17,7 @@
 
 from __future__ import unicode_literals
 
-from collections import OrderedDict
-
+from rows.compat import ORDERED_DICT
 from rows.plugins.utils import create_table
 from rows.table import Table
 
@@ -27,7 +26,7 @@ def join(keys, tables):
     """Merge a list of `Table` objects using `keys` to group rows"""
 
     # Make new (merged) Table fields
-    fields = OrderedDict()
+    fields = ORDERED_DICT()
     for table in tables:
         fields.update(table.fields)
     # TODO: may raise an error if a same field is different in some tables
@@ -39,8 +38,8 @@ def join(keys, tables):
             raise ValueError('Invalid key: "{}"'.format(key))
 
     # Group rows by key, without missing ordering
-    none_fields = lambda: OrderedDict({field: None for field in fields.keys()})
-    data = OrderedDict()
+    none_fields = lambda: ORDERED_DICT({field: None for field in fields.keys()})
+    data = ORDERED_DICT()
     for table in tables:
         for row in table:
             row_key = tuple([getattr(row, key) for key in keys])

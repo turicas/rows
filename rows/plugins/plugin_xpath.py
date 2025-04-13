@@ -17,18 +17,18 @@
 
 from __future__ import unicode_literals
 
-import six
 from lxml.html import fromstring as tree_from_string
 
 from rows.plugins.utils import create_table
 from rows.utils import Source
+from rows.compat import PYTHON_VERSION, TEXT_TYPE
 
-try:
-    from HTMLParser import HTMLParser  # Python 2
+if PYTHON_VERSION < (3, 0, 0):
+    from HTMLParser import HTMLParser  # noqa
 
     unescape = HTMLParser().unescape
-except ImportError:
-    import html  # Python 3
+else:
+    import html  # noqa
 
     unescape = html.unescape
 
@@ -45,7 +45,7 @@ def _get_row_data(fields_xpath):
                 result = " ".join(
                     text
                     for text in map(
-                        six.text_type.strip, map(six.text_type, map(unescape, result))
+                        TEXT_TYPE.strip, map(TEXT_TYPE, map(unescape, result))
                     )
                     if text
                 )
@@ -58,18 +58,26 @@ def _get_row_data(fields_xpath):
     return get_data
 
 
-def import_from_xpath(
-    filename_or_fobj, rows_xpath, fields_xpath, encoding="utf-8", *args, **kwargs
-):
+def import_from_xpath(filename_or_fobj, rows_xpath, fields_xpath, encoding=None, *args, **kwargs):
+    from rows.plugins.utils import is_binary_file, is_fobj
 
     types = set([type(rows_xpath)] + [type(xpath) for xpath in fields_xpath.values()])
-    if types != set([six.text_type]):
-        raise TypeError("XPath must be {}".format(six.text_type.__name__))
+    if types != set([TEXT_TYPE]):
+        raise TypeError("XPath must be {}".format(TEXT_TYPE.__name__))
+    elif not is_fobj(filename_or_fobj):
+        source = Source.from_file(filename_or_fobj, plugin_name="xpath", mode="r", encoding=encoding)
+        xml = source.fobj.read()
+    else:
+        if is_binary_file(filename_or_fobj):
+            if encoding is None:
+                raise ValueError("import_from_xpath must receive an encoding when file is in binary mode")
 
-    source = Source.from_file(
-        filename_or_fobj, plugin_name="xpath", mode="rb", encoding=encoding
-    )
-    xml = source.fobj.read().decode(encoding)
+            source = Source.from_file(filename_or_fobj, plugin_name="xpath", mode="rb")
+            xml = source.fobj.read().decode(encoding)
+        else:
+            source = Source.from_file(filename_or_fobj, plugin_name="xpath", mode="r", encoding=encoding)
+            xml = source.fobj.read()
+
     tree = tree_from_string(xml)
     row_elements = tree.xpath(rows_xpath)
 

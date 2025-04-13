@@ -17,25 +17,49 @@
 
 from __future__ import unicode_literals
 
-import math
-import re
-import statistics
 import tempfile
-from dataclasses import dataclass
 
-import six
 from cached_property import cached_property
 
-from rows.plugins.utils import create_table
-from rows.utils import Source, subclasses
+from rows.utils import Source
+from rows.compat import PYTHON_VERSION, TEXT_TYPE
 
-try:
-    import fitz as pymupdf
 
-    pymupdf.TOOLS.mupdf_display_errors(False)
+if PYTHON_VERSION >= (3, 8, 0):
+    # `statistics` is available from Python 3.4, but the `mode` function raises an exception if all numbers are
+    # different.
+    from statistics import mode, stdev
+else:
+    import math
+    from collections import Counter
 
-    pymupdf_imported = True
-except ImportError:
+    def mode(data):
+        counter = Counter(data)
+        return max(counter, key=counter.get)
+
+    class StatisticsError(ValueError):
+        pass
+
+    def stdev(data, xbar=None):
+        n = len(data)
+        if n < 2:
+            raise StatisticsError("stdev requires at least two data points")
+        if xbar is None:
+            xbar = sum(data) / float(n)
+        ss = sum((x - xbar) ** 2 for x in data)
+        mss = ss / (n - 1)
+        return math.sqrt(mss)
+
+if PYTHON_VERSION >= (3, 7, 0):
+    try:
+        import fitz as pymupdf
+
+        pymupdf.TOOLS.mupdf_display_errors(False)
+
+        pymupdf_imported = True
+    except ImportError:
+        pymupdf_imported = False
+else:
     pymupdf_imported = False
 
 
@@ -58,7 +82,6 @@ except ImportError:
     PDFMINER_TEXT_TYPES, PDFMINER_ALL_TYPES = None, None
 
 
-REGEXP_BBOX = re.compile("bbox ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+)")
 
 def extract_intervals(text, repeat=False, sort=True):
     """
@@ -127,7 +150,7 @@ def number_of_pages(filename_or_fobj, backend=None):
 
 
 def pdf_to_text(filename_or_fobj, page_numbers=None, backend=None):
-    if isinstance(page_numbers, six.text_type):
+    if isinstance(page_numbers, TEXT_TYPE):
         page_numbers = extract_intervals(page_numbers)
 
     backend = backend or default_backend()
@@ -245,7 +268,8 @@ class PDFMinerBackend(PDFBackend):
 
     @property
     def pages(self):
-        yield from PDFPage.create_pages(self.document)
+        for item in PDFPage.create_pages(self.document):
+            yield item
 
     @staticmethod
     def convert_object(obj, page_height):
@@ -308,12 +332,7 @@ class PyMuPDFBackend(PDFBackend):
         # TODO: should consider using `dir` and `wmode` from line dict (`obj`)?
         #       `dir` is already considered in the calculation below:
         bbox = pymupdf.Rect(*obj["bbox"]) * page.rotation_matrix
-        text = " ".join(
-            [
-                "\n".join(line.strip() for line in span["text"].splitlines())
-                for span in obj["spans"]
-            ]
-        )
+        text = "\n".join(line.strip() for line in "".join(span["text"] for span in obj["spans"]).splitlines())
         # TODO: may use glyph's height instead of object's bbox (more info:
         # <https://pymupdf.readthedocs.io/en/latest/textpage.html#span-dictionary>)
         return TextObject(
@@ -350,8 +369,11 @@ class PyMuPDFTesseractBackend(PyMuPDFBackend):
         self.preserve_groups = preserve_groups
 
     def page_objects(self, page, dpi=300, alpha=True, lang=None, remove_empty=True, merge_x=True):
+        import re
         import pytesseract
         from lxml.html import document_fromstring
+
+        REGEXP_BBOX = re.compile("bbox ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+)")
 
         with tempfile.NamedTemporaryFile(suffix=".png") as tmp:
             pix = page.get_pixmap(dpi=dpi, alpha=alpha)
@@ -386,17 +408,11 @@ class PyMuPDFTesseractBackend(PyMuPDFBackend):
         ]
 
 
-@dataclass
 class TextObject(object):
-    x0: float
-    y0: float
-    x1: float
-    y1: float
-    text: str
-    colors: int = None
-    flags: int = None
-    fonts: str = None
-    sizes: int = None
+    def __init__(self, x0, y0, x1, y1, text, colors=None, flags=None, fonts=None, sizes=None):
+        self.x0, self.y0, self.x1, self.y1 = x0, y0, x1, y1  # float
+        self.text = text  # str
+        self.colors, self.flags, self.fonts, self.sizes = colors, flags, fonts, sizes  # int
 
     @property
     def center_x(self):
@@ -625,9 +641,11 @@ def contains_or_overlap(a, b):
 
 
 def distance_center(a, b):
+    from math import sqrt
+
     a_x, a_y = a.x0 + (a.x1 - a.x0) / 2, a.y0 + (a.y1 - a.y0) / 2
     b_x, b_y = b.x0 + (b.x1 - b.x0) / 2, b.y0 + (b.y1 - b.y0) / 2
-    return math.sqrt((a_x - b_x) ** 2 + (a_y - b_y) ** 2)
+    return sqrt((a_x - b_x) ** 2 + (a_y - b_y) ** 2)
 
 
 def closest_object(objects, value):
@@ -765,7 +783,7 @@ class ExtractionAlgorithm(object):
 
             # Remove empty lines
             line_text = "".join(
-                "".join(str(obj.text or "") for obj in cell)
+                "".join(TEXT_TYPE(obj.text or "") for obj in cell)
                 for cell in line
                 if cell is not None
             ).strip()
@@ -801,8 +819,8 @@ class YGroupsAlgorithm(ExtractionAlgorithm):
         groups_width = {
             index: group.x1 - group.x0 for index, group in enumerate(groups)
         }
-        mode_width = statistics.mode(groups_width.values())
-        stdev_width = statistics.stdev(groups_width.values())
+        mode_width = mode(groups_width.values())
+        stdev_width = stdev(groups_width.values())
 
         # To finish, find the groups that match the upper and lower width
         # limits (mode +- stdev) and get its objects.
@@ -883,7 +901,7 @@ class HeaderPositionAlgorithm(YGroupsAlgorithm):
                 line.append(y_objs)
             # Remove empty lines
             line_text = "".join(
-                "".join(str(obj.text or "") for obj in cell)
+                "".join(TEXT_TYPE(obj.text or "") for obj in cell)
                 for cell in line
                 if cell is not None
             ).strip()
@@ -943,13 +961,15 @@ class RectsBoundariesAlgorithm(ExtractionAlgorithm):
 
 
 def algorithms():
+    from rows.utils import subclasses
+
     return {Class.name: Class for Class in subclasses(ExtractionAlgorithm)}
 
 
 def get_algorithm(algorithm):
     available_algorithms = algorithms()
 
-    if isinstance(algorithm, six.text_type):
+    if isinstance(algorithm, TEXT_TYPE):
         if algorithm not in available_algorithms:
             raise ValueError(
                 'Unknown algorithm "{}" (options are: {})'.format(
@@ -970,13 +990,15 @@ def get_algorithm(algorithm):
 
 
 def backends():
+    from rows.utils import subclasses
+
     return {Class.name: Class for Class in subclasses(PDFBackend)}
 
 
 def get_backend(backend):
     available_backends = backends()
 
-    if isinstance(backend, six.text_type):
+    if isinstance(backend, TEXT_TYPE):
         if backend not in available_backends:
             raise ValueError(
                 'Unknown PDF backend "{}" (options are: {})'.format(
@@ -1006,7 +1028,7 @@ def pdf_table_lines(
     y_threshold=None,
     backend=None,
 ):
-    if isinstance(page_numbers, six.text_type):
+    if isinstance(page_numbers, TEXT_TYPE):
         page_numbers = extract_intervals(page_numbers)
     backend = backend or default_backend()
 
@@ -1052,8 +1074,12 @@ def import_from_pdf(
     *args,
     **kwargs
 ):
+    from rows.plugins.utils import create_table, is_fobj, is_binary_file
 
-    if isinstance(page_numbers, six.text_type):
+    if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
+        raise ValueError("import_from_pdf must not receive a file-like object in text mode")
+
+    if isinstance(page_numbers, TEXT_TYPE):
         page_numbers = extract_intervals(page_numbers)
 
     backend = backend or default_backend()
@@ -1083,13 +1109,14 @@ LINE_WIDTHS = {
 
 def plot_objects(objects, width=None, height=None, background_color=(255, 255, 255), object_colors=OBJECT_COLORS,
                  line_widths=LINE_WIDTHS):
-    import math
+    from math import ceil
+
     from PIL import Image, ImageDraw
 
     if width is None:
-        width = math.ceil(max(obj.x1 for obj in objects))
+        width = ceil(max(obj.x1 for obj in objects))
     if height is None:
-        height = math.ceil(max(obj.y1 for obj in objects))
+        height = ceil(max(obj.y1 for obj in objects))
 
     img = Image.new("RGB", (width, height), color=background_color)
     draw = ImageDraw.Draw(img)

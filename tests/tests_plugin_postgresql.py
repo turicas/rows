@@ -23,16 +23,32 @@ import unittest
 from textwrap import dedent
 
 import mock
-import six
+from psycopg2 import connect as pgconnect
 
 import rows
-import rows.plugins.postgresql
 import rows.plugins.utils
 import tests.utils as utils
 from rows import fields
-from rows.plugins.postgresql import pgconnect
 from rows.utils import Source
+from rows.compat import PYTHON_VERSION
 
+if PYTHON_VERSION < (3, 0, 0):
+    from urlparse import urlparse, urlunparse
+else:
+    from urllib.parse import urlparse, urlunparse
+
+
+ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_postgresql, rows.export_to_postgresql  # Lazy functions (just aliases)
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL is not None:
+    parsed = urlparse(DATABASE_URL)
+    TEST_DATABASE_NAME = "test_py" + "_".join(str(item) for item in PYTHON_VERSION)
+    TEST_DATABASE_URL = urlunparse(
+        (parsed.scheme, parsed.netloc, "/{}".format(TEST_DATABASE_NAME), parsed.params, parsed.query, parsed.fragment)
+    )
+else:
+    TEST_DATABASE_URL = None
+exported_utils_table = list(rows.plugins.utils.prepare_to_export(utils.table))
 
 class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
@@ -41,16 +57,49 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         "bool_column": fields.BoolField,
         "percent_column": fields.FloatField,
     }
-    uri = os.environ["POSTGRESQL_URI"]
     expected_meta = {
         "imported_from": "postgresql",
-        "source": Source(uri=uri, plugin_name=plugin_name, encoding=None),
+        "source": Source(uri=TEST_DATABASE_URL, plugin_name=plugin_name, encoding=None),
     }
 
-    def get_table_names(self):
-        connection = pgconnect(self.uri)
+    @classmethod
+    def setUpClass(cls):
+        """Create a new database for this Python version"""
+        if DATABASE_URL is None:
+            return
+        connection = pgconnect(DATABASE_URL)
+        connection.autocommit = True
         cursor = connection.cursor()
-        cursor.execute(rows.plugins.postgresql.SQL_TABLE_NAMES)
+        cursor.execute("DROP DATABASE IF EXISTS {}".format(TEST_DATABASE_NAME))
+        cursor.execute("CREATE DATABASE {}".format(TEST_DATABASE_NAME))
+        cursor.close()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Delete the test database for this Python version"""
+
+        if DATABASE_URL is None:
+            return
+        parsed = urlparse(DATABASE_URL)
+        database_url_no_db = urlunparse(
+            (parsed.scheme, parsed.netloc, "/", parsed.params, parsed.query, parsed.fragment)
+        )
+        connection = pgconnect(database_url_no_db)
+        connection.autocommit = True
+        cursor = connection.cursor()
+        cursor.execute("DROP DATABASE IF EXISTS {}".format(TEST_DATABASE_NAME))
+        cursor.close()
+
+    def get_table_names(self):
+        SQL_TABLE_NAMES = """
+            SELECT
+                tablename
+            FROM pg_tables
+            WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+        """
+        connection = pgconnect(TEST_DATABASE_URL)
+        cursor = connection.cursor()
+        cursor.execute(SQL_TABLE_NAMES)
         header = [item[0] for item in cursor.description]
         result = [dict(zip(header, row))["tablename"] for row in cursor.fetchall()]
         cursor.close()
@@ -58,7 +107,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         return result
 
     def tearDown(self):
-        connection = pgconnect(self.uri)
+        connection = pgconnect(TEST_DATABASE_URL)
         for table in self.get_table_names():
             if table.startswith("rows_"):
                 cursor = connection.cursor()
@@ -67,20 +116,23 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         connection.commit()
         connection.close()
 
+    @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
     def test_imports(self):
-        self.assertIs(
-            rows.import_from_postgresql, rows.plugins.postgresql.import_from_postgresql
-        )
-        self.assertIs(
-            rows.export_to_postgresql, rows.plugins.postgresql.export_to_postgresql
-        )
+        # Force the plugin to load
+        original_import, original_export = rows.plugins.postgresql.import_from_postgresql, rows.plugins.postgresql.export_to_postgresql
+        assert id(ALIAS_IMPORT) != id(original_import)
+        assert id(ALIAS_EXPORT) != id(original_export)
+        new_alias_import, new_alias_export = rows.import_from_postgresql, rows.export_to_postgresql
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+        assert id(new_alias_export) == id(original_export)  # Function replaced with loaded one
 
-    @mock.patch("rows.plugins.postgresql.create_table")
+    @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_postgresql_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"encoding": "test", "some_key": 123, "other": 456}
-        rows.export_to_postgresql(utils.table, self.uri, table_name="rows_1")
-        result = rows.import_from_postgresql(self.uri, table_name="rows_1", **kwargs)
+        rows.export_to_postgresql(utils.table, TEST_DATABASE_URL, table_name="rows_1")
+        result = rows.import_from_postgresql(TEST_DATABASE_URL, table_name="rows_1", **kwargs)
         self.assertTrue(mocked_create_table.called)
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
@@ -95,24 +147,25 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(meta, expected_meta)
         self.assertEqual(expected_source.uri, source.uri)
 
-    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
-    @mock.patch("rows.plugins.postgresql.create_table")
+    @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_postgresql_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
         connection, table_name = rows.export_to_postgresql(
-            utils.table, self.uri, table_name="rows_2"
+            utils.table, TEST_DATABASE_URL, table_name="rows_2"
         )
         self.assertTrue(connection.closed)
 
         # import using uri
         table_1 = rows.import_from_postgresql(
-            self.uri, close_connection=True, table_name="rows_2"
+            TEST_DATABASE_URL, close_connection=True, table_name="rows_2"
         )
         call_args = mocked_create_table.call_args_list[0]
         self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
         # import using connection
-        connection = pgconnect(self.uri)
+        connection = pgconnect(TEST_DATABASE_URL)
         table_2 = rows.import_from_postgresql(
             connection, close_connection=False, table_name="rows_2"
         )
@@ -126,46 +179,51 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_create_table_data(call_args, expected_meta={})
         self.assertTrue(isinstance(meta["source"].fobj, connection_type))
 
+    @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
     def test_postgresql_injection(self):
         with self.assertRaises(ValueError):
             rows.import_from_postgresql(
-                self.uri, table_name=('table1","postgresql_master')
+                TEST_DATABASE_URL, table_name=('table1","postgresql_master')
             )
 
         with self.assertRaises(ValueError):
             rows.export_to_postgresql(
-                utils.table, self.uri, table_name='table1", "postgresql_master'
+                utils.table, TEST_DATABASE_URL, table_name='table1", "postgresql_master'
             )
 
-    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
     def test_export_to_postgresql_uri(self):
-        rows.export_to_postgresql(utils.table, self.uri, table_name="rows_3")
+        rows.export_to_postgresql(utils.table, TEST_DATABASE_URL, table_name="rows_3")
 
-        table = rows.import_from_postgresql(self.uri, table_name="rows_3")
+        table = rows.import_from_postgresql(TEST_DATABASE_URL, table_name="rows_3")
         self.assert_table_equal(table, utils.table)
 
-    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
     def test_export_to_postgresql_connection(self):
-        connection = pgconnect(self.uri)
+        connection = pgconnect(TEST_DATABASE_URL)
         rows.export_to_postgresql(
             utils.table, connection, close_connection=True, table_name="rows_4"
         )
 
-        table = rows.import_from_postgresql(self.uri, table_name="rows_4")
+        table = rows.import_from_postgresql(TEST_DATABASE_URL, table_name="rows_4")
         self.assert_table_equal(table, utils.table)
+        connection.close()
 
-    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
     def test_export_to_postgresql_create_unique_table_name(self):
         first_table = utils.table
         second_table = utils.table + utils.table
 
         table_names_before = self.get_table_names()
         rows.export_to_postgresql(
-            first_table, self.uri, table_name_format="rows_{index}"
+            first_table, TEST_DATABASE_URL, table_name_format="rows_{index}"
         )
         table_names_after = self.get_table_names()
         rows.export_to_postgresql(
-            second_table, self.uri, table_name_format="rows_{index}"
+            second_table, TEST_DATABASE_URL, table_name_format="rows_{index}"
         )
         table_names_final = self.get_table_names()
 
@@ -177,50 +235,49 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         new_table_2 = diff_2[0]
 
         result_first_table = rows.import_from_postgresql(
-            self.uri, table_name=new_table_1
+            TEST_DATABASE_URL, table_name=new_table_1
         )
         result_second_table = rows.import_from_postgresql(
-            self.uri, table_name=new_table_2
+            TEST_DATABASE_URL, table_name=new_table_2
         )
         self.assert_table_equal(result_first_table, first_table)
         self.assert_table_equal(result_second_table, second_table)
 
-    @unittest.skipIf(six.PY2, "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
+    @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
     def test_export_to_postgresql_forcing_table_name_appends_rows(self):
         repeat = 3
         for _ in range(repeat):
-            rows.export_to_postgresql(utils.table, self.uri, table_name="rows_7")
+            rows.export_to_postgresql(utils.table, TEST_DATABASE_URL, table_name="rows_7")
         expected_table = utils.table
         for _ in range(repeat - 1):
             expected_table += utils.table
 
-        result_table = rows.import_from_postgresql(self.uri, table_name="rows_7")
+        result_table = rows.import_from_postgresql(TEST_DATABASE_URL, table_name="rows_7")
 
         self.assertEqual(len(result_table), repeat * len(utils.table))
         self.assert_table_equal(result_table, expected_table)
 
-    @mock.patch("rows.plugins.postgresql.prepare_to_export")
+    @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
+    @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_postgresql_prepare_to_export(self, mocked_prepare_to_export):
         encoding = "iso-8859-15"
         kwargs = {"test": 123, "parameter": 3.14}
-        mocked_prepare_to_export.return_value = iter(
-            rows.plugins.utils.prepare_to_export(utils.table)
-        )
-
+        mocked_prepare_to_export.return_value = iter(exported_utils_table)
         rows.export_to_postgresql(
-            utils.table, self.uri, encoding=encoding, table_name="rows_8", **kwargs
+            utils.table, TEST_DATABASE_URL, encoding=encoding, table_name="rows_8", **kwargs
         )
         self.assertTrue(mocked_prepare_to_export.called)
         self.assertEqual(mocked_prepare_to_export.call_count, 1)
-
         call = mocked_prepare_to_export.call_args
         self.assertEqual(call[0], (utils.table,))
         kwargs["encoding"] = encoding
         self.assertEqual(call[1], kwargs)
 
+    @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
     def test_import_from_postgresql_query_args(self):
         connection, table_name = rows.export_to_postgresql(
-            utils.table, self.uri, close_connection=False, table_name="rows_9"
+            utils.table, TEST_DATABASE_URL, close_connection=False, table_name="rows_9"
         )
         table = rows.import_from_postgresql(
             connection,
@@ -229,7 +286,9 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         )
         for row in table:
             self.assertTrue(row.float_column > 3)
+        connection.close()
 
+    @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
     def test_pgimport_force_null(self):
         temp = tempfile.NamedTemporaryFile()
         filename = "{}.csv".format(temp.name)
@@ -249,10 +308,10 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
             )
         rows.utils.pgimport(
             filename=filename,
-            database_uri=self.uri,
+            database_uri=TEST_DATABASE_URL,
             table_name="rows_force_null",
         )
-        table = rows.import_from_postgresql(self.uri, "rows_force_null")
+        table = rows.import_from_postgresql(TEST_DATABASE_URL, "rows_force_null")
         self.assertIs(table[0].field1, None)
         self.assertEqual(table[0].field2, 4)
         self.assertIs(table[1].field1, None)

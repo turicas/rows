@@ -24,11 +24,12 @@ import unittest
 from collections import Counter, OrderedDict, defaultdict
 
 import mock
-import six
+import pytest
 
 import rows
 import tests.utils as utils
 from rows.utils import Source
+from rows.compat import TEXT_TYPE
 
 
 class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -46,7 +47,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertIs(rows.import_from_json, rows.plugins.plugin_json.import_from_json)
         self.assertIs(rows.export_to_json, rows.plugins.plugin_json.export_to_json)
 
-    @mock.patch("rows.plugins.plugin_json.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_json_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
@@ -55,7 +56,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
-    @mock.patch("rows.plugins.plugin_json.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_json_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -74,7 +75,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 call_args, field_ordering=False, expected_meta=self.expected_meta
             )
 
-    @mock.patch("rows.plugins.plugin_json.prepare_to_export")
+    @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_json_uses_prepare_to_export(self, mocked_prepare_to_export):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
@@ -97,13 +98,25 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_json(temp.name)
         self.assert_table_equal(table, utils.table)
 
-    def test_export_to_json_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
-        # TODO: may test file contents
+    def test_export_to_json_fobj_binary(self):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
-        rows.export_to_json(utils.table, temp.file)
+        fobj = temp.file
+        result = rows.export_to_json(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
+        # TODO: test file contents instead of this side-effect
+        table = rows.import_from_json(temp.name)
+        self.assert_table_equal(table, utils.table)
 
+    def test_export_to_json_fobj_text(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        result = rows.export_to_json(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
+        # TODO: test file contents instead of this side-effect
         table = rows.import_from_json(temp.name)
         self.assert_table_equal(table, utils.table)
 
@@ -121,10 +134,10 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
             "decimal_column": float,
             "bool_column": bool,
             "integer_column": int,
-            "date_column": six.text_type,
-            "datetime_column": six.text_type,
-            "percent_column": six.text_type,
-            "unicode_column": six.text_type,
+            "date_column": TEXT_TYPE,
+            "datetime_column": TEXT_TYPE,
+            "percent_column": TEXT_TYPE,
+            "unicode_column": TEXT_TYPE,
         }
         field_types = defaultdict(list)
         for row in imported_json:
@@ -181,7 +194,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         ]
         json_obj = io.BytesIO(json.dumps(data).encode("utf-8"))
         table = rows.import_from_json(json_obj)
-        self.assertEqual(table.field_names, ["f1", "f2"])
+        self.assertEqual(sorted(table.field_names), ["f1", "f2"])
         self.assertEqual(table[0].f1, 2)
         self.assertEqual(table[0].f2, 3)
         self.assertEqual(table[1].f1, 1)

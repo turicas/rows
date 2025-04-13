@@ -1,22 +1,43 @@
-FROM	python:3.7
-MAINTAINER	Álvaro Justen <https://github.com/turicas>
+ARG PYTHON_IMAGE="python"
+ARG PYTHON_VERSION="3.13"
+ARG DEBIAN_VERSION="bookworm"
+FROM ${PYTHON_IMAGE}:${PYTHON_VERSION}-slim-${DEBIAN_VERSION}
+LABEL org.opencontainers.image.authors="Álvaro Justen <alvarojusten@gmail.com>"
+LABEL org.opencontainers.image.url="https://github.com/turicas/rows/"
 
-# Install system dependencies
-RUN apt-get update
-RUN apt-get install --no-install-recommends -y \
-                    build-essential git locales python3-dev libsnappy-dev \
-                    libxml2-dev libxslt-dev libz-dev libmupdf-dev && \
-    apt-get clean && \
-    pip install --no-cache-dir -U pip
+ENV PYTHONUNBUFFERED=1
+WORKDIR /app
+VOLUME /data
 
-# Configure locale (needed to run tests)
-RUN echo 'en_US.UTF-8 UTF-8' > /etc/locale.gen
-RUN echo 'pt_BR.UTF-8 UTF-8' >> /etc/locale.gen
-RUN /usr/sbin/locale-gen
+# Create a non-root user
+RUN addgroup --gid ${GID:-1000} python \
+  && adduser --disabled-password --gecos "" --home /app --uid ${UID:-1000} --gid ${GID:-1000} python \
+  && chown -R python:python /app
 
-# Clone the repository and install Python dependencies
-RUN git clone https://github.com/turicas/rows.git /rows
-RUN cd /rows && \
-    git checkout master && \
-    pip install --no-cache-dir -r requirements-development.txt && \
-    pip install --no-cache-dir -e .
+# Configure locale (required to run tests)
+RUN bash -c 'echo -e "en_US.UTF-8 UTF-8\npt_BR.UTF-8 UTF-8" > /etc/locale.gen'
+
+# Upgrade and install required system packages
+RUN apt update \
+  && apt upgrade -y \
+  && apt install --no-install-recommends -y build-essential libffi-dev libfreetype-dev libmagic1 libmupdf-dev \
+                                            libpq-dev libsnappy-dev libxml2-dev libxslt-dev libz-dev locales \
+                                            postgresql-client python3-dev sqlite3 wget \
+  && apt purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip and install (if needed) expensive-to-build, big packages and the ones from other indexes (for caching)
+RUN --mount=type=cache,target=/var/cache/pip pip install --cache-dir /var/cache/pip -U pip
+
+# Install requirements
+COPY --chown=python:python requirements.txt requirements-development.txt /app/
+RUN --mount=type=cache,target=/var/cache/pip \
+    pip install --cache-dir /var/cache/pip -Ur /app/requirements.txt \
+    && pip install --cache-dir /var/cache/pip -Ur /app/requirements-development.txt
+
+# Copy all needed files and set permissions
+COPY --chown=python:python . /app/
+RUN pip install -e .
+USER python
+CMD ["rows"]

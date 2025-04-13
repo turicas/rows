@@ -17,12 +17,31 @@
 
 from __future__ import unicode_literals
 
+import io
 import re
+import tempfile
 import unittest
 
+import pytest
+
 import rows
-import rows.plugins.plugin_pdf as pdf
 import tests.utils as utils
+from rows.compat import PYTHON_VERSION
+
+ALIAS_IMPORT = rows.import_from_pdf
+
+import rows.plugins.plugin_pdf as pdf
+
+
+if PYTHON_VERSION >= (3, 7, 0):
+    try:
+        import fitz as pymupdf
+
+        pymupdf_imported = True
+    except ImportError:
+        pymupdf_imported = False
+else:
+    pymupdf_imported = False
 
 
 class PDFTestCase(utils.RowsTestMixIn):
@@ -32,7 +51,17 @@ class PDFTestCase(utils.RowsTestMixIn):
     plugin_name = "pdf"
 
     def test_imports(self):
-        self.assertIs(rows.import_from_pdf, pdf.import_from_pdf)
+        # Force the plugin to load
+        original_import = rows.plugins.pdf.import_from_pdf
+        assert id(ALIAS_IMPORT) != id(original_import)
+        new_alias_import = rows.import_from_pdf
+        assert id(new_alias_import) == id(original_import)  # Function replaced with loaded one
+
+    def test_import_from_pdf_fobj_text(self):
+        with pytest.raises(ValueError, match="import_from_pdf must not receive a file-like object in text mode"):
+            with tempfile.NamedTemporaryFile(suffix=".pdf", mode="r") as tmp:
+                fobj = io.TextIOWrapper(tmp.file, encoding="utf-8")
+                rows.import_from_pdf(fobj)
 
     def test_real_data_1(self):
         filename = "tests/data/balneabilidade-26-2010"
@@ -49,7 +78,7 @@ class PDFTestCase(utils.RowsTestMixIn):
             ends_before="*Variação em pontos percentuais.",
         )
         expected = rows.import_from_csv(filename + ".csv")
-        self.assertEqual(list(expected), list(result))
+        assert list(expected) == list(result)
 
     def test_real_data_3(self):
         filename = "tests/data/eleicoes-tcesp-161-162.pdf"
@@ -108,6 +137,7 @@ class PDFTestCase(utils.RowsTestMixIn):
         self.assertTrue(first_page.startswith(expected_start))
 
 
+@pytest.mark.skipif(not pymupdf_imported, reason="pymupdf not supported (Python < 3.7) or not installed")
 class PyMuPDFTestCase(PDFTestCase, unittest.TestCase):
 
     backend = "pymupdf"

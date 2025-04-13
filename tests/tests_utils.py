@@ -19,7 +19,10 @@ from __future__ import unicode_literals
 
 import bz2
 import gzip
-import lzma
+try:
+    import lzma  # Requires Python >= 3.3
+except ImportError:
+    lzma = None
 import pathlib
 import tempfile
 import unittest
@@ -72,8 +75,9 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
 
 class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
-    def assert_generate_schema(self, fmt, expected, export_fields=None):
-        # prepare a consistent table so we can test all formats using it
+
+    def _create_table(self, export_fields=None):
+        """Prepare a consistent table so we can test all formats using it"""
         table_fields = utils.table.fields.copy()
         table_fields["json_column"] = fields.JSONField
         table_fields["decimal_column"] = fields.DecimalField
@@ -87,77 +91,154 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             data["json_column"] = {}
             table.append(data)
         table.meta["name"] = "this is my table"  # TODO: may set source
+        return table
 
-        result = rows.utils.generate_schema(table, export_fields, fmt)
-        self.assertEqual(expected.strip(), result.strip())
+    def assert_generate_schema(self, fmt, expected, export_fields=None, max_choices=0):
+        table = self._create_table(export_fields=export_fields)
+        if export_fields is None:
+            export_fields = list(table.fields.keys())
+        result = rows.utils.generate_schema(
+            table=table, export_fields=export_fields, output_format=fmt, max_choices=max_choices
+        )
+        assert expected.strip() == result.strip()
 
     def test_generate_schema_txt(self):
         expected = dedent(
             """
-            +-----------------+------------+
-            |    field_name   | field_type |
-            +-----------------+------------+
-            |     bool_column |       bool |
-            |  integer_column |    integer |
-            |    float_column |      float |
-            |  decimal_column |    decimal |
-            |  percent_column |    decimal |
-            |     date_column |       date |
-            | datetime_column |   datetime |
-            |  unicode_column |       text |
-            |     json_column |       json |
-            +-----------------+------------+
+            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+---------+
+            |    field_name   | field_type |  null |  min  |  max   | subtype  | decimal_places | max_digits | max_length | choices |
+            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+---------+
+            |     bool_column |       bool |  true |       |        |          |                |            |            |         |
+            |  integer_column |    integer |  true |   1.0 |    6.0 | SMALLINT |                |            |            |         |
+            |    float_column |      float |  true | 1.234 |   9.87 |          |                |            |            |         |
+            |  decimal_column |    decimal |  true | 1.234 |   9.87 |          |              6 |         10 |            |         |
+            |  percent_column |    decimal |  true |  0.01 | 0.1364 |          |              4 |          8 |            |         |
+            |     date_column |       date |  true |       |        |          |                |            |            |         |
+            | datetime_column |   datetime |  true |       |        |          |                |            |            |         |
+            |  unicode_column |       text |  true |       |        |  VARCHAR |                |            |          8 |         |
+            |     json_column |       json | false |       |        |          |                |            |            |         |
+            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+---------+
         """
         )
         self.assert_generate_schema("txt", expected)
 
+    def test_generate_schema_txt_choices(self):
+        table = self._create_table()
+        export_fields = list(table.fields.keys())
+        result = rows.utils.generate_schema(table=table, export_fields=export_fields, output_format="txt", max_choices=10)
+        lines = result.strip().splitlines()
+        self.assertIn('choices', lines[1])
+        selected_line = None
+        for line in lines:
+            if ' unicode_column |' in line:
+                selected_line = line
+                break
+        self.assertIsNotNone(selected_line)
+        self.assertIn('["test", "~~~~", ', selected_line)
+
     def test_generate_schema_sql(self):
         expected = dedent(
             """
-        CREATE TABLE IF NOT EXISTS this_is_my_table (
-            bool_column BOOL,
-            integer_column INT,
-            float_column FLOAT,
-            decimal_column FLOAT,
-            percent_column FLOAT,
-            date_column DATE,
-            datetime_column DATETIME,
-            unicode_column TEXT,
-            json_column TEXT
+        CREATE TABLE IF NOT EXISTS "this_is_my_table" (
+            "bool_column" BOOL,
+            "integer_column" SMALLINT,
+            "float_column" FLOAT,
+            "decimal_column" DECIMAL(10, 6),
+            "percent_column" DECIMAL(8, 4),
+            "date_column" DATE,
+            "datetime_column" TIMESTAMP,
+            "unicode_column" VARCHAR(8),
+            "json_column" TEXT NOT NULL
         );
         """
         )
-        self.assert_generate_schema("sql", expected)
+        self.assert_generate_schema("sql", expected, max_choices=0)
+
+    def test_generate_schema_sql_choices(self):
+        expected = dedent(
+            """
+        CREATE TYPE "enum_unicode_column" AS ENUM (
+          'test',
+          '~~~~',
+          'Álvaro',
+          'àáãâä¹²³',
+          'álvaro',
+          'éèẽêë'
+        );
+
+        CREATE TABLE IF NOT EXISTS "this_is_my_table" (
+            "bool_column" BOOL,
+            "integer_column" SMALLINT,
+            "float_column" FLOAT,
+            "decimal_column" DECIMAL(10, 6),
+            "percent_column" DECIMAL(8, 4),
+            "date_column" DATE,
+            "datetime_column" TIMESTAMP,
+            "unicode_column" enum_unicode_column,
+            "json_column" TEXT NOT NULL
+        );
+        """
+        )
+        self.assert_generate_schema("sql", expected, max_choices=10)
 
     def test_generate_schema_django(self):
         expected = dedent(
             """
         from django.db import models
-        from django.contrib.postgres.fields import JSONField
+
 
         class ThisIsMyTable(models.Model):
-            bool_column = models.BooleanField()
-            integer_column = models.IntegerField()
-            float_column = models.FloatField()
-            decimal_column = models.DecimalField()
-            percent_column = models.DecimalField()
-            date_column = models.DateField()
-            datetime_column = models.DateTimeField()
-            unicode_column = models.TextField()
-            json_column = JSONField()
+            bool_column = models.BooleanField(null=True, blank=True)
+            integer_column = models.PositiveSmallIntegerField(null=True, blank=True)  # max value=6, min value=1
+            float_column = models.FloatField(null=True, blank=True)  # max value=9.87, min value=1.234
+            decimal_column = models.DecimalField(null=True, blank=True, decimal_places=6, max_digits=10)  # max value=9.87, min value=1.234
+            percent_column = models.DecimalField(null=True, blank=True, decimal_places=4, max_digits=8)  # max value=0.1364, min value=0.01
+            date_column = models.DateField(null=True, blank=True)
+            datetime_column = models.DateTimeField(null=True, blank=True)
+            unicode_column = models.CharField(null=True, blank=True, max_length=8)
+            json_column = models.JSONField(null=False, blank=False)
         """
         )
         self.assert_generate_schema("django", expected)
 
+    def test_generate_schema_django_choices(self):
+        expected = dedent(
+            """
+        from django.db import models
+
+
+        class ThisIsMyTable(models.Model):
+            UNICODE_COLUMN_CHOICES = (
+                (0, 'test'),
+                (1, '~~~~'),
+                (2, 'Álvaro'),
+                (3, 'àáãâä¹²³'),
+                (4, 'álvaro'),
+                (5, 'éèẽêë'),
+            )
+
+            bool_column = models.BooleanField(null=True, blank=True)
+            integer_column = models.PositiveSmallIntegerField(null=True, blank=True)  # max value=6, min value=1
+            float_column = models.FloatField(null=True, blank=True)  # max value=9.87, min value=1.234
+            decimal_column = models.DecimalField(null=True, blank=True, decimal_places=6, max_digits=10)  # max value=9.87, min value=1.234
+            percent_column = models.DecimalField(null=True, blank=True, decimal_places=4, max_digits=8)  # max value=0.1364, min value=0.01
+            date_column = models.DateField(null=True, blank=True)
+            datetime_column = models.DateTimeField(null=True, blank=True)
+            unicode_column = models.SmallIntegerField(null=True, blank=True, choices=UNICODE_COLUMN_CHOICES)
+            json_column = models.JSONField(null=False, blank=False)
+        """
+        )
+        self.assert_generate_schema("django", expected, max_choices=10)
+
     def test_generate_schema_restricted_fields(self):
         expected = dedent(
             """
-            +-------------+------------+
-            |  field_name | field_type |
-            +-------------+------------+
-            | bool_column |       bool |
-            | json_column |       json |
-            +-------------+------------+
+            +-------------+------------+-------+-----+-----+---------+----------------+------------+------------+---------+
+            |  field_name | field_type |  null | min | max | subtype | decimal_places | max_digits | max_length | choices |
+            +-------------+------------+-------+-----+-----+---------+----------------+------------+------------+---------+
+            | bool_column |       bool |  true |     |     |         |                |            |            |         |
+            | json_column |       json | false |     |     |         |                |            |            |         |
+            +-------------+------------+-------+-----+-----+---------+----------------+------------+------------+---------+
         """
         )
         self.assert_generate_schema(
@@ -166,9 +247,9 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         expected = dedent(
             """
-        CREATE TABLE IF NOT EXISTS this_is_my_table (
-            bool_column BOOL,
-            json_column TEXT
+        CREATE TABLE IF NOT EXISTS "this_is_my_table" (
+            "bool_column" BOOL,
+            "json_column" TEXT NOT NULL
         );
         """
         )
@@ -179,11 +260,11 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         expected = dedent(
             """
         from django.db import models
-        from django.contrib.postgres.fields import JSONField
+
 
         class ThisIsMyTable(models.Model):
-            bool_column = models.BooleanField()
-            json_column = JSONField()
+            bool_column = models.BooleanField(null=True, blank=True)
+            json_column = models.JSONField(null=False, blank=False)
         """
         )
         self.assert_generate_schema(
@@ -225,7 +306,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             dedent(
                 """
         field_name,field_type
-        f1,text,
+        f1,text
         f2,decimal
         f3,custom1
         f4,custom2
@@ -264,49 +345,6 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         source = rows.utils.Source.from_file(path, mode="w")
         self.assertEqual(source.uri, path)
         source.fobj.close()
-
-    def assert_open_compressed_binary(self, suffix, decompress):
-        content = "Álvaro"
-        encoding = "iso-8859-1"
-        content_encoded = content.encode(encoding)
-
-        temp = tempfile.NamedTemporaryFile(delete=False)
-        filename = temp.name + (suffix or "")
-        self.files_to_delete.append(filename)
-        fobj = rows.utils.open_compressed(filename, mode="wb")
-        fobj.write(content_encoded)
-        fobj.close()
-        assert decompress(open(filename, mode="rb").read()) == content_encoded
-
-    def assert_open_compressed_text(self, suffix, decompress):
-        content = "Álvaro"
-        encoding = "iso-8859-1"
-
-        temp = tempfile.NamedTemporaryFile(delete=False)
-        filename = temp.name + (suffix or "")
-        self.files_to_delete.append(filename)
-        fobj = rows.utils.open_compressed(filename, mode="w", encoding=encoding)
-        fobj.write(content)
-        fobj.close()
-        assert decompress(open(filename, mode="rb").read()).decode(encoding) == content
-
-    def test_open_compressed(self):
-        # No compression
-        same_content = lambda data: data
-        self.assert_open_compressed_binary(suffix="", decompress=same_content)
-        self.assert_open_compressed_text(suffix="", decompress=same_content)
-
-        # Gzip
-        self.assert_open_compressed_binary(suffix=".gz", decompress=gzip.decompress)
-        self.assert_open_compressed_text(suffix=".gz", decompress=gzip.decompress)
-
-        # Lzma
-        self.assert_open_compressed_binary(suffix=".xz", decompress=lzma.decompress)
-        self.assert_open_compressed_text(suffix=".xz", decompress=lzma.decompress)
-
-        # Bz2
-        self.assert_open_compressed_binary(suffix=".bz2", decompress=bz2.decompress)
-        self.assert_open_compressed_text(suffix=".bz2", decompress=bz2.decompress)
 
 
 class PgUtilsTestCase(unittest.TestCase):

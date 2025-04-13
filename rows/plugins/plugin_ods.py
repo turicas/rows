@@ -20,10 +20,8 @@ from __future__ import unicode_literals
 import zipfile
 from decimal import Decimal
 
-from lxml.etree import fromstring as xml_from_string
-from lxml.etree import tostring as xml_to_string
+from lxml.etree import fromstring as xml_from_string, tostring as xml_to_string
 
-from rows.plugins.utils import create_table
 from rows.utils import Source
 
 
@@ -56,7 +54,7 @@ def sheet_names(filename_or_fobj):
     namespaces = document.nsmap
     spreadsheet = document.xpath("//office:spreadsheet", namespaces=namespaces)[0]
     tables = xpath(spreadsheet, "//table:table", namespaces)
-    name_attribute = f"{{{namespaces['table']}}}name"
+    name_attribute = "{" + namespaces["table"] + "}name"
     # TODO: unescape values
     return [table.attrib[name_attribute] for table in tables]
 
@@ -69,9 +67,13 @@ def import_from_ods(
     end_row=None,
     end_column=None,
     *args,
-    **kwargs,
+    **kwargs
 ):
+    from rows.plugins.utils import create_table, is_fobj, is_binary_file
     # TODO: unescape values
+
+    if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
+        raise ValueError("import_from_ods must not receive a file-like object open in text mode")
 
     source = Source.from_file(filename_or_fobj, plugin_name="ods")
 

@@ -1,10 +1,127 @@
-version: '3'
-
 services:
-    db:
-        image: postgres:14
-        shm_size: 4g
-        container_name: rows_postgresql
-        env_file: .env
-        ports:
-            - "42001:5432"
+
+  py313:
+    profiles: [py313]
+    env_file:
+      - path: "docker/env/python"
+        required: true
+      - path: "docker/env/python.local"
+        required: false
+    user: "${UID:-1000}:${GID:-1000}"
+    build:
+      context: .
+      dockerfile: "Dockerfile"
+      args:
+        PYTHON_IMAGE: "python"
+        PYTHON_VERSION: "3.13"
+        DEBIAN_VERSION: "bookworm"
+    image: turicas/rows-py313:dev
+    pull_policy: build
+    volumes:
+      - ${PWD}/docker/data/python/:/data/
+      - ${PWD}/:/app/
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  py312:
+    profiles: [py312]
+    extends:
+      service: py313
+    build:
+      args:
+        PYTHON_VERSION: "3.12"
+    image: turicas/rows-py312:dev
+
+  py311:
+    profiles: [py311]
+    extends:
+      service: py313
+    build:
+      args:
+        PYTHON_VERSION: "3.11"
+    image: turicas/rows-py311:dev
+
+  py310:
+    profiles: [py310]
+    extends:
+      service: py313
+    build:
+      args:
+        PYTHON_VERSION: "3.10"
+    image: turicas/rows-py310:dev
+
+  py39:
+    profiles: [py39]
+    extends:
+      service: py313
+    build:
+      args:
+        PYTHON_VERSION: "3.9"
+    image: turicas/rows-py39:dev
+
+  py38:
+    profiles: [py38]
+    extends:
+      service: py313
+    build:
+      args:
+        PYTHON_VERSION: "3.8"
+    image: turicas/rows-py38:dev
+
+  py37:
+    profiles: [py37]
+    extends:
+      service: py313
+    build:
+      args:
+        PYTHON_VERSION: "3.7"
+    image: turicas/rows-py37:dev
+
+  py36:
+    profiles: [py36]
+    extends:
+      service: py313
+    build:
+      args:
+        PYTHON_IMAGE: "turicas/python"
+        PYTHON_VERSION: "3.6"
+    image: turicas/rows-py36:dev
+
+  py35:
+    profiles: [py35]
+    extends:
+      service: py313
+    build:
+      args:
+        PYTHON_IMAGE: "turicas/python"
+        PYTHON_VERSION: "3.5"
+    image: turicas/rows-py35:dev
+
+  py27:
+    profiles: [py27]
+    extends:
+      service: py313
+    build:
+      args:
+        PYTHON_IMAGE: "turicas/python"
+        PYTHON_VERSION: "2.7"
+    image: turicas/rows-py27:dev
+
+  postgres:
+    env_file:
+      - path: "docker/env/postgres"
+        required: true
+      - path: "docker/env/postgres.local"
+        required: false
+    user: "${UID:-1000}:${GID:-1000}"
+    shm_size: "4g"
+    image: "postgres:17.4-bookworm"
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    volumes:
+      - ${PWD}/docker/data/postgres/:/data/
+      - ${PWD}/docker/conf/postgres/postgresql.dev.conf:/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      retries: 5

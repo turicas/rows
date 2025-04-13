@@ -24,16 +24,16 @@ import locale
 import re
 import uuid
 from base64 import b64decode, b64encode
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from decimal import Decimal, InvalidOperation
 from unicodedata import normalize
 
-import six
+from rows.compat import BINARY_TYPE, ORDERED_DICT, PYTHON_KEYWORDS_LOWER, PYTHON_VERSION, TEXT_TYPE
 
-if six.PY2:
-    from itertools import izip_longest as zip_longest
+if PYTHON_VERSION < (3, 0, 0):
+    from itertools import izip_longest as zip_longest  # noqa
 else:
-    from itertools import zip_longest
+    from itertools import zip_longest  # noqa
 
 
 # Order matters here
@@ -61,6 +61,44 @@ REGEXP_SEPARATOR = re.compile("(_+)")
 REGEXP_WORD_BOUNDARY = re.compile("(\\w\\b)")
 SHOULD_NOT_USE_LOCALE = True  # This variable is changed by rows.locale_manager
 SLUG_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
+
+_cache_resize_len = 31000
+_cacheable_types = (TEXT_TYPE, BINARY_TYPE, int, float, bool, type(None), datetime.date, datetime.datetime, uuid.UUID)
+_max_cache_size = 32000
+_deserialization_cache = {}
+_deserialization_error = object()
+
+def cached_type_deserialize(type_, value, true_behavior=True):
+    """
+    LFU cache for type deserialization
+
+    Calls `type_.deserialize(value)`. When `true_behavior` is `True`, exception is raised if value can't be
+    deserialized; returns `_deserialization_error` sentinel, otherwise.
+    Will only cache values that can be hashed and on `_cacheable_types`.
+    """
+    from locale import getlocale
+    global _deserialization_cache
+
+    should_cache = isinstance(value, _cacheable_types)
+    cache_key = hash((type_, type(value), value, SHOULD_NOT_USE_LOCALE or getlocale())) if should_cache else None
+    if not should_cache or cache_key not in _deserialization_cache:
+        try:
+            result = type_.deserialize(value)
+        except (ValueError, TypeError):
+            if true_behavior:
+                raise
+            return _deserialization_error
+        else:
+            if should_cache:
+                _deserialization_cache[cache_key] = [result, 1]
+                if len(_deserialization_cache) == _max_cache_size:
+                    min_freq = _deserialization_cache[sorted(_deserialization_cache.keys(), key=lambda key: _deserialization_cache[key][1])[_cache_resize_len]][1]
+                    _deserialization_cache = {k: v for k, v in _deserialization_cache.items() if v[1] > min_freq}
+    else:
+        result, _ = _deserialization_cache[cache_key]
+        _deserialization_cache[cache_key][1] += 1
+    return result
+
 
 def value_error(value, cls):
     value = repr(value)
@@ -113,12 +151,12 @@ class BinaryField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (six.binary_type,)
+    TYPE = (BINARY_TYPE,)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is not None:
-            if not isinstance(value, six.binary_type):
+            if not isinstance(value, BINARY_TYPE):
                 value_error(value, cls)
             else:
                 try:
@@ -131,9 +169,9 @@ class BinaryField(Field):
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
         if value is not None:
-            if isinstance(value, six.binary_type):
+            if isinstance(value, BINARY_TYPE):
                 return value
-            elif isinstance(value, six.text_type):
+            elif isinstance(value, TEXT_TYPE):
                 try:
                     return b64decode(value)
                 except (TypeError, ValueError, binascii.Error):
@@ -158,13 +196,13 @@ class UUIDField(Field):
             if not isinstance(value, self.TYPE):
                 value_error(value, cls)
             else:
-                return str(value)
+                return TEXT_TYPE(value)
         else:
             return ""
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = as_string(value).strip()
+        value = as_string(value, encoding="ascii").strip()
         if len(value) not in (36, 32):  # with dashes and without dashes
             value_error(value, cls)
         else:
@@ -180,8 +218,8 @@ class BoolField(Field):
 
     TYPE = (bool,)
     SERIALIZED_VALUES = {True: "true", False: "false", None: ""}
-    TRUE_VALUES = ("true", "yes")
-    FALSE_VALUES = ("false", "no")
+    TRUE_VALUES = ("true", "t", "yes")
+    FALSE_VALUES = ("false", "f", "no")
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -190,10 +228,10 @@ class BoolField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(BoolField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if isinstance(value, cls.TYPE):
             return value
-
+        elif is_null(value):
+            return None
         value = as_string(value).lower()
         if value in cls.TRUE_VALUES:
             return True
@@ -217,23 +255,23 @@ class IntegerField(Field):
             return ""
 
         if SHOULD_NOT_USE_LOCALE:
-            return six.text_type(value)
+            return TEXT_TYPE(value)
         else:
             grouping = kwargs.get("grouping", None)
             return locale.format_string("%d", value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(IntegerField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if isinstance(value, cls.TYPE):
             return value
+        elif is_null(value):
+            return None
         elif isinstance(value, float):
             new_value = int(value)
             if new_value != value:
                 raise ValueError("It's float, not integer")
             else:
                 value = new_value
-
         value = as_string(value)
         return int(value) if SHOULD_NOT_USE_LOCALE else locale.atoi(value)
 
@@ -252,22 +290,19 @@ class FloatField(Field):
             return ""
 
         if SHOULD_NOT_USE_LOCALE:
-            return six.text_type(value)
+            return TEXT_TYPE(value)
         else:
             grouping = kwargs.get("grouping", None)
             return locale.format_string("%f", value, grouping=grouping)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(FloatField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if isinstance(value, cls.TYPE):
             return value
-
+        elif is_null(value):
+            return None
         value = as_string(value)
-        if SHOULD_NOT_USE_LOCALE:
-            return float(value)
-        else:
-            return locale.atof(value)
+        return float(value) if SHOULD_NOT_USE_LOCALE else locale.atof(value)
 
 
 class DecimalField(Field):
@@ -283,7 +318,7 @@ class DecimalField(Field):
         if value is None:
             return ""
 
-        value_as_string = six.text_type(value)
+        value_as_string = TEXT_TYPE(value)
         if SHOULD_NOT_USE_LOCALE:
             return value_as_string
         else:
@@ -298,11 +333,12 @@ class DecimalField(Field):
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(DecimalField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if isinstance(value, cls.TYPE):
             return value
+        elif is_null(value):
+            return None
         elif type(value) in (int, float):
-            return Decimal(six.text_type(value))
+            return Decimal(TEXT_TYPE(value))
 
         if SHOULD_NOT_USE_LOCALE:
             try:
@@ -359,7 +395,7 @@ class PercentField(DecimalField):
         elif value == Decimal("0"):
             return "0.00%"
 
-        value = Decimal(six.text_type(value * 100)[:-2])
+        value = Decimal(TEXT_TYPE(value * 100)[:-2])
         value = super(PercentField, cls).serialize(value, *args, **kwargs)
         return "{}%".format(value)
 
@@ -392,16 +428,16 @@ class DateField(Field):
         if value is None:
             return ""
 
-        return six.text_type(value.strftime(cls.OUTPUT_FORMAT))
+        return TEXT_TYPE(value.strftime(cls.OUTPUT_FORMAT))
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(DateField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        # TODO: add locale support?
+        if isinstance(value, cls.TYPE):
             return value
-
+        elif is_null(value):
+            return None
         value = as_string(value)
-
         dt_object = datetime.datetime.strptime(value, cls.INPUT_FORMAT)
         return dt_object.date()
 
@@ -422,14 +458,14 @@ class DatetimeField(Field):
         if value is None:
             return ""
 
-        return six.text_type(value.isoformat())
+        return TEXT_TYPE(value.isoformat())
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(DatetimeField, cls).deserialize(value)
-        if value is None or isinstance(value, cls.TYPE):
+        if isinstance(value, cls.TYPE):
             return value
-
+        elif is_null(value):
+            return None
         value = as_string(value)
         # TODO: may use iso8601
         groups = cls.DATETIME_REGEXP.findall(value)
@@ -445,7 +481,7 @@ class TextField(Field):
     Is not locale-aware (does not need to be)
     """
 
-    TYPE = (six.text_type,)
+    TYPE = (TEXT_TYPE,)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
@@ -470,14 +506,13 @@ class EmailField(TextField):
         if value is None:
             return ""
 
-        return six.text_type(value)
+        return TEXT_TYPE(value)
 
     @classmethod
     def deserialize(cls, value, *args, **kwargs):
-        value = super(EmailField, cls).deserialize(value)
-        if value is None or not value.strip():
+        if value is None or is_null(value):
             return None
-
+        value = as_string(value)
         result = cls.EMAIL_REGEXP.findall(value)
         if not result:
             value_error(value, cls)
@@ -506,19 +541,21 @@ class JSONField(Field):
             return json.loads(value)
 
 
-def as_string(value):
-    if isinstance(value, six.binary_type):
-        raise ValueError("Binary is not supported")
-    elif isinstance(value, six.text_type):
+def as_string(value, encoding=None):
+    if isinstance(value, BINARY_TYPE):
+        if encoding is None:
+            raise ValueError("Binary is not supported")
+        return value.decode(encoding)
+    elif isinstance(value, TEXT_TYPE):
         return value
     else:
-        return six.text_type(value)
+        return TEXT_TYPE(value)
 
 
 def is_null(value):
     if value is None:
         return True
-    elif type(value) is six.binary_type:
+    elif type(value) is BINARY_TYPE:
         value = value.strip().lower()
         return not value or value in NULL_BYTES
     else:
@@ -549,13 +586,13 @@ def get_items(*indexes):
 def slug(text, separator="_", permitted_chars=SLUG_CHARS):
     """Generate a slug for the `text`.
 
-    >>> slug(' ÁLVARO  justen% ')
+    >>> str(slug(' ÁLVARO  justen% '))
     'alvaro_justen'
-    >>> slug(' ÁLVARO  justen% ', separator='-')
+    >>> str(slug(' ÁLVARO  justen% ', separator='-'))
     'alvaro-justen'
     """
 
-    text = six.text_type(text or "")
+    text = TEXT_TYPE(text or "")
 
     # Strip non-ASCII characters
     # Example: u' ÁLVARO  justen% ' -> ' ALVARO  justen% '
@@ -583,7 +620,7 @@ def slug(text, separator="_", permitted_chars=SLUG_CHARS):
 
 
 def camel_to_snake(value):
-    value = str(value or "").strip()
+    value = TEXT_TYPE(value or "").strip()
     if not value:
         return ""
     # Adapted from <https://stackoverflow.com/a/1176023/1299446>
@@ -623,7 +660,10 @@ def make_header(field_names, permit_not=False, max_size=None, prefix="field_"):
             field_name = "{}{}".format(prefix, index)
         elif field_name[0].isdigit():
             field_name = "{}{}".format(prefix, field_name)
-
+        elif field_name in PYTHON_KEYWORDS_LOWER:
+            field_name = make_unique_name(
+                name=field_name, existing_names=[field_name] + result, start=1, max_size=max_size
+            )
         if field_name in result:
             field_name = make_unique_name(
                 name=field_name, existing_names=result, start=2, max_size=max_size
@@ -648,6 +688,14 @@ DEFAULT_TYPES = (
 )
 
 
+def _unique_list_values(values):
+    result = []
+    for value in values:
+        if value not in result:
+            result.append(value)
+    return result
+
+
 class TypeDetector(object):
     """Detect data types based on a list of Field classes"""
 
@@ -666,24 +714,40 @@ class TypeDetector(object):
         self._samples = []
         self._skip = skip_indexes or tuple()
 
-    def check_type(self, index, value):
-        for type_ in self._possible_types[index][:]:
-            if not is_null(value):
-                self._is_empty[index] = False
-            try:
-                type_.deserialize(value)
-            except (ValueError, TypeError):
-                self._possible_types[index].remove(type_)
-
     def process_row(self, row):
         for index, value in enumerate(row):
             if index in self._skip:
                 continue
-            self.check_type(index, value)
+            for type_ in self._possible_types[index][:]:
+                if self._is_empty[index] and not is_null(value):
+                    self._is_empty[index] = False
+                if cached_type_deserialize(type_, value, true_behavior=False) is _deserialization_error:
+                    self._possible_types[index].remove(type_)
 
-    def feed(self, data):
-        for row in data:
-            self.process_row(row)
+    # TODO: create two kinds of `feed`: by row and by column (some formats will have it by column)
+
+    def feed(self, data, batch_size=512):
+        if not isinstance(data, list):
+            data = list(data)  # Must have all values in memory and indexable
+        if not data:
+            return
+        indices = [index for index in range(len(data[0])) if index not in self._skip]
+        if not indices:
+            return
+
+        skip, possible_types, is_empty = self._skip, self._possible_types, self._is_empty
+        while data:
+            for col_index in indices:
+                col_values = _unique_list_values(row[col_index] for row in data[:batch_size])
+                if is_empty[col_index] and any(not is_null(value) for value in col_values):
+                    is_empty[col_index] = False
+                for type_ in possible_types[col_index][:]:
+                    if any(
+                        cached_type_deserialize(type_, value, true_behavior=False) is _deserialization_error
+                        for value in col_values
+                    ):
+                        possible_types[col_index].remove(type_)
+            data = data[batch_size:]
 
     def priority(self, *field_types):
         """Decide the priority between each possible type"""
@@ -711,7 +775,7 @@ class TypeDetector(object):
         else:
             header = self.field_names
 
-        return OrderedDict(
+        return ORDERED_DICT(
             [
                 (
                     field_name,

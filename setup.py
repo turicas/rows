@@ -17,26 +17,29 @@
 
 from __future__ import unicode_literals
 
-from distutils.util import convert_path
-
+import sys
 from setuptools import find_packages, setup
 
-version_filename = convert_path("rows/__init__.py")
-with open(version_filename, mode="r", encoding="utf-8") as fobj:
-    for line in fobj:
-        if "__version__ =" in line:
-            version = line.strip().split("=")[-1].strip().replace('"', '').replace("'", "")
 
 utils_requirements = ["requests", "requests-cache", "tqdm"]
+pdfminer_requirements = [
+    "cached-property",
+    "pdfminer.six == 20191110; python_version == '2.7'",
+    "pdfminer.six == 20201018; python_version == '3.5'",
+    "pdfminer.six == 20221105; python_version == '3.6'",
+    "pdfminer.six == 20221105; python_version == '3.7'",
+    "pdfminer.six; python_version >= '3.8'"
+]
 EXTRA_REQUIREMENTS = {
-    "cli": ["click"] + utils_requirements,
-    "csv": ["unicodecsv"],
-    "detect": ["file-magic"],
+    "cli": ["click"],
+    "cli-extra": ["click"] + utils_requirements,
+    "csv": [],
+    "detect": ["file-magic; python_version >= '3.0'"],
     "html": ["lxml"],  # apt: libxslt-dev libxml2-dev
     "ods": ["lxml"],
     "parquet": ["parquet"],
-    "pdf": ["cached-property", "pymupdf>=1.16.8"],
-    "pdf-pdfminer.six": ["cached-property", "pdfminer.six"],
+    "pdf": pdfminer_requirements,
+    "pdf-pdfminer.six": pdfminer_requirements,
     "pdf-pymupdf": ["cached-property", "pymupdf"],
     "postgresql": ["psycopg2-binary"],
     "utils": utils_requirements,
@@ -46,10 +49,8 @@ EXTRA_REQUIREMENTS = {
 }
 EXTRA_REQUIREMENTS["all"] = sum(EXTRA_REQUIREMENTS.values(), [])
 INSTALL_REQUIREMENTS = [
-    "dataclasses",    
-    "six",
-    "requests",
-] + EXTRA_REQUIREMENTS["csv"]
+    "pathlib; python_version < '3.0'",
+]
 LONG_DESCRIPTION = """
 No matter in which format your tabular data is: rows will import it,
 automatically detect types and give you high-level Python objects so you can
@@ -64,7 +65,7 @@ setup(
     name="rows",
     description=("A common, beautiful interface to tabular data, no matter the format"),
     long_description=LONG_DESCRIPTION,
-    version=version,
+    version="0.5.0-dev0",
     author="Álvaro Justen",
     author_email="alvarojusten@gmail.com",
     url="https://github.com/turicas/rows/",
@@ -86,8 +87,14 @@ setup(
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Topic :: Database",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: Text Processing :: Markup :: HTML",

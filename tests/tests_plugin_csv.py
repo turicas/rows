@@ -26,6 +26,7 @@ from io import BytesIO
 from textwrap import dedent
 
 import mock
+import pytest
 
 import rows
 import rows.plugins.plugin_csv
@@ -55,10 +56,11 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def test_imports(self):
-        self.assertIs(rows.import_from_csv, rows.plugins.plugin_csv.import_from_csv)
-        self.assertIs(rows.export_to_csv, rows.plugins.plugin_csv.export_to_csv)
+        # The order must be this one to force loading the lazy module (first the real function, then the alias)
+        self.assertIs(rows.plugins.plugin_csv.import_from_csv, rows.import_from_csv)
+        self.assertIs(rows.plugins.plugin_csv.export_to_csv, rows.export_to_csv)
 
-    @mock.patch("rows.plugins.plugin_csv.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
@@ -67,7 +69,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(mocked_create_table.call_count, 1)
         self.assertEqual(result, 42)
 
-    @mock.patch("rows.plugins.plugin_csv.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
 
@@ -82,7 +84,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
-    @mock.patch("rows.plugins.plugin_csv.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_discover_dialect(self, mocked_create_table):
         data, lines = make_csv_data(
             quote_char="'", field_delimiter=";", line_delimiter="\r\n"
@@ -156,7 +158,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(table[2].field1, 5)
         self.assertEqual(table[2].field2, 6)
 
-    @mock.patch("rows.plugins.plugin_csv.create_table")
+    @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_force_dialect(self, mocked_create_table):
         data, lines = make_csv_data(
             quote_char="'", field_delimiter="\t", line_delimiter="\r\n"
@@ -250,7 +252,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertDictEqual(table[1].jsoncolumn1, {"c": 44})
         self.assertDictEqual(table[1].jsoncolumn2, {"d": 45})
 
-    @mock.patch("rows.plugins.plugin_csv.serialize")
+    @mock.patch("rows.plugins.utils.serialize")
     def test_export_to_csv_uses_serialize(self, mocked_serialize):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
@@ -266,26 +268,43 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertEqual(call[1], kwargs)
 
     def test_export_to_csv_filename(self):
-        # TODO: may test file contents
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         rows.export_to_csv(utils.table, temp.name)
-
+        # TODO: test file contents instead of this side-effect
         table = rows.import_from_csv(temp.name)
         self.assert_table_equal(table, utils.table)
-
         temp.file.seek(0)
         result = temp.file.read()
         export_in_memory = rows.export_to_csv(utils.table, None)
         self.assertEqual(result, export_in_memory)
 
-    def test_export_to_csv_fobj(self):
-        # TODO: may test with codecs.open passing an encoding
-        # TODO: may test file contents
-        temp = tempfile.NamedTemporaryFile(delete=False)
+    def test_export_to_csv_fobj_binary(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
         self.files_to_delete.append(temp.name)
-        rows.export_to_csv(utils.table, temp.file)
+        fobj = temp.file
+        result = rows.export_to_csv(utils.table, fobj, encoding="utf-8")
+        assert result is fobj
+        assert not fobj.closed
+        # TODO: test file contents instead of this side-effect
+        table = rows.import_from_csv(temp.name)
+        self.assert_table_equal(table, utils.table)
 
+    def test_export_to_csv_fobj_binary_without_encoding(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        with pytest.raises(ValueError, match="export_to_csv must receive an encoding when file is in binary mode"):
+            rows.export_to_csv(utils.table, fobj, encoding=None)
+
+    def test_export_to_csv_fobj_text(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        self.files_to_delete.append(temp.name)
+        fobj = temp.file
+        result = rows.export_to_csv(utils.table, fobj)
+        assert result is fobj
+        assert not fobj.closed
+        # TODO: test file contents instead of this side-effect
         table = rows.import_from_csv(temp.name)
         self.assert_table_equal(table, utils.table)
 
