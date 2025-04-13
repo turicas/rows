@@ -119,7 +119,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_html_fobj_text(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8")
         self.files_to_delete.append(temp.name)
         fobj = temp.file
         result = rows.export_to_html(utils.table, fobj)

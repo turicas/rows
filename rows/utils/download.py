@@ -265,7 +265,7 @@ class Aria2cDownloader(Downloader):
             tmp = NamedTemporaryFile(
                 delete=False, prefix="aria2c-download-", suffix=".txt"
             )
-            with open(tmp.name, mode="w") as output:
+            with open(tmp.name, mode="w", encoding="utf-8") as output:
                 for url, path, filename in self._aria2c_downloads:
                     data = "{}\n".format(url) + "  dir={}\n".format(TEXT_TYPE(path))
                     if filename is not None:

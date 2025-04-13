@@ -132,7 +132,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_txt_fobj_text(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8")
         self.files_to_delete.append(temp.name)
         fobj = temp.file
         result = rows.export_to_txt(utils.table, fobj)
@@ -143,7 +143,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_txt_fobj_text_with_encoding(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8")
         self.files_to_delete.append(temp.name)
         fobj = temp.file
         with pytest.raises(ValueError, match="export_to_txt must not receive an encoding when file is in text mode"):

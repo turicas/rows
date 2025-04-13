@@ -59,7 +59,7 @@ else:
 
 def read_csv(filename):
     filename = Path(TEXT_TYPE(filename))
-    with filename.open() as fobj:
+    with filename.open(encoding="utf-8") as fobj:  # TODO: may not work for py2
         return list(csv.DictReader(fobj))
 
 
@@ -105,7 +105,7 @@ def test_convert_fields_and_order_by_desc(runner, tmp_path, sample_csv):
     assert result.exit_code == 0, result.output
     ages = [row["age"] for row in read_csv(out_file)]
     assert ages == ["37", "30", "25"]
-    assert out_file.read_text().splitlines()[0].strip() == "age,name"
+    assert out_file.read_text(encoding="utf-8").splitlines()[0].strip() == "age,name"
 
 
 def test_convert_fields_exclude(runner, tmp_path, sample_csv):
@@ -244,7 +244,7 @@ def test_schema_txt(runner, sample_csv, tmp_path):
         ["schema", "--format", "txt", str(sample_csv), str(output_file)],
     )
     assert output_file.exists()
-    result_data = output_file.read_text()
+    result_data = output_file.read_text(encoding="utf-8")
     expected = dedent("""
         +------------+------------+-------+-----+-----+----------+----------------+------------+------------+---------------------------------+
         | field_name | field_type |  null | min | max | subtype  | decimal_places | max_digits | max_length |             choices             |
@@ -271,7 +271,7 @@ def test_schema_max_samples(runner, tmp_path):
         ["schema", "--format", "txt", "--samples", "3", str(csvfile), str(output_file)],
     )
     assert output_file.exists()
-    result_data = output_file.read_text()
+    result_data = output_file.read_text(encoding="utf-8")
     expected = dedent("""
         +------------+------------+-------+-----+-----+----------+----------------+------------+------------+---------------------------------+
         | field_name | field_type |  null | min | max | subtype  | decimal_places | max_digits | max_length |             choices             |
@@ -622,7 +622,7 @@ def test_pdf_to_text_basic(runner, tmp_path):
         ["pdf-to-text", str(pdf_path), str(txt_path)],
     )
     assert result.exit_code == 0
-    assert "Em frente à Rua da Música" in txt_path.read_text()
+    assert "Em frente à Rua da Música" in txt_path.read_text(encoding="utf-8")
 
 
 def test_create_complete_query():

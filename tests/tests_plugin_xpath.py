@@ -101,7 +101,7 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 rows.import_from_xpath(fobj, encoding=None, **self.kwargs)
 
     def test_import_from_xpath_fobj_text(self):
-        with open(self.filename, mode="r") as fobj:
+        with open(self.filename, mode="r", encoding="utf-8") as fobj:
             table = rows.import_from_xpath(fobj, encoding=self.encoding, **self.kwargs)
         meta = table.meta.copy()
         source = meta.pop("source")

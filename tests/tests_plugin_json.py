@@ -67,8 +67,16 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
             call_args, field_ordering=False, expected_meta=self.expected_meta
         )
 
-        # import using fobj
-        with open(self.filename) as fobj:
+        # import using fobj - binary
+        with open(self.filename, mode="rb") as fobj:
+            rows.import_from_json(fobj)
+            call_args = mocked_create_table.call_args_list[1]
+            self.assert_create_table_data(
+                call_args, field_ordering=False, expected_meta=self.expected_meta
+            )
+
+        # import using fobj - text
+        with open(self.filename, mode="r", encoding="utf-8") as fobj:
             rows.import_from_json(fobj)
             call_args = mocked_create_table.call_args_list[1]
             self.assert_create_table_data(
@@ -110,7 +118,7 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_json_fobj_text(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8")
         self.files_to_delete.append(temp.name)
         fobj = temp.file
         result = rows.export_to_json(utils.table, fobj)

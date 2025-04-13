@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 import contextlib
 import locale
+import sys
 
 import rows.fields
 from rows.compat import TEXT_TYPE
@@ -28,7 +29,6 @@ try:
     locale.setlocale(locale.LC_ALL, "C")
 except locale.Error:
     pass
-
 
 @contextlib.contextmanager
 def locale_context(name, category=locale.LC_ALL):

@@ -298,7 +298,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             rows.export_to_csv(utils.table, fobj, encoding=None)
 
     def test_export_to_csv_fobj_text(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+        temp = tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8")
         self.files_to_delete.append(temp.name)
         fobj = temp.file
         result = rows.export_to_csv(utils.table, fobj)
