@@ -86,11 +86,11 @@ def create_table(
       resulting fields will seek its order
     - `fields` must always be in the same order as the data
     """
-    from collections import OrderedDict
     from itertools import chain, islice
     from os import unlink
     from pathlib import Path
 
+    from rows.compat import ORDERED_DICT, ORDERED_DICTS
     from rows.fields import TextField, cached_type_deserialize, detect_types, get_items, make_header
     from rows.table import Table
 
@@ -137,7 +137,7 @@ def create_table(
         ]
         # Finally create the `fields` with both header and new field names,
         # based on detected fields `and force_types`
-        fields = OrderedDict(
+        fields = ORDERED_DICT(
             [
                 (field_name, detected_fields.get(field_name, TextField))
                 for field_name in header + new_fields
@@ -151,8 +151,8 @@ def create_table(
             import_fields = header
 
     else:  # using provided field types
-        if not isinstance(fields, OrderedDict):
-            raise ValueError("`fields` must be an `OrderedDict`")
+        if not isinstance(fields, ORDERED_DICTS):
+            raise ValueError("`fields` must be an instance of {}".format(ORDERED_DICTS))
 
         if skip_header:
             # If we're skipping the header probably this row is not trustable
@@ -163,7 +163,7 @@ def create_table(
         if import_fields is None:
             import_fields = header
 
-        fields = OrderedDict(
+        fields = ORDERED_DICT(
             [(field_name, fields[key]) for field_name, key in zip(header, fields)]
         )
     if max_rows is not None and max_rows > 0:
@@ -174,7 +174,7 @@ def create_table(
     if diff:
         field_names = ", ".join('"{}"'.format(field) for field in diff)
         raise ValueError("Invalid field names: {}".format(field_names))
-    fields = OrderedDict(
+    fields = ORDERED_DICT(
         [(field_name, fields[field_name]) for field_name in import_fields]
     )
     field_types = list(fields.values())

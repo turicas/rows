@@ -1129,9 +1129,7 @@ def command_pgimport(
     database_uri,
     table_name,
 ):
-    from collections import OrderedDict
-
-    from rows.compat import PYTHON_VERSION
+    from rows.compat import PYTHON_VERSION, ORDERED_DICT
     from rows.fields import TextField, make_header
     from rows.plugins import csv as rows_csv
     from rows.utils import ProgressBar, pgimport, uncompressed_size
@@ -1208,7 +1206,7 @@ def command_pgimport(
         if _tqdm_available:
             progress_bar.description = "Reading schema"
         if schema == ":text:":
-            schemas = [OrderedDict([
+            schemas = [ORDERED_DICT([
                 (field_name, TextField)
                 for field_name in make_header(inspector.field_names, max_size=63)
             ])]
@@ -1224,7 +1222,7 @@ def command_pgimport(
 
     if not original_field_names:
         header = make_header(schema.keys())
-        schema = OrderedDict(
+        schema = ORDERED_DICT(
             [
                 (header_name, field_type)
                 for (header_name, (_, field_type)) in zip(header, schema.items())

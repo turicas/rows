@@ -24,11 +24,11 @@ import locale
 import re
 import uuid
 from base64 import b64decode, b64encode
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from decimal import Decimal, InvalidOperation
 from unicodedata import normalize
 
-from rows.compat import BINARY_TYPE, PYTHON_KEYWORDS_LOWER, PYTHON_VERSION, TEXT_TYPE
+from rows.compat import BINARY_TYPE, ORDERED_DICT, PYTHON_KEYWORDS_LOWER, PYTHON_VERSION, TEXT_TYPE
 
 if PYTHON_VERSION < (3, 0, 0):
     from itertools import izip_longest as zip_longest  # noqa
@@ -775,7 +775,7 @@ class TypeDetector(object):
         else:
             header = self.field_names
 
-        return OrderedDict(
+        return ORDERED_DICT(
             [
                 (
                     field_name,

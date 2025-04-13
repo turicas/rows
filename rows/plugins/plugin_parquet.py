@@ -18,9 +18,9 @@
 from __future__ import unicode_literals
 
 import logging
-from collections import OrderedDict
 
 from rows import fields
+from rows.compat import ORDERED_DICT
 from rows.plugins.utils import create_table
 from rows.utils import Source
 
@@ -56,7 +56,7 @@ def import_from_parquet(filename_or_fobj, *args, **kwargs):
     source = Source.from_file(filename_or_fobj, plugin_name="parquet", mode="rb")
 
     # TODO: should look into `schema.converted_type` also
-    types = OrderedDict(
+    types = ORDERED_DICT(
         [
             (schema.name, PARQUET_TO_ROWS[schema.type])
             for schema in parquet._read_footer(source.fobj).schema

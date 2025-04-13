@@ -833,8 +833,8 @@ def csv_to_sqlite(
     "Export a CSV file to SQLite, based on field type detection from samples"
     import csv
     from itertools import islice
-    from collections import OrderedDict
 
+    from rows.compat import ORDERED_DICT
     from rows.plugins.plugin_csv import CsvInspector
     from rows.plugins.plugin_sqlite import export_to_sqlite
     from rows.plugins.utils import make_header
@@ -865,7 +865,7 @@ def csv_to_sqlite(
     original_header = next(csv_reader)
     header = make_header(original_header)
     table = Table(
-        fields=OrderedDict([
+        fields=ORDERED_DICT([
             (field, schema[original_field])
             for field, original_field in zip(header, original_header)
         ]))
@@ -1055,9 +1055,10 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
     name is taken from file name).
     """
     import json
-    from collections import OrderedDict, defaultdict
+    from collections import defaultdict
 
     from rows import fields as rows_fields
+    from rows.compat import ORDERED_DICT
     # Detect field features
     # TODO: move this code to detect algorithm and for each plugin (if possible), so we have this metadata available on
     # all tables
@@ -1139,7 +1140,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             if "choices" in metadata:
                 metadata["choices"] = json.dumps(sorted(metadata["choices"]))
             data.append(
-                OrderedDict([
+                ORDERED_DICT([
                     ("field_name", field_name),
                     ("field_type", metadata["type"].__name__.replace("Field", "").lower()),
                     ("null", metadata.get("null")),
@@ -1251,8 +1252,8 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                 continue
             metadata = field_metadata[field_name]
             django_type_name = django_fields[metadata["type"]]
-            comment = OrderedDict()
-            options = OrderedDict([
+            comment = ORDERED_DICT()
+            options = ORDERED_DICT([
                 ("null", metadata["null"]),
                 ("blank", metadata["null"]),
             ])
@@ -1339,9 +1340,8 @@ def load_schema(filename, context=None):
     `context` is a `dict` with field_type as key pointing to field class, like:
         {"text": rows.fields.TextField, "value": MyCustomField}
     """
-    from collections import OrderedDict
-
     from rows import fields as rows_fields
+    from rows.compat import ORDERED_DICT
     # TODO: load_schema must support Path objects
 
     table = import_from_uri(filename)
@@ -1354,7 +1354,7 @@ def load_schema(filename, context=None):
         for key in dir(rows_fields)
         if "Field" in key and key != "Field"
     }
-    return OrderedDict([(row.field_name, context[row.field_type]) for row in table])
+    return ORDERED_DICT([(row.field_name, context[row.field_type]) for row in table])
 
 
 def scale_number(n, divider=1000, suffix=None, multipliers="KMGTPEZ", decimal_places=2):

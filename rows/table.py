@@ -18,11 +18,11 @@
 from __future__ import unicode_literals
 
 import os
-from collections import OrderedDict, namedtuple
+from collections import namedtuple
 from operator import itemgetter
 from pathlib import Path
 
-from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
+from rows.compat import BINARY_TYPE, ORDERED_DICT, PYTHON_VERSION, TEXT_TYPE
 
 if PYTHON_VERSION < (3, 0, 0):
     from collections import Iterable, MutableSequence, Sized  # noqa
@@ -71,7 +71,7 @@ class Table(MutableSequence):
         # TODO: should we really use OrderedDict here?
         # TODO: should use slug/make_header on each field name automatically or inside each plugin?
         header = make_header(fields.keys())
-        self.fields = OrderedDict(
+        self.fields = ORDERED_DICT(
             [
                 (header_name, field_type)
                 for (header_name, (_, field_type)) in zip(header, fields.items())
@@ -180,7 +180,7 @@ class Table(MutableSequence):
 
         # Show only head and tail
         representation = Table(
-            fields=OrderedDict([(field_name, TextField) for field_name in self.field_names]),
+            fields=ORDERED_DICT([(field_name, TextField) for field_name in self.field_names]),
             meta={"name": self.name},
         )
         for row in head_rows:
