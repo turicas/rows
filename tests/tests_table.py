@@ -652,6 +652,23 @@ class TestFlexibleTable(unittest.TestCase):
         assert list(t2) == list(table[-15:])
 
 
+def test_fields_with_python_keywords():
+    some_keywords = ("def", "try", "if", "for", "while", "def ")
+    # Should not raise an exception
+    table = Table(fields=OrderedDict([(key, fields.TextField) for key in some_keywords]))
+    assert table.field_names == ["def_1", "try_1", "if_1", "for_1", "while_1", "def_2"]
+
+
+def test_replacing_column_must_use_slug():
+    table = Table(fields=OrderedDict([(key, fields.IntegerField) for key in ("f1", "f2", "f3")]))
+    for i in range(10):
+        table.append({"f1": i, "f2": i * 2, "f3": i ** 2})
+    new_values = list(range(10))
+    table["F2!!!"] = new_values
+    assert table.field_names == ["f1", "f2", "f3"]
+    assert table["f2"] == new_values
+
+
 def row_source(n):
     for i in range(n):
         yield [i, random.choice(["Bob", "Álvaro", "Alice"]), i ** 2]

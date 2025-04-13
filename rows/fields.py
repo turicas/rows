@@ -28,7 +28,7 @@ from collections import OrderedDict, defaultdict
 from decimal import Decimal, InvalidOperation
 from unicodedata import normalize
 
-from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
+from rows.compat import BINARY_TYPE, PYTHON_KEYWORDS_LOWER, PYTHON_VERSION, TEXT_TYPE
 
 if PYTHON_VERSION < (3, 0, 0):
     from itertools import izip_longest as zip_longest  # noqa
@@ -660,7 +660,10 @@ def make_header(field_names, permit_not=False, max_size=None, prefix="field_"):
             field_name = "{}{}".format(prefix, index)
         elif field_name[0].isdigit():
             field_name = "{}{}".format(prefix, field_name)
-
+        elif field_name in PYTHON_KEYWORDS_LOWER:
+            field_name = make_unique_name(
+                name=field_name, existing_names=[field_name] + result, start=1, max_size=max_size
+            )
         if field_name in result:
             field_name = make_unique_name(
                 name=field_name, existing_names=result, start=2, max_size=max_size

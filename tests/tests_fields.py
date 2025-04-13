@@ -454,6 +454,11 @@ class FieldUtilsTestCase(unittest.TestCase):
         expected_result = ["test", "another", "anothe_2"]
         self.assertEqual(result, expected_result)
 
+    def test_make_header_python_keywords(self):
+        result = fields.make_header(["def", "try", "if", "for", "while", "def"], max_size=8)
+        expected = ["def_1", "try_1", "if_1", "for_1", "while_1", "def_2"]
+        assert result == expected
+
     def test_detect_types_no_sample(self):
         expected = {key: fields.TextField for key in self.expected.keys()}
         result = fields.detect_types(self.fields, [])

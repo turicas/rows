@@ -53,7 +53,7 @@ class Table(MutableSequence):
 
     def __init__(self, fields, meta=None, mode=None, data=None):
         from collections import namedtuple
-        from rows.fields import slug
+        from rows.fields import make_header
 
         # TODO: what if `fields` is None but `data` is not? Run the detection algorithm here instead of inside
         # `create_table`?
@@ -69,10 +69,13 @@ class Table(MutableSequence):
         self._mode = mode_from_class
 
         # TODO: should we really use OrderedDict here?
-        # TODO: should use slug on each field name automatically or inside each
-        #       plugin?
+        # TODO: should use slug/make_header on each field name automatically or inside each plugin?
+        header = make_header(fields.keys())
         self.fields = OrderedDict(
-            [(slug(field_name), field_type) for field_name, field_type in OrderedDict(fields).items()]
+            [
+                (header_name, field_type)
+                for (header_name, (_, field_type)) in zip(header, fields.items())
+            ]
         )
         # TODO: should be able to customize row return type (namedtuple, dict etc.)
         self.Row = namedtuple("Row", self.field_names)
@@ -103,7 +106,7 @@ class Table(MutableSequence):
             for field_name, field_type in self.fields.items()
         ])
 
-    def _add_column(self, name, values):
+    def _add_or_replace_column(self, name, values):
         from rows.fields import cached_type_deserialize, detect_types, slug
 
         values = list(values)  # I'm not lazy, sorry
@@ -330,7 +333,7 @@ class EagerTable(Table):
         if isinstance(key, int):
             self._rows[key] = self._make_row_from_dict(value)
         elif isinstance(key, TEXT_TYPE):
-            self._add_column(name=key, values=value)
+            self._add_or_replace_column(name=key, values=value)
         elif isinstance(key, slice):
             self._rows[key] = [self._make_row_from_dict(v) for v in value]
         else:
@@ -438,7 +441,7 @@ class IncrementalTable(Table):
         elif isinstance(key, TEXT_TYPE):
             if not self._filled:
                 self._fill_all()
-            self._add_column(name=key, values=value)
+            self._add_or_replace_column(name=key, values=value)
         elif isinstance(key, slice):
             stop = key.stop
             if stop is None:

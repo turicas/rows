@@ -13,6 +13,12 @@ else:
     TEXT_TYPE = str
     BINARY_TYPE = bytes
 
+PYTHON_KEYWORDS_LOWER = {
+    "false", "none", "true", "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del",
+    "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal",
+    "not", "or", "pass", "raise", "return", "try", "while", "with", "yield"
+}
+# Take from: `import keyword; set(key.lower() for key in keyword.kwlist)`
 
 def library_installed(module_name):
     if PYTHON_VERSION >= (3, 0, 0):
