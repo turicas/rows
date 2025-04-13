@@ -23,6 +23,12 @@ import locale
 import rows.fields
 from rows.compat import TEXT_TYPE
 
+try:
+    # Force to use all categories in C locale by default
+    locale.setlocale(locale.LC_ALL, "C")
+except locale.Error:
+    pass
+
 
 @contextlib.contextmanager
 def locale_context(name, category=locale.LC_ALL):
