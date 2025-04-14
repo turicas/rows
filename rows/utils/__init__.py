@@ -333,38 +333,58 @@ def plugin_name_by_mime_type(mime_type, mime_name, file_extension):
     )
 
 def _try_to_import_file_magic():
+    from rows.compat import library_installed
+
+    if not library_installed("magic"):
+        return
+
     try:
         import magic
     except (AttributeError, ImportError, TypeError):
-        magic = None
-    else:
-        if not hasattr(magic, "detect_from_content"):
-            # This is not the file-magic library
-            magic = None
-        elif hasattr(magic, "MagicDetect"):
-            def fixed__del__(self):
-                if magic._close is None:
-                    return
-                if self.mime_magic is not None:
-                    self.mime_magic.close()
-                if self.none_magic is not None:
-                    self.none_magic.close()
-            magic.MagicDetect.__del__ = fixed__del__
-    return magic
+        return None
+
+    if not hasattr(magic, "detect_from_content"):
+        # This is not the file-magic library
+        return None
+
+    if hasattr(magic, "MagicDetect"):
+        def fixed__del__(self):
+            if magic._close is None:
+                return
+            if self.mime_magic is not None:
+                self.mime_magic.close()
+            if self.none_magic is not None:
+                self.none_magic.close()
+        magic.MagicDetect.__del__ = fixed__del__
+        return magic
+
 
 def _try_to_import_chardet():
-    try:
-        from requests.compat import chardet
-    except ImportError:
-        chardet = None
+    from rows.compat import library_installed
 
-    return chardet
+    if library_installed("chardet"):
+        import chardet
+
+        return chardet
+
+    elif library_installed("requests"):
+        from requests.compat import chardet
+
+        return chardet
+
+
+def _try_to_import_charset_normalizer():
+    from rows.compat import library_installed
+
+    if library_installed("charset_normalizer"):
+        import charset_normalizer
+
+        return charset_normalizer
 
 
 def detect_local_source(path, content, mime_type=None, encoding=None):
     import os
 
-    chardet = _try_to_import_chardet()
     magic = _try_to_import_file_magic()
 
     # TODO: may add sample_size
@@ -378,12 +398,10 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
     else:
         compressed = False
 
-    if chardet and not encoding:
-        encoding = chardet.detect(content)["encoding"] or encoding
-
     if magic is not None and hasattr(magic, "detect_from_content"):
         detected = magic.detect_from_content(content)
-        encoding = encoding or detected.encoding
+        if not encoding:
+            encoding = detected.encoding
         mime_name = detected.name
         mime_type = detected.mime_type or mime_type
 
@@ -392,6 +410,15 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
 
         mime_name = None
         mime_type = mime_type or mimetypes.guess_type(filename)[0]
+
+    if not encoding:
+        charset_normalizer = _try_to_import_charset_normalizer()
+        if charset_normalizer is not None:
+            encoding = (charset_normalizer.detect(content) or {}).get("encoding")
+        if not encoding:  # Last resort
+            chardet = _try_to_import_chardet()
+            if chardet is not None:
+                encoding = chardet.detect(content)
 
     plugin_name = plugin_name_by_mime_type(mime_type, mime_name, extension)
     if encoding == "binary":

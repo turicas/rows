@@ -1,6 +1,7 @@
 """Helper objects to make compatibility with older versions or external tools easier"""
 import sys
 from collections import OrderedDict
+from functools import lru_cache
 
 
 DEFAULT_SAMPLE_ROWS = 20480  # Number of rows to sample from files when no schema is provided
@@ -28,6 +29,7 @@ PYTHON_KEYWORDS_LOWER = {
 }
 # Take from: `import keyword; set(key.lower() for key in keyword.kwlist)`
 
+@lru_cache
 def library_installed(module_name):
     if PYTHON_VERSION >= (3, 0, 0):
         from importlib.util import find_spec
