@@ -315,11 +315,11 @@ class CsvInspector(object):
         self._max_samples = max_samples
 
     def _read_sample(self, binary=False):
-        from rows.utils import open_compressed
+        from rows.fileio import cfopen
 
         if binary:
             if self._sample_binary is None:
-                fobj = open_compressed(self.filename, mode="rb")
+                fobj = cfopen(self.filename, mode="rb")
                 self._sample_binary = fobj.read(self._chunk_size).replace(b"\x00", b"")
                 fobj.close()
             return self._sample_binary
@@ -327,7 +327,7 @@ class CsvInspector(object):
         else:
             if self._sample_unicode is None:
                 # TODO: may add a skip on some bytes, since the chunk read could end in the middle of a character
-                fobj = open_compressed(self.filename, mode="r", encoding=self.encoding)
+                fobj = cfopen(self.filename, mode="r", encoding=self.encoding)
                 self._sample_unicode = fobj.read(self._chunk_size).replace("\x00", "")
                 fobj.close()
             return self._sample_unicode

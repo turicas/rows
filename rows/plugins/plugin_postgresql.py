@@ -493,8 +493,8 @@ class PostgresCopy(object):
         callback=None,
     ):
         from rows.fields import make_header
+        from rows.fileio import cfopen
         from rows.plugins import csv as rows_csv
-        from rows.utils import open_compressed
 
         inspector = rows_csv.CsvInspector(
             filename, chunk_size=self.chunk_size, max_samples=self.max_samples, encoding=encoding, dialect=dialect
@@ -543,7 +543,7 @@ class PostgresCopy(object):
             # `SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_am WHERE amname = %s)`
             pg_execute_psql(self.database_uri, create_table_sql)
 
-        fobj = open_compressed(filename, mode="rb")
+        fobj = cfopen(filename, mode="rb")
         return self._import(
             fobj=fobj,
             encoding=encoding,
@@ -682,7 +682,7 @@ def pgexport(
 
     Required: psql command
     """
-    from rows.utils import open_compressed
+    from rows.fileio import cfopen
     # TODO: integrate with PostgresCopy
 
     # TODO: add logging to the process
@@ -699,7 +699,7 @@ def pgexport(
         is_query=is_query,
         dialect=dialect,
     )
-    fobj = open_compressed(filename, mode="wb")
+    fobj = cfopen(filename, mode="wb")
     try:
         process = subprocess.Popen(
             command,
