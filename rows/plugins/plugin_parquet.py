@@ -18,10 +18,11 @@
 from __future__ import unicode_literals
 
 import logging
+from itertools import chain
 
 from rows import fields
 from rows.compat import ORDERED_DICT
-from rows.plugins.utils import create_table
+from rows.plugins.utils import create_table, is_fobj, is_binary_file
 from rows.utils import Source
 
 
@@ -29,26 +30,23 @@ class NullHandler(logging.Handler):
     def emit(self, record):
         pass
 
-
 logging.getLogger("parquet").addHandler(NullHandler())
-import parquet  # NOQA
-
-PARQUET_TO_ROWS = {
-    parquet.parquet_thrift.Type.BOOLEAN: fields.BoolField,
-    parquet.parquet_thrift.Type.BYTE_ARRAY: fields.BinaryField,
-    parquet.parquet_thrift.Type.DOUBLE: fields.FloatField,
-    parquet.parquet_thrift.Type.FIXED_LEN_BYTE_ARRAY: fields.BinaryField,
-    parquet.parquet_thrift.Type.FLOAT: fields.FloatField,
-    parquet.parquet_thrift.Type.INT32: fields.IntegerField,
-    parquet.parquet_thrift.Type.INT64: fields.IntegerField,
-    parquet.parquet_thrift.Type.INT96: fields.IntegerField,
-}
-
 
 def import_from_parquet(filename_or_fobj, *args, **kwargs):
     """Import data from a Parquet file and return with rows.Table."""
-    from itertools import chain
-    from rows.plugins.utils import is_fobj, is_binary_file
+
+    import parquet  # NOQA
+
+    PARQUET_TO_ROWS = {
+        parquet.parquet_thrift.Type.BOOLEAN: fields.BoolField,
+        parquet.parquet_thrift.Type.BYTE_ARRAY: fields.BinaryField,
+        parquet.parquet_thrift.Type.DOUBLE: fields.FloatField,
+        parquet.parquet_thrift.Type.FIXED_LEN_BYTE_ARRAY: fields.BinaryField,
+        parquet.parquet_thrift.Type.FLOAT: fields.FloatField,
+        parquet.parquet_thrift.Type.INT32: fields.IntegerField,
+        parquet.parquet_thrift.Type.INT64: fields.IntegerField,
+        parquet.parquet_thrift.Type.INT96: fields.IntegerField,
+    }
 
     if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
         raise ValueError("import_from_parquet must not receive a file-like object in text mode")
