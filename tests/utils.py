@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import copy
 import datetime
 import os
+import subprocess
 from collections import OrderedDict
 from decimal import Decimal
 from pathlib import Path
@@ -29,6 +30,18 @@ import rows.fields as fields
 from rows.fields import slug
 from rows.table import Table
 from rows.compat import TEXT_TYPE
+
+process = None
+try:
+    process = subprocess.Popen(["psqxxxl", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+except OSError:
+    PSQL_FOUND = False
+else:
+    PSQL_FOUND = True
+finally:
+    if process:
+        process.wait()
+
 
 NONE_VALUES = list(fields.NULL) + ["", None]
 FIELDS = OrderedDict(

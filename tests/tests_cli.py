@@ -30,13 +30,13 @@ from click.testing import CliRunner
 
 from rows.cli import cli, create_complete_query
 from rows.compat import PYTHON_VERSION, TEXT_TYPE
+from tests.utils import PSQL_FOUND
 
 
 if PYTHON_VERSION < (3, 0, 0):
     from urlparse import urlparse, urlunparse
 else:
     from urllib.parse import urlparse, urlunparse
-
 
 sample_csv_content = dedent("""
     Name  , Age!
@@ -548,7 +548,7 @@ def test_list_sheets_invalid_extension(runner, tmp_path):
     assert result.output.strip() == "Sheet1\nSheet2"
 
 
-@pytest.mark.skipif(TEST_DATABASE_URL is None, reason="postgres service is not running")
+@pytest.mark.skipif(TEST_DATABASE_URL is None or not PSQL_FOUND, reason="postgres service is not running")
 def test_pgexport_import_cycle(tmp_path, runner):
     # First, create test database
     connection = psycopg2.connect(DATABASE_URL)

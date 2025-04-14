@@ -1,7 +1,6 @@
 """Helper objects to make compatibility with older versions or external tools easier"""
 import sys
 from collections import OrderedDict
-from functools import lru_cache
 
 
 DEFAULT_SAMPLE_ROWS = 20480  # Number of rows to sample from files when no schema is provided
@@ -11,7 +10,25 @@ PYTHON_VERSION = (sys.version_info.major, sys.version_info.minor, sys.version_in
 if PYTHON_VERSION < (3, 0, 0):
     TEXT_TYPE = unicode
     BINARY_TYPE = str
+
+    def lru_cache(user_func):
+        # Actually NOT LRU, just a dummy cache for Python 2. This is only used in this module.
+
+        internal_cache = {}
+        def func(*args, **kwargs):
+            cache_key = hash(tuple(list(args) + sorted(kwargs.items())))
+            if cache_key not in internal_cache:
+                result = user_func(*args, **kwargs)
+                internal_cache[cache_key] = result
+            else:
+                result = internal_cache[cache_key]
+            return result
+
+        return func
+
 else:
+    from functools import lru_cache
+
     TEXT_TYPE = str
     BINARY_TYPE = bytes
 
