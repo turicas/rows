@@ -68,7 +68,7 @@ class PDFTestCase(utils.RowsTestMixIn):
         filename = "tests/data/balneabilidade-26-2010"
         result = rows.import_from_pdf(filename + ".pdf", backend=self.backend)
         expected = rows.import_from_csv(filename + ".csv")
-        self.assertEqual(list(expected), list(result))
+        assert list(expected) == list(result)
 
     def test_real_data_2(self):
         filename = "tests/data/milho-safra-2017"
@@ -97,7 +97,7 @@ class PDFTestCase(utils.RowsTestMixIn):
             algorithm="header-position",
         )
         expected = rows.import_from_csv(expected1)
-        self.assertEqual(list(expected), list(result))
+        assert list(expected) == list(result)
 
         result = rows.import_from_pdf(
             filename,
@@ -108,7 +108,7 @@ class PDFTestCase(utils.RowsTestMixIn):
             algorithm="header-position",
         )
         expected = rows.import_from_csv(expected2)
-        self.assertEqual(list(expected), list(result))
+        assert list(expected) == list(result)
 
     def test_number_of_pages(self):
         filenames_and_pages = (
@@ -120,11 +120,11 @@ class PDFTestCase(utils.RowsTestMixIn):
         for filename, expected_pages in filenames_and_pages:
             # Using filename
             pages = rows.plugins.pdf.number_of_pages(filename, backend=self.backend)
-            self.assertEqual(pages, expected_pages)
+            assert pages == expected_pages
             # Using fobj
             with open(filename, mode="rb") as fobj:
                 pages = rows.plugins.pdf.number_of_pages(fobj, backend=self.backend)
-                self.assertEqual(pages, expected_pages)
+                assert pages == expected_pages
 
     def test_pdf_to_text(self):
         filename = "tests/data/balneabilidade-26-2010.pdf"
@@ -135,7 +135,7 @@ class PDFTestCase(utils.RowsTestMixIn):
             filename, backend=self.backend, page_numbers=(1,)
         )
         first_page = next(reader)
-        self.assertTrue(first_page.startswith(expected_start))
+        assert first_page.startswith(expected_start)
 
 
 @pytest.mark.skipif(not pymupdf_imported, reason="pymupdf not supported (Python < 3.7) or not installed")
@@ -160,7 +160,7 @@ class PDFMinerSixTestCase(PDFTestCase, unittest.TestCase):
             algorithm="rects-boundaries",
         )
         expected = rows.import_from_csv(filename + ".csv")
-        self.assertEqual(list(expected), list(result))
+        assert list(expected) == list(result)
 
 
 class HelperFunctionsTestCase(unittest.TestCase):

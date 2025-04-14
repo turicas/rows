@@ -133,9 +133,9 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         kwargs = {"encoding": "test", "some_key": 123, "other": 456}
         rows.export_to_postgresql(utils.table, TEST_DATABASE_URL, table_name="rows_1")
         result = rows.import_from_postgresql(TEST_DATABASE_URL, table_name="rows_1", **kwargs)
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
-        self.assertEqual(result, 42)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
+        assert result == 42
 
         call = mocked_create_table.call_args
         meta = call[1].pop("meta")
@@ -143,9 +143,9 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         expected_meta = self.expected_meta.copy()
         expected_source = expected_meta.pop("source")
 
-        self.assertEqual(call[1], kwargs)
-        self.assertEqual(meta, expected_meta)
-        self.assertEqual(expected_source.uri, source.uri)
+        assert call[1] == kwargs
+        assert meta == expected_meta
+        assert expected_source.uri == source.uri
 
     @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
     @mock.patch("rows.plugins.utils.create_table")
@@ -154,7 +154,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         connection, table_name = rows.export_to_postgresql(
             utils.table, TEST_DATABASE_URL, table_name="rows_2"
         )
-        self.assertTrue(connection.closed)
+        assert connection.closed
 
         # import using uri
         table_1 = rows.import_from_postgresql(
@@ -176,7 +176,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         meta = call_args[1].pop("meta")
         call_args[1]["meta"] = {}
         self.assert_create_table_data(call_args, expected_meta={})
-        self.assertTrue(isinstance(meta["source"].fobj, connection_type))
+        assert isinstance(meta["source"].fobj, connection_type)
 
     def test_postgresql_injection(self):
         with self.assertRaises(ValueError):
@@ -224,8 +224,8 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         diff_1 = list(set(table_names_after) - set(table_names_before))
         diff_2 = list(set(table_names_final) - set(table_names_after))
-        self.assertEqual(len(diff_1), 1)
-        self.assertEqual(len(diff_2), 1)
+        assert len(diff_1) == 1
+        assert len(diff_2) == 1
         new_table_1 = diff_1[0]
         new_table_2 = diff_2[0]
 
@@ -249,7 +249,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         result_table = rows.import_from_postgresql(TEST_DATABASE_URL, table_name="rows_7")
 
-        self.assertEqual(len(result_table), repeat * len(utils.table))
+        assert len(result_table) == repeat * len(utils.table)
         self.assert_table_equal(result_table, expected_table)
 
     @mock.patch("rows.plugins.utils.prepare_to_export")
@@ -260,12 +260,12 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.export_to_postgresql(
             utils.table, TEST_DATABASE_URL, encoding=encoding, table_name="rows_8", **kwargs
         )
-        self.assertTrue(mocked_prepare_to_export.called)
-        self.assertEqual(mocked_prepare_to_export.call_count, 1)
+        assert mocked_prepare_to_export.called
+        assert mocked_prepare_to_export.call_count == 1
         call = mocked_prepare_to_export.call_args
-        self.assertEqual(call[0], (utils.table,))
+        assert call[0] == utils.table
         kwargs["encoding"] = encoding
-        self.assertEqual(call[1], kwargs)
+        assert call[1] == kwargs
 
     def test_import_from_postgresql_query_args(self):
         connection, table_name = rows.export_to_postgresql(
@@ -277,7 +277,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
             query_args=(3,),
         )
         for row in table:
-            self.assertTrue(row.float_column > 3)
+            assert row.float_column > 3
         connection.close()
 
     def test_pgimport_force_null(self):
@@ -303,7 +303,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
             table_name="rows_force_null",
         )
         table = rows.import_from_postgresql(TEST_DATABASE_URL, "rows_force_null")
-        self.assertIs(table[0].field1, None)
-        self.assertEqual(table[0].field2, 4)
-        self.assertIs(table[1].field1, None)
-        self.assertEqual(table[1].field2, 2)
+        assert table[0].field1 is None
+        assert table[0].field2 == 4
+        assert table[1].field1 is None
+        assert table[1].field2 == 2

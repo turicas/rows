@@ -153,18 +153,16 @@ class PluginParquetTestCase(unittest.TestCase):
     filename = "tests/data/nation.dict.parquet"
 
     def test_imports(self):
-        self.assertIs(
-            rows.import_from_parquet, rows.plugins.plugin_parquet.import_from_parquet
-        )
+        assert rows.import_from_parquet is rows.plugins.plugin_parquet.import_from_parquet
 
     @mock.patch("rows.plugins.plugin_parquet.create_table")
     def test_import_from_parquet_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
         result = rows.import_from_parquet(self.filename, **kwargs)
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
-        self.assertEqual(result, 42)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
+        assert result == 42
 
         call = mocked_create_table.call_args
         expected_force_types = OrderedDict(
@@ -180,15 +178,15 @@ class PluginParquetTestCase(unittest.TestCase):
         expected_meta = {"imported_from": "parquet"}
         meta = call[1]["meta"].copy()
         source = meta.pop("source")
-        self.assertEqual(meta, expected_meta)
-        self.assertEqual(source.uri, Path(self.filename))
+        assert meta == expected_meta
+        assert source.uri == Path(self.filename)
 
     @mock.patch("rows.plugins.plugin_parquet.create_table")
     def test_import_from_parquet_fobj_binary(self, mocked_create_table):
         with open(self.filename, mode="rb") as fobj:
             rows.import_from_parquet(fobj)
             called_data = list(mocked_create_table.call_args[0][0])
-        self.assertEqual(called_data, DATA)
+        assert called_data == DATA
 
     def test_import_from_parquet_fobj_text(self):
         with pytest.raises(ValueError, match="import_from_parquet must not receive a file-like object in text mode"):
@@ -204,6 +202,6 @@ class PluginParquetTestCase(unittest.TestCase):
         # import using filename
         rows.import_from_parquet(self.filename)
         called_data = list(mocked_create_table.call_args[0][0])
-        self.assertEqual(called_data, DATA)
+        assert called_data == DATA
 
     # TODO: test all supported field types

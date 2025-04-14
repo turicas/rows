@@ -44,17 +44,17 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
     }
 
     def test_imports(self):
-        self.assertIs(rows.import_from_json, rows.plugins.plugin_json.import_from_json)
-        self.assertIs(rows.export_to_json, rows.plugins.plugin_json.export_to_json)
+        assert rows.import_from_json is rows.plugins.plugin_json.import_from_json
+        assert rows.export_to_json is rows.plugins.plugin_json.export_to_json
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_json_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
         result = rows.import_from_json(self.filename, encoding=self.encoding, **kwargs)
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
-        self.assertEqual(result, 42)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
+        assert result == 42
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_json_retrieve_desired_data(self, mocked_create_table):
@@ -91,12 +91,12 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_prepare_to_export.return_value = iter([utils.table.fields.keys()])
 
         rows.export_to_json(utils.table, temp.name, **kwargs)
-        self.assertTrue(mocked_prepare_to_export.called)
-        self.assertEqual(mocked_prepare_to_export.call_count, 1)
+        assert mocked_prepare_to_export.called
+        assert mocked_prepare_to_export.call_count == 1
 
         call = mocked_prepare_to_export.call_args
-        self.assertEqual(call[0], (utils.table,))
-        self.assertEqual(call[1], kwargs)
+        assert call[0] == (utils.table,)
+        assert call[1] == kwargs
 
     def test_export_to_json_filename(self):
         # TODO: may test file contents
@@ -157,14 +157,9 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # be serialized, like date, datetime etc.
         for field_name, value_types in field_types.items():
             if field_name != "unicode_column":
-                self.assertEqual(
-                    Counter(value_types),
-                    Counter({type(None): 1, COLUMN_TYPE[field_name]: 6}),
-                )
+                assert Counter(value_types) == Counter({type(None): 1, COLUMN_TYPE[field_name]: 6})
             else:
-                self.assertEqual(
-                    Counter(value_types), Counter({COLUMN_TYPE[field_name]: 7})
-                )
+                assert Counter(value_types) == Counter({COLUMN_TYPE[field_name]: 7})
 
     def test_export_to_json_indent(self):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="rb+")
@@ -176,12 +171,12 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         temp.file.seek(0)
         result = temp.file.read().strip().replace(b"\r\n", b"\n").splitlines()
-        self.assertEqual(result[0], b"[")
-        self.assertEqual(result[1], b"  {")
+        assert result[0] == b"["
+        assert result[1] == b"  {"
         for line in result[2:-2]:
-            self.assertTrue(line.startswith(b"    "))
-        self.assertEqual(result[-2], b"  }")
-        self.assertEqual(result[-1], b"]")
+            assert line.startswith(b"    ")
+        assert result[-2] == b"  }"
+        assert result[-1] == b"]"
 
     def test_issue_168(self):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
@@ -203,13 +198,13 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         ]
         json_obj = io.BytesIO(json.dumps(data).encode("utf-8"))
         table = rows.import_from_json(json_obj)
-        self.assertEqual(sorted(table.field_names), ["f1", "f2"])
-        self.assertEqual(table[0].f1, 2)
-        self.assertEqual(table[0].f2, 3)
-        self.assertEqual(table[1].f1, 1)
-        self.assertEqual(table[1].f2, None)
-        self.assertEqual(table[2].f1, 4)
-        self.assertEqual(table[2].f2, 5)
+        assert sorted(table.field_names) == ["f1", "f2"]
+        assert table[0].f1 == 2
+        assert table[0].f2 == 3
+        assert table[1].f1 == 1
+        assert table[1].f2 is None
+        assert table[2].f1 == 4
+        assert table[2].f2 == 5
 
     def test_item_with_new_field_in_the_middle(self):
         data = [
@@ -219,10 +214,10 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         ]
         json_obj = io.BytesIO(json.dumps(data).encode("utf-8"))
         table = rows.import_from_json(json_obj)
-        self.assertEqual(table.field_names, ["f1", "f2"])
-        self.assertEqual(table[0].f1, 1)
-        self.assertEqual(table[0].f2, None)
-        self.assertEqual(table[1].f1, 2)
-        self.assertEqual(table[1].f2, 3)
-        self.assertEqual(table[2].f1, 4)
-        self.assertEqual(table[2].f2, 5)
+        assert table.field_names == ["f1", "f2"]
+        assert table[0].f1 == 1
+        assert table[0].f2 is None
+        assert table[1].f1 == 2
+        assert table[1].f2 == 3
+        assert table[2].f1 == 4
+        assert table[2].f2 == 5

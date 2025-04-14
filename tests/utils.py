@@ -178,7 +178,7 @@ class RowsTestMixIn(object):
                 expected_fields[key] = value
 
         self.assertDictEqual(dict(first.fields), expected_fields)
-        self.assertEqual(len(first), len(second))
+        assert len(first) == len(second)
 
         for first_row, second_row in zip(first, second):
             first_row = dict(first_row._asdict())
@@ -191,11 +191,7 @@ class RowsTestMixIn(object):
                         expected_value
                     )
                 if float not in (type(value), type(expected_value)):
-                    self.assertEqual(
-                        value,
-                        expected_value,
-                        "Field {} value mismatch".format(field_name),
-                    )
+                    assert value == expected_value
                 else:
                     self.assertAlmostEqual(value, expected_value, places=5)
 
@@ -204,7 +200,7 @@ class RowsTestMixIn(object):
             first = fobj.read()
         with open(second_filename, "rb") as fobj:
             second = fobj.read()
-        self.assertEqual(first, second)
+        assert first == second
 
     def assert_create_table_data(
         self, call_args, field_ordering=True, filename=None, expected_meta=None
@@ -238,7 +234,7 @@ class RowsTestMixIn(object):
             if expected_source:
                 source_uri = Path(source.uri).absolute()
                 expected_uri = Path(expected_source.uri).absolute()
-                self.assertEqual(source_uri, expected_uri)
+                assert source_uri == expected_uri
 
         self.assertDictEqual(meta, expected_meta)
         del kwargs["meta"]
@@ -250,7 +246,7 @@ class RowsTestMixIn(object):
         data = list(data)
         data[0] = list(data[0])
         if field_ordering:
-            self.assertEqual(data[0], FIELD_NAMES)
+            assert data[0] == FIELD_NAMES
 
             for row_index, row in enumerate(data[1:]):
                 for column_index, value in enumerate(row):
@@ -260,7 +256,7 @@ class RowsTestMixIn(object):
                         field_name, expected_value, value, *args, **kwargs
                     )
         else:
-            self.assertEqual(set(data[0]), set(FIELD_NAMES))
+            assert set(data[0]) == set(FIELD_NAMES)
             for row_index, row in enumerate(data[1:]):
                 for column_index, value in enumerate(row):
                     field_name = data[0][column_index]
@@ -303,13 +299,13 @@ class RowsTestMixIn(object):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
         else:
-            self.assertIn(value, (expected_value, TEXT_TYPE(expected_value)))
+            assert value in (expected_value, TEXT_TYPE(expected_value))
 
     def assert_FloatField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
         elif type(value) != type(expected_value):
-            self.assertEqual(TEXT_TYPE(value), TEXT_TYPE(expected_value))
+            assert TEXT_TYPE(value) == TEXT_TYPE(expected_value)
         else:
             self.assertAlmostEqual(expected_value, value, places=5)
 
@@ -342,7 +338,7 @@ class RowsTestMixIn(object):
                 ]
             )
 
-            self.assertIn(value, possible_values)
+            assert value in possible_values
 
     def assert_DateField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
@@ -351,7 +347,7 @@ class RowsTestMixIn(object):
             value = TEXT_TYPE(value)
             if value.endswith("00:00:00"):
                 value = value[:-9]
-            self.assertEqual(TEXT_TYPE(expected_value), value)
+            assert TEXT_TYPE(expected_value) == value
 
     def assert_DatetimeField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
@@ -364,13 +360,11 @@ class RowsTestMixIn(object):
             # XLSX plugin has not a good precision and will change milliseconds
             delta_1 = expected_value - value
             delta_2 = value - expected_value
-            self.assertTrue(
-                TEXT_TYPE(delta_1).startswith("0:00:00") or TEXT_TYPE(delta_2).startswith("0:00:00")
-            )
+            assert TEXT_TYPE(delta_1).startswith("0:00:00") or TEXT_TYPE(delta_2).startswith("0:00:00")
         else:
             # if not, convert values to string and verify if are equal
             value = TEXT_TYPE(value)
-            self.assertEqual(TEXT_TYPE(expected_value).replace(" ", "T"), value)
+            assert TEXT_TYPE(expected_value).replace(" ", "T") == value
 
     def assert_TextField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
@@ -380,4 +374,4 @@ class RowsTestMixIn(object):
             # with blank values and we don't have an way to differentiate
             assert value in (None, "")
         else:
-            self.assertEqual(expected_value, value)
+            assert expected_value == value

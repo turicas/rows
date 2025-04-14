@@ -49,7 +49,7 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             encoding_1 = ["iso", "8859"]
         if encoding_2 == ["windows"]:
             encoding_2 = ["iso", "8859"]
-        self.assertEqual(encoding_1, encoding_2)
+        assert encoding_1 == encoding_2
 
     def test_local_file_sample_size(self):
 
@@ -69,9 +69,9 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         temp.file.close()
 
         result = rows.utils.local_file(temp.name)
-        self.assertEqual(result.uri, temp.name)
+        assert result.uri == temp.name
         self.assert_encoding(result.encoding, encoding)
-        self.assertEqual(result.should_delete, False)
+        assert result.should_delete == False
 
 
 class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -127,14 +127,14 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         export_fields = list(table.fields.keys())
         result = rows.utils.generate_schema(table=table, export_fields=export_fields, output_format="txt", max_choices=10)
         lines = result.strip().splitlines()
-        self.assertIn('choices', lines[1])
+        assert 'choices' in lines[1]
         selected_line = None
         for line in lines:
             if ' unicode_column |' in line:
                 selected_line = line
                 break
-        self.assertIsNotNone(selected_line)
-        self.assertIn('["test", "~~~~", ', selected_line)
+        assert selected_line is not None
+        assert '["test", "~~~~", ' in selected_line
 
     def test_generate_schema_sql(self):
         expected = dedent(
@@ -343,7 +343,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_source_from_path(self):
         path = pathlib.Path("/tmp/test.csv")
         source = rows.utils.Source.from_file(path, mode="w")
-        self.assertEqual(source.uri, path)
+        assert source.uri == path
         source.fobj.close()
 
 

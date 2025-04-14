@@ -60,17 +60,17 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
         result = rows.import_from_txt(self.filename, encoding=self.encoding, **kwargs)
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
-        self.assertEqual(result, 42)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
+        assert result == 42
 
         call = mocked_create_table.call_args
         called_data = call[1]
         meta = called_data.pop("meta")
-        self.assertEqual(call[1], kwargs)
+        assert call[1] == kwargs
 
         source = meta.pop("source")
-        self.assertEqual(source.uri, Path(self.filename))
+        assert source.uri == Path(self.filename)
 
         expected_meta = {
             "imported_from": "txt",
@@ -101,12 +101,12 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_serialize.return_value = iter([utils.table.fields.keys()])
 
         rows.export_to_txt(utils.table, temp.name, encoding=self.encoding, **kwargs)
-        self.assertTrue(mocked_serialize.called)
-        self.assertEqual(mocked_serialize.call_count, 1)
+        assert mocked_serialize.called
+        assert mocked_serialize.call_count == 1
 
         call = mocked_serialize.call_args
-        self.assertEqual(call[0], (utils.table,))
-        self.assertEqual(call[1], kwargs)
+        assert call[0] == (utils.table,)
+        assert call[1] == kwargs
 
     def test_export_to_txt_filename(self):
         # TODO: may test file contents
@@ -119,7 +119,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         with open(temp.name, mode="rb") as fobj:
             content = fobj.read()
-        self.assertEqual(content[-10:].count(b"\n"), 1)
+        assert content[-10:].count(b"\n") == 1
 
     def test_export_to_txt_fobj_binary(self):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
@@ -173,7 +173,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_export_to_text_should_return_unicode(self):
         result = rows.export_to_txt(utils.table)
-        self.assertEqual(type(result), TEXT_TYPE)
+        assert type(result) == TEXT_TYPE
 
     def _test_export_to_txt_frame_style(self, frame_style, chars, positive=True):
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -191,7 +191,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         for char in chars:
             if positive:
-                self.assertIn(char, file_data)
+                assert char in file_data
             else:
                 self.assertNotIn(char, file_data)
 
@@ -216,13 +216,7 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
             utils.table, temp.file, encoding="utf-8", frame_style=frame_style
         )
         new_data = rows.import_from_txt(temp.name)
-        self.assertEqual(
-            list(new_data),
-            list(original_data),
-            msg='failed to read information with frame_style == "{0}"'.format(
-                frame_style
-            ),
-        )
+        assert list(new_data) == list(original_data)
 
     def test_import_from_txt_works_with_ASCII_frame(self):
         self._test_import_from_txt_works_with_custom_frame("ASCII")
@@ -238,6 +232,6 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test__parse_col_positions(self):
         result1 = rows.plugins.txt._parse_col_positions("ascii", "|----|----|")
-        self.assertEqual(result1, [0, 5, 10])
+        assert result1 == [0, 5, 10]
         result2 = rows.plugins.txt._parse_col_positions("none", "  col1   col2  ")
-        self.assertEqual(result2, [0, 7, 14])
+        assert result2 == [0, 7, 14]

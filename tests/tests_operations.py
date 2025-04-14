@@ -28,7 +28,7 @@ import tests.utils as utils
 
 class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_join_imports(self):
-        self.assertIs(rows.join, rows.operations.join)
+        assert rows.join is rows.operations.join
 
     def test_join_feature(self):
         tables = [
@@ -41,7 +41,7 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(merged, expected)
 
     def test_transform_imports(self):
-        self.assertIs(rows.transform, rows.operations.transform)
+        assert rows.transform is rows.operations.transform
 
     def test_transform_feature(self):
         def transformation_function(row, table):
@@ -58,18 +58,18 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         fields.update({"meta": rows.fields.TextField})
         tables = [utils.table] * 3
         result = rows.transform(fields, transformation_function, *tables)
-        self.assertEqual(result.fields, fields)
+        assert result.fields == fields
         not_discarded = [
             transformation_function(row, utils.table) for row in utils.table
         ] * 3
         not_discarded = [row for row in not_discarded if row is not None]
-        self.assertEqual(len(result), len(not_discarded))
+        assert len(result) == len(not_discarded)
 
         for expected_row, row in zip(not_discarded, result):
-            self.assertEqual(expected_row, dict(row._asdict()))
+            assert expected_row == dict(row._asdict())
 
     def test_transpose_imports(self):
-        self.assertIs(rows.transpose, rows.operations.transpose)
+        assert rows.transpose is rows.operations.transpose
 
     def test_transpose_feature(self):
         new_fields = OrderedDict(
@@ -91,14 +91,14 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         new_table = rows.transpose(table, fields_column="key")
 
-        self.assertEqual(len(new_table), 2)
-        self.assertEqual(len(new_table.fields), len(table))
-        self.assertEqual(new_table.field_names, [row.key for row in table])
-        self.assertEqual(new_table[0].first_key, "first_value_1")
-        self.assertEqual(new_table[0].second_key, 1)
-        self.assertEqual(new_table[0].third_key, 3.14)
-        self.assertEqual(new_table[0].fourth_key, datetime.date(2015, 9, 4))
-        self.assertEqual(new_table[1].first_key, "first_value_2")
-        self.assertEqual(new_table[1].second_key, 2)
-        self.assertEqual(new_table[1].third_key, 2.71)
-        self.assertEqual(new_table[1].fourth_key, datetime.date(2015, 8, 29))
+        assert len(new_table) == 2
+        assert len(new_table.fields) == len(table)
+        assert new_table.field_names == [row.key for row in table]
+        assert new_table[0].first_key == "first_value_1"
+        assert new_table[0].second_key == 1
+        assert new_table[0].third_key == 3.14
+        assert new_table[0].fourth_key == datetime.date(2015, 9, 4)
+        assert new_table[1].first_key == "first_value_2"
+        assert new_table[1].second_key == 2
+        assert new_table[1].third_key == 2.71
+        assert new_table[1].fourth_key == datetime.date(2015, 8, 29)

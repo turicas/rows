@@ -65,13 +65,13 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
         kwargs = {"encoding": "test", "some_key": 123, "other": 456}
         result = rows.import_from_sqlite(self.filename, **kwargs)
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
-        self.assertEqual(result, 42)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
+        assert result == 42
 
         call = mocked_create_table.call_args
         call[1].pop("meta")
-        self.assertEqual(call[1], kwargs)
+        assert call[1] == kwargs
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_sqlite_retrieve_desired_data(self, mocked_create_table):
@@ -147,7 +147,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         result_table = rows.import_from_sqlite(temp.name, table_name="rows")
 
-        self.assertEqual(len(result_table), 2 * len(utils.table))
+        assert len(result_table) == 2 * len(utils.table)
         self.assert_table_equal(result_table, utils.table + utils.table)
 
     @mock.patch("rows.plugins.utils.prepare_to_export")
@@ -159,13 +159,13 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_prepare_to_export.return_value = iter(exported_utils_table)
 
         rows.export_to_sqlite(utils.table, temp.name, encoding=encoding, **kwargs)
-        self.assertTrue(mocked_prepare_to_export.called)
-        self.assertEqual(mocked_prepare_to_export.call_count, 1)
+        assert mocked_prepare_to_export.called
+        assert mocked_prepare_to_export.call_count == 1
 
         call = mocked_prepare_to_export.call_args
-        self.assertEqual(call[0], (utils.table,))
+        assert call[0] == (utils.table,)
         kwargs["encoding"] = encoding
-        self.assertEqual(call[1], kwargs)
+        assert call[1] == kwargs
 
     def test_issue_170(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -205,17 +205,14 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
             query_args=(3,),
         )
         for row in table:
-            self.assertTrue(row.float_column > 3)
+            assert row.float_column > 3
 
     def test_export_callback(self):
         table = rows.import_from_dicts([{"id": number} for number in range(10)])
         myfunc = mock.Mock()
         rows.export_to_sqlite(table, ":memory:", callback=myfunc, batch_size=3)
-        self.assertEqual(myfunc.call_count, 4)
-        self.assertEqual(
-            [(x[0][0], x[0][1]) for x in myfunc.call_args_list],
-            [(3, 3), (3, 6), (3, 9), (1, 10)],
-        )
+        assert myfunc.call_count == 4
+        assert [(x[0][0], x[0][1]) for x in myfunc.call_args_list] == [(3, 3), (3, 6), (3, 9), (1, 10)]
 
     def test_empty_decimal(self):
         table = rows.import_from_dicts([{"test": ""} for _ in range(10)])
@@ -223,4 +220,4 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
         connection = rows.export_to_sqlite(table, ":memory:")
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM table1")
-        self.assertEqual(list(cursor.fetchall()), [(None,) for _ in range(10)])
+        assert list(cursor.fetchall()) == [(None,) for _ in range(10)]

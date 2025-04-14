@@ -57,17 +57,17 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_imports(self):
         # The order must be this one to force loading the lazy module (first the real function, then the alias)
-        self.assertIs(rows.plugins.plugin_csv.import_from_csv, rows.import_from_csv)
-        self.assertIs(rows.plugins.plugin_csv.export_to_csv, rows.export_to_csv)
+        assert rows.plugins.plugin_csv.import_from_csv is rows.import_from_csv
+        assert rows.plugins.plugin_csv.export_to_csv is rows.export_to_csv
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_uses_create_table(self, mocked_create_table):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
         result = rows.import_from_csv(self.filename, encoding="utf-8", **kwargs)
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
-        self.assertEqual(result, 42)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
+        assert result == 42
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_retrieve_desired_data(self, mocked_create_table):
@@ -95,7 +95,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         rows.import_from_csv(fobj)
         call_args = mocked_create_table.call_args_list[0]
-        self.assertEqual(data, list(call_args[0][0]))
+        assert data == list(call_args[0][0])
 
     def test_import_from_csv_discover_dialect_decode_error(self):
 
@@ -115,7 +115,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         last_row = table[-1]
         last_column = "b" * 508
-        self.assertEqual(getattr(last_row, last_column), "b" * 508 + "++Á")
+        assert getattr(last_row, last_column) == "b" * 508 + "++Á"
 
     def test_import_from_csv_impossible_dialect(self):
         # Fix a bug from: https://github.com/turicas/rows/issues/214
@@ -135,8 +135,8 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         ).encode(encoding)
 
         dialect = rows.plugins.plugin_csv.discover_dialect(data, encoding)
-        self.assertIs(dialect.doublequote, True)
-        self.assertIs(dialect.escapechar, None)
+        assert dialect.doublequote is True
+        assert dialect.escapechar is None
 
     def test_import_from_csv_excel_semicolon_dialect(self):
         encoding = "utf-8"
@@ -150,13 +150,13 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         ).encode(encoding)
 
         table = rows.import_from_csv(io.BytesIO(data), dialect="excel-semicolon")
-        self.assertEqual(table.field_names, ["field1", "field2"])
-        self.assertEqual(table[0].field1, 1)
-        self.assertEqual(table[0].field2, 2)
-        self.assertEqual(table[1].field1, 3)
-        self.assertEqual(table[1].field2, 4)
-        self.assertEqual(table[2].field1, 5)
-        self.assertEqual(table[2].field2, 6)
+        assert table.field_names == ["field1", "field2"]
+        assert table[0].field1 == 1
+        assert table[0].field2 == 2
+        assert table[1].field1 == 3
+        assert table[1].field2 == 4
+        assert table[2].field1 == 5
+        assert table[2].field2 == 6
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_force_dialect(self, mocked_create_table):
@@ -169,7 +169,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         rows.import_from_csv(fobj, dialect="excel-tab")
         call_args = mocked_create_table.call_args_list[0]
-        self.assertEqual(data, list(call_args[0][0]))
+        assert data == list(call_args[0][0])
 
     def test_detect_dialect_more_data(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -189,11 +189,11 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             fobj.write(data.encode("utf-8"))
 
         table = rows.import_from_csv(filename, encoding="utf-8")
-        self.assertEqual(table.field_names, ["field1_samefield", "field2_other"])
-        self.assertEqual(table[0].field1_samefield, "row1value1")
-        self.assertEqual(table[0].field2_other, "row1value2")
-        self.assertEqual(table[1].field1_samefield, "row2value1")
-        self.assertEqual(table[1].field2_other, "row2value2")
+        assert table.field_names == ["field1_samefield", "field2_other"]
+        assert table[0].field1_samefield == "row1value1"
+        assert table[0].field2_other == "row1value2"
+        assert table[1].field1_samefield == "row2value1"
+        assert table[1].field2_other == "row2value2"
 
     def test_detect_weird_dialect(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -217,12 +217,12 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         )
 
         table = rows.import_from_csv(data, encoding=encoding, lazy=False)
-        self.assertEqual(table.field_names, ["field1", "field2", "field3", "field4"])
+        assert table.field_names == ["field1", "field2", "field3", "field4"]
 
         expected = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 0, 1, 2]]
         for expected_data, row in zip(expected, table):
             row = [row.field1, row.field2, row.field3, row.field4]
-            self.assertEqual(expected_data, row)
+            assert expected_data == row
 
     def test_detect_dialect_using_json(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -246,7 +246,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         table = rows.import_from_csv(filename, encoding=encoding)
 
-        self.assertEqual(table.field_names, ["jsoncolumn1", "jsoncolumn2"])
+        assert table.field_names == ["jsoncolumn1", "jsoncolumn2"]
         self.assertDictEqual(table[0].jsoncolumn1, {"a": 42})
         self.assertDictEqual(table[0].jsoncolumn2, {"b": 43})
         self.assertDictEqual(table[1].jsoncolumn1, {"c": 44})
@@ -260,12 +260,12 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_serialize.return_value = iter([utils.table.fields.keys()])
 
         rows.export_to_csv(utils.table, temp.name, encoding="utf-8", **kwargs)
-        self.assertTrue(mocked_serialize.called)
-        self.assertEqual(mocked_serialize.call_count, 1)
+        assert mocked_serialize.called
+        assert mocked_serialize.call_count == 1
 
         call = mocked_serialize.call_args
-        self.assertEqual(call[0], (utils.table,))
-        self.assertEqual(call[1], kwargs)
+        assert call[0] == (utils.table,)
+        assert call[1] == kwargs
 
     def test_export_to_csv_filename(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -277,7 +277,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         temp.file.seek(0)
         result = temp.file.read()
         export_in_memory = rows.export_to_csv(utils.table, None)
-        self.assertEqual(result, export_in_memory)
+        assert result == export_in_memory
 
     def test_export_to_csv_fobj_binary(self):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
@@ -362,14 +362,14 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_export_to_csv_accepts_dialect(self):
         result_1 = rows.export_to_csv(utils.table, dialect=csv.excel_tab)
         result_2 = rows.export_to_csv(utils.table, dialect=csv.excel)
-        self.assertEqual(result_1.replace(b"\t", b","), result_2)
+        assert result_1.replace(b"\t", b",") == result_2
 
     def test_export_callback(self):
         table = rows.import_from_dicts([{"id": number} for number in range(10)])
         myfunc = mock.Mock()
         rows.export_to_csv(table, callback=myfunc, batch_size=3)
-        self.assertEqual(myfunc.call_count, 4)
-        self.assertEqual([x[0][0] for x in myfunc.call_args_list], [3, 6, 9, 10])
+        assert myfunc.call_count == 4
+        assert [x[0][0] for x in myfunc.call_args_list] == [3, 6, 9, 10]
 
     def test_import_field_limit(self):
         temp = tempfile.NamedTemporaryFile(delete=False)

@@ -62,9 +62,9 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
         kwargs = {"some_key": 123, "other": 456}
         result = rows.import_from_xls(self.filename, **kwargs)
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
-        self.assertEqual(result, 42)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
+        assert result == 42
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_xls_retrieve_desired_data(self, mocked_create_table):
@@ -93,7 +93,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         temp.file.seek(0)
         result = temp.file.read()
         export_in_memory = rows.export_to_xls(utils.table, None)
-        self.assertEqual(result, export_in_memory)
+        assert result == export_in_memory
 
     def test_export_to_xls_fobj_binary(self):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")
@@ -123,13 +123,13 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_prepare_to_export.return_value = iter([utils.table.fields.keys()])
 
         rows.export_to_xls(utils.table, temp.name, encoding=encoding, **kwargs)
-        self.assertTrue(mocked_prepare_to_export.called)
-        self.assertEqual(mocked_prepare_to_export.call_count, 1)
+        assert mocked_prepare_to_export.called
+        assert mocked_prepare_to_export.call_count == 1
 
         call = mocked_prepare_to_export.call_args
-        self.assertEqual(call[0], (utils.table,))
+        assert call[0] == (utils.table,)
         kwargs["encoding"] = encoding
-        self.assertEqual(call[1], kwargs)
+        assert call[1] == kwargs
 
     def test_issue_168(self):
         temp = tempfile.NamedTemporaryFile(delete=False)
@@ -148,15 +148,15 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.import_from_xls(
             self.filename, start_row=6, end_row=8, start_column=6, end_column=8
         )
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
         call_args = mocked_create_table.call_args_list[0]
         expected_data = [
             ["12.0%", "2050-01-02", "2050-01-02T23:45:31"],
             ["13.64%", "2015-08-18", "2015-08-18T22:21:33"],
             ["13.14%", "2015-03-04", "2015-03-04T16:00:01"],
         ]
-        self.assertEqual(expected_data, list(call_args[0][0]))
+        assert expected_data == list(call_args[0][0])
 
     def test_zero_date(self):
         table = rows.import_from_xls(

@@ -65,9 +65,9 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
         kwargs = {"encoding": "iso-8859-15", "some_key": 123, "other": 456}
         result = rows.import_from_xlsx(self.filename, **kwargs)
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
-        self.assertEqual(result, 42)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
+        assert result == 42
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_xlsx_retrieve_desired_data(self, mocked_create_table):
@@ -125,12 +125,12 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_prepare_to_export.return_value = iter([utils.table.fields.keys()])
 
         rows.export_to_xlsx(utils.table, filename, **kwargs)
-        self.assertTrue(mocked_prepare_to_export.called)
-        self.assertEqual(mocked_prepare_to_export.call_count, 1)
+        assert mocked_prepare_to_export.called
+        assert mocked_prepare_to_export.call_count == 1
 
         call = mocked_prepare_to_export.call_args
-        self.assertEqual(call[0], (utils.table,))
-        self.assertEqual(call[1], kwargs)
+        assert call[0] == (utils.table,)
+        assert call[1] == kwargs
 
     def test_issue_168(self):
         filename = self.get_temp_filename()
@@ -147,15 +147,15 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.import_from_xlsx(
             self.filename, start_row=6, end_row=8, start_column=4, end_column=7
         )
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
         call_args = mocked_create_table.call_args_list[0]
         expected_data = [
             [4.56, 4.56, "12%", datetime.datetime(2050, 1, 2, 0, 0)],
             [7.89, 7.89, "13.64%", datetime.datetime(2015, 8, 18, 0, 0)],
             [9.87, 9.87, "13.14%", datetime.datetime(2015, 3, 4, 0, 0)],
         ]
-        self.assertEqual(expected_data, list(call_args[0][0]))
+        assert expected_data == list(call_args[0][0])
 
     def test_issue_290_can_read_sheet(self):
         rows.import_from_xlsx("tests/data/text_in_percent_cell.xlsx")
@@ -184,10 +184,10 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_define_sheet_name(self):
         define_sheet_name = rows.plugins.xlsx.define_sheet_name
 
-        self.assertEqual(define_sheet_name(["Sheet1"]), "Sheet2")
-        self.assertEqual(define_sheet_name(["Test", "Test2"]), "Sheet1")
-        self.assertEqual(define_sheet_name(["Sheet1", "Sheet2"]), "Sheet3")
-        self.assertEqual(define_sheet_name(["Sheet1", "Sheet3"]), "Sheet2")
+        assert define_sheet_name(["Sheet1"]) == "Sheet2"
+        assert define_sheet_name(["Test", "Test2"]) == "Sheet1"
+        assert define_sheet_name(["Sheet1", "Sheet2"]) == "Sheet3"
+        assert define_sheet_name(["Sheet1", "Sheet3"]) == "Sheet2"
 
     def test_is_existing_spreadsheet(self):
         is_existing_spreadsheet = rows.plugins.xlsx.is_existing_spreadsheet
@@ -203,12 +203,12 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertFalse(is_existing_spreadsheet(get_source(filename)))
 
         filename = self.filename
-        self.assertTrue(is_existing_spreadsheet(get_source(filename)))
+        assert is_existing_spreadsheet(get_source(filename))
 
         data = BytesIO()
         with open(self.filename, mode="rb") as fobj:
             data.write(fobj.read())
-        self.assertTrue(is_existing_spreadsheet(get_source(data)))
+        assert is_existing_spreadsheet(get_source(data))
 
     def test_write_multiple_sheets(self):
         filename = self.get_temp_filename()
@@ -222,14 +222,8 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows.export_to_xlsx(table3, filename)
 
         result = rows.plugins.xlsx.sheet_names(filename)
-        self.assertEqual(result, ["Test1", "Sheet1", "Sheet2"])
+        assert result == ["Test1", "Sheet1", "Sheet2"]
 
-        self.assertEqual(
-            list(table1), list(rows.import_from_xlsx(filename, sheet_name="Test1"))
-        )
-        self.assertEqual(
-            list(table2), list(rows.import_from_xlsx(filename, sheet_name="Sheet1"))
-        )
-        self.assertEqual(
-            list(table3), list(rows.import_from_xlsx(filename, sheet_name="Sheet2"))
-        )
+        assert list(table1) == list(rows.import_from_xlsx(filename, sheet_name="Test1"))
+        assert list(table2) == list(rows.import_from_xlsx(filename, sheet_name="Sheet1"))
+        assert list(table3) == list(rows.import_from_xlsx(filename, sheet_name="Sheet2"))

@@ -13,7 +13,7 @@ class UwsgiLogPluginTestCase(unittest.TestCase):
     def test_import_from_uwsgi_log(self):
         filename = "uwsgi.log"
         table = import_from_uwsgi_log(filename, "utf-8")
-        self.assertEqual(len(table), 2)
+        assert len(table) == 2
         first = table.Row(
             pid=879,
             ip="127.0.0.1",
@@ -34,5 +34,5 @@ class UwsgiLogPluginTestCase(unittest.TestCase):
             http_version=1.1,
             http_status=200,
         )
-        self.assertEqual(table[0], first)
-        self.assertEqual(table[1], second)
+        assert table[0] == first
+        assert table[1] == second

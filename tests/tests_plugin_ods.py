@@ -54,9 +54,9 @@ class PluginOdsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         mocked_create_table.return_value = 42
         kwargs = {"encoding": "test", "some_key": 123, "other": 456}
         result = rows.import_from_ods(self.filename, **kwargs)
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
-        self.assertEqual(result, 42)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
+        assert result == 42
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_ods_retrieve_desired_data_filename(self, mocked_create_table):

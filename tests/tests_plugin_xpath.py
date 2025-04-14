@@ -68,9 +68,9 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table = rows.import_from_xpath(self.filename, encoding=self.encoding, **self.kwargs)
         meta = table.meta.copy()
         source = meta.pop("source")
-        self.assertEqual(source.uri, Path(self.filename))
+        assert source.uri == Path(self.filename)
         expected_meta = {"imported_from": "xpath"}
-        self.assertEqual(meta, expected_meta)
+        assert meta == expected_meta
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         fobj = temp.file
@@ -84,9 +84,9 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
             table = rows.import_from_xpath(fobj, encoding=self.encoding, **self.kwargs)
         meta = table.meta.copy()
         source = meta.pop("source")
-        self.assertEqual(source.uri, Path(self.filename))
+        assert source.uri == Path(self.filename)
         expected_meta = {"imported_from": "xpath"}
-        self.assertEqual(meta, expected_meta)
+        assert meta == expected_meta
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         fobj = temp.file
@@ -105,9 +105,9 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
             table = rows.import_from_xpath(fobj, encoding=self.encoding, **self.kwargs)
         meta = table.meta.copy()
         source = meta.pop("source")
-        self.assertEqual(source.uri, Path(self.filename))
+        assert source.uri == Path(self.filename)
         expected_meta = {"imported_from": "xpath"}
-        self.assertEqual(meta, expected_meta)
+        assert meta == expected_meta
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         fobj = temp.file
@@ -133,8 +133,8 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
             fields_xpath=fields_xpath,
             encoding="utf-8",
         )
-        self.assertEqual(table[0].name, "Abadia de Goiás (GO)")
-        self.assertEqual(table[1].name, "Abadiânia (GO)")
+        assert table[0].name == "Abadia de Goiás (GO)"
+        assert table[1].name == "Abadiânia (GO)"
 
     @mock.patch("rows.plugins.xpath.create_table")
     def test_import_from_xpath_uses_create_table(self, mocked_create_table):
@@ -144,9 +144,9 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.kwargs.update(kwargs)
 
         result = rows.import_from_xpath(self.filename, encoding=encoding, **self.kwargs)
-        self.assertTrue(mocked_create_table.called)
-        self.assertEqual(mocked_create_table.call_count, 1)
-        self.assertEqual(result, 42)
+        assert mocked_create_table.called
+        assert mocked_create_table.call_count == 1
+        assert result == 42
 
     def test_xpath_must_be_text_type(self):
         with self.assertRaises(TypeError):
