@@ -1,5 +1,5 @@
 MAKEFLAGS += --always-make
-PYTHON_VERSIONS = 27 35 36 37 38 39 310 311 312 313
+PYTHON_VERSIONS = 27 35 36 37 38 39 310 311 312 313 debian
 TEST_PY_TARGETS = $(foreach version, $(PYTHON_VERSIONS), test-py$(version))
 BUILD_PY_TARGETS = $(foreach version, $(PYTHON_VERSIONS), build-py$(version))
 
@@ -13,7 +13,7 @@ build-py%:
 	@echo "Running py$*"
 	docker compose build py$*
 
-test-py%: build-py%
+test-py%:
 	@echo "Running tests for py$*"
 	@COMPOSE_PROFILES=py$* docker compose run --rm -it py$* bash -c "coverage run -m pytest $(TEST_ARGS) && coverage report"
 

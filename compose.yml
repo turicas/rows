@@ -1,5 +1,25 @@
 services:
 
+  pydebian:
+    profiles: [pydebian]
+    env_file:
+      - path: "docker/env/python"
+        required: true
+      - path: "docker/env/python.local"
+        required: false
+    user: "${UID:-1000}:${GID:-1000}"
+    build:
+      context: .
+      dockerfile: "debian.Dockerfile"
+    image: turicas/rows-pydebian:dev
+    pull_policy: build
+    volumes:
+      - ${PWD}/docker/data/python/:/data/
+      - ${PWD}/:/app/
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   py313:
     profiles: [py313]
     env_file:
