@@ -1,4 +1,17 @@
 # coding: utf-8
+
+# Copyright 2014-2025 Álvaro Justen <https://github.com/turicas/rows/>
+#    This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
+#    Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option)
+#    any later version.
+#    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+#    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+#    more details.
+#    You should have received a copy of the GNU Lesser General Public License along with this program.  If not, see
+#    <http://www.gnu.org/licenses/>.
+
+from __future__ import unicode_literals
+
 import pytest
 
 import bz2
@@ -15,17 +28,15 @@ from rows.fileio import cfopen
 from rows.compat import PYTHON_VERSION, TEXT_TYPE
 
 
-if PYTHON_VERSION < (3, 0, 0):
-    content = "Álvaro".decode("utf-8")
-    encoding = "iso-8859-1"
+content = "Álvaro"
+encoding = "iso-8859-1"
+content_encoded = content.encode(encoding)
 
+if PYTHON_VERSION < (3, 0, 0):
     def gzip_decompress(data):
         return gzip.GzipFile(fileobj=io.BytesIO(data)).read()
 else:
-    content = "Álvaro"
-    encoding = "iso-8859-1"
     gzip_decompress = gzip.decompress
-content_encoded = content.encode(encoding)
 
 
 def assert_cfopen_path_filename_binary_content(suffix, decompress):
