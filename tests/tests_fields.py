@@ -61,7 +61,7 @@ class FieldsTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             fields.BinaryField.serialize("123")
 
-        assert fields.BinaryField.deserialize(None) is b""
+        assert fields.BinaryField.deserialize(None) == b""
         assert fields.BinaryField.deserialize(serialized) == deserialized
         assert type(fields.BinaryField.deserialize(serialized)) is BINARY_TYPE
         with self.assertRaises(ValueError):
@@ -286,7 +286,7 @@ class FieldsTestCase(unittest.TestCase):
 
         assert fields.TextField.deserialize("Álvaro") == "Álvaro"
         assert fields.TextField.deserialize(None) is None
-        assert fields.TextField.deserialize("") is ""
+        assert fields.TextField.deserialize("") == ""
         assert fields.TextField.serialize("Álvaro") == "Álvaro"
         assert type(fields.TextField.serialize("Álvaro")) is TEXT_TYPE
 

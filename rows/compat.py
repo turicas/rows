@@ -14,6 +14,7 @@
 
 from __future__ import unicode_literals
 
+import platform
 import sys
 from collections import OrderedDict
 
@@ -21,6 +22,7 @@ from collections import OrderedDict
 DEFAULT_SAMPLE_ROWS = 20480  # Number of rows to sample from files when no schema is provided
 
 PYTHON_VERSION = (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
+PYTHON_IMPLEMENTATION = platform.python_implementation()
 
 if PYTHON_VERSION < (3, 0, 0):
     TEXT_TYPE = unicode
@@ -61,8 +63,7 @@ PYTHON_KEYWORDS_LOWER = {
 }
 # Take from: `import keyword; set(key.lower() for key in keyword.kwlist)`
 
-@lru_cache
-def library_installed(module_name):
+def _library_installed(module_name):
     if PYTHON_VERSION >= (3, 0, 0):
         from importlib.util import find_spec
 
@@ -77,3 +78,8 @@ def library_installed(module_name):
             return False
         else:
             return True
+
+if PYTHON_VERSION < (3, 0, 0):
+    library_installed = lru_cache(_library_installed)
+else:
+    library_installed = lru_cache(maxsize=128)(_library_installed)

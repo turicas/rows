@@ -258,7 +258,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert mocked_prepare_to_export.called
         assert mocked_prepare_to_export.call_count == 1
         call = mocked_prepare_to_export.call_args
-        assert call[0] == utils.table
+        assert call[0] == (utils.table,)
         kwargs["encoding"] = encoding
         assert call[1] == kwargs
 

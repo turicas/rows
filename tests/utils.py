@@ -28,7 +28,7 @@ from rows.compat import TEXT_TYPE
 
 process = None
 try:
-    process = subprocess.Popen(["psqxxxl", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(["psql", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 except OSError:
     PSQL_FOUND = False
 else:

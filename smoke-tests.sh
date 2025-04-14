@@ -3,7 +3,11 @@ set -xe
 
 TMPDIR=$(mktemp -d)
 PYTHON_VERSION=$(python --version | sed 's/Python //; s/\./_/g')
-ROWS="python3 -m rows"
+if [[ $(which python2.7) ]]; then
+  ROWS="python2.7 -m rows"
+else
+  ROWS="python3 -m rows"
+fi
 echo "Python version: ${PYTHON_VERSION}"
 echo "Using temp directory: $TMPDIR"
 
