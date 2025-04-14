@@ -23,14 +23,20 @@ import os
 import sys
 from pathlib import Path
 
-import click
-
 import rows
+from rows.compat import PYTHON_VERSION
 from rows.fields import make_header, TextField
 from rows.fileio import cfopen
 from rows.plugins.plugin_csv import CsvInspector, fix_file
 from rows.compat import DEFAULT_SAMPLE_ROWS, TEXT_TYPE, library_installed
 from rows.version import as_string as rows_version
+
+if PYTHON_VERSION < (3, 0, 0):
+    import warnings
+
+    warnings.filterwarnings("ignore", message="Click detected the use of the unicode_literals", category=Warning)
+
+import click
 
 # TODO: move constants to compat?
 DEFAULT_BUFFER_SIZE = 8 * 1024 * 1024
