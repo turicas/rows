@@ -419,6 +419,8 @@ def detect_local_source(path, content, mime_type=None, encoding=None):
             chardet = _try_to_import_chardet()
             if chardet is not None:
                 encoding = chardet.detect(content)
+    if isinstance(encoding, dict):  # WHY? Python2?
+        encoding = encoding.get("encoding")
 
     plugin_name = plugin_name_by_mime_type(mime_type, mime_name, extension)
     if encoding == "binary":

@@ -17,10 +17,10 @@
 
 from __future__ import unicode_literals
 
+import io
 import tempfile
 import unittest
 from collections import OrderedDict
-from io import BytesIO
 from pathlib import Path
 
 import mock
@@ -101,7 +101,7 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 rows.import_from_xpath(fobj, encoding=None, **self.kwargs)
 
     def test_import_from_xpath_fobj_text(self):
-        with open(self.filename, mode="r", encoding="utf-8") as fobj:
+        with io.TextIOWrapper(io.open(self.filename, mode="rb"), encoding="utf-8") as fobj:
             table = rows.import_from_xpath(fobj, encoding=self.encoding, **self.kwargs)
         meta = table.meta.copy()
         source = meta.pop("source")
@@ -128,7 +128,7 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
         rows_xpath = "//ul/li"
         fields_xpath = OrderedDict([("name", ".//text()"), ("link", ".//a/@href")])
         table = rows.import_from_xpath(
-            BytesIO(html),
+            io.BytesIO(html),
             rows_xpath=rows_xpath,
             fields_xpath=fields_xpath,
             encoding="utf-8",

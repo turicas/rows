@@ -17,10 +17,10 @@
 
 from __future__ import unicode_literals
 
+import io
 import tempfile
 import unittest
 from collections import OrderedDict
-from io import BytesIO
 from pathlib import Path
 from textwrap import dedent
 
@@ -81,7 +81,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assertFalse(source.should_close)
 
     def test_import_from_xhtml(self):
-        fobj = BytesIO(
+        fobj = io.BytesIO(
             b'<?xml version="1.0" encoding="UTF-8"?>'
             b"<table> <tr><td>f1</td></tr> <tr><td>42</td></tr> </table>"
         )
@@ -119,15 +119,16 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_html_fobj_text(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8")
-        self.files_to_delete.append(temp.name)
-        fobj = temp.file
-        result = rows.export_to_html(utils.table, fobj)
-        assert result is fobj
-        assert not fobj.closed
-        fobj.close()
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        tmp.close()
+        temp = io.TextIOWrapper(io.open(tmp.name, mode="wb"), encoding="utf-8")
+        self.files_to_delete.append(tmp.name)
+        result = rows.export_to_html(utils.table, temp)
+        assert result is temp
+        assert not temp.closed
+        temp.close()
         # TODO: test file contents instead of collateral effect
-        table = rows.import_from_html(temp.name)
+        table = rows.import_from_html(tmp.name)
         self.assert_table_equal(table, utils.table)
 
     @mock.patch("rows.plugins.utils.serialize")
@@ -320,10 +321,10 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         """
         ).encode("utf-8")
         table = rows.import_from_html(
-            BytesIO(html), encoding="utf-8", preserve_html=True
+            io.BytesIO(html), encoding="utf-8", preserve_html=True
         )
         table2 = rows.import_from_html(
-            BytesIO(html), encoding="utf-8", preserve_html=False
+            io.BytesIO(html), encoding="utf-8", preserve_html=False
         )
         self.assertEqual(table[0].f1, "<i>r0f1</i>")
         self.assertEqual(table[0].f2, "<i>r0f2</i>")

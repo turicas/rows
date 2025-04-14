@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import io
 import sys
 import tempfile
 import unittest
@@ -132,22 +133,24 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_txt_fobj_text(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8")
-        self.files_to_delete.append(temp.name)
-        fobj = temp.file
-        result = rows.export_to_txt(utils.table, fobj)
-        assert result is fobj
-        assert not fobj.closed
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        tmp.close()
+        temp = io.TextIOWrapper(io.open(tmp.name, mode="wb"), encoding="utf-8")
+        self.files_to_delete.append(tmp.name)
+        result = rows.export_to_txt(utils.table, temp)
+        assert result is temp
+        assert not temp.closed
         # TODO: test file contents instead of this side-effect
-        table = rows.import_from_txt(temp.name, encoding="utf-8")
+        table = rows.import_from_txt(tmp.name, encoding="utf-8")
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_txt_fobj_text_with_encoding(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8")
-        self.files_to_delete.append(temp.name)
-        fobj = temp.file
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        tmp.close()
+        temp = io.TextIOWrapper(io.open(tmp.name, mode="wb"), encoding="utf-8")
+        self.files_to_delete.append(tmp.name)
         with pytest.raises(ValueError, match="export_to_txt must not receive an encoding when file is in text mode"):
-            rows.export_to_txt(utils.table, fobj, encoding="utf-8")
+            rows.export_to_txt(utils.table, temp, encoding="utf-8")
 
     def test_export_to_txt_fobj_binary_without_encoding(self):
         temp = tempfile.NamedTemporaryFile(delete=False, mode="wb")

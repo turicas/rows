@@ -18,11 +18,11 @@
 from __future__ import unicode_literals
 
 import csv
+import io
 import tempfile
 import textwrap
 import unittest
 from collections import OrderedDict
-from io import BytesIO
 from textwrap import dedent
 
 import mock
@@ -89,7 +89,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         data, lines = make_csv_data(
             quote_char="'", field_delimiter=";", line_delimiter="\r\n"
         )
-        fobj = BytesIO()
+        fobj = io.BytesIO()
         fobj.write(lines.encode("utf-8"))
         fobj.seek(0)
 
@@ -110,7 +110,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         # Should not raise `UnicodeDecodeError`
         table = rows.import_from_csv(
-            BytesIO(data), encoding="utf-8", sample_size=262144
+            io.BytesIO(data), encoding="utf-8", sample_size=262144
         )
 
         last_row = table[-1]
@@ -149,7 +149,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             """.strip()
         ).encode(encoding)
 
-        table = rows.import_from_csv(BytesIO(data), dialect="excel-semicolon")
+        table = rows.import_from_csv(io.BytesIO(data), dialect="excel-semicolon")
         self.assertEqual(table.field_names, ["field1", "field2"])
         self.assertEqual(table[0].field1, 1)
         self.assertEqual(table[0].field2, 2)
@@ -163,7 +163,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         data, lines = make_csv_data(
             quote_char="'", field_delimiter="\t", line_delimiter="\r\n"
         )
-        fobj = BytesIO()
+        fobj = io.BytesIO()
         fobj.write(lines.encode("utf-8"))
         fobj.seek(0)
 
@@ -203,7 +203,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # If the sniffer reads only the first line, it will think the delimiter
         # is ',' instead of ';'
         encoding = "utf-8"
-        data = BytesIO(
+        data = io.BytesIO(
             textwrap.dedent(
                 """
             field1|field2|field3|field4
@@ -298,14 +298,15 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
             rows.export_to_csv(utils.table, fobj, encoding=None)
 
     def test_export_to_csv_fobj_text(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8")
-        self.files_to_delete.append(temp.name)
-        fobj = temp.file
-        result = rows.export_to_csv(utils.table, fobj)
-        assert result is fobj
-        assert not fobj.closed
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        tmp.close()
+        temp = io.TextIOWrapper(io.open(tmp.name, mode="wb"), encoding="utf-8")
+        self.files_to_delete.append(tmp.name)
+        result = rows.export_to_csv(utils.table, temp)
+        assert result is temp
+        assert not temp.closed
         # TODO: test file contents instead of this side-effect
-        table = rows.import_from_csv(temp.name)
+        table = rows.import_from_csv(tmp.name)
         self.assert_table_equal(table, utils.table)
 
     def test_issue_168(self):

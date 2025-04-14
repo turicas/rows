@@ -192,9 +192,10 @@ class PluginParquetTestCase(unittest.TestCase):
 
     def test_import_from_parquet_fobj_text(self):
         with pytest.raises(ValueError, match="import_from_parquet must not receive a file-like object in text mode"):
-            with tempfile.NamedTemporaryFile(suffix=".parquet", mode="r") as tmp:
-                fobj = io.TextIOWrapper(tmp.file, encoding="utf-8")
-                rows.import_from_parquet(fobj)
+            tmp = tempfile.NamedTemporaryFile(suffix=".parquet", delete=False)
+            tmp.close()
+            fobj = io.TextIOWrapper(io.open(tmp.name, mode="rb"), encoding="utf-8")
+            rows.import_from_parquet(fobj)
 
     @mock.patch("rows.plugins.plugin_parquet.create_table")
     def test_import_from_parquet_retrieve_desired_data(self, mocked_create_table):

@@ -118,14 +118,15 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_json_fobj_text(self):
-        temp = tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8")
-        self.files_to_delete.append(temp.name)
-        fobj = temp.file
-        result = rows.export_to_json(utils.table, fobj)
-        assert result is fobj
-        assert not fobj.closed
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        tmp.close()
+        temp = io.TextIOWrapper(io.open(tmp.name, mode="wb"), encoding="utf-8")
+        self.files_to_delete.append(tmp.name)
+        result = rows.export_to_json(utils.table, temp)
+        assert result is temp
+        assert not temp.closed
         # TODO: test file contents instead of this side-effect
-        table = rows.import_from_json(temp.name)
+        table = rows.import_from_json(tmp.name)
         self.assert_table_equal(table, utils.table)
 
     def test_export_to_json_filename_save_data_in_correct_format(self):

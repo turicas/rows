@@ -155,6 +155,7 @@ def get_table_start(sheet):
 
 
 def sheet_names(filename_or_fobj):
+    import io
     import os
 
     import xlrd
@@ -162,7 +163,7 @@ def sheet_names(filename_or_fobj):
     # TODO: setup/teardown must be methods of a class so we can reuse them
     source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="xls")
     source.fobj.close()
-    devnull = open(os.devnull, mode="w", encoding="utf-8")
+    devnull = io.TextIOWrapper(io.open(os.devnull, mode="wb"), encoding="utf-8")
     book = xlrd.open_workbook(TEXT_TYPE(source.uri), formatting_info=False, logfile=devnull)
     result = book.sheet_names()
     del book
@@ -182,6 +183,7 @@ def import_from_xls(
     **kwargs
 ):
     """Return a rows.Table created from imported XLS file."""
+    import io
     import os
     import xlrd
 
@@ -189,7 +191,7 @@ def import_from_xls(
 
     source = Source.from_file(filename_or_fobj, mode="rb", plugin_name="xls")
     source.fobj.close()
-    devnull = open(os.devnull, mode="w", encoding="utf-8")
+    devnull = io.TextIOWrapper(io.open(os.devnull, mode="wb"), encoding="utf-8")
     book = xlrd.open_workbook(TEXT_TYPE(source.uri), formatting_info=True, logfile=devnull)
 
     if sheet_name is not None:
