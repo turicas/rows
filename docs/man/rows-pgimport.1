@@ -1,0 +1,42 @@
+.TH "ROWS PGIMPORT" "1" "2025-04-14" "0.5.0.dev0" "rows pgimport Manual"
+.SH NAME
+rows\-pgimport \- Import a CSV file into a PostgreSQL table
+.SH SYNOPSIS
+.B rows pgimport
+[OPTIONS] SOURCE DATABASE_URI TABLE_NAME
+.SH DESCRIPTION
+Import a CSV file into a PostgreSQL table
+.SH OPTIONS
+.TP
+\fB\-e,\fP \-\-input\-encoding TEXT
+.PP
+.TP
+\fB\-C,\fP \-\-no\-create\-table
+.PP
+.TP
+\fB\-H,\fP \-\-no\-header
+.PP
+.TP
+\fB\-S,\fP \-\-skip\-rows INTEGER
+.PP
+.TP
+\fB\-d,\fP \-\-dialect TEXT
+.PP
+.TP
+\fB\-s,\fP \-\-schema TEXT
+.PP
+.TP
+\fB\-o,\fP \-\-original\-field\-names
+.PP
+.TP
+\fB\-u,\fP \-\-unlogged
+.PP
+.TP
+\fB\-a,\fP \-\-access\-method TEXT
+.PP
+.TP
+\fB\-\-sample\-size\fP INTEGER
+Number of bytes to read from CSV to define encoding, dialect and field types
+.TP
+\fB\-\-sample\-size\fP INTEGER
+.PP

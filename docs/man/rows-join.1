@@ -1,0 +1,42 @@
+.TH "ROWS JOIN" "1" "2025-04-14" "0.5.0.dev0" "rows join Manual"
+.SH NAME
+rows\-join \- Join tables from `source` URIs using...
+.SH SYNOPSIS
+.B rows join
+[OPTIONS] KEYS SOURCES... DESTINATION
+.SH DESCRIPTION
+Join tables from `source` URIs using `key(s)` to group rows and save into `destination`
+.SH OPTIONS
+.TP
+\fB\-q,\fP \-\-quiet
+.PP
+.TP
+\fB\-\-input\-encoding\fP TEXT
+.PP
+.TP
+\fB\-\-output\-encoding\fP TEXT
+.PP
+.TP
+\fB\-\-input\-locale\fP TEXT
+.PP
+.TP
+\fB\-\-output\-locale\fP TEXT
+.PP
+.TP
+\fB\-\-verify\-ssl\fP BOOLEAN
+.PP
+.TP
+\fB\-\-timeout\fP INTEGER
+.PP
+.TP
+\fB\-\-order\-by\fP TEXT
+.PP
+.TP
+\fB\-\-fields\fP TEXT
+A comma-separated list of fields to export
+.TP
+\fB\-\-fields\-exclude\fP TEXT
+A comma-separated list of fields to exclude when exporting
+.TP
+\fB\-\-samples\fP INTEGER
+Number of rows to determine the field types (0 = all)
