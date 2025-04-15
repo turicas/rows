@@ -100,9 +100,8 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_generate_schema_txt(self):
         expected = dedent(
             """
-            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+---------+
             |    field_name   | field_type |  null |  min  |  max   | subtype  | decimal_places | max_digits | max_length | choices |
-            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+---------+
+            |-----------------|------------|-------|-------|--------|----------|----------------|------------|------------|---------|
             |     bool_column |       bool |  true |       |        |          |                |            |            |         |
             |  integer_column |    integer |  true |   1.0 |    6.0 | SMALLINT |                |            |            |         |
             |    float_column |      float |  true | 1.234 |   9.87 |          |                |            |            |         |
@@ -112,7 +111,6 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             | datetime_column |   datetime |  true |       |        |          |                |            |            |         |
             |  unicode_column |       text |  true |       |        |  VARCHAR |                |            |          8 |         |
             |     json_column |       json | false |       |        |          |                |            |            |         |
-            +-----------------+------------+-------+-------+--------+----------+----------------+------------+------------+---------+
         """
         )
         self.assert_generate_schema("txt", expected)
@@ -122,7 +120,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         export_fields = list(table.fields.keys())
         result = rows.utils.generate_schema(table=table, export_fields=export_fields, output_format="txt", max_choices=10)
         lines = result.strip().splitlines()
-        assert 'choices' in lines[1]
+        assert 'choices' in lines[0]
         selected_line = None
         for line in lines:
             if ' unicode_column |' in line:
@@ -228,12 +226,10 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_generate_schema_restricted_fields(self):
         expected = dedent(
             """
-            +-------------+------------+-------+-----+-----+---------+----------------+------------+------------+---------+
             |  field_name | field_type |  null | min | max | subtype | decimal_places | max_digits | max_length | choices |
-            +-------------+------------+-------+-----+-----+---------+----------------+------------+------------+---------+
+            |-------------|------------|-------|-----|-----|---------|----------------|------------|------------|---------|
             | bool_column |       bool |  true |     |     |         |                |            |            |         |
             | json_column |       json | false |     |     |         |                |            |            |         |
-            +-------------+------------+-------+-----+-----+---------+----------------+------------+------------+---------+
         """
         )
         self.assert_generate_schema(

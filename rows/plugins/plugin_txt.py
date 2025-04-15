@@ -233,7 +233,7 @@ def export_to_txt(
     table,
     filename_or_fobj=None,
     encoding=None,
-    frame_style="ascii",
+    frame_style="markdown",
     safe_none_frame=True,
     *args,
     **kwargs
@@ -246,7 +246,7 @@ def export_to_txt(
     `encoding` could be `None` if no filename/file-like object is specified,
     then the return type will be `TEXT_TYPE` (depends on Python 2 vs 3).
     `frame_style`: will select the frame style to be printed around data.
-    Valid values are: 'none', 'ascii' (default), 'single', 'double', 'markdown'.
+    Valid values are: 'none', 'ascii', 'single', 'double', 'markdown' (default).
     Warning: no checks are made to check the desired encoding allows the
     characters needed by single and double frame styles.
 

@@ -510,7 +510,7 @@ def sum_(
 )
 @click.option("--output-locale")
 @click.option(
-    "--frame-style", default="ascii", help="Options: ascii, single, double, none"
+    "--frame-style", default="markdown", help="Options: ascii, single, double, markdown (default), none"
 )
 @click.option(
     "--samples",
@@ -654,7 +654,7 @@ def create_complete_query(query, table_names):
 )
 @click.option("--output")
 @click.option(
-    "--frame-style", default="ascii", help="Options: ascii, single, double, none"
+    "--frame-style", default="markdown", help="Options: ascii, single, double, markdown (default), none"
 )
 @click.option("--quiet", "-q", is_flag=True)
 @click.argument("query", required=True)
