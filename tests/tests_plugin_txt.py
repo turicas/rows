@@ -18,6 +18,7 @@ import tempfile
 import unittest
 from collections import OrderedDict
 from pathlib import Path
+from textwrap import dedent
 
 import mock
 import pytest
@@ -230,3 +231,37 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert result1 == [0, 5, 10]
         result2 = rows.plugins.txt._parse_col_positions("none", "  col1   col2  ")
         assert result2 == [0, 7, 14]
+
+    def test_export_to_txt_frame_style_markdown(self):
+        result = rows.export_to_txt(utils.table, frame_style="markdown")
+        expected = dedent("""
+            | bool_column | integer_column | float_column | decimal_column | percent_column | date_column |   datetime_column   | unicode_column |
+            |-------------|----------------|--------------|----------------|----------------|-------------|---------------------|----------------|
+            |        true |              1 |     3.141592 |       3.141592 |             1% |  2015-01-01 | 2015-08-18T15:10:00 |         Álvaro |
+            |       false |              2 |        1.234 |          1.234 |         11.69% |  1999-02-03 | 1999-02-03T00:01:02 |       àáãâä¹²³ |
+            |        true |              3 |         4.56 |           4.56 |            12% |  2050-01-02 | 2050-01-02T23:45:31 |          éèẽêë |
+            |       false |              4 |         7.89 |           7.89 |         13.64% |  2015-08-18 | 2015-08-18T22:21:33 |           ~~~~ |
+            |        true |              5 |         9.87 |           9.87 |         13.14% |  2015-03-04 | 2015-03-04T16:00:01 |         álvaro |
+            |       false |              6 |       1.2345 |         1.2345 |             2% |  2015-05-06 | 2015-05-06T12:01:02 |           test |
+            |             |                |              |                |                |             |                     |                |
+        """).strip()
+        assert result == expected + "\n"
+
+    def test_import_from_txt_frame_style_markdown(self):
+        data = dedent("""
+            | bool_column | integer_column | float_column | decimal_column | percent_column | date_column |   datetime_column   | unicode_column |
+            |-------------|----------------|--------------|----------------|----------------|-------------|---------------------|----------------|
+            |        true |              1 |     3.141592 |       3.141592 |             1% |  2015-01-01 | 2015-08-18T15:10:00 |         Álvaro |
+            |       false |              2 |        1.234 |          1.234 |         11.69% |  1999-02-03 | 1999-02-03T00:01:02 |       àáãâä¹²³ |
+            |        true |              3 |         4.56 |           4.56 |            12% |  2050-01-02 | 2050-01-02T23:45:31 |          éèẽêë |
+            |       false |              4 |         7.89 |           7.89 |         13.64% |  2015-08-18 | 2015-08-18T22:21:33 |           ~~~~ |
+            |        true |              5 |         9.87 |           9.87 |         13.14% |  2015-03-04 | 2015-03-04T16:00:01 |         álvaro |
+            |       false |              6 |       1.2345 |         1.2345 |             2% |  2015-05-06 | 2015-05-06T12:01:02 |           test |
+            |             |                |              |                |                |             |                     |                |
+        """).strip()
+        table = rows.import_from_txt(io.BytesIO(data.encode("utf-8")), encoding="utf-8", frame_style="markdown")
+        self.assert_table_equal(table, utils.table)
+        table = rows.import_from_txt(io.BytesIO(data.encode("utf-8")), encoding="utf-8", frame_style=None)
+        self.assert_table_equal(table, utils.table)
+
+    # TODO: implement a test like this one for all frame styles (import and export, with the explicit result)

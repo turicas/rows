@@ -48,11 +48,17 @@ def _generate_frames():
     ASCII_FRAME["HORIZONTAL"] = "-"
     ASCII_FRAME["VERTICAL"] = "|"
     NONE_FRAME = {name: " " for name in frame_parts}
+    MARKDOWN_FRAME = {name: None for name in frame_parts}
+    for name in ("VERTICAL", "VERTICAL AND LEFT", "VERTICAL AND RIGHT", "VERTICAL AND HORIZONTAL"):
+        MARKDOWN_FRAME[name] = "|"
+    MARKDOWN_FRAME["HORIZONTAL"] = "-"
+
     return {
         "none": NONE_FRAME,
         "ascii": ASCII_FRAME,
         "single": SINGLE_FRAME,
         "double": DOUBLE_FRAME,
+        "markdown": MARKDOWN_FRAME,
     }
 
 FRAMES = {
@@ -107,6 +113,19 @@ FRAMES = {
         "DOWN AND HORIZONTAL": "╦",
         "UP AND HORIZONTAL": "╩",
         "VERTICAL AND HORIZONTAL": "╬",
+    },
+    "markdown": {
+        "VERTICAL": "|",
+        "HORIZONTAL": "-",
+        "DOWN AND RIGHT": None,
+        "DOWN AND LEFT": None,
+        "UP AND RIGHT": None,
+        "UP AND LEFT": None,
+        "VERTICAL AND LEFT": "|",
+        "VERTICAL AND RIGHT": "|",
+        "DOWN AND HORIZONTAL": None,
+        "UP AND HORIZONTAL": None,
+        "VERTICAL AND HORIZONTAL": "|",
     },
 }
 
@@ -166,14 +185,10 @@ def import_from_txt(
     from rows.plugins.utils import create_table
 
     # TODO: (maybe)
-    # enable parsing of non-fixed-width-columns
-    # with old algorithm - that would just split columns
-    # at the vertical separator character for the frame.
-    # (if doing so, include an optional parameter)
-    # Also, this fixes an outstanding unreported issue:
-    # trying to parse tables which fields values
-    # included a Pipe char - "|" - would silently
-    # yield bad results.
+    # enable parsing of non-fixed-width-columns with old algorithm - that would just split columns at the vertical
+    # separator character for the frame (if doing so, include an optional parameter).
+    # Also, this fixes an outstanding unreported issue: trying to parse tables which fields values included a Pipe char
+    # - "|" - would silently yield bad results.
 
     source = Source.from_file(
         filename_or_fobj, mode="rb", plugin_name="txt", encoding=encoding
@@ -231,7 +246,7 @@ def export_to_txt(
     `encoding` could be `None` if no filename/file-like object is specified,
     then the return type will be `TEXT_TYPE` (depends on Python 2 vs 3).
     `frame_style`: will select the frame style to be printed around data.
-    Valid values are: ('none', 'ascii', 'single', 'double') - ascii is default.
+    Valid values are: 'none', 'ascii' (default), 'single', 'double', 'markdown'.
     Warning: no checks are made to check the desired encoding allows the
     characters needed by single and double frame styles.
 
@@ -287,7 +302,7 @@ def export_to_txt(
         frame["DOWN AND RIGHT"]
         + frame["DOWN AND HORIZONTAL"].join(dashes)
         + frame["DOWN AND LEFT"]
-    )
+    ) if None not in (frame["DOWN AND RIGHT"], frame["DOWN AND LEFT"]) else None
 
     body_split_line = (
         frame["VERTICAL AND RIGHT"]
@@ -299,10 +314,10 @@ def export_to_txt(
         frame["UP AND RIGHT"]
         + frame["UP AND HORIZONTAL"].join(dashes)
         + frame["UP AND LEFT"]
-    )
+    ) if None not in (frame["UP AND RIGHT"], frame["UP AND LEFT"]) else None
 
     result = []
-    if frame_style != "none":
+    if frame_style != "none" and top_split_line:
         result += [top_split_line]
     result += [header, body_split_line]
 
@@ -314,7 +329,7 @@ def export_to_txt(
         row_data = " {} ".format(frame["VERTICAL"]).join(values)
         result.append("{0} {1} {0}".format(frame["VERTICAL"], row_data))
 
-    if frame_style != "none":
+    if frame_style != "none" and botton_split_line:
         result.append(botton_split_line)
     result.append("")
     data = "\n".join(result)
