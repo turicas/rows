@@ -19,16 +19,10 @@ import locale
 import re
 import uuid
 from base64 import b64decode, b64encode
-from collections import defaultdict
 from decimal import Decimal, InvalidOperation
 from unicodedata import normalize
 
 from rows.compat import BINARY_TYPE, ORDERED_DICT, PYTHON_KEYWORDS_LOWER, PYTHON_VERSION, TEXT_TYPE
-
-if PYTHON_VERSION < (3, 0, 0):
-    from itertools import izip_longest as zip_longest  # noqa
-else:
-    from itertools import zip_longest  # noqa
 
 
 # Order matters here
@@ -674,7 +668,6 @@ DEFAULT_TYPES = (
     FloatField,
     DecimalField,
     PercentField,
-    DecimalField,
     DatetimeField,
     DateField,
     JSONField,
@@ -696,12 +689,14 @@ class TypeDetector(object):
 
     def __init__(
         self,
-        field_names=None,
+        field_names,
         field_types=DEFAULT_TYPES,
         fallback_type=TextField,
         skip_indexes=None,
     ):
-        self.field_names = field_names or []
+        from collections import defaultdict
+
+        self.field_names = list(field_names)
         self.field_types = list(field_types)
         self.fallback_type = fallback_type
         self._possible_types = defaultdict(lambda: list(self.field_types))
@@ -757,6 +752,11 @@ class TypeDetector(object):
 
     @property
     def fields(self):
+        if PYTHON_VERSION < (3, 0, 0):
+            from itertools import izip_longest as zip_longest  # noqa
+        else:
+            from itertools import zip_longest  # noqa
+
         possible, skip = self._possible_types, self._skip
 
         if possible:
