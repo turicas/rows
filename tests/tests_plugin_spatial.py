@@ -16,7 +16,9 @@ import re
 
 import pytest
 
-from rows.plugins.plugin_spatial import Point2D
+from rows.plugins.plugin_spatial import LineString2D, Point2D
+
+# TODO: add SRID, to_ewkb, to_ewkt, from_ewkb, from_ewkt
 
 
 POINT_1 = Point2D(x=10, y=20)
@@ -124,6 +126,63 @@ POINT_3_SHP = (
 )
 assert POINT_3_SHP == POINT_3_WKB_LITTLE[2:]
 
+LINESTRING_1 = LineString2D(points=(POINT_1, POINT_2, POINT_3))
+LINESTRING_1_WKT = "LINESTRING (10 20, 123.45 67.89, -10 -34.56)"
+LINESTRING_1_GEOJSON = {
+    "type": "Feature",
+    "geometry": {
+        "type": "LineString",
+        "coordinates": [
+            [10, 20],
+            [123.45, 67.89],
+            [-10, -34.56],
+        ]
+    },
+    "properties": {}
+}
+# ST_AsEWKB('LINESTRING (10 20, 123.45 67.89, -10 -34.56)'::geometry, 'XDR')
+LINESTRING_1_WKB_BIG = (
+    "00"                                     # endianness (0 = big)
+    "00" "00" "00" "02"                      # geometry type
+    "00" "00" "00" "03"                      # number of points
+    "40" "24" "00" "00" "00" "00" "00" "00"  # x1
+    "40" "34" "00" "00" "00" "00" "00" "00"  # y1
+    "40" "5E" "DC" "CC" "CC" "CC" "CC" "CD"  # x2
+    "40" "50" "F8" "F5" "C2" "8F" "5C" "29"  # y2
+    "C0" "24" "00" "00" "00" "00" "00" "00"  # x3
+    "C0" "41" "47" "AE" "14" "7A" "E1" "48"  # y3
+)
+# ST_AsEWKB('LINESTRING (10 20, 123.45 67.89, -10 -34.56)'::geometry, 'NDR')
+LINESTRING_1_WKB_LITTLE = (
+    "01"                                     # endianness (1 = little)
+    "02" "00" "00" "00"                      # geometry type (2 = LineString)
+    "03" "00" "00" "00"                      # number of points
+    "00" "00" "00" "00" "00" "00" "24" "40"  # x1
+    "00" "00" "00" "00" "00" "00" "34" "40"  # y1
+    "CD" "CC" "CC" "CC" "CC" "DC" "5E" "40"  # x2
+    "29" "5C" "8F" "C2" "F5" "F8" "50" "40"  # y2
+    "00" "00" "00" "00" "00" "00" "24" "C0"  # x3
+    "48" "E1" "7A" "14" "AE" "47" "41" "C0"  # y3
+)
+LINESTRING_1_SHP = (
+    "03" "00" "00" "00"                      # geometry type (3 = PolyLine)
+    "00" "00" "00" "00" "00" "00" "24" "C0"  # xmin = x3
+    "48" "E1" "7A" "14" "AE" "47" "41" "C0"  # ymin = y3
+    "CD" "CC" "CC" "CC" "CC" "DC" "5E" "40"  # xmax = x2
+    "29" "5C" "8F" "C2" "F5" "F8" "50" "40"  # ymax = y2
+    "01" "00" "00" "00"                      # number of parts
+    "03" "00" "00" "00"                      # number of points
+    "00" "00" "00" "00"                      # index of the first point in this part
+    "00" "00" "00" "00" "00" "00" "24" "40"  # x1
+    "00" "00" "00" "00" "00" "00" "34" "40"  # y1
+    "CD" "CC" "CC" "CC" "CC" "DC" "5E" "40"  # x2
+    "29" "5C" "8F" "C2" "F5" "F8" "50" "40"  # y2
+    "00" "00" "00" "00" "00" "00" "24" "C0"  # x3
+    "48" "E1" "7A" "14" "AE" "47" "41" "C0"  # y3
+)
+assert LINESTRING_1_SHP[-32:] == LINESTRING_1_WKB_LITTLE[-32:]
+assert LINESTRING_1_SHP[80:88] == LINESTRING_1_WKB_LITTLE[10:18]
+
 
 def test_point_2d():
     point = Point2D(x=123, y=456)
@@ -198,4 +257,58 @@ def test_point_2d_from_geojson():
     assert Point2D.from_geojson(POINT_2_GEOJSON) == POINT_2
     assert Point2D.from_geojson(POINT_2_GEOJSON_PROPERTIES) == POINT_2_PROPERTIES
     assert Point2D.from_geojson(POINT_3_GEOJSON) == POINT_3
+    # TODO: add test for ValueErrors in `from_geojson`
+
+
+def test_line_string():
+    line = LineString2D(points=(POINT_1, POINT_2, POINT_3))
+    assert len(line.points) == 3
+    assert line.points[0] == POINT_1
+    assert line.points[1] == POINT_2
+    assert line.points[2] == POINT_3
+    assert line == LINESTRING_1
+
+    line = LineString2D(points=(POINT_1, POINT_2, POINT_3), properties={"def": 123, "abc": 456})
+    assert len(line.points) == 3
+    assert line.points[0] == POINT_1
+    assert line.points[1] == POINT_2
+    assert line.points[2] == POINT_3
+    assert line.properties == {"def": 123, "abc": 456}
+
+
+def test_line_string_from_wkt():
+    assert LineString2D.from_wkt("LINESTRING (10 20, 123.45 67.89, -10 -34.56)") == LINESTRING_1
+    # TODO: test behavior of "others" when garbage is added? (REGEXP_LINESTRING_2D_OTHERS don't have `^...$`)
+    # TODO: add more tests
+
+
+def test_line_string_to_wkt():
+    assert str(LINESTRING_1) == LINESTRING_1_WKT
+
+
+def test_line_string_to_wkb():
+    assert bytes(LINESTRING_1).hex().upper() == LINESTRING_1_WKB_LITTLE
+
+
+def test_line_string_from_wkb():
+    assert LineString2D.from_wkb(bytes.fromhex(LINESTRING_1_WKB_LITTLE)) == LINESTRING_1
+    assert LineString2D.from_wkb(bytes.fromhex(LINESTRING_1_WKB_BIG)) == LINESTRING_1
+
+
+def test_line_string_from_shp():
+    assert LineString2D.from_shp(bytes.fromhex(LINESTRING_1_SHP)) == LINESTRING_1
+
+
+def test_line_string_to_shp():
+    assert LINESTRING_1.shp().hex().upper() == LINESTRING_1_SHP
+
+
+def test_line_string_to_geojson():
+    assert LINESTRING_1.geojson() == LINESTRING_1_GEOJSON
+    # TODO: test properties
+
+
+def test_line_string_from_geojson():
+    assert LineString2D.from_geojson(LINESTRING_1_GEOJSON) == LINESTRING_1
+    # TODO: test properties
     # TODO: add test for ValueErrors in `from_geojson`
