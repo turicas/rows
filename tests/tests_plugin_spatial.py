@@ -16,7 +16,8 @@ import re
 
 import pytest
 
-from rows.plugins.plugin_spatial import LineString2D, Point2D
+from rows.compat import BINARY_TYPE, TEXT_TYPE
+from rows.plugins.plugin_spatial import LineString2D, Point2D, extract_point_list_wkt
 
 # TODO: add SRID, to_ewkb, to_ewkt, from_ewkb, from_ewkt
 
@@ -184,6 +185,16 @@ assert LINESTRING_1_SHP[-32:] == LINESTRING_1_WKB_LITTLE[-32:]
 assert LINESTRING_1_SHP[80:88] == LINESTRING_1_WKB_LITTLE[10:18]
 
 
+def test_parse_point_list():
+    text = "(20 30, 35 35, 30 20, 20 30)"
+    expected = [Point2D(x=20, y=30), Point2D(x=35, y=35), Point2D(x=30, y=20), Point2D(x=20, y=30)]
+    assert extract_point_list_wkt(text) == expected
+
+    text = "(10 20, 123.45 67.89, 75 -10, -10 -34.56, 10 20)"
+    expected = [POINT_1, POINT_2, POINT_4, POINT_3, POINT_1]
+    assert extract_point_list_wkt(text) == expected
+
+
 def test_point_2d():
     point = Point2D(x=123, y=456)
     assert point.x == 123
@@ -204,7 +215,7 @@ def test_point_2d_from_wkt():
     assert Point2D.from_wkt("POINT (- 30.123 -10.456)") == Point2D(x=-30.123, y=-10.456)  # float negative
 
     text = "POINT (1,23 4,56)"
-    with pytest.raises(ValueError, match=re.escape("Cannot parse value as Point: '{}'".format(text))):
+    with pytest.raises(ValueError, match=re.escape("Cannot parse list of points: '(1,23 4,56)'")):
         result = Point2D.from_wkt(text)
 
     assert Point2D.from_wkt(POINT_1_WKT) == POINT_1
@@ -213,30 +224,30 @@ def test_point_2d_from_wkt():
 
 
 def test_point_2d_to_wkt():
-    assert str(POINT_1) == POINT_1_WKT
-    assert str(POINT_2) == POINT_2_WKT
-    assert str(POINT_3) == POINT_3_WKT
+    assert TEXT_TYPE(POINT_1) == POINT_1_WKT
+    assert TEXT_TYPE(POINT_2) == POINT_2_WKT
+    assert TEXT_TYPE(POINT_3) == POINT_3_WKT
 
 
 def test_point_2d_to_wkb():
-    assert bytes(POINT_1).hex().upper() == POINT_1_WKB_LITTLE
-    assert bytes(POINT_2).hex().upper() == POINT_2_WKB_LITTLE
-    assert bytes(POINT_3).hex().upper() == POINT_3_WKB_LITTLE
+    assert BINARY_TYPE(POINT_1).hex().upper() == POINT_1_WKB_LITTLE
+    assert BINARY_TYPE(POINT_2).hex().upper() == POINT_2_WKB_LITTLE
+    assert BINARY_TYPE(POINT_3).hex().upper() == POINT_3_WKB_LITTLE
 
 
 def test_point_2d_from_wkb():
-    assert Point2D.from_wkb(bytes.fromhex(POINT_1_WKB_LITTLE)) == POINT_1
-    assert Point2D.from_wkb(bytes.fromhex(POINT_2_WKB_LITTLE)) == POINT_2
-    assert Point2D.from_wkb(bytes.fromhex(POINT_3_WKB_LITTLE)) == POINT_3
-    assert Point2D.from_wkb(bytes.fromhex(POINT_1_WKB_BIG)) == POINT_1
-    assert Point2D.from_wkb(bytes.fromhex(POINT_2_WKB_BIG)) == POINT_2
-    assert Point2D.from_wkb(bytes.fromhex(POINT_3_WKB_BIG)) == POINT_3
+    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_1_WKB_LITTLE)) == POINT_1
+    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_2_WKB_LITTLE)) == POINT_2
+    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_3_WKB_LITTLE)) == POINT_3
+    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_1_WKB_BIG)) == POINT_1
+    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_2_WKB_BIG)) == POINT_2
+    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_3_WKB_BIG)) == POINT_3
 
 
 def test_point_2d_from_shp():
-    assert Point2D.from_shp(bytes.fromhex(POINT_1_SHP)) == POINT_1
-    assert Point2D.from_shp(bytes.fromhex(POINT_2_SHP)) == POINT_2
-    assert Point2D.from_shp(bytes.fromhex(POINT_3_SHP)) == POINT_3
+    assert Point2D.from_shp(BINARY_TYPE.fromhex(POINT_1_SHP)) == POINT_1
+    assert Point2D.from_shp(BINARY_TYPE.fromhex(POINT_2_SHP)) == POINT_2
+    assert Point2D.from_shp(BINARY_TYPE.fromhex(POINT_3_SHP)) == POINT_3
 
 
 def test_point_2d_to_shp():
@@ -260,7 +271,7 @@ def test_point_2d_from_geojson():
     # TODO: add test for ValueErrors in `from_geojson`
 
 
-def test_line_string():
+def test_line_string_2d():
     line = LineString2D(points=(POINT_1, POINT_2, POINT_3))
     assert len(line.points) == 3
     assert line.points[0] == POINT_1
@@ -276,39 +287,39 @@ def test_line_string():
     assert line.properties == {"def": 123, "abc": 456}
 
 
-def test_line_string_from_wkt():
-    assert LineString2D.from_wkt("LINESTRING (10 20, 123.45 67.89, -10 -34.56)") == LINESTRING_1
+def test_line_string_2d_to_wkt():
+    assert TEXT_TYPE(LINESTRING_1) == LINESTRING_1_WKT
+
+
+def test_line_string_2d_from_wkt():
+    assert LineString2D.from_wkt(LINESTRING_1_WKT) == LINESTRING_1
     # TODO: test behavior of "others" when garbage is added? (REGEXP_LINESTRING_2D_OTHERS don't have `^...$`)
     # TODO: add more tests
 
 
-def test_line_string_to_wkt():
-    assert str(LINESTRING_1) == LINESTRING_1_WKT
+def test_line_string_2d_to_wkb():
+    assert BINARY_TYPE(LINESTRING_1).hex().upper() == LINESTRING_1_WKB_LITTLE
 
 
-def test_line_string_to_wkb():
-    assert bytes(LINESTRING_1).hex().upper() == LINESTRING_1_WKB_LITTLE
+def test_line_string_2d_from_wkb():
+    assert LineString2D.from_wkb(BINARY_TYPE.fromhex(LINESTRING_1_WKB_LITTLE)) == LINESTRING_1
+    assert LineString2D.from_wkb(BINARY_TYPE.fromhex(LINESTRING_1_WKB_BIG)) == LINESTRING_1
 
 
-def test_line_string_from_wkb():
-    assert LineString2D.from_wkb(bytes.fromhex(LINESTRING_1_WKB_LITTLE)) == LINESTRING_1
-    assert LineString2D.from_wkb(bytes.fromhex(LINESTRING_1_WKB_BIG)) == LINESTRING_1
+def test_line_string_2d_from_shp():
+    assert LineString2D.from_shp(BINARY_TYPE.fromhex(LINESTRING_1_SHP)) == LINESTRING_1
 
 
-def test_line_string_from_shp():
-    assert LineString2D.from_shp(bytes.fromhex(LINESTRING_1_SHP)) == LINESTRING_1
-
-
-def test_line_string_to_shp():
+def test_line_string_2d_to_shp():
     assert LINESTRING_1.shp().hex().upper() == LINESTRING_1_SHP
 
 
-def test_line_string_to_geojson():
+def test_line_string_2d_to_geojson():
     assert LINESTRING_1.geojson() == LINESTRING_1_GEOJSON
     # TODO: test properties
 
 
-def test_line_string_from_geojson():
+def test_line_string_2d_from_geojson():
     assert LineString2D.from_geojson(LINESTRING_1_GEOJSON) == LINESTRING_1
     # TODO: test properties
     # TODO: add test for ValueErrors in `from_geojson`

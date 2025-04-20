@@ -13,24 +13,34 @@
 from __future__ import unicode_literals
 
 import re
-import struct
+from struct import pack, unpack
 from collections import namedtuple
+
+from rows.compat import BINARY_TYPE
 
 # TODO: move to just rows.spatial?
 
 NUMBER_REGEXP = r"-?\s*[0-9]+(?:\.[0-9]+)?"
-REGEXP_POINT_2D = re.compile(
-    r"^\s*POINT\s*\(\s*"
-    + r"({0})\s+({0})".format(NUMBER_REGEXP)
-    + r"\)\s*$"
-)
-REGEXP_LINESTRING_2D = re.compile(
-    r"^\s*LINESTRING\s*\(\s*"
-    + r"({0}\s+{0})".format(NUMBER_REGEXP)
+REGEXP_NEGATIVE_SIGN = re.compile(r"-\s+")
+REGEXP_POINT_2D = re.compile(r"^\s*POINT\s*(\(.*\))\s*$")
+REGEXP_POINTS_2D = re.compile(
+    r"^\s*\(\s*"
+    r"({0}\s+{0})".format(NUMBER_REGEXP)
     + "(.*)"
-    + r"\)\s*$"
+    + r"\s*\)\s*$"
 )
-REGEXP_LINESTRING_2D_OTHERS = re.compile(r"\s*,\s*({0}\s+{0})".format(NUMBER_REGEXP))
+REGEXP_POINTS_2D_OTHERS = re.compile(r"\s*,\s*({0}\s+{0})".format(NUMBER_REGEXP))
+REGEXP_LINESTRING_2D = re.compile(r"^\s*LINESTRING\s*(\(.*\))\s*$")
+
+def extract_point_list_wkt(text):
+    result = REGEXP_POINTS_2D.findall(text)
+    if len(result) != 1:
+        raise ValueError("Cannot parse list of points: {}".format(repr(text)))
+    first, others = result[0]
+    return [
+        Point2D.from_str(item) for item in [first] + (REGEXP_POINTS_2D_OTHERS.findall(others) if others else [])
+    ]
+
 
 def float_or_int(value):
     return float(value) if "." in value else int(value)
@@ -38,7 +48,13 @@ def float_or_int(value):
 
 class Point2D(namedtuple("Point2D", ("x", "y", "properties"))):
     def __new__(cls, x, y, properties=None):
+        # TODO: validate coords and properties
         return super().__new__(cls, x, y, properties if properties is not None else {})
+
+    @classmethod
+    def from_str(cls, text):
+        x, y = REGEXP_NEGATIVE_SIGN.sub("-", text).split()
+        return cls(x=float_or_int(x), y=float_or_int(y))
 
     def __str__(self):
         return "POINT ({} {})".format(self.x, self.y)
@@ -48,21 +64,21 @@ class Point2D(namedtuple("Point2D", ("x", "y", "properties"))):
         # Field 2: I (uint, 4 B), geometry type: 1 = Point
         # Field 3: d (double, 8 B), x
         # Field 4: d (double, 8 B), y
-        return struct.pack("<BIdd", 1, 1, self.x, self.y)
+        return pack("<BIdd", 1, 1, self.x, self.y)
         # Big endian would be:
-        # struct.pack("<BI", 0, 1) + struct.pack(">dd", self.x, self.y)
+        # pack("<BI", 0, 1) + pack(">dd", self.x, self.y)
 
     # TODO: create `to_wkb` (same as `__bytes__`, maybe with endianness selection)?
 
     def shp(self):
-        return struct.pack("<idd", 1, self.x, self.y)
+        return pack("<idd", 1, self.x, self.y)
 
     @classmethod
     def from_wkb(cls, data):
         if len(data) != 21:  # 21 = 1 + 4 + 8 + 8
             raise ValueError("Invalid length for Point2D: {} (expected: 21)".format(len(data)))
-        endianness = struct.unpack("B", data[:1])[0]
-        geometry_type, x, y = struct.unpack(("<" if endianness == 1 else ">") + "Idd", data[1:])
+        endianness = unpack("B", data[:1])[0]
+        geometry_type, x, y = unpack(("<" if endianness == 1 else ">") + "Idd", data[1:])
         if geometry_type != 1:
             raise ValueError("Invalid geometry type for Point2D: {} (expected: 1)".format(geometry_type))
         return cls(x=x, y=y)
@@ -71,18 +87,21 @@ class Point2D(namedtuple("Point2D", ("x", "y", "properties"))):
     def from_shp(cls, data):
         if len(data) != 20:  # 20 = 4 + 8 + 8
             raise ValueError("Invalid length for Point2D: {} (expected: 20)".format(len(data)))
-        geometry_type = struct.unpack("<i", data[:4])[0]  # shp uses little endian
+        geometry_type = unpack("<i", data[:4])[0]  # shp uses little endian
         if geometry_type != 1:
             raise ValueError("Invalid geometry type for Point2D: {} (expected: 1)".format(geometry_type))
-        x, y = struct.unpack("<dd", data[4:])
+        x, y = unpack("<dd", data[4:])
         return cls(x=x, y=y)
 
     @classmethod
     def from_wkt(cls, text):
         result = REGEXP_POINT_2D.findall(text)
         if len(result) != 1:
-            raise ValueError("Cannot parse value as Point: {}".format(repr(text)))
-        return cls(x=float_or_int(result[0][0].replace(" ", "")), y=float_or_int(result[0][1].replace(" ", "")))
+            raise ValueError("Cannot parse value as Point2D: {}".format(repr(text)))
+        points = extract_point_list_wkt(result[0])
+        if len(points) > 1:
+            raise ValueError("Wrong number of values for Point2D: {}".format(repr(text)))
+        return points[0]
 
     def geojson(self):
         return {
@@ -108,8 +127,9 @@ class Point2D(namedtuple("Point2D", ("x", "y", "properties"))):
         return cls(x=x, y=y, properties=data.get("properties"))
 
 
-class LineString2D(namedtuple("LineString", ("points", "properties"))):
+class LineString2D(namedtuple("LineString2D", ("points", "properties"))):
     def __new__(cls, points, properties=None):
+        # TODO: validate points and properties
         return super().__new__(cls, points, properties if properties is not None else {})
 
     def __str__(self):
@@ -125,7 +145,7 @@ class LineString2D(namedtuple("LineString", ("points", "properties"))):
         # Field 4 + i: d, Field 5 + i: d
         n_points = len(self.points)
         points_numbers = [value for point in self.points for value in (point.x, point.y)]
-        return struct.pack("<BII" + ("dd" * n_points), 1, 2, n_points, *points_numbers)
+        return pack("<BII" + ("dd" * n_points), 1, 2, n_points, *points_numbers)
 
     def shp(self):
         point = self.points[0]
@@ -143,26 +163,26 @@ class LineString2D(namedtuple("LineString", ("points", "properties"))):
             elif y > ymax:
                 ymax = y
         n_points = len(self.points)
-        return struct.pack("<Iddddiii" + ("dd" * n_points), 3, xmin, ymin, xmax, ymax, 1, n_points, 0, *points_numbers)
+        return pack("<Iddddiii" + ("dd" * n_points), 3, xmin, ymin, xmax, ymax, 1, n_points, 0, *points_numbers)
 
     @classmethod
     def from_wkb(cls, data):
         if len(data) < 41:  # 41 = (1 + 4 + 4) + (8 + 8) + (8 + 8)
             raise ValueError("Invalid length for LineString2D: {} (expected: at least 41)".format(len(data)))
-        endianness = struct.unpack("B", data[:1])[0]
-        geometry_type, n_points = struct.unpack(("<" if endianness == 1 else ">") + "II", data[1:9])  # TODO endian?
+        endianness = unpack("B", data[:1])[0]
+        geometry_type, n_points = unpack(("<" if endianness == 1 else ">") + "II", data[1:9])  # TODO endian?
         if geometry_type != 2:
             raise ValueError("Invalid geometry type for LineString2D: {} (expected: 2)".format(geometry_type))
         elif n_points < 2:
             raise ValueError("Invalid number of points for LineString2D: {} (expected: at least 2)".format(n_points))
-        coords = struct.unpack(("<" if endianness == 1 else ">") + ("dd" * n_points), data[9:])
+        coords = unpack(("<" if endianness == 1 else ">") + ("dd" * n_points), data[9:])
         return cls(points=tuple([Point2D(x=x, y=y) for x, y in zip(coords[::2], coords[1::2])]))
 
     @classmethod
     def from_shp(cls, data):
         if len(data) < 80:  # 80 = 4 + (8 + 8 + 8 + 8) + 4 + 4 + 4 + (8 + 8) + (8 + 8) -> 1 part with at least 2 pts
             raise ValueError("Invalid length for LineString2D: {} (expected: at least 80)".format(len(data)))
-        geometry_type, xmin, ymin, xmax, ymax, n_parts, n_points, start_index = struct.unpack("<iddddiii", data[:48])
+        geometry_type, xmin, ymin, xmax, ymax, n_parts, n_points, start_index = unpack("<iddddiii", data[:48])
         if geometry_type != 3:
             raise ValueError("Invalid geometry type for LineString2D: {} (expected: 3)".format(geometry_type))
         elif n_parts != 1:
@@ -173,7 +193,7 @@ class LineString2D(namedtuple("LineString", ("points", "properties"))):
             )
         elif start_index != 0:
             raise ValueError("Invalid start index for part 1 for LineString2D: {} (expected: 0)".format(start_index))
-        coords = struct.unpack("<" + ("dd" * n_points), data[48:])
+        coords = unpack("<" + ("dd" * n_points), data[48:])
         return cls(points=tuple([Point2D(x=x, y=y) for x, y in zip(coords[::2], coords[1::2])]))
 
     @classmethod
@@ -181,10 +201,7 @@ class LineString2D(namedtuple("LineString", ("points", "properties"))):
         result = REGEXP_LINESTRING_2D.findall(text)
         if len(result) != 1:
             raise ValueError("Cannot parse value as LineString: {}".format(repr(text)))
-        first, others = result[0]
-        items_str = [first] + REGEXP_LINESTRING_2D_OTHERS.findall(others)
-        items = [item.strip().split() for item in items_str]
-        return cls(points=tuple([Point2D(x=float_or_int(item[0]), y=float_or_int(item[1])) for item in items]))
+        return cls(points=tuple(extract_point_list_wkt(result[0])))
 
     @classmethod
     def from_geojson(cls, data):
