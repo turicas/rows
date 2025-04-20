@@ -22,6 +22,25 @@ from rows.plugins.plugin_spatial import LineString2D, Point2D, extract_point_lis
 # TODO: add SRID, to_ewkb, to_ewkt, from_ewkb, from_ewkt
 
 
+def hex_to_splits(data, splits):
+    data_hex = data.hex()
+    result = []
+    index = 0
+    for split in splits:
+        this_split = []
+        for _ in range(split):
+            hex_index = index * 2
+            if this_split:
+                this_split.append(" ")
+            this_split.append(data_hex[hex_index])
+            this_split.append(data_hex[hex_index + 1])
+            index += 1
+        result.append("".join(this_split))
+    if index != len(data):
+        raise ValueError("Wrong number of splits")
+    return result
+
+
 POINT_1 = Point2D(x=10, y=20)
 POINT_1_WKT = "POINT (10 20)"
 POINT_1_GEOJSON = {
@@ -33,25 +52,25 @@ POINT_1_GEOJSON = {
     "properties": {}
 }
 # ST_AsEWKB('POINT(10 20)'::geometry, 'XDR')
-POINT_1_WKB_BIG = (
+POINT_1_WKB_BIG = BINARY_TYPE.fromhex(
     "00"                                     # endianness (0 = big)
     "00" "00" "00" "01"                      # geometry type
     "40" "24" "00" "00" "00" "00" "00" "00"  # x
     "40" "34" "00" "00" "00" "00" "00" "00"  # y
 )
 # ST_AsEWKB('POINT(10 20)'::geometry, 'NDR')
-POINT_1_WKB_LITTLE = (
+POINT_1_WKB_LITTLE = BINARY_TYPE.fromhex(
     "01"                                     # endianness (1 = little)
     "01" "00" "00" "00"                      # geometry type
     "00" "00" "00" "00" "00" "00" "24" "40"  # x
     "00" "00" "00" "00" "00" "00" "34" "40"  # y
 )
-POINT_1_SHP = (
+POINT_1_SHP = BINARY_TYPE.fromhex(
     "01" "00" "00" "00"                      # geometry type
     "00" "00" "00" "00" "00" "00" "24" "40"  # x
     "00" "00" "00" "00" "00" "00" "34" "40"  # y
 )
-assert POINT_1_SHP == POINT_1_WKB_LITTLE[2:]
+assert POINT_1_SHP == POINT_1_WKB_LITTLE[1:]
 
 POINT_2 = Point2D(x=123.45, y=67.89)
 POINT_2_WKT = "POINT (123.45 67.89)"
@@ -76,25 +95,25 @@ POINT_2_GEOJSON_PROPERTIES = {
     }
 }
 # ST_AsEWKB('POINT(123.45 67.89)'::geometry, 'XDR')
-POINT_2_WKB_BIG = (
+POINT_2_WKB_BIG = BINARY_TYPE.fromhex(
     "00"                                     # endianness (0 = big)
     "00" "00" "00" "01"                      # geometry type
     "40" "5E" "DC" "CC" "CC" "CC" "CC" "CD"  # x
     "40" "50" "F8" "F5" "C2" "8F" "5C" "29"  # y
 )
 # ST_AsEWKB('POINT(123.45 67.89)'::geometry, 'NDR')
-POINT_2_WKB_LITTLE = (
+POINT_2_WKB_LITTLE = BINARY_TYPE.fromhex(
     "01"                                     # endianness (1 = little)
     "01" "00" "00" "00"                      # geometry type
     "CD" "CC" "CC" "CC" "CC" "DC" "5E" "40"  # x
     "29" "5C" "8F" "C2" "F5" "F8" "50" "40"  # y
 )
-POINT_2_SHP = (
+POINT_2_SHP = BINARY_TYPE.fromhex(
     "01" "00" "00" "00"                      # geometry type
     "CD" "CC" "CC" "CC" "CC" "DC" "5E" "40"  # x
     "29" "5C" "8F" "C2" "F5" "F8" "50" "40"  # y
 )
-assert POINT_2_SHP == POINT_2_WKB_LITTLE[2:]
+assert POINT_2_SHP == POINT_2_WKB_LITTLE[1:]
 
 POINT_3 = Point2D(x=-10, y=-34.56)
 POINT_3_WKT = "POINT (-10 -34.56)"
@@ -107,25 +126,25 @@ POINT_3_GEOJSON = {
     "properties": {}
 }
 # ST_AsEWKB('POINT(-10 -34.56)'::geometry, 'XDR')
-POINT_3_WKB_BIG = (
+POINT_3_WKB_BIG = BINARY_TYPE.fromhex(
     "00"                                     # endianness (0 = big)
     "00" "00" "00" "01"                      # geometry type
     "C0" "24" "00" "00" "00" "00" "00" "00"  # x
     "C0" "41" "47" "AE" "14" "7A" "E1" "48"  # y
 )
 # ST_AsEWKB('POINT(-10 -34.56)'::geometry, 'NDR')
-POINT_3_WKB_LITTLE = (
+POINT_3_WKB_LITTLE = BINARY_TYPE.fromhex(
     "01"                                     # endianness (1 = little)
     "01" "00" "00" "00"                      # geometry type
     "00" "00" "00" "00" "00" "00" "24" "C0"  # x
     "48" "E1" "7A" "14" "AE" "47" "41" "C0"  # y
 )
-POINT_3_SHP = (
+POINT_3_SHP = BINARY_TYPE.fromhex(
     "01" "00" "00" "00"                      # geometry type
     "00" "00" "00" "00" "00" "00" "24" "C0"  # x
     "48" "E1" "7A" "14" "AE" "47" "41" "C0"  # y
 )
-assert POINT_3_SHP == POINT_3_WKB_LITTLE[2:]
+assert POINT_3_SHP == POINT_3_WKB_LITTLE[1:]
 
 LINESTRING_1 = LineString2D(points=(POINT_1, POINT_2, POINT_3))
 LINESTRING_1_WKT = "LINESTRING (10 20, 123.45 67.89, -10 -34.56)"
@@ -142,7 +161,7 @@ LINESTRING_1_GEOJSON = {
     "properties": {}
 }
 # ST_AsEWKB('LINESTRING (10 20, 123.45 67.89, -10 -34.56)'::geometry, 'XDR')
-LINESTRING_1_WKB_BIG = (
+LINESTRING_1_WKB_BIG = BINARY_TYPE.fromhex(
     "00"                                     # endianness (0 = big)
     "00" "00" "00" "02"                      # geometry type
     "00" "00" "00" "03"                      # number of points
@@ -154,7 +173,7 @@ LINESTRING_1_WKB_BIG = (
     "C0" "41" "47" "AE" "14" "7A" "E1" "48"  # y3
 )
 # ST_AsEWKB('LINESTRING (10 20, 123.45 67.89, -10 -34.56)'::geometry, 'NDR')
-LINESTRING_1_WKB_LITTLE = (
+LINESTRING_1_WKB_LITTLE = BINARY_TYPE.fromhex(
     "01"                                     # endianness (1 = little)
     "02" "00" "00" "00"                      # geometry type (2 = LineString)
     "03" "00" "00" "00"                      # number of points
@@ -165,7 +184,7 @@ LINESTRING_1_WKB_LITTLE = (
     "00" "00" "00" "00" "00" "00" "24" "C0"  # x3
     "48" "E1" "7A" "14" "AE" "47" "41" "C0"  # y3
 )
-LINESTRING_1_SHP = (
+LINESTRING_1_SHP = BINARY_TYPE.fromhex(
     "03" "00" "00" "00"                      # geometry type (3 = PolyLine)
     "00" "00" "00" "00" "00" "00" "24" "C0"  # xmin = x3
     "48" "E1" "7A" "14" "AE" "47" "41" "C0"  # ymin = y3
@@ -181,8 +200,9 @@ LINESTRING_1_SHP = (
     "00" "00" "00" "00" "00" "00" "24" "C0"  # x3
     "48" "E1" "7A" "14" "AE" "47" "41" "C0"  # y3
 )
-assert LINESTRING_1_SHP[-32:] == LINESTRING_1_WKB_LITTLE[-32:]
-assert LINESTRING_1_SHP[80:88] == LINESTRING_1_WKB_LITTLE[10:18]
+assert LINESTRING_1_SHP[-16:] == LINESTRING_1_WKB_LITTLE[-16:]
+assert LINESTRING_1_SHP[40:44] == LINESTRING_1_WKB_LITTLE[5:9]
+
 
 
 def test_parse_point_list():
@@ -230,30 +250,32 @@ def test_point_2d_to_wkt():
 
 
 def test_point_2d_to_wkb():
-    assert BINARY_TYPE(POINT_1).hex().upper() == POINT_1_WKB_LITTLE
-    assert BINARY_TYPE(POINT_2).hex().upper() == POINT_2_WKB_LITTLE
-    assert BINARY_TYPE(POINT_3).hex().upper() == POINT_3_WKB_LITTLE
+    splits = [1, 4, 8, 8]
+    assert hex_to_splits(BINARY_TYPE(POINT_1), splits) == hex_to_splits(POINT_1_WKB_LITTLE, splits)
+    assert hex_to_splits(BINARY_TYPE(POINT_2), splits) == hex_to_splits(POINT_2_WKB_LITTLE, splits)
+    assert hex_to_splits(BINARY_TYPE(POINT_3), splits) == hex_to_splits(POINT_3_WKB_LITTLE, splits)
 
 
 def test_point_2d_from_wkb():
-    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_1_WKB_LITTLE)) == POINT_1
-    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_2_WKB_LITTLE)) == POINT_2
-    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_3_WKB_LITTLE)) == POINT_3
-    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_1_WKB_BIG)) == POINT_1
-    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_2_WKB_BIG)) == POINT_2
-    assert Point2D.from_wkb(BINARY_TYPE.fromhex(POINT_3_WKB_BIG)) == POINT_3
+    assert Point2D.from_wkb(POINT_1_WKB_LITTLE) == POINT_1
+    assert Point2D.from_wkb(POINT_2_WKB_LITTLE) == POINT_2
+    assert Point2D.from_wkb(POINT_3_WKB_LITTLE) == POINT_3
+    assert Point2D.from_wkb(POINT_1_WKB_BIG) == POINT_1
+    assert Point2D.from_wkb(POINT_2_WKB_BIG) == POINT_2
+    assert Point2D.from_wkb(POINT_3_WKB_BIG) == POINT_3
 
 
 def test_point_2d_from_shp():
-    assert Point2D.from_shp(BINARY_TYPE.fromhex(POINT_1_SHP)) == POINT_1
-    assert Point2D.from_shp(BINARY_TYPE.fromhex(POINT_2_SHP)) == POINT_2
-    assert Point2D.from_shp(BINARY_TYPE.fromhex(POINT_3_SHP)) == POINT_3
+    assert Point2D.from_shp(POINT_1_SHP) == POINT_1
+    assert Point2D.from_shp(POINT_2_SHP) == POINT_2
+    assert Point2D.from_shp(POINT_3_SHP) == POINT_3
 
 
 def test_point_2d_to_shp():
-    assert POINT_1.shp().hex().upper() == POINT_1_SHP
-    assert POINT_2.shp().hex().upper() == POINT_2_SHP
-    assert POINT_3.shp().hex().upper() == POINT_3_SHP
+    splits = [4, 8, 8]
+    assert hex_to_splits(POINT_1.shp(), splits) == hex_to_splits(POINT_1_SHP, splits)
+    assert hex_to_splits(POINT_2.shp(), splits) == hex_to_splits(POINT_2_SHP, splits)
+    assert hex_to_splits(POINT_3.shp(), splits) == hex_to_splits(POINT_3_SHP, splits)
 
 
 def test_point_2d_to_geojson():
@@ -298,20 +320,23 @@ def test_line_string_2d_from_wkt():
 
 
 def test_line_string_2d_to_wkb():
-    assert BINARY_TYPE(LINESTRING_1).hex().upper() == LINESTRING_1_WKB_LITTLE
+    splits = [1] + [4] * 2 + [8] * 6
+    assert hex_to_splits(BINARY_TYPE(LINESTRING_1), splits) == hex_to_splits(LINESTRING_1_WKB_LITTLE, splits)
 
 
 def test_line_string_2d_from_wkb():
-    assert LineString2D.from_wkb(BINARY_TYPE.fromhex(LINESTRING_1_WKB_LITTLE)) == LINESTRING_1
-    assert LineString2D.from_wkb(BINARY_TYPE.fromhex(LINESTRING_1_WKB_BIG)) == LINESTRING_1
+    assert LineString2D.from_wkb(LINESTRING_1_WKB_LITTLE) == LINESTRING_1
+    assert LineString2D.from_wkb(LINESTRING_1_WKB_BIG) == LINESTRING_1
 
 
 def test_line_string_2d_from_shp():
-    assert LineString2D.from_shp(BINARY_TYPE.fromhex(LINESTRING_1_SHP)) == LINESTRING_1
+    splits = [4] + [8] * 4 + [4] * 3 + [8] * 6
+    assert LineString2D.from_shp(LINESTRING_1_SHP) == LINESTRING_1
 
 
 def test_line_string_2d_to_shp():
-    assert LINESTRING_1.shp().hex().upper() == LINESTRING_1_SHP
+    splits = [4] + [8] * 4 + [4] * 3 + [8] * 6
+    assert hex_to_splits(LINESTRING_1.shp(), splits) == hex_to_splits(LINESTRING_1_SHP, splits)
 
 
 def test_line_string_2d_to_geojson():

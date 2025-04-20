@@ -180,7 +180,7 @@ class LineString2D(namedtuple("LineString2D", ("points", "properties"))):
 
     @classmethod
     def from_shp(cls, data):
-        if len(data) < 80:  # 80 = 4 + (8 + 8 + 8 + 8) + 4 + 4 + 4 + (8 + 8) + (8 + 8) -> 1 part with at least 2 pts
+        if len(data) < 80:  # 80 = 4 + 8*4 + 4*3 + 8*2*2 -> 1 part with at least 2 pts
             raise ValueError("Invalid length for LineString2D: {} (expected: at least 80)".format(len(data)))
         geometry_type, xmin, ymin, xmax, ymax, n_parts, n_points, start_index = unpack("<iddddiii", data[:48])
         if geometry_type != 3:
