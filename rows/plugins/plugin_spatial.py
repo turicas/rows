@@ -40,6 +40,48 @@ REGEXP_POLYGON_2D = re.compile(
 )
 REGEXP_LIST_OTHERS = re.compile(r"\s*,\s*(\([^)]*\))\s*")
 
+# TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP
+
+class Ring2D:
+    def __init__(self, data):
+        self._data = data
+        self._array = None
+        self._n_points = len(self._data) // 2
+
+    @property
+    def array(self):
+        import array
+
+        if self._array is None:
+            # TODO: byte order will vary (check sys.byteorder and re-pack with struct accordingly, if necessary)
+            self._array = array.array("d", self._data)
+        return self._array
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {len(self._data)} points>"
+
+    def __getitem__(self, key):
+        if isinstance(key, int):  # index
+            x, y = self.array[2 * key:2 * key + 2]
+            return Point2D(x=x, y=y)
+        elif isinstance(key, slice):  # many points
+            start, stop, step = key.indices(self._n_points)
+            result = []
+            coords = self.array
+            for i in range(start, stop, step):
+                x, y = coords[2 * i:2 * i + 2]
+                result.append(Point2D(x=x, y=y))
+            return result
+        else:
+            raise ValueError("Unknown key type for {}: {}".format(self.__class__.__name__, type(key)))
+
+    def __iter__(self):
+        coords = self.array
+        for index in range(self._n_points):
+            x, y = coords[2 * index:2 * index + 2]
+            yield Point2D(x=x, y=y)
+
+
 def extract_point_list_wkt(text):
     result = REGEXP_POINTS_2D.findall(text)
     if len(result) != 1:
@@ -79,6 +121,7 @@ class Point2D(namedtuple("Point2D", ("x", "y", "properties"))):
     @classmethod
     def from_str(cls, text):
         x, y = REGEXP_NEGATIVE_SIGN.sub("-", text).split()
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return cls(x=float_or_int(x), y=float_or_int(y))
 
     def __str__(self):
@@ -89,6 +132,7 @@ class Point2D(namedtuple("Point2D", ("x", "y", "properties"))):
         # Field 2: I (uint, 4 B), geometry type: 1 = Point
         # Field 3: d (double, 8 B), x
         # Field 4: d (double, 8 B), y
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return pack("<BIdd", 1, 1, self.x, self.y)
         # Big endian would be:
         # pack("<BI", 0, 1) + pack(">dd", self.x, self.y)
@@ -96,6 +140,7 @@ class Point2D(namedtuple("Point2D", ("x", "y", "properties"))):
     # TODO: create `to_wkb` (same as `__bytes__`, maybe with endianness selection)?
 
     def shp(self):
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return pack("<idd", 1, self.x, self.y)
 
     @classmethod
@@ -106,6 +151,7 @@ class Point2D(namedtuple("Point2D", ("x", "y", "properties"))):
         geometry_type, x, y = unpack(("<" if endianness == 1 else ">") + "Idd", data[1:])
         if geometry_type != 1:
             raise ValueError("Invalid geometry type for Point2D: {} (expected: 1)".format(geometry_type))
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return cls(x=x, y=y)
 
     @classmethod
@@ -116,6 +162,7 @@ class Point2D(namedtuple("Point2D", ("x", "y", "properties"))):
         if geometry_type != 1:
             raise ValueError("Invalid geometry type for Point2D: {} (expected: 1)".format(geometry_type))
         x, y = unpack("<dd", data[4:])
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return cls(x=x, y=y)
 
     @classmethod
@@ -149,6 +196,7 @@ class Point2D(namedtuple("Point2D", ("x", "y", "properties"))):
         elif geometry_type != "Point":
             raise ValueError("Geometry type is not Point: {}".format(repr(data)))
         x, y = geometry_coords
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return cls(x=x, y=y, properties=data.get("properties"))
 
 
@@ -170,6 +218,7 @@ class LineString2D(namedtuple("LineString2D", ("points", "properties"))):
         # Field 4 + i: d, Field 5 + i: d
         n_points = len(self.points)
         points_numbers = [value for point in self.points for value in (point.x, point.y)]
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return pack("<BII" + ("dd" * n_points), 1, 2, n_points, *points_numbers)
 
     def shp(self):
@@ -188,6 +237,7 @@ class LineString2D(namedtuple("LineString2D", ("points", "properties"))):
             elif y > ymax:
                 ymax = y
         n_points = len(self.points)
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return pack("<Iddddiii" + ("dd" * n_points), 3, xmin, ymin, xmax, ymax, 1, n_points, 0, *points_numbers)
 
     @classmethod
@@ -201,6 +251,7 @@ class LineString2D(namedtuple("LineString2D", ("points", "properties"))):
         elif n_points < 2:
             raise ValueError("Invalid number of points for LineString2D: {} (expected: at least 2)".format(n_points))
         coords = unpack(("<" if endianness == 1 else ">") + ("dd" * n_points), data[9:])
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return cls(points=tuple([Point2D(x=x, y=y) for x, y in zip(coords[::2], coords[1::2])]))
 
     @classmethod
@@ -219,6 +270,7 @@ class LineString2D(namedtuple("LineString2D", ("points", "properties"))):
         elif start_index != 0:
             raise ValueError("Invalid start index for part 1 for LineString2D: {} (expected: 0)".format(start_index))
         coords = unpack("<" + ("dd" * n_points), data[48:])
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return cls(points=tuple([Point2D(x=x, y=y) for x, y in zip(coords[::2], coords[1::2])]))
 
     @classmethod
@@ -226,6 +278,7 @@ class LineString2D(namedtuple("LineString2D", ("points", "properties"))):
         result = REGEXP_LINESTRING_2D.findall(text)
         if len(result) != 1:
             raise ValueError("Cannot parse value as LineString: {}".format(repr(text)))
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return cls(points=tuple(extract_point_list_wkt(result[0])))
 
     @classmethod
@@ -238,6 +291,7 @@ class LineString2D(namedtuple("LineString2D", ("points", "properties"))):
             raise ValueError("Missing type or geometry fields for GeoJSON: {}".format(repr(data)))
         elif geometry_type != "LineString":
             raise ValueError("Geometry type is not LineString: {}".format(repr(data)))
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return cls(points=tuple([Point2D(x=x, y=y) for x, y in geometry_coords]), properties=data.get("properties"))
 
     def geojson(self):
@@ -284,6 +338,7 @@ class Polygon2D(namedtuple("Polygon2D", ("rings", "properties"))):
         # Field 5: d (double, 8 B), x1
         # Field 6: d (double, 8 B), y1
         # Field 5 + i: d, Field 6 + i: d (xi, yi)
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         n_rings = len(self.rings)
         rings_data = BINARY_TYPE()
         for ring in self.rings:
@@ -310,6 +365,7 @@ class Polygon2D(namedtuple("Polygon2D", ("rings", "properties"))):
         point = self.rings[0][0]
         xmin, xmax, ymin, ymax = point.x, point.x, point.y, point.y
         points_numbers, parts_indices = [], []
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         for ring in self.rings:
             parts_indices.append(total_points)
             for point in ring:
@@ -341,6 +397,7 @@ class Polygon2D(namedtuple("Polygon2D", ("rings", "properties"))):
             raise ValueError("Missing type or geometry fields for GeoJSON: {}".format(repr(data)))
         elif geometry_type != "Polygon":
             raise ValueError("Geometry type is not Polygon: {}".format(repr(data)))
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return cls(
             rings=tuple([
                 tuple([Point2D(x=point[0], y=point[1]) for point in ring])
@@ -355,6 +412,7 @@ class Polygon2D(namedtuple("Polygon2D", ("rings", "properties"))):
         if len(result) != 1:
             raise ValueError("Cannot parse value as Polygon2D: {}".format(repr(text)))
         first_ring, other_rings = result[0]
+        # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return cls(
             rings=tuple([
                 tuple(extract_point_list_wkt(ring_wkt))
@@ -382,6 +440,7 @@ class Polygon2D(namedtuple("Polygon2D", ("rings", "properties"))):
             stop_index = index + 2 * n_points * 8  # 2 coords per point, 8 bytes per coord
             coords = unpack(endian + ("dd" * n_points), data[index:stop_index])
             rings.append(tuple([Point2D(x=x, y=y) for x, y in zip(coords[::2], coords[1::2])]))
+            # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
             index = stop_index
         return cls(rings=tuple(rings))
 
@@ -408,4 +467,5 @@ class Polygon2D(namedtuple("Polygon2D", ("rings", "properties"))):
             coords = unpack("<" + ("dd" * n_points), data[coords_index:new_coords_index])
             coords_index = new_coords_index
             rings.append(tuple([Point2D(x=x, y=y) for x, y in zip(coords[::2], coords[1::2])]))
+            # TODO: use an efficient storage in memory so we can dump it directly when exporting to WKB/SHP (Ring2D)
         return cls(rings=tuple(rings))

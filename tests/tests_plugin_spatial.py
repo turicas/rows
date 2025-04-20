@@ -12,12 +12,14 @@
 
 from __future__ import unicode_literals
 
+import array
 import re
+import struct
 
 import pytest
 
 from rows.compat import BINARY_TYPE, TEXT_TYPE
-from rows.plugins.plugin_spatial import LineString2D, Point2D, Polygon2D, extract_point_list_wkt
+from rows.plugins.plugin_spatial import LineString2D, Point2D, Polygon2D, Ring2D, extract_point_list_wkt
 
 # TODO: move `read_spatial.py` to real tests here
 # TODO: add tests with real data for LineString2D and Polygon2D
@@ -581,3 +583,30 @@ def test_polygon_2d_from_geojson():
     assert Polygon2D.from_geojson(POLYGON_2_GEOJSON) == POLYGON_2
     # TODO: test properties
     # TODO: add test for ValueErrors in `from_geojson`
+
+
+def test_ring_2d():
+    raw_data = struct.pack("<dddddddddddd", 0.1, 1.2, 2.3, 3.4, 4.5, 0, -1.2, -1.0, -2.1, -2.2, 0.1, 1.2)
+    arr = array.array("d", raw_data)
+    ring = Ring2D(arr)
+    expected = [
+        Point2D(x=0.1, y=1.2),
+        Point2D(x=2.3, y=3.4),
+        Point2D(x=4.5, y=0.0),
+        Point2D(x=-1.2, y=-1.0),
+        Point2D(x=-2.1, y=-2.2),
+        Point2D(x=0.1, y=1.2),
+    ]
+    assert list(ring) == expected
+    assert ring[0] == expected[0]
+    assert ring[1] == expected[1]
+    assert ring[2] == expected[2]
+    assert ring[3] == expected[3]
+    assert ring[4] == expected[4]
+    assert ring[5] == expected[5]
+    assert ring[-2] == expected[-2]
+    assert ring[1:3] == [expected[1], expected[2]]
+    assert ring[1:5:2] == [expected[1], expected[3]]
+    assert ring[:3] == [expected[0], expected[1], expected[2]]
+    assert ring[1:] == [expected[1], expected[2], expected[3], expected[4], expected[5]]
+    assert ring[-3:-1] == [expected[-3], expected[-2]]
