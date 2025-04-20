@@ -19,6 +19,9 @@ import pytest
 from rows.compat import BINARY_TYPE, TEXT_TYPE
 from rows.plugins.plugin_spatial import LineString2D, Point2D, Polygon2D, extract_point_list_wkt
 
+# TODO: move `read_spatial.py` to real tests here
+# TODO: add tests with real data for LineString2D and Polygon2D
+# TODO: limit the precision of WKT
 # TODO: add SRID, to_ewkb, to_ewkt, from_ewkb, from_ewkt
 
 

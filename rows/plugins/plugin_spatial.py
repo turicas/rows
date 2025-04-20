@@ -54,6 +54,23 @@ def float_or_int(value):
     return float(value) if "." in value else int(value)
 
 
+def read_shp(filename):
+    geom_type_mapping = {1: Point2D, 3: LineString2D, 5: Polygon2D}
+    with open(filename, mode="rb", buffering=1024 * 1024) as fobj:
+        header = fobj.read(100)
+        while True:
+            record_header = fobj.read(8)
+            if not record_header:
+                break
+            record_number, content_length = unpack(">ii", record_header)
+            content_length_bytes = content_length * 2
+            record_data = fobj.read(content_length_bytes)
+            geometry_type = unpack("<i", record_data[0:4])[0]
+            if geometry_type not in geom_type_mapping:
+                raise ValueError("Cannot read geometry of type {}".format(geometry_type))
+            yield geom_type_mapping[geometry_type].from_shp(record_data)
+
+
 class Point2D(namedtuple("Point2D", ("x", "y", "properties"))):
     def __new__(cls, x, y, properties=None):
         # TODO: validate coords and properties
