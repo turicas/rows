@@ -17,7 +17,7 @@ import re
 import pytest
 
 from rows.compat import BINARY_TYPE, TEXT_TYPE
-from rows.plugins.plugin_spatial import LineString2D, Point2D, extract_point_list_wkt
+from rows.plugins.plugin_spatial import LineString2D, Point2D, Polygon2D, extract_point_list_wkt
 
 # TODO: add SRID, to_ewkb, to_ewkt, from_ewkb, from_ewkt
 
@@ -203,6 +203,173 @@ LINESTRING_1_SHP = BINARY_TYPE.fromhex(
 assert LINESTRING_1_SHP[-16:] == LINESTRING_1_WKB_LITTLE[-16:]
 assert LINESTRING_1_SHP[40:44] == LINESTRING_1_WKB_LITTLE[5:9]
 
+POINT_4 = Point2D(x=75, y=-10)
+POLYGON_1 = Polygon2D(rings=((POINT_1, POINT_2, POINT_4, POINT_3, POINT_1),))
+POLYGON_1_WKT = "POLYGON ((10 20, 123.45 67.89, 75 -10, -10 -34.56, 10 20))"
+POLYGON_1_GEOJSON = {
+    "type": "Feature",
+    "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+            [[10, 20], [123.45, 67.89], [75, -10], [-10, -34.56], [10, 20]],
+        ],
+    },
+    "properties": {}
+}
+# ST_AsEWKB('POLYGON ((10 20, 123.45 67.89, 75 -10, -10 -34.56, 10 20))'::geometry, 'XDR')
+POLYGON_1_WKB_BIG = BINARY_TYPE.fromhex(
+    "00"                                     # endianness (0 = big)
+    "00" "00" "00" "03"                      # geometry type (3 = Polygon)
+    "00" "00" "00" "01"                      # number of rings
+    "00" "00" "00" "05"                      # number of points (first ring)
+    "40" "24" "00" "00" "00" "00" "00" "00"  # x1 (POINT_1)
+    "40" "34" "00" "00" "00" "00" "00" "00"  # y1 (POINT_1)
+    "40" "5E" "DC" "CC" "CC" "CC" "CC" "CD"  # x2 (POINT_2)
+    "40" "50" "F8" "F5" "C2" "8F" "5C" "29"  # y2 (POINT_2)
+    "40" "52" "C0" "00" "00" "00" "00" "00"  # x3 (POINT_4)
+    "C0" "24" "00" "00" "00" "00" "00" "00"  # y3 (POINT_4)
+    "C0" "24" "00" "00" "00" "00" "00" "00"  # x4 (POINT_3)
+    "C0" "41" "47" "AE" "14" "7A" "E1" "48"  # y4 (POINT_3)
+    "40" "24" "00" "00" "00" "00" "00" "00"  # x5 (POINT_1)
+    "40" "34" "00" "00" "00" "00" "00" "00"  # y5 (POINT_1)
+)
+# ST_AsEWKB('POLYGON ((10 20, 123.45 67.89, 75 -10, -10 -34.56, 10 20))'::geometry, 'NDR')
+POLYGON_1_WKB_LITTLE = BINARY_TYPE.fromhex(
+    "01"                                     # endianness (1 = little)
+    "03" "00" "00" "00"                      # geometry type (3 = Polygon)
+    "01" "00" "00" "00"                      # number of rings
+    "05" "00" "00" "00"                      # number of points (first ring)
+    "00" "00" "00" "00" "00" "00" "24" "40"  # x1 (POINT_1)
+    "00" "00" "00" "00" "00" "00" "34" "40"  # y1 (POINT_1)
+    "CD" "CC" "CC" "CC" "CC" "DC" "5E" "40"  # x2 (POINT_2)
+    "29" "5C" "8F" "C2" "F5" "F8" "50" "40"  # y2 (POINT_2)
+    "00" "00" "00" "00" "00" "C0" "52" "40"  # x3 (POINT_4)
+    "00" "00" "00" "00" "00" "00" "24" "C0"  # y3 (POINT_4)
+    "00" "00" "00" "00" "00" "00" "24" "C0"  # x4 (POINT_3)
+    "48" "E1" "7A" "14" "AE" "47" "41" "C0"  # y4 (POINT_3)
+    "00" "00" "00" "00" "00" "00" "24" "40"  # x5 (POINT_1)
+    "00" "00" "00" "00" "00" "00" "34" "40"  # y5 (POINT_1)
+)
+POLYGON_1_SHP = BINARY_TYPE.fromhex(
+    "05" "00" "00" "00"                      # geometry type (5 = Polygon)
+    "00" "00" "00" "00" "00" "00" "24" "C0"  # xmin (POINT_4)
+    "48" "E1" "7A" "14" "AE" "47" "41" "C0"  # ymin (POINT_3)
+    "CD" "CC" "CC" "CC" "CC" "DC" "5E" "40"  # xmax (POINT_2)
+    "29" "5C" "8F" "C2" "F5" "F8" "50" "40"  # ymax (POINT_2)
+    "01" "00" "00" "00"                      # number of parts
+    "05" "00" "00" "00"                      # total number of points
+    "00" "00" "00" "00"                      # parts (index for the first point in each part)
+    "00" "00" "00" "00" "00" "00" "24" "40"  # x1 (POINT_1)
+    "00" "00" "00" "00" "00" "00" "34" "40"  # y1 (POINT_1)
+    "CD" "CC" "CC" "CC" "CC" "DC" "5E" "40"  # x2 (POINT_2)
+    "29" "5C" "8F" "C2" "F5" "F8" "50" "40"  # y2 (POINT_2)
+    "00" "00" "00" "00" "00" "C0" "52" "40"  # x3 (POINT_4)
+    "00" "00" "00" "00" "00" "00" "24" "C0"  # y3 (POINT_4)
+    "00" "00" "00" "00" "00" "00" "24" "C0"  # x4 (POINT_3)
+    "48" "E1" "7A" "14" "AE" "47" "41" "C0"  # y4 (POINT_3)
+    "00" "00" "00" "00" "00" "00" "24" "40"  # x5 (POINT_1)
+    "00" "00" "00" "00" "00" "00" "34" "40"  # y5 (POINT_1)
+)
+
+POLYGON_2 = Polygon2D(
+    rings=(
+        (Point2D(x=35, y=10), Point2D(x=45, y=45), Point2D(x=15, y=40), Point2D(x=10, y=20), Point2D(x=35, y=10)),
+        (Point2D(x=20, y=30), Point2D(x=35, y=35), Point2D(x=30, y=20), Point2D(x=20, y=30)),
+    )
+)
+POLYGON_2_WKT = "POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))"
+POLYGON_2_GEOJSON = {
+    "type": "Feature",
+    "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+            [[35, 10], [45, 45], [15, 40], [10, 20], [35, 10]],
+            [[20, 30], [35, 35], [30, 20], [20, 30]],
+        ],
+    },
+    "properties": {}
+}
+# ST_AsEWKB('POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))'::geometry, 'XDR')
+POLYGON_2_WKB_BIG = BINARY_TYPE.fromhex(
+    "00"                                    # endianness (1 = little)
+    "00" "00" "00" "03"                      # geometry type (3 = Polygon)
+    "00" "00" "00" "02"                      # number of rings
+    "00" "00" "00" "05"                      # number of points (first ring)
+    "40" "41" "80" "00" "00" "00" "00" "00"  # x1=35
+    "40" "24" "00" "00" "00" "00" "00" "00"  # y1=10
+    "40" "46" "80" "00" "00" "00" "00" "00"  # x2=45
+    "40" "46" "80" "00" "00" "00" "00" "00"  # y2=45
+    "40" "2E" "00" "00" "00" "00" "00" "00"  # x3=15
+    "40" "44" "00" "00" "00" "00" "00" "00"  # y3=40
+    "40" "24" "00" "00" "00" "00" "00" "00"  # x4=10
+    "40" "34" "00" "00" "00" "00" "00" "00"  # y4=20
+    "40" "41" "80" "00" "00" "00" "00" "00"  # x5=35
+    "40" "24" "00" "00" "00" "00" "00" "00"  # y5=10
+    "00" "00" "00" "04"                      # number of points (second ring)
+    "40" "34" "00" "00" "00" "00" "00" "00"  # x1=20
+    "40" "3E" "00" "00" "00" "00" "00" "00"  # y1=30
+    "40" "41" "80" "00" "00" "00" "00" "00"  # x2=35
+    "40" "41" "80" "00" "00" "00" "00" "00"  # y2=35
+    "40" "3E" "00" "00" "00" "00" "00" "00"  # x3=30
+    "40" "34" "00" "00" "00" "00" "00" "00"  # y3=20
+    "40" "34" "00" "00" "00" "00" "00" "00"  # x4=20
+    "40" "3E" "00" "00" "00" "00" "00" "00"  # y4=30
+)
+# ST_AsEWKB('POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))'::geometry, 'NDR')
+POLYGON_2_WKB_LITTLE = BINARY_TYPE.fromhex(
+    "01"                                     # endianness (1 = little)
+    "03" "00" "00" "00"                      # geometry type (3 = Polygon)
+    "02" "00" "00" "00"                      # number of rings
+    "05" "00" "00" "00"                      # number of points (first ring)
+    "00" "00" "00" "00" "00" "80" "41" "40"  # x1=35
+    "00" "00" "00" "00" "00" "00" "24" "40"  # y1=10
+    "00" "00" "00" "00" "00" "80" "46" "40"  # x2=45
+    "00" "00" "00" "00" "00" "80" "46" "40"  # y2=45
+    "00" "00" "00" "00" "00" "00" "2E" "40"  # x3=15
+    "00" "00" "00" "00" "00" "00" "44" "40"  # y3=40
+    "00" "00" "00" "00" "00" "00" "24" "40"  # x4=10
+    "00" "00" "00" "00" "00" "00" "34" "40"  # y4=20
+    "00" "00" "00" "00" "00" "80" "41" "40"  # x5=35
+    "00" "00" "00" "00" "00" "00" "24" "40"  # y5=10
+    "04" "00" "00" "00"                      # number of points (second ring)
+    "00" "00" "00" "00" "00" "00" "34" "40"  # x1=20
+    "00" "00" "00" "00" "00" "00" "3E" "40"  # y1=30
+    "00" "00" "00" "00" "00" "80" "41" "40"  # x2=35
+    "00" "00" "00" "00" "00" "80" "41" "40"  # y2=35
+    "00" "00" "00" "00" "00" "00" "3E" "40"  # x3=30
+    "00" "00" "00" "00" "00" "00" "34" "40"  # y3=20
+    "00" "00" "00" "00" "00" "00" "34" "40"  # x4=20
+    "00" "00" "00" "00" "00" "00" "3E" "40"  # y4=30
+)
+POLYGON_2_SHP = BINARY_TYPE.fromhex(
+    "05" "00" "00" "00"                      # geometry type (5 = Polygon)
+    "00" "00" "00" "00" "00" "00" "24" "40"  # xmin=10
+    "00" "00" "00" "00" "00" "00" "24" "40"  # ymin=10
+    "00" "00" "00" "00" "00" "80" "46" "40"  # xmax=45
+    "00" "00" "00" "00" "00" "80" "46" "40"  # ymax=45
+    "02" "00" "00" "00"                      # number of parts
+    "09" "00" "00" "00"                      # total number of points
+    "00" "00" "00" "00"                      # parts[0] (index for the first point in each part)
+    "05" "00" "00" "00"                      # parts[1] (index for the first point in each part)
+    "00" "00" "00" "00" "00" "80" "41" "40"  # part0, x1=35
+    "00" "00" "00" "00" "00" "00" "24" "40"  # part0, y1=10
+    "00" "00" "00" "00" "00" "80" "46" "40"  # part0, x2=45
+    "00" "00" "00" "00" "00" "80" "46" "40"  # part0, y2=45
+    "00" "00" "00" "00" "00" "00" "2E" "40"  # part0, x3=15
+    "00" "00" "00" "00" "00" "00" "44" "40"  # part0, y3=40
+    "00" "00" "00" "00" "00" "00" "24" "40"  # part0, x4=10
+    "00" "00" "00" "00" "00" "00" "34" "40"  # part0, y4=20
+    "00" "00" "00" "00" "00" "80" "41" "40"  # part0, x5=35
+    "00" "00" "00" "00" "00" "00" "24" "40"  # part0, y5=10
+    "00" "00" "00" "00" "00" "00" "34" "40"  # part1, x1=20
+    "00" "00" "00" "00" "00" "00" "3E" "40"  # part1, y1=30
+    "00" "00" "00" "00" "00" "80" "41" "40"  # part1, x2=35
+    "00" "00" "00" "00" "00" "80" "41" "40"  # part1, y2=35
+    "00" "00" "00" "00" "00" "00" "3E" "40"  # part1, x3=30
+    "00" "00" "00" "00" "00" "00" "34" "40"  # part1, y3=20
+    "00" "00" "00" "00" "00" "00" "34" "40"  # part1, x4=20
+    "00" "00" "00" "00" "00" "00" "3E" "40"  # part1, y4=30
+)
 
 
 def test_parse_point_list():
@@ -346,5 +513,68 @@ def test_line_string_2d_to_geojson():
 
 def test_line_string_2d_from_geojson():
     assert LineString2D.from_geojson(LINESTRING_1_GEOJSON) == LINESTRING_1
+    # TODO: test properties
+    # TODO: add test for ValueErrors in `from_geojson`
+
+
+def test_polygon_2d():
+    assert len(POLYGON_1.rings) == 1
+    assert len(POLYGON_1.rings[0]) == 5
+    assert POLYGON_1.rings[0] == (POINT_1, POINT_2, POINT_4, POINT_3, POINT_1)
+    assert POLYGON_1.properties == {}
+
+    polygon = Polygon2D(rings=POLYGON_1.rings, properties={"aaa": 111, "bbb": 222})
+    assert polygon.properties == {"aaa": 111, "bbb": 222}
+
+
+def test_polygon_2d_to_wkt():
+    assert TEXT_TYPE(POLYGON_1) == POLYGON_1_WKT
+    assert TEXT_TYPE(POLYGON_2) == POLYGON_2_WKT
+
+
+def test_polygon_2d_from_wkt():
+    assert Polygon2D.from_wkt(POLYGON_1_WKT) == POLYGON_1
+    assert Polygon2D.from_wkt(POLYGON_2_WKT) == POLYGON_2
+    # TODO: add a polygon with 2 or more rings
+    # TODO: add more tests
+
+
+def test_polygon_2d_to_wkb():
+    splits_1 = [1] + [4] * 3 + [8] * 10
+    assert hex_to_splits(BINARY_TYPE(POLYGON_1), splits_1) == hex_to_splits(POLYGON_1_WKB_LITTLE, splits_1)
+
+    splits_2 = [1] + [4] * 3 + [8] * 10 + [4] + [8] * 8
+    assert hex_to_splits(BINARY_TYPE(POLYGON_2), splits_2) == hex_to_splits(POLYGON_2_WKB_LITTLE, splits_2)
+
+
+def test_polygon_2d_from_wkb():
+    assert Polygon2D.from_wkb(POLYGON_1_WKB_LITTLE) == POLYGON_1
+    assert Polygon2D.from_wkb(POLYGON_1_WKB_BIG) == POLYGON_1
+    assert Polygon2D.from_wkb(POLYGON_2_WKB_LITTLE) == POLYGON_2
+    assert Polygon2D.from_wkb(POLYGON_2_WKB_BIG) == POLYGON_2
+
+
+def test_polygon_2d_from_shp():
+    assert Polygon2D.from_shp(POLYGON_1_SHP) == POLYGON_1
+    assert Polygon2D.from_shp(POLYGON_2_SHP) == POLYGON_2
+
+
+def test_polygon_2d_to_shp():
+    splits_1 = [4] + [8] * 4 + [4] * 3 + [8] * 10
+    assert hex_to_splits(POLYGON_1.shp(), splits_1) == hex_to_splits(POLYGON_1_SHP, splits_1)
+
+    splits_2 = [4] + [8] * 4 + [4] * 4 + [8] * 18
+    assert hex_to_splits(POLYGON_2.shp(), splits_2) == hex_to_splits(POLYGON_2_SHP, splits_2)
+
+
+def test_polygon_2d_to_geojson():
+    assert POLYGON_1.geojson() == POLYGON_1_GEOJSON
+    assert POLYGON_2.geojson() == POLYGON_2_GEOJSON
+    # TODO: test properties
+
+
+def test_polygon_2d_from_geojson():
+    assert Polygon2D.from_geojson(POLYGON_1_GEOJSON) == POLYGON_1
+    assert Polygon2D.from_geojson(POLYGON_2_GEOJSON) == POLYGON_2
     # TODO: test properties
     # TODO: add test for ValueErrors in `from_geojson`

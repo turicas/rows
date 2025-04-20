@@ -13,8 +13,9 @@
 from __future__ import unicode_literals
 
 import re
-from struct import pack, unpack
 from collections import namedtuple
+from itertools import zip_longest
+from struct import pack, unpack
 
 from rows.compat import BINARY_TYPE
 
@@ -31,6 +32,13 @@ REGEXP_POINTS_2D = re.compile(
 )
 REGEXP_POINTS_2D_OTHERS = re.compile(r"\s*,\s*({0}\s+{0})".format(NUMBER_REGEXP))
 REGEXP_LINESTRING_2D = re.compile(r"^\s*LINESTRING\s*(\(.*\))\s*$")
+REGEXP_POLYGON_2D = re.compile(
+    r"^\s*POLYGON\s*\(\s*"
+    + r"(\([^)]+\))"
+    + "(.*)?"
+    + r"\)\s*$"
+)
+REGEXP_LIST_OTHERS = re.compile(r"\s*,\s*(\([^)]*\))\s*")
 
 def extract_point_list_wkt(text):
     result = REGEXP_POINTS_2D.findall(text)
@@ -224,3 +232,163 @@ class LineString2D(namedtuple("LineString2D", ("points", "properties"))):
             },
             "properties": {} if self.properties is None else self.properties,
         }
+
+
+class Polygon2D(namedtuple("Polygon2D", ("rings", "properties"))):
+    def __new__(cls, rings, properties=None):
+        # TODO: validate rings and properties
+        for ring in rings:
+            if ring[0] != ring[-1]:
+                raise ValueError("Geometry contains a non-closed ring: {}".format(repr(ring)))
+            elif len(ring) < 4:
+                raise ValueError(
+                    "Geometry contains a ring of invalid size (expected: at least 4, got {}): {}".format(
+                        len(ring), repr(ring)
+                    )
+                )
+        return super().__new__(cls, rings, properties if properties is not None else {})
+
+    def __str__(self):
+        return (
+            "POLYGON ("
+            + ", ".join(
+                "(" + ", ".join("{} {}".format(point.x, point.y) for point in ring) + ")"
+                for ring in self.rings
+            )
+            + ")"
+        )
+
+    def __bytes__(self):
+        # Field 1: B (uchar, 1 B), endianness: 1 = little, 0 = big
+        # Field 2: I (uint, 4 B), geometry type: 3 = Polygon
+        # Field 3: I (uint, 4 B), number of rings
+        # For each ring:
+        # Field 4: I (uint, 4 B), number of points
+        # Field 5: d (double, 8 B), x1
+        # Field 6: d (double, 8 B), y1
+        # Field 5 + i: d, Field 6 + i: d (xi, yi)
+        n_rings = len(self.rings)
+        rings_data = BINARY_TYPE()
+        for ring in self.rings:
+            n_points = len(ring)
+            points_numbers = [value for point in ring for value in (point.x, point.y)]
+            rings_data += pack("<I" + ("dd" * n_points), n_points, *points_numbers)
+        return pack("<BII", 1, 3, n_rings) + rings_data
+
+    def geojson(self):
+        return {
+            "type": "Feature",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [[point.x, point.y] for point in ring]
+                    for ring in self.rings
+                ],
+            },
+            "properties": {} if self.properties is None else self.properties,
+        }
+
+    def shp(self):
+        total_points = 0
+        point = self.rings[0][0]
+        xmin, xmax, ymin, ymax = point.x, point.x, point.y, point.y
+        points_numbers, parts_indices = [], []
+        for ring in self.rings:
+            parts_indices.append(total_points)
+            for point in ring:
+                total_points += 1
+                x, y = point.x, point.y
+                points_numbers.extend((x, y))
+                if x < xmin:
+                    xmin = x
+                elif x > xmax:
+                    xmax = x
+                if y < ymin:
+                    ymin = y
+                elif y > ymax:
+                    ymax = y
+        return pack(
+            "<Iddddii" + ("I" * len(parts_indices)) + "d" * len(points_numbers),
+            5, xmin, ymin, xmax, ymax, len(self.rings), total_points,
+            *parts_indices,
+            *points_numbers,
+        )
+
+    @classmethod
+    def from_geojson(cls, data):
+        type_ = data.get("type")
+        geometry = data.get("geometry", {}) or {}
+        geometry_type = geometry.get("type")
+        geometry_coords = geometry.get("coordinates")
+        if not type_ or not geometry or type_ != "Feature" or not geometry_type or not geometry_coords:
+            raise ValueError("Missing type or geometry fields for GeoJSON: {}".format(repr(data)))
+        elif geometry_type != "Polygon":
+            raise ValueError("Geometry type is not Polygon: {}".format(repr(data)))
+        return cls(
+            rings=tuple([
+                tuple([Point2D(x=point[0], y=point[1]) for point in ring])
+                for ring in geometry_coords
+            ]),
+            properties=data.get("properties"),
+        )
+
+    @classmethod
+    def from_wkt(cls, text):
+        result = REGEXP_POLYGON_2D.findall(text)
+        if len(result) != 1:
+            raise ValueError("Cannot parse value as Polygon2D: {}".format(repr(text)))
+        first_ring, other_rings = result[0]
+        return cls(
+            rings=tuple([
+                tuple(extract_point_list_wkt(ring_wkt))
+                for ring_wkt in [first_ring] + (REGEXP_LIST_OTHERS.findall(other_rings) if other_rings else [])
+            ])
+        )
+
+    @classmethod
+    def from_wkb(cls, data):
+        if len(data) < 77:  # 77 = 1 + 4 + 4 + 4 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8
+            raise ValueError("Invalid length for Polygon2D: {} (expected: at least 77)".format(len(data)))
+        endianness = unpack("B", data[:1])[0]
+        endian = ("<" if endianness == 1 else ">")
+        geometry_type, n_rings = unpack(endian + "II", data[1:9])
+        if geometry_type != 3:
+            raise ValueError("Invalid geometry type for Polygon2D: {} (expected: 3)".format(geometry_type))
+        index, rings = 9, []
+        for ring_index in range(n_rings):
+            n_points = unpack(endian + "I", data[index:index + 4])[0]
+            if n_points < 4:
+                raise ValueError(
+                    "Invalid number of points for ring {}: {} (expected: at least 4)".format(ring_index + 1, n_points)
+                )
+            index += 4
+            stop_index = index + 2 * n_points * 8  # 2 coords per point, 8 bytes per coord
+            coords = unpack(endian + ("dd" * n_points), data[index:stop_index])
+            rings.append(tuple([Point2D(x=x, y=y) for x, y in zip(coords[::2], coords[1::2])]))
+            index = stop_index
+        return cls(rings=tuple(rings))
+
+    @classmethod
+    def from_shp(cls, data):
+        if len(data) < 112:  # 112 = 4 + 8*4 + 4*3 + 8*2*4 -> 1 part with at least 4 pts
+            raise ValueError("Invalid length for Polygon2D: {} (expected: at least 80)".format(len(data)))
+        geometry_type, xmin, ymin, xmax, ymax, n_parts, n_points = unpack("<iddddii", data[:44])
+        if geometry_type != 5:
+            raise ValueError("Invalid geometry type for Polygon2D: {} (expected: 5)".format(geometry_type))
+        elif n_points < 4 * n_parts:
+            raise ValueError(
+                "Invalid number of points for Polygon2D: {} (expected: at least {})".format(n_points, 4 * n_parts)
+            )
+        coords_index = 44 + 4 * n_parts
+        part_indices = unpack("<" + ("i" * n_parts), data[44:coords_index])
+        rings = []
+        for part_index, next_part_index in zip_longest(part_indices, part_indices[1:]):
+            if next_part_index is not None:
+                n_points = next_part_index - part_index
+            else:
+                n_points = (len(data) - coords_index) // 8 // 2
+            new_coords_index = coords_index + n_points * 8 * 2
+            coords = unpack("<" + ("dd" * n_points), data[coords_index:new_coords_index])
+            coords_index = new_coords_index
+            rings.append(tuple([Point2D(x=x, y=y) for x, y in zip(coords[::2], coords[1::2])]))
+        return cls(rings=tuple(rings))
