@@ -31,24 +31,22 @@ data = b"""f1,f2,f3
 13,6,"<crnl quoted>\r\n</crnl>"
 """
 
-# The lines above aren't correct, so not part of the file
-wrong = b"""
-3,3,<nl unquoted>\n</nl>
-8,5,<cr unquoted>\r</cr>
-12,6,<crnl unquoted>\r\n</crnl>
-"""
+def main():
+    filename_1, filename_2 = "bad-csv-1.csv", "bad-csv-2.csv"
 
-with open("bad-csv-1.csv", mode="wb") as fobj:
-    fobj.write(data)
+    with open(filename_1, mode="wb") as fobj:
+        fobj.write(data)
+    values = [
+        {"f1": 1, "f2": 3, "f3": "<nl>\n</nl>"},
+        {"f1": 2, "f2": 5, "f3": "<cr>\r</cr>"},
+        {"f1": 3, "f2": 6, "f3": "<crnl>\r\n</crnl>"},
+    ]
+    with open(filename_2, mode="w") as fobj:
+        writer = csv.DictWriter(fobj, fieldnames=["f1", "f2", "f3"])
+        writer.writeheader()
+        for row in values:
+            writer.writerow(row)
 
 
-values = [
-    {"f1": 1, "f2": 3, "f3": "<nl>\n</nl>"},
-    {"f1": 2, "f2": 5, "f3": "<cr>\r</cr>"},
-    {"f1": 3, "f2": 6, "f3": "<crnl>\r\n</crnl>"},
-]
-with open("bad-csv-2.csv", mode="w") as fobj:
-    writer = csv.DictWriter(fobj, fieldnames=["f1", "f2", "f3"])
-    writer.writeheader()
-    for row in values:
-        writer.writerow(row)
+if __name__ == "__main__":
+    main()
