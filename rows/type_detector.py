@@ -53,12 +53,35 @@ class ColumnTypeDetector(object):
             "cache_unhashable": self._cache_unhashable
         }
 
+    def real_deserialize(self, value):
+        type_ = self._possible_types[0]
+        should_cache = isinstance(value, self._cacheable_types)
+        cache_key = hash((type_, type(value), value, self._locale_config)) if should_cache else None
+        cache = self._cache
+        if not should_cache:
+            self._cache_unhashable += 1
+        if not should_cache or cache_key not in cache:
+            result = type_.deserialize(value)
+            if should_cache:
+                cache[cache_key] = [result, 1]
+                if len(cache) >= self._cache_max_size:
+                    min_freq = cache[sorted(cache.keys(), key=lambda key: cache[key][1])[self._cache_purge]][1]
+                    self._cache = cache = {k: v for k, v in cache.items() if v[1] > min_freq}
+                self._cache_misses += 1
+        else:
+            result, _ = cache[cache_key]
+            cache[cache_key][1] += 1
+            self._cache_hits += 1
+        return result
+
     def deserialize(self, type_, value, true_behavior=True):
         """
         Calls `type_.deserialize(value)`. When `true_behavior` is `True`, exception is raised if value can't be
         deserialized; returns `_deserialization_error` sentinel, otherwise.
         Will only cache values that can be hashed and on `_cacheable_types`.
         """
+        # TODO: this should not be the "deserialize" method! The real deserialize must be when the type is already
+        # defined. This one is for discovery.
 
         should_cache = isinstance(value, self._cacheable_types)
         cache_key = hash((type_, type(value), value, self._locale_config)) if should_cache else None
@@ -129,9 +152,22 @@ class TypeDetector(object):
 
     # TODO: create two kinds of `feed`: by row and by column (some formats will have it by column)
 
-    def feed(self, data, batch_size=1024):
-        from concurrent.futures import wait
+    def set_types(self, fields):
+        if self._detectors is None:
+            from locale import getlocale
 
+            locale_config = rows_fields.SHOULD_NOT_USE_LOCALE or getlocale()
+            self._ncols = len(self.field_names)
+            self._detectors = tuple([
+                ColumnTypeDetector(types=self.field_types, locale_config=locale_config)
+                for index in range(self._ncols)
+            ])
+        for field_name, field_type in fields.items():
+            if field_name not in self.field_names:
+                raise ValueError("Unknown field name: {}".format(repr(field_name)))
+            self._detectors[self.field_names.index(field_name)]._possible_types = [field_type]
+
+    def feed(self, data, batch_size=1024):
         if not isinstance(data, list):
             data = list(data)  # Must have all values in memory and indexable
         if not data:
