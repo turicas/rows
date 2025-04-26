@@ -34,6 +34,7 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         merged = rows.join(keys=("id", "username"), tables=tables)
         expected = rows.import_from_csv("tests/data/merged.csv")
         self.assert_table_equal(merged, expected)
+        # TODO: create a test so join should not overwrite field names
 
     def test_transform_imports(self):
         assert rows.transform is rows.operations.transform
