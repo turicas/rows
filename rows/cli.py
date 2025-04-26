@@ -353,9 +353,6 @@ def join(
     export_fields = _get_import_fields(fields, fields_exclude)
     keys = make_header(keys.split(","), permit_not=False)
 
-    # TODO: if we're able to put tables in order of number of rows (or file size), then we could save memory by reading
-    # the first one in "eager" mode and the other ones in "stream"
-
     if input_locale is not None:
         with rows.locale_context(input_locale):
             tables = [
