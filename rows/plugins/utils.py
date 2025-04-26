@@ -86,8 +86,9 @@ def create_table(
     from pathlib import Path
 
     from rows.compat import ORDERED_DICT, ORDERED_DICTS
-    from rows.fields import TextField, cached_type_deserialize, detect_types, get_items, make_header
+    from rows.fields import TextField, get_items, make_header
     from rows.table import Table
+    from rows.type_detector import TypeDetector
 
     table_rows = iter(data)
     force_types = force_types or {}
@@ -113,17 +114,16 @@ def create_table(
                 sample_rows = table_rows = list(table_rows)
 
         # Detect field types using only the desired columns
-        detected_fields = detect_types(
-            header,
-            sample_rows,
+        type_detector = TypeDetector(
+            field_names=header,
             skip_indexes=[
                 index
                 for index, field in enumerate(header)
                 if field in force_types or field not in (import_fields or header)
             ],
-            *args,
-            **kwargs
         )
+        type_detector.feed(sample_rows)
+        detected_fields = type_detector.fields
         # Check if any field was added during detecting process
         new_fields = [
             field_name
@@ -161,6 +161,16 @@ def create_table(
         fields = ORDERED_DICT(
             [(field_name, fields[key]) for field_name, key in zip(header, fields)]
         )
+        type_detector = TypeDetector(
+            field_names=header,
+            skip_indexes=[
+                index
+                for index, field in enumerate(header)
+                if field in force_types or field not in (import_fields or header)
+            ],
+        )
+        type_detector.set_types(fields)
+
     if max_rows is not None and max_rows > 0:
         # TODO: transform in list if data is already read
         table_rows = islice(table_rows, max_rows)
@@ -174,12 +184,13 @@ def create_table(
     )
     field_types = list(fields.values())
 
+    detectors = type_detector._detectors
     # What if we deserialize only when the data is read from the Table (not from the plugin)?
     if list(header) == list(import_fields):  # Add rows directly, no need to get specific indices
         table_rows = (
             tuple([
-                cached_type_deserialize(field_type, value)
-                for field_type, value in zip(field_types, row)
+                detector.real_deserialize(value)
+                for detector, value in zip(detectors, row)
             ])
             for row in table_rows
         )
@@ -187,12 +198,12 @@ def create_table(
         field_indices = list(map(header.index, import_fields))
         table_rows = (
             tuple([
-                cached_type_deserialize(field_type, row[index])
-                for index, field_type in zip(field_indices, field_types)
+                detectors[index].real_deserialize(row[index])
+                for index in field_indices
             ])
             for row in table_rows
         )
-    table = Table(fields=fields, meta=meta, data=table_rows, mode=mode)
+    table = Table(fields=fields, meta=meta, data=table_rows, mode=mode, type_detector=type_detector)
     return table
 
 

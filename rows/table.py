@@ -46,7 +46,7 @@ class Table(MutableSequence):
         subclass = subclasses.get(mode.lower())
         return super(Table, subclass).__new__(subclass)
 
-    def __init__(self, fields, meta=None, mode=None, data=None):
+    def __init__(self, fields, meta=None, mode=None, data=None, type_detector=None):
         from collections import namedtuple
         from rows.fields import make_header
 
@@ -72,6 +72,12 @@ class Table(MutableSequence):
                 for (header_name, (_, field_type)) in zip(header, fields.items())
             ]
         )
+        if type_detector is not None:
+            self._type_detector = type_detector
+        else:
+            from rows.type_detector import TypeDetector
+            self._type_detector = TypeDetector(field_names=header)
+            self._type_detector.set_types(fields)
         # TODO: should be able to customize row return type (namedtuple, dict etc.)
         self.Row = namedtuple("Row", self.field_names)
         self.meta = dict(meta) if meta is not None else {}
@@ -82,23 +88,19 @@ class Table(MutableSequence):
         return
 
     def _make_row_from_tuple(self, row):
-        from rows.fields import cached_type_deserialize
-
         # Python tuple creation from list comprehesion is faster than from generator expression:
         # <https://gist.github.com/turicas/f28c110d931c437f5b952040ec2c1da1>
         return tuple([
-            cached_type_deserialize(field_type, row[index])
-            for index, field_type in enumerate(self.fields.values())
+            self._type_detector._detectors[index].real_deserialize(row[index])
+            for index in range(len(self.fields))
         ])
 
     def _make_row_from_dict(self, row):
-        from rows.fields import cached_type_deserialize
-
         # Python tuple creation from list comprehesion is faster than from generator expression:
         # <https://gist.github.com/turicas/f28c110d931c437f5b952040ec2c1da1>
         return tuple([
-            cached_type_deserialize(field_type, row.get(field_name, None))
-            for field_name, field_type in self.fields.items()
+            self._type_detector._detectors[index].real_deserialize(row.get(field_name, None))
+            for index, field_name in enumerate(self.fields.keys())
         ])
 
     def _add_or_replace_column(self, name, values):
@@ -113,6 +115,7 @@ class Table(MutableSequence):
 
         field_name = slug(name)
         is_new_field = field_name not in self.field_names
+        # TODO: add new column to the list of self._type_detectors
         field_type = detect_types([field_name], [[value] for value in values])[field_name]
         # TODO: this type detection would benefit of having `TypeDetector.feed_column` implemented
         self.fields[field_name] = field_type
@@ -568,14 +571,14 @@ class FlexibleTable(EagerTable):
         self.Row = namedtuple("Row", self.field_names)
 
     def _make_row_from_dict(self, row):
-        from rows.fields import cached_type_deserialize, identify_type
+        from rows.fields import identify_type
 
         for field_name in row.keys():
             if field_name not in self.field_names:
                 self._add_field(field_name, identify_type(row[field_name]))
         return {
-            field_name: cached_type_deserialize(field_type, row.get(field_name, None))
-            for field_name, field_type in self.fields.items()
+            field_name: self._type_detector._detectors[index].real_deserialize(row.get(field_name, None))
+            for index, field_name in enumerate(self.fields.keys())
         }
 
     def insert(self, index, row):
