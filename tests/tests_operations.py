@@ -27,14 +27,19 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_join_feature(self):
         tables = [
-            rows.import_from_csv("tests/data/to-merge-1.csv"),
-            rows.import_from_csv("tests/data/to-merge-2.csv"),
-            rows.import_from_csv("tests/data/to-merge-3.csv"),
+            rows.import_from_csv("tests/data/table-id-username.csv"),
+            rows.import_from_csv("tests/data/table-id-username-birthday-sex.csv"),
+            rows.import_from_csv("tests/data/table-id-username-gender-sex.csv"),
         ]
-        merged = rows.join(keys=("id", "username"), tables=tables)
-        expected = rows.import_from_csv("tests/data/merged.csv")
-        self.assert_table_equal(merged, expected)
-        # TODO: create a test so join should not overwrite field names
+        merged = rows.join(keys=("id", "username"), tables=tables, ignore_repeated_fields=True)
+        expected = rows.import_from_csv("tests/data/table-join-ignore-repeated-fields.csv")
+        assert merged.fields == expected.fields
+        assert sorted(merged) == sorted(expected)  # May not be in the same order
+
+        expected = rows.import_from_csv("tests/data/table-join-all-fields.csv")
+        merged = rows.join(keys=("id", "username"), tables=tables, ignore_repeated_fields=False)
+        assert merged.fields == expected.fields
+        assert sorted(merged) == sorted(expected)  # May not be in the same order
 
     def test_transform_imports(self):
         assert rows.transform is rows.operations.transform

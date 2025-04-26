@@ -12,54 +12,85 @@
 
 from __future__ import unicode_literals
 
-from rows.compat import ORDERED_DICT
-from rows.plugins.utils import create_table
-from rows.table import Table
 
+def join(keys, tables, ignore_repeated_fields=False):
+    """
+    Perform an INNER JOIN in tables using keys (only advised if tables are small - otherwise use a database)
 
-def join(keys, tables):
-    """Merge a list of `Table` objects using `keys` to group rows"""
+    Even if `ignore_repeated_fields` is `False`, the keys are not repeated (since their values are equal)
+    """
+    from collections import defaultdict
+    from itertools import product
 
-    # Make new (merged) Table fields
-    fields = ORDERED_DICT()
-    for table in tables:
-        fields.update(table.fields)
-    # TODO: may raise an error if a same field is different in some tables
+    from rows.compat import ORDERED_DICT
+    from rows.fields import make_header
+    from rows.plugins.utils import create_table
 
-    # Check if all keys are inside merged Table's fields
-    fields_keys = set(fields.keys())
-    for key in keys:
-        if key not in fields_keys:
-            raise ValueError('Invalid key: "{}"'.format(key))
+    # First, create new field names since that could be conflicting names
+    selected_field_names = []
+    for table_index, table in enumerate(tables):
+        for key in keys:
+            if key not in table.field_names:
+                raise ValueError("Key {} not found in table {}".format(repr(key), table_index))
+        if table_index == 0:
+            selected_field_names.extend([(table_index, field_name) for field_name in table.field_names])
+        elif not ignore_repeated_fields:
+            selected_field_names.extend([(table_index, field_name) for field_name in table.field_names if field_name not in keys])
+        else:
+            current_field_names = [field_name for _, field_name in selected_field_names]
+            selected_field_names.extend(
+                [
+                    (table_index, field_name)
+                    for field_name in table.field_names
+                    if field_name not in keys and field_name not in current_field_names
+                ]
+            )
+    new_field_names = make_header([field_name for _, field_name in selected_field_names])
+    fields = ORDERED_DICT(
+        [
+            (new_field_name, tables[table_index].fields[original_field_name])
+            for new_field_name, (table_index, original_field_name) in zip(new_field_names, selected_field_names)
+        ]
+    )
 
-    # Group rows by key, without missing ordering
-    none_fields = lambda: ORDERED_DICT({field: None for field in fields.keys()})
-    data = ORDERED_DICT()
-    for table in tables:
-        for row in table:
-            row_key = tuple([getattr(row, key) for key in keys])
-            if row_key not in data:
-                data[row_key] = none_fields()
-            data[row_key].update(row._asdict())
-
-    merged = Table(fields=fields)
-    merged.extend(data.values())
-    return merged
+    # Hash join: build
+    hashmap = defaultdict(list)
+    for table_index, table in enumerate(tables):
+        for row_index, row in enumerate(table):
+            hashmap[tuple(getattr(row, key) for key in keys)].append((table_index, row_index))
+    # Hash join: combine
+    n_tables = len(tables)
+    tuples = []
+    for key_tuple, matching_rows in hashmap.items():
+        rows_by_table = defaultdict(list)
+        for table_index, row_id in matching_rows:
+            rows_by_table[table_index].append(row_id)
+        if len(rows_by_table) != n_tables:  # Do not match all tables
+            continue
+        for row_ids in product(*(rows_by_table[i] for i in range(n_tables))):
+            tuples.append(
+                tuple([
+                    getattr(tables[table_index][row_ids[table_index]], field_name)
+                    for table_index, field_name in selected_field_names
+                ])
+            )
+    return create_table(data=tuples, fields=fields, skip_header=False, mode="eager")
 
 
 def transform(fields, function, *tables):
     "Return a new table based on other tables and a transformation function"
+    from rows.table import Table
 
     new_table = Table(fields=fields)
-
     for table in tables:
         for row in filter(bool, map(lambda row: function(row, table), table)):
             new_table.append(row)
-
     return new_table
 
 
 def transpose(table, fields_column, *args, **kwargs):
+    from rows.plugins.utils import create_table
+
     field_names = []
     new_rows = [{} for _ in range(len(table.fields) - 1)]
     for row in table:
