@@ -27,19 +27,19 @@ from rows.compat import BINARY_TYPE, ORDERED_DICT, PYTHON_KEYWORDS_LOWER, PYTHON
 
 # Order matters here
 __all__ = [
-    "BoolField",
-    "IntegerField",
-    "FloatField",
-    "DatetimeField",
-    "DateField",
-    "DecimalField",
-    "PercentField",
-    "JSONField",
-    "EmailField",
-    "UUIDField",
-    "TextField",
     "BinaryField",
+    "BoolField",
+    "DateField",
+    "DatetimeField",
+    "DecimalField",
+    "EmailField",
     "Field",
+    "FloatField",
+    "IntegerField",
+    "JSONField",
+    "PercentField",
+    "TextField",
+    "UUIDField",
 ]
 NULL = ("-", "null", "none", "nil", "n/a", "na")
 NULL_BYTES = (b"-", b"null", b"none", b"nil", b"n/a", b"na")
@@ -670,11 +670,11 @@ DEFAULT_TYPES = (
     PercentField,
     DatetimeField,
     DateField,
+    UUIDField,
     JSONField,
     TextField,
     BinaryField,
 )
-
 
 def _unique_list_values(values):
     result = []

@@ -1261,6 +1261,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             rows_fields.DecimalField: "DecimalField",
             rows_fields.EmailField: "EmailField",
             rows_fields.JSONField: "JSONField",
+            rows_fields.UUIDField: "UUIDField",
         }
         table_name = "".join(word.capitalize() for word in table.name.split("_"))
 
