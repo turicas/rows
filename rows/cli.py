@@ -780,6 +780,7 @@ def parse_comma_separated(ctx, param, value):
 @click.option("--input-locale")
 @click.option("--verify-ssl", type=bool, default=True)
 @click.option("--detect-all-types", is_flag=True)
+@click.option("--align", "-a", is_flag=True, help="Reorder fields based on column alignment (saves space)")
 @click.option(
     "--input-option",
     "-i",
@@ -823,6 +824,7 @@ def command_schema(
     input_locale,
     verify_ssl,
     detect_all_types,
+    align,
     input_option,
     output_format,
     fields,
@@ -904,7 +906,7 @@ def command_schema(
         output_fobj = cfopen(output, mode="wb")
     # TODO: check if all field names in `exclude_choices` actually exists on source dataset
     content = generate_schema(table, export_fields, output_format, max_choices=max_choices,
-                              exclude_choices=exclude_choices)
+                              exclude_choices=exclude_choices, align=align)
     output_fobj.write(content.encode("utf-8"))
 
 

@@ -1071,7 +1071,76 @@ def uncompressed_size(filename):
         raise ValueError('Unrecognized file type for "{}".'.format(filename))
 
 
-def generate_schema(table, export_fields, output_format, max_choices=100, exclude_choices=None):
+def align_columns(source, target, fields):
+    # PostgreSQL: <https://www.postgresql.org/docs/8.1/datatype.html>
+    #             and <https://www.postgresql.org/docs/current/datatype-enum.html#DATATYPE-ENUM-IMPLEMENTATION-DETAILS>
+    # MariaDB: # <https://mariadb.com/kb/en/data-type-storage-requirements/>
+
+    # None = variable size
+    sizes_per_db = {
+        "postgres": {
+            "BIGINT": 8,
+            "BIGSERIAL": 8,
+            "BOOL": 1,
+            "BOOLEAN": 1,
+            "BYTEA": None,
+            "DATE": 4,
+            "DECIMAL": None,
+            "ENUM": 4,
+            "FLOAT": 8,
+            "INT": 4,
+            "INTEGER": 4,
+            "JSONB": None,
+            "NUMERIC": None,
+            "REAL": 4,
+            "SERIAL": 4,
+            "SMALLINT": 2,
+            "TEXT": None,
+            "TIME": 8,
+            "TIMESTAMP": 8,
+            "TIMESTAMPTZ": 8,
+            "TIMETZ": 12,
+            "UUID": 16,
+            "VARCHAR": None,
+        },
+    }
+    target = target.strip().lower()
+    if target not in sizes_per_db:
+        raise ValueError("Unknown target: {}".format(repr(target)))
+
+    sizes = sizes_per_db[target]
+    result = []
+    for field_name, field_type in fields:
+        if source == "django":
+            col_type = field_type.replace("models.", "", 1).split("Field", 1)[0].upper()
+            col_type = {
+                "CHAR": "VARCHAR",
+                "SMALLINTEGER": "SMALLINT",
+                "POSITIVESMALLINTEGER": "SMALLINT",
+                "POSITIVEINTEGER": "INTEGER",
+                "DATETIME": "TIMESTAMPTZ",
+            }.get(col_type, col_type)
+        else:
+            col_type = field_type.upper().split()[0].split("(")[0].strip()
+        if col_type.startswith("ENUM_"):
+            col_type = "ENUM"
+        if col_type not in sizes:
+            raise ValueError("Unknown column type for {}: {}".format(target, repr(field_type)))
+        col_size = sizes[col_type]
+        result.append(
+            (
+                1 if col_size is None else 0,
+                -col_size if col_size is not None else 0,
+                col_type,
+                field_name,
+                field_type,
+            )
+        )
+    result.sort()
+    return [(field_name, field_type) for _, _, _, field_name, field_type in result]
+
+
+def generate_schema(table, export_fields, output_format, max_choices=100, exclude_choices=None, align=False):
     """Generate table schema for a specific output format and write
 
     Current supported output formats: 'txt', 'sql' and 'django'.
@@ -1177,6 +1246,10 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                     ("choices", metadata.get("choices")),
                 ])
             )
+        if align:
+            aligned = align_columns("rows", "postgres", [(obj["field_name"], obj["field_type"]) for obj in data])
+            aligned_names = [field_name for field_name, _ in aligned]
+            data.sort(key=lambda obj: aligned_names.index(obj["field_name"]))
         table = plugins.dicts.import_from_dicts(data)
         if output_format == "txt":
             return plugins.txt.export_to_txt(table)
@@ -1235,7 +1308,13 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             # TODO: detect/add 'WITH TIME ZONE' when sql_type == "TIMESTAMP"
             # TODO: should add comments, like max_length when sql_type == "TEXT"?
             not_null = " NOT NULL" if not metadata["null"] else ""
-            fields.append('    "{}" {}{}'.format(field_name, sql_type, not_null))
+            fields.append((field_name, sql_type + not_null))
+        if align:
+            fields = align_columns("postgres", "postgres", fields)
+        fields_str = [
+            '    "{}" {}'.format(field_name, sql_type)
+            for field_name, sql_type in fields
+        ]
         sql = (
             dedent(
                 """
@@ -1245,7 +1324,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                 """
             )
             .strip()
-            .format(name=table.name, fields=",\n".join(fields))
+            .format(name=table.name, fields=",\n".join(fields_str))
             + "\n"
         )
         if choices_sql:
@@ -1278,6 +1357,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             "class {}(models.Model):".format(table_name),
         ]
         model_choices = []
+        field_types = []
         for field_name in table.field_names:
             if field_name not in export_fields:
                 continue
@@ -1329,7 +1409,11 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                 if metadata["min"] > 0:
                     django_type_name = "Positive" + django_type_name
             django_type = "models.{}({})".format(django_type_name, options_str)
-            lines.append("    {} = {}{}".format(field_name, django_type, comment_str if comment else ""))
+            field_types.append((field_name, django_type + (comment_str if comment else "")))
+        if align:
+            field_types = align_columns("django", "postgres", field_types)
+        for field_name, django_type in field_types:
+            lines.append("    {} = {}".format(field_name, django_type))
 
         if model_choices:  # Add choice definitions before any field definitions
             for index, line in enumerate(lines):
