@@ -143,7 +143,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             "date_column" DATE,
             "datetime_column" TIMESTAMP,
             "unicode_column" VARCHAR(8),
-            "json_column" TEXT NOT NULL
+            "json_column" JSONB NOT NULL
         );
         """
         )
@@ -170,7 +170,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             "date_column" DATE,
             "datetime_column" TIMESTAMP,
             "unicode_column" enum_unicode_column,
-            "json_column" TEXT NOT NULL
+            "json_column" JSONB NOT NULL
         );
         """
         )
@@ -244,7 +244,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             """
         CREATE TABLE IF NOT EXISTS "this_is_my_table" (
             "bool_column" BOOL,
-            "json_column" TEXT NOT NULL
+            "json_column" JSONB NOT NULL
         );
         """
         )

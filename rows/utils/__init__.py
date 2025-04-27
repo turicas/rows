@@ -1087,7 +1087,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
     # TODO: move this code to detect algorithm and for each plugin (if possible), so we have this metadata available on
     # all tables
     # TODO: use rows.fields.NULL (or move NULL to rows.constants and use it)?
-    null_values = (None, "", "-", "N/A", "NA", "null", "NULL", "none", "NONE", "None")
+    null_values = (None, "", "-", "N/A", "NA", "null", "NULL", "none", "NONE", "None")  # TODO: move to `is_null`
     exclude_choices = set() if exclude_choices is None else set(exclude_choices)
     field_metadata = {}
     for field_name, field_type in table.fields.items():
@@ -1188,7 +1188,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
 
         # TODO: may use dict from rows.plugins.sqlite or postgresql
         sql_fields = {
-            rows_fields.BinaryField: "BLOB",
+            rows_fields.BinaryField: "BYTEA",  # Valid for postgres (MariaDB and SQLite uses "BLOB")
             rows_fields.BoolField: "BOOL",
             rows_fields.IntegerField: "INTEGER",
             rows_fields.FloatField: "FLOAT",
@@ -1198,7 +1198,8 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             rows_fields.TextField: "TEXT",
             rows_fields.DecimalField: "DECIMAL",
             rows_fields.EmailField: "TEXT",
-            rows_fields.JSONField: "TEXT",
+            rows_fields.JSONField: "JSONB",  # Valid for postgres (check others)
+            rows_fields.UUIDField: "UUID",
         }
         choices_sql = []
         fields = []
@@ -1216,6 +1217,9 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                     sql_type = "VARCHAR({})".format(metadata["max_length"])
                 field_choices = metadata.get("choices")
                 if field_choices is not None:
+                    # TODO: from postgres docs: "The length of an enum value's textual label is limited by the
+                    # NAMEDATALEN setting compiled into PostgreSQL; in standard builds this means at most 63 bytes."
+                    # So we need to check if any value is greater than 63 bytes (if so, can't add column as enum)
                     if field_name not in reuse_choices:
                         enum_name = "enum_{}".format(field_name)
                         choices_sql.append(
@@ -1248,6 +1252,8 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             sql = "\n".join(choices_sql) + "\n\n" + sql
         return sql
 
+    # TODO: add format python-dataclasses
+    # TODO: add format python-pydantic
     elif output_format == "django":
         django_fields = {
             rows_fields.BinaryField: "BinaryField",
