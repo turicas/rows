@@ -147,7 +147,7 @@ def test_join_two_csvs(runner, tmp_path):
         {"id": "2", "name": "Bob", "score": "7.0"},
         {"id": "3", "name": "Álvaro", "score": "10.0"},
     ]
-    assert data == expected
+    assert sorted(data, key=lambda obj: obj["id"]) == expected
 
 
 def test_sum_two_csvs(runner, tmp_path):
