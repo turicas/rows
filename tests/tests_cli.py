@@ -23,7 +23,7 @@ from textwrap import dedent
 import pytest
 from click.testing import CliRunner
 
-from rows.cli import cli, create_complete_query
+from rows.cli import cli, create_complete_query, remove_sql_comments
 from rows.compat import PYTHON_VERSION, TEXT_TYPE
 from tests.utils import PSQL_FOUND
 
@@ -40,6 +40,26 @@ sample_csv_content = dedent("""
     Álvaro,37
 """).strip()
 tests_data_path = Path(__file__).parent / "data"
+QUERY_WITH_COMMENTS = dedent(
+    """
+    -- Olá
+    --Como vai?
+
+
+    \t--aqui tem outro
+    -- SELECT ahaha
+    \t
+
+    /*
+    multiline
+    comments
+    in
+    SQL
+    \t\t\tWITH x AS (SELECT * FROM foo) SELECT * FROM x
+    --teste\t\t*/
+    \t\tSELECT * FROM bar
+    """
+).strip()
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL is not None:
@@ -620,10 +640,15 @@ def test_pdf_to_text_basic(runner, tmp_path):
     assert "Em frente à Rua da Música" in txt_path.read_text(encoding="utf-8")
 
 
+def test_remove_sql_comments():
+    result = remove_sql_comments(QUERY_WITH_COMMENTS)
+    expected = "SELECT * FROM bar"
+    assert result == expected
+
+
 def test_create_complete_query():
-    query = "-- Olá\n--Como vai?\n\n\n\t--aqui tem outro\n-- SELECT ahaha\n\t\n\n/*\nmultiline\ncomments\nin\nSQL\n\t\t\tWITH x AS (SELECT * FROM foo) SELECT * FROM x\n--teste\t\t*/\n\t\tSELECT * FROM bar"
-    result = create_complete_query(query, [])
-    expected = query
+    result = create_complete_query(QUERY_WITH_COMMENTS, [])
+    expected = QUERY_WITH_COMMENTS
     assert result == expected
 
     result = create_complete_query("a > 1", ["tableX"])

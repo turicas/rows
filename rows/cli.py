@@ -618,15 +618,20 @@ def print_(
     # TODO: may pass unicode to click.echo if output_encoding is not provided
     click.echo(fobj.read())
 
-def create_complete_query(query, table_names):
-    """Return a complete SQL query - allows user to specify only the part after 'WHERE'"""
+
+def remove_sql_comments(query):
+    """Strip inline and multiline comments from a SQL query using regular expressions"""
     import re
 
     REGEXP_SQL_MULTILINE_COMMENTS = re.compile(r"/\*.*?\*/", flags=re.MULTILINE | re.DOTALL)
     REGEXP_SQL_INLINE_COMMENT = re.compile(r"^\s*--.*?\n", flags=re.MULTILINE)
 
-    query_without_comments = REGEXP_SQL_INLINE_COMMENT.sub("\n", REGEXP_SQL_MULTILINE_COMMENTS.sub("\n", query))
-    first_word = query_without_comments.strip().lower().split(" ", 1)[0]
+    return REGEXP_SQL_INLINE_COMMENT.sub("\n", REGEXP_SQL_MULTILINE_COMMENTS.sub("\n", query)).strip()
+
+
+def create_complete_query(query, table_names):
+    """Return a complete SQL query - allows user to specify only the part after 'WHERE'"""
+    first_word = remove_sql_comments(query).lower().split(" ", 1)[0]
     if first_word not in ("select", "with"):
         return "SELECT * FROM {} WHERE {}".format(", ".join(table_names), query)
     else:
@@ -1254,20 +1259,45 @@ def command_pgimport(
         progress_bar.close()
 
 
-@cli.command(name="pgexport", help="Export a PostgreSQL table into a CSV file")
-@click.option("--is-query", "-q", default=False, is_flag=True)
-@click.option("--output-encoding", "-e", default="utf-8")
-@click.option("--dialect", "-d", default="excel")
+@cli.command(
+    name="pgexport",
+    help=(
+        "Export a PostgreSQL table into a (possibly compressed) CSV file. Arguments:\n\n"
+        "DATABASE_URI: PostgreSQL database URI to connect to in the format `postgres://user:pass@host:port/dbname`.\n"
+        "TABLE_NAME_OR_QUERY: Source of data to be exported. Can be a table, view, materialized view or a query.\n"
+        "DESTINATION: Output CSV filename (for compression, use the compressed extension)."
+    )
+)
+@click.option("--is-query", "-q", default=None, is_flag=True, help="(DEPRECATED) Flag TABLE_NAME_OR_QUERY as a query")  # TODO: remove (deprecated)
+@click.option("--output-encoding", "-e", default="utf-8", help="Encoding for output CSV")
+@click.option("--dialect", "-d", default="excel", help="Dialect for output CSV")
+@click.option("--quiet", is_flag=True, help="Do not show progress bar")  # TODO: add `-q` as a shortcut after removing `--is-query`
 @click.argument("database_uri", required=True)
-@click.argument("table_name", required=True)
+@click.argument("table_name_or_query", required=True)
 @click.argument("destination", required=True)
 def command_pgexport(
-    is_query, output_encoding, dialect, database_uri, table_name, destination
+    is_query, output_encoding, dialect, quiet, database_uri, table_name_or_query, destination
 ):
-    from rows.utils import ProgressBar, pgexport
-    # TODO: add --quiet
+    import warnings
 
-    if _tqdm_available:
+    from rows.utils import ProgressBar, pgexport
+
+    if is_query is not None and not quiet:
+        warnings.simplefilter("default", DeprecationWarning)
+        warnings.warn(
+            "'--is-query' is deprecated and will be removed in a future version. "
+            "This setting is not needed anymore (rows will automatically detect if it's a query or table/view name).",
+            DeprecationWarning,
+        )
+
+    clean_query = remove_sql_comments(table_name_or_query)
+    first_word = clean_query.lower().split(" ", 1)[0]
+    if first_word not in ("select", "with"):
+        query = '''SELECT * FROM "{}"'''.format(table_name_or_query)
+    else:
+        query = table_name_or_query  # Already a query
+
+    if _tqdm_available and not quiet:
         progress_bar = ProgressBar(prefix="Exporting data", unit="bytes")
         progress_bar_update = progress_bar.update
     else:
@@ -1275,14 +1305,14 @@ def command_pgexport(
             pass
     pgexport(
         database_uri=database_uri,
-        table_name_or_query=table_name,
-        is_query=is_query,
+        table_name_or_query=query,
+        is_query=True,
         filename=destination,
         encoding=output_encoding,
         dialect=dialect,
         callback=progress_bar_update,
     )
-    if _tqdm_available:
+    if _tqdm_available and not quiet:
         progress_bar.close()
 
 
