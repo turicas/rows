@@ -4,7 +4,7 @@ VOLUME /data
 
 RUN apt update && \
     apt upgrade -y && \
-    apt install --no-install-recommends -y adduser ca-certificates git vim && \
+    apt install --no-install-recommends -y adduser ca-certificates git python-is-python3 vim && \
     apt clean
 
 # Create a non-root user

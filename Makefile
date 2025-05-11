@@ -4,7 +4,7 @@ TEST_PY_TARGETS = $(foreach version, $(PYTHON_VERSIONS), test-py$(version))
 BUILD_PY_TARGETS = $(foreach version, $(PYTHON_VERSIONS), build-py$(version))
 
 test-local:
-	coverage run -m pytest $(TEST_ARGS) && coverage report
+	python -m coverage run -m pytest $(TEST_ARGS) && python -m coverage report
 
 test-all: $(TEST_PY_TARGETS)
 	@echo "Running tests for all Python versions"
@@ -15,7 +15,7 @@ build-py%:
 
 test-py%:
 	@echo "Running tests for py$*"
-	@COMPOSE_PROFILES=py$* docker compose run --rm -it py$* bash -c "coverage run -m pytest $(TEST_ARGS) && coverage report"
+	@COMPOSE_PROFILES=py$* docker compose run --rm -it py$* bash -c "python -m coverage run -m pytest $(TEST_ARGS) && python -m coverage report"
 
 py%:
 	@echo "Running Python shell in version py$*"
@@ -34,7 +34,7 @@ clean:
 	find -regex '.*~' -exec rm {} \;
 	rm -rf reg-settings.py MANIFEST dist build *.egg-info rows.1 .tox
 	rm -rf docs-build docs/reference docs/man
-	coverage erase
+	python -m coverage erase
 
 fix-imports:
 	autoflake --in-place --recursive --remove-unused-variables --remove-all-unused-imports .
