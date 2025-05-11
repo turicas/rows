@@ -14,16 +14,9 @@ from __future__ import unicode_literals
 
 import contextlib
 import locale
-import sys
 
 import rows.fields
-from rows.compat import TEXT_TYPE
 
-try:
-    # Force to use all categories in C locale by default
-    locale.setlocale(locale.LC_ALL, "C")
-except locale.Error:
-    pass
 
 @contextlib.contextmanager
 def locale_context(name, category=locale.LC_ALL):
@@ -35,6 +28,9 @@ def locale_context(name, category=locale.LC_ALL):
     - A string with the language and the encoding, like in `"pt_BR.UTF-8"`
     - A tuple with the language and the encoding, like in `("pt_BR", "UTF-8")`
     """
+
+    from rows.compat import TEXT_TYPE
+
     old_setting = old_lang, old_encoding = locale.getlocale()
     if isinstance(name, TEXT_TYPE):
         name = TEXT_TYPE(name)
