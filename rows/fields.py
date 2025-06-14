@@ -182,7 +182,7 @@ class UUIDField(Field):
     @classmethod
     def serialize(cls, value, *args, **kwargs):
         if value is not None:
-            if not isinstance(value, self.TYPE):
+            if not isinstance(value, cls.TYPE):
                 value_error(value, cls)
             else:
                 return TEXT_TYPE(value)

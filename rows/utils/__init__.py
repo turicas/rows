@@ -744,6 +744,7 @@ def download_file(
         # TODO: use pathlib instead
         os.rename(tmp.name, filename)
     else:
+        # TODO: if it's a `Path` instead of `str` this will generate an error
         extension = filename.split(".")[-1].lower().strip()
 
     return Source(
