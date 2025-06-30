@@ -19,7 +19,11 @@ from collections import OrderedDict
 from decimal import Decimal
 from io import BytesIO
 
-import mock
+try:
+    import mock
+except ImportError:
+    from unittest import mock
+
 import pytest
 
 import rows
