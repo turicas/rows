@@ -1120,7 +1120,6 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
     default=DEFAULT_SAMPLE_SIZE,
     help="Number of bytes to read from CSV to define encoding, dialect and field types",
 )
-@click.option("--sample-size", default=DEFAULT_SAMPLE_SIZE)
 @click.argument("source", required=True)
 @click.argument("database_uri", required=True)
 @click.argument("table_name", required=True)
