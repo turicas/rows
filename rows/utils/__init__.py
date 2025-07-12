@@ -1118,6 +1118,7 @@ def align_columns(source, target, fields):
                 "CHAR": "VARCHAR",
                 "SMALLINTEGER": "SMALLINT",
                 "POSITIVESMALLINTEGER": "SMALLINT",
+                "POSITIVEBIGINTEGER": "BIGINT",
                 "POSITIVEINTEGER": "INTEGER",
                 "DATETIME": "TIMESTAMPTZ",
             }.get(col_type, col_type)
