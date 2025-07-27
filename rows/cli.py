@@ -629,13 +629,32 @@ def remove_sql_comments(query):
     return REGEXP_SQL_INLINE_COMMENT.sub("\n", REGEXP_SQL_MULTILINE_COMMENTS.sub("\n", query)).strip()
 
 
+def is_select_query(text):
+    """Check whether a text is a SQL SELECT query, after removing comments
+    >>> is_select_query('SELECT * FROM foo')
+    True
+    >>> is_select_query('WITH a AS (SELECT * FROM foo) SELECT * FROM a')
+    True
+    >>> is_select_query('foo')
+    False
+    """
+    clean_query = remove_sql_comments(text)
+    first_word = clean_query.lower().split(" ", 1)[0].strip()
+    # TODO: there will be cases where it starts with "WITH" but the main query is not "SELECT". Proper parsing will be
+    # needed for those cases
+    return first_word in ("select", "with")
+
+
 def create_complete_query(query, table_names):
-    """Return a complete SQL query - allows user to specify only the part after 'WHERE'"""
-    first_word = remove_sql_comments(query).lower().split(" ", 1)[0]
-    if first_word not in ("select", "with"):
-        return "SELECT * FROM {} WHERE {}".format(", ".join(table_names), query)
-    else:
+    """Return a complete SQL query - allows user to specify only the part after 'WHERE'
+    >>> create_complete_query('SELECT * FROM foo', [])
+    'SELECT * FROM foo'
+    >>> create_complete_query('a > 10', ['foo'])
+    'SELECT * FROM foo WHERE a > 10'
+    """
+    if is_select_query(query):
         return query
+    return "SELECT * FROM {} WHERE {}".format(", ".join(table_names), query)
 
 
 @cli.command(name="query", help="Query a table using SQL")
@@ -1289,12 +1308,10 @@ def command_pgexport(
             DeprecationWarning,
         )
 
-    clean_query = remove_sql_comments(table_name_or_query)
-    first_word = clean_query.lower().split(" ", 1)[0]
-    if first_word not in ("select", "with"):
-        query = '''SELECT * FROM "{}"'''.format(table_name_or_query)
-    else:
+    if is_select_query(table_name_or_query):
         query = table_name_or_query  # Already a query
+    else:
+        query = '''SELECT * FROM "{}"'''.format(table_name_or_query)
 
     if _tqdm_available and not quiet:
         progress_bar = ProgressBar(prefix="Exporting data", unit="bytes")
