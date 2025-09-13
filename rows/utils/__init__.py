@@ -511,7 +511,8 @@ def _download_file_stdlib(
     sample_size=1048576,
     retries=3,
     progress_pattern="Downloading file",
-    user_agent=None
+    user_agent=None,
+    proxies=None,
 ):
     # TODO: add ability to continue download
     import os
@@ -522,6 +523,12 @@ def _download_file_stdlib(
     from rows.version import as_string as rows_version
 
     # TODO: unify with `download_file`
+
+    if proxies is not None:
+        # TODO: implement proxy support
+        import warnings
+
+        warnings.warn("Proxy support is not implemented on stdlib downloader", RuntimeWarning)
 
     if user_agent is None:
         user_agent = "python/rows-{} (Python {})".format(rows_version, PYTHON_VERSION)
@@ -630,7 +637,8 @@ def download_file(
     sample_size=1048576,
     retries=3,
     progress_pattern="Downloading file",
-    user_agent=None
+    user_agent=None,
+    proxies=None,
 ):
     from rows.compat import library_installed
 
@@ -675,6 +683,7 @@ def download_file(
         timeout=timeout,
         stream=True,
         headers={"User-Agent": user_agent},
+        proxies=proxies,
     )
     if not response.ok:
         raise RuntimeError("HTTP response: {}".format(response.status_code))

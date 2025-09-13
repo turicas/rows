@@ -46,6 +46,7 @@ class Downloader(object):
         self, path=None, user_agent=None, continue_paused=True, timeout=10,
         max_tries=5, quiet=False, disable_ipv6=False, check_certificate=True,
     ):
+        # TODO: implement proxy support
         self.path = path
         if self.path is not None and not isinstance(self.path, Path):
             self.path = Path(self.path)
