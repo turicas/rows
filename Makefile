@@ -35,6 +35,7 @@ bash-root-py%:					# Run bash as root inside the container for a specific Python
 	@COMPOSE_PROFILES=py$* docker compose run --rm -itu root py$* bash
 
 clean:							# Clean temporary files
+	rm -f $(TAGS_FILE)
 	find -regex '.*\.pyc' -exec rm {} \;
 	find -regex '.*~' -exec rm {} \;
 	rm -rf reg-settings.py MANIFEST dist build *.egg-info rows.1 .tox
