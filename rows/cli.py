@@ -1273,7 +1273,11 @@ def command_pgimport(
         callback=progress_bar_update,
     )
     if _tqdm_available:
-        progress_bar.description = "{} rows imported".format(import_meta["rows_imported"])
+        rows_imported = import_meta["rows_imported"]
+        plural = ""
+        if rows_imported is not None:
+            plural = "s" if rows_imported != 1 else ""
+        progress_bar.description = "{} row{} imported".format(rows_imported, plural)
         progress_bar.close()
 
 
@@ -1373,7 +1377,11 @@ def command_pg2pg(
         binary=binary,
     )
     if _tqdm_available:
-        progress_bar.description = "{} rows imported".format(import_meta["rows_imported"])
+        rows_imported = import_meta["rows_imported"]
+        plural = ""
+        if rows_imported is not None:
+            plural = "s" if rows_imported != 1 else ""
+        progress_bar.description = "{} row{} imported".format(rows_imported, plural)
         progress_bar.close()
 
 
