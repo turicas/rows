@@ -1,30 +1,32 @@
 -r requirements.txt
 
 # Everything except install_requires
+cached-property
 click
 file-magic; python_version >= '3.0'
+https://github.com/turicas/parquet-python/archive/enhancement/move-to-thriftpy2.zip#egg=parquet
 lxml
 openpyxl
-pymupdf >= 1.16.8; python_version >= '3.7'
-https://github.com/turicas/parquet-python/archive/enhancement/move-to-thriftpy2.zip#egg=parquet
 pdfminer.six == 20191110; python_version == '2.7'
 pdfminer.six == 20201018; python_version == '3.5'
 pdfminer.six == 20221105; python_version == '3.6'
 pdfminer.six == 20221105; python_version == '3.7'
 pdfminer.six; python_version >= '3.8'
+psycopg2-binary
+pymupdf >= 1.16.8; python_version >= '3.7'
 requests
 requests-cache
+tqdm
 xlrd
 xlwt
-cached-property
-psycopg2-binary
-tqdm
 
 # Test and lint tools
 autoflake
 black; python_version >= '3.6'
 coverage
+flake8
 ipdb
+ipython
 isort
 mock; python_version < '3.3'
 pytest
