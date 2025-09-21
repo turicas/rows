@@ -715,10 +715,12 @@ def test_repr_html_stream():
     assert "out of ?" not in html3
 
 
+from collections import OrderedDict
 
 import pytest
-from collections import OrderedDict
-from rows import Table, EagerTable, IncrementalTable, StreamTable, FlexibleTable, fields
+
+from rows import EagerTable, FlexibleTable, Table, fields
+
 
 @pytest.fixture
 def fields_():

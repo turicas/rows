@@ -17,7 +17,7 @@ from itertools import chain
 
 from rows import fields
 from rows.compat import ORDERED_DICT
-from rows.plugins.utils import create_table, is_fobj, is_binary_file
+from rows.plugins.utils import create_table, is_binary_file, is_fobj
 from rows.utils import Source
 
 

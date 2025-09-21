@@ -12,8 +12,6 @@
 
 from __future__ import unicode_literals
 
-import bz2
-import gzip
 try:
     import lzma  # Requires Python >= 3.3
 except ImportError:

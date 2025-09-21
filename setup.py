@@ -12,7 +12,6 @@
 
 from __future__ import unicode_literals
 
-import sys
 from setuptools import find_packages, setup
 
 

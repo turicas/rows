@@ -16,9 +16,8 @@ import tempfile
 
 from cached_property import cached_property
 
-from rows.utils import Source
 from rows.compat import PYTHON_VERSION, TEXT_TYPE
-
+from rows.utils import Source
 
 if PYTHON_VERSION >= (3, 8, 0):
     # `statistics` is available from Python 3.4, but the `mode` function raises an exception if all numbers are
@@ -593,11 +592,9 @@ def group_objects(axis, objects, threshold=None, check_group=object_intercepts):
         threshold = define_threshold(axis, objects)
 
     if axis == "x":
-        get_dimensions = lambda row: (row.x0, row.x1)
         get_ordering = lambda obj: (obj.x0, obj.x1)
         get_other_ordering = lambda obj: (obj.y0, obj.y1)
     elif axis == "y":
-        get_dimensions = lambda row: (row.y0, row.y1)
         get_ordering = lambda obj: (obj.y0, obj.y1)
         get_other_ordering = lambda obj: (obj.x0, obj.x1)
 
@@ -1069,7 +1066,7 @@ def import_from_pdf(
     *args,
     **kwargs
 ):
-    from rows.plugins.utils import create_table, is_fobj, is_binary_file
+    from rows.plugins.utils import create_table, is_binary_file, is_fobj
 
     if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
         raise ValueError("import_from_pdf must not receive a file-like object in text mode")

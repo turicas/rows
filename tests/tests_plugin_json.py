@@ -23,12 +23,10 @@ try:
 except ImportError:
     from unittest import mock
 
-import pytest
-
 import rows
 import tests.utils as utils
-from rows.utils import Source
 from rows.compat import TEXT_TYPE
+from rows.utils import Source
 
 
 class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):

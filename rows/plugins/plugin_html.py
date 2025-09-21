@@ -12,8 +12,8 @@
 
 from __future__ import unicode_literals
 
-from rows.utils import Source
 from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
+from rows.utils import Source
 
 if PYTHON_VERSION < (3, 0, 0):
     from HTMLParser import HTMLParser  # noqa

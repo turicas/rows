@@ -14,9 +14,8 @@ from __future__ import unicode_literals
 
 from io import BufferedReader
 
-from rows.fileio import COMPRESSED_EXTENSIONS, cfopen
 from rows.compat import BINARY_TYPE, DEFAULT_SAMPLE_ROWS, PYTHON_VERSION, TEXT_TYPE
-
+from rows.fileio import COMPRESSED_EXTENSIONS, cfopen
 
 if PYTHON_VERSION < (3, 0, 0):
     def str_repr(string):
@@ -866,7 +865,6 @@ def csv_to_sqlite(
 ):
     "Export a CSV file to SQLite, based on field type detection from samples"
     import csv
-    from itertools import islice
 
     from rows.compat import ORDERED_DICT
     from rows.plugins.plugin_csv import CsvInspector

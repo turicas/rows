@@ -82,11 +82,9 @@ def create_table(
     - `fields` must always be in the same order as the data
     """
     from itertools import chain, islice
-    from os import unlink
-    from pathlib import Path
 
     from rows.compat import ORDERED_DICT, ORDERED_DICTS
-    from rows.fields import TextField, cached_type_deserialize, detect_types, get_items, make_header
+    from rows.fields import TextField, cached_type_deserialize, detect_types, make_header
     from rows.table import Table
 
     table_rows = iter(data)

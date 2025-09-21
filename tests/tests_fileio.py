@@ -12,21 +12,21 @@
 
 from __future__ import unicode_literals
 
-import pytest
-
 import bz2
 import gzip
 import io
 import tempfile
+
+import pytest
+
 try:
     import lzma
 except ImportError:
     lzma = None
 from pathlib import Path
 
-from rows.fileio import cfopen
 from rows.compat import PYTHON_VERSION, TEXT_TYPE
-
+from rows.fileio import cfopen
 
 content = "Álvaro"
 encoding = "iso-8859-1"

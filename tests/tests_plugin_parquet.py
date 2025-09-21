@@ -13,8 +13,8 @@
 from __future__ import unicode_literals
 
 import io
-import unittest
 import tempfile
+import unittest
 from collections import OrderedDict
 from pathlib import Path
 

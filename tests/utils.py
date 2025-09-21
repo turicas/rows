@@ -20,11 +20,10 @@ from collections import OrderedDict
 from decimal import Decimal
 from pathlib import Path
 
-
 import rows.fields as fields
+from rows.compat import TEXT_TYPE
 from rows.fields import slug
 from rows.table import Table
-from rows.compat import TEXT_TYPE
 
 process = None
 try:

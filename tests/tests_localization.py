@@ -17,9 +17,8 @@ import platform
 
 import rows
 import rows.fields
-from rows.localization import locale_context
 from rows.compat import TEXT_TYPE
-
+from rows.localization import locale_context
 
 if platform.system() == "Windows":
     LOCALE_NAME = TEXT_TYPE("ptb_bra")

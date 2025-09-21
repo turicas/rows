@@ -12,6 +12,13 @@
 
 from __future__ import unicode_literals
 
+import os
+import sys
+from pathlib import Path
+
+from rows.compat import DEFAULT_SAMPLE_ROWS, PYTHON_VERSION, TEXT_TYPE, library_installed
+from rows.version import as_string as rows_version
+
 # TODO: define exit codes
 # TODO: move default options to base command
 # TODO: may move all 'destination' to '--output'
@@ -19,17 +26,6 @@ from __future__ import unicode_literals
 # TODO: add option to pass 'create_table' options in command-line (like force
 #       fields)
 
-import os
-import sys
-from pathlib import Path
-
-import rows
-from rows.compat import PYTHON_VERSION
-from rows.fields import make_header, TextField
-from rows.fileio import cfopen
-from rows.plugins.plugin_csv import CsvInspector, fix_file
-from rows.compat import DEFAULT_SAMPLE_ROWS, TEXT_TYPE, library_installed
-from rows.version import as_string as rows_version
 
 if PYTHON_VERSION < (3, 0, 0):
     import warnings

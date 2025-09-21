@@ -13,11 +13,10 @@
 from __future__ import unicode_literals
 
 import csv
-from io import BytesIO, TextIOWrapper, StringIO
+from io import BytesIO, StringIO, TextIOWrapper
 
-from rows.utils import Source
 from rows.compat import BINARY_TYPE, DEFAULT_SAMPLE_ROWS, PYTHON_VERSION, TEXT_TYPE
-
+from rows.utils import Source
 
 PY2 = PYTHON_VERSION < (3, 0, 0)
 

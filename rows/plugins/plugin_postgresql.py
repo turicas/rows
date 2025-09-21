@@ -14,7 +14,6 @@ from __future__ import unicode_literals
 
 import csv
 import io
-import itertools
 import subprocess
 from pathlib import Path
 

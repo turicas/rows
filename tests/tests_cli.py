@@ -15,11 +15,10 @@ from __future__ import unicode_literals
 import csv
 import io
 import os
-import psycopg2
-import sqlite3
 from pathlib import Path
 from textwrap import dedent
 
+import psycopg2
 import pytest
 from click.testing import CliRunner
 

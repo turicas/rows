@@ -25,7 +25,7 @@ PYTHON_VERSION = (sys.version_info.major, sys.version_info.minor, sys.version_in
 PYTHON_IMPLEMENTATION = platform.python_implementation()
 
 if PYTHON_VERSION < (3, 0, 0):
-    TEXT_TYPE = unicode
+    TEXT_TYPE = unicode  # noqa
     BINARY_TYPE = str
 
     def lru_cache(user_func):

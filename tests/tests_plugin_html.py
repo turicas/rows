@@ -19,8 +19,6 @@ from collections import OrderedDict
 from pathlib import Path
 from textwrap import dedent
 
-import pytest
-
 try:
     import mock
 except ImportError:

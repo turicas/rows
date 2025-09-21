@@ -24,8 +24,8 @@ import pytest
 
 import rows
 import tests.utils as utils
-from rows.utils import Source
 from rows.fileio import cfopen
+from rows.utils import Source
 
 ALIAS_IMPORT = rows.import_from_ods  # Lazy function (just aliases)
 

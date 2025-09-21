@@ -17,12 +17,12 @@ from collections import namedtuple
 from operator import itemgetter
 from pathlib import Path
 
-from rows.compat import BINARY_TYPE, ORDERED_DICT, PYTHON_VERSION, TEXT_TYPE
+from rows.compat import ORDERED_DICT, PYTHON_VERSION, TEXT_TYPE
 
 if PYTHON_VERSION < (3, 0, 0):
     from collections import Iterable, MutableSequence, Sized  # noqa
 else:
-    from collections.abc import Iterable, MutableSequence, Sized
+    from collections.abc import Iterable, MutableSequence
 
 
 class Table(MutableSequence):

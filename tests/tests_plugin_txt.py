@@ -28,8 +28,8 @@ import pytest
 
 import rows
 import tests.utils as utils
-from rows.utils import Source
 from rows.compat import TEXT_TYPE
+from rows.utils import Source
 
 ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_txt, rows.export_to_txt  # Lazy functions (just aliases)
 

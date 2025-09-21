@@ -28,8 +28,8 @@ import rows
 import rows.plugins.utils
 import tests.utils as utils
 from rows import fields
-from rows.utils import Source
 from rows.compat import PYTHON_VERSION
+from rows.utils import Source
 from tests.utils import PSQL_FOUND
 
 if PYTHON_VERSION < (3, 0, 0):

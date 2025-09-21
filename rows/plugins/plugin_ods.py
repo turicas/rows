@@ -15,7 +15,8 @@ from __future__ import unicode_literals
 import zipfile
 from decimal import Decimal
 
-from lxml.etree import fromstring as xml_from_string, tostring as xml_to_string
+from lxml.etree import fromstring as xml_from_string
+from lxml.etree import tostring as xml_to_string
 
 from rows.utils import Source
 
@@ -64,7 +65,8 @@ def import_from_ods(
     *args,
     **kwargs
 ):
-    from rows.plugins.utils import create_table, is_fobj, is_binary_file
+    from rows.plugins.utils import create_table, is_binary_file, is_fobj
+
     # TODO: unescape values
 
     if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):

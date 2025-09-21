@@ -13,8 +13,8 @@
 from __future__ import unicode_literals
 
 from rows import fields
-from rows.utils import Source
 from rows.compat import TEXT_TYPE
+from rows.utils import Source
 
 
 def _python_to_xls(field_types):
@@ -232,7 +232,7 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kw
 
     import xlwt
 
-    from rows.plugins.utils import is_fobj, is_binary_file, prepare_to_export
+    from rows.plugins.utils import is_binary_file, is_fobj, prepare_to_export
 
     if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
         raise ValueError("export_to_xls must receive a file-object open in binary mode")

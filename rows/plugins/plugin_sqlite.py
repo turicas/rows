@@ -15,8 +15,8 @@ from __future__ import unicode_literals
 import sqlite3
 from pathlib import Path
 
-from rows.utils import Source
 from rows.compat import BINARY_TYPE, TEXT_TYPE
+from rows.utils import Source
 
 
 def _python_to_sqlite(field_types):
