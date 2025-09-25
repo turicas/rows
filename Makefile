@@ -20,7 +20,7 @@ build-py%:						# Build the container for a specific Python version
 
 test-py%:						# Run tests inside a container for a specific Python version
 	@echo "Running tests for py$*"
-	@COMPOSE_PROFILES=py$* docker compose run --rm -it py$* bash -c "python -m coverage run -m pytest $(TEST_ARGS) && python -m coverage report"
+	@COMPOSE_PROFILES=py$* docker compose run --rm -it py$* bash -c "python -m coverage run -m pytest $(TEST_ARGS) && python -m coverage report --omit 'tests/*'"
 
 py%:							# Run Python shell inside the container for a specific Python version
 	@echo "Running Python shell in version py$*"
