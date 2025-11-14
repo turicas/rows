@@ -99,7 +99,7 @@ def estimate_gzip_uncompressed_size(filename):
     with open(filename, mode="rb") as fobj:
         fobj.seek(-4, 2)
         uncompressed_size = struct.unpack("<I", fobj.read())[0]
-    if compressed_size > uncompressed_size:
+    if compressed_size > 4 * 1024 * 1024 * 1024 or compressed_size > uncompressed_size:
         # If the compressed size is greater than the uncompressed, probably the
         # uncompressed is greater than 4GiB and we try to guess the correct
         # size by adding "1" bits to the left until the new size is greater
@@ -115,7 +115,7 @@ def estimate_gzip_uncompressed_size(filename):
         #   correctly "fill the hole" without reading the whole file.
         i, value = 32, uncompressed_size
         while value <= 2**32 and value < compressed_size:
-            value = (1 << i) ^ uncompressed_size
+            value = (1 << i) | uncompressed_size
             i += 1
         uncompressed_size = value
     return uncompressed_size

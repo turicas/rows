@@ -30,6 +30,8 @@ def _fobj_gz(filename, mode, *args, **kwargs):
 
     return gzip.GzipFile(filename=str(filename), mode=mode, *args, **kwargs)
 
+# TODO: check https://pypi.org/project/xopen/
+
 PY2 = PYTHON_VERSION < (3, 0, 0)
 
 if PY2:
