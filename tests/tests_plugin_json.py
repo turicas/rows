@@ -18,7 +18,11 @@ import tempfile
 import unittest
 from collections import Counter, OrderedDict, defaultdict
 
-import mock
+try:
+    import mock
+except ImportError:
+    from unittest import mock
+
 import pytest
 
 import rows

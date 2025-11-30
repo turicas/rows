@@ -19,7 +19,11 @@ from collections import OrderedDict
 from pathlib import Path
 from textwrap import dedent
 
-import mock
+try:
+    import mock
+except ImportError:
+    from unittest import mock
+
 import pytest
 
 import rows

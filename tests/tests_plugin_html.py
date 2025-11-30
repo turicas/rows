@@ -20,7 +20,11 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
-import mock
+
+try:
+    import mock
+except ImportError:
+    from unittest import mock
 
 import rows
 import rows.plugins.plugin_html

@@ -17,7 +17,11 @@ import tempfile
 import unittest
 from textwrap import dedent
 
-import mock
+try:
+    import mock
+except ImportError:
+    from unittest import mock
+
 from psycopg2 import connect as pgconnect
 
 import rows

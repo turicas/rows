@@ -15,7 +15,11 @@ from __future__ import unicode_literals
 import unittest
 from decimal import Decimal
 
-import mock
+try:
+    import mock
+except ImportError:
+    from unittest import mock
+
 import pytest
 
 import rows

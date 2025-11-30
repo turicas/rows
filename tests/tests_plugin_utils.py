@@ -18,7 +18,10 @@ import types
 import unittest
 from collections import OrderedDict
 
-import mock
+try:
+    import mock
+except ImportError:
+    from unittest import mock
 
 import rows
 import rows.plugins.utils as plugins_utils
