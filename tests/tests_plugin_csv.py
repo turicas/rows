@@ -35,10 +35,7 @@ from rows.utils import Source
 
 def make_csv_data(quote_char, field_delimiter, line_delimiter):
     data = [["field1", "field2", "field3"], ["value1", "value2", "value3"]]
-    lines = [
-        ["{}{}{}".format(quote_char, value, quote_char) for value in line]
-        for line in data
-    ]
+    lines = [["{}{}{}".format(quote_char, value, quote_char) for value in line] for line in data]
     lines = line_delimiter.join([field_delimiter.join(line) for line in data])
     return data, lines
 
@@ -85,9 +82,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_discover_dialect(self, mocked_create_table):
-        data, lines = make_csv_data(
-            quote_char="'", field_delimiter=";", line_delimiter="\r\n"
-        )
+        data, lines = make_csv_data(quote_char="'", field_delimiter=";", line_delimiter="\r\n")
         fobj = io.BytesIO()
         fobj.write(lines.encode("utf-8"))
         fobj.seek(0)
@@ -108,9 +103,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
         data = data.encode("utf-8")
 
         # Should not raise `UnicodeDecodeError`
-        table = rows.import_from_csv(
-            io.BytesIO(data), encoding="utf-8", sample_size=262144
-        )
+        table = rows.import_from_csv(io.BytesIO(data), encoding="utf-8", sample_size=262144)
 
         last_row = table[-1]
         last_column = "b" * 508
@@ -159,9 +152,7 @@ class PluginCsvTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_csv_force_dialect(self, mocked_create_table):
-        data, lines = make_csv_data(
-            quote_char="'", field_delimiter="\t", line_delimiter="\r\n"
-        )
+        data, lines = make_csv_data(quote_char="'", field_delimiter="\t", line_delimiter="\r\n")
         fobj = io.BytesIO()
         fobj.write(lines.encode("utf-8"))
         fobj.seek(0)

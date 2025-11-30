@@ -14,6 +14,7 @@ from __future__ import unicode_literals
 
 from rows.compat import DEFAULT_SAMPLE_ROWS
 
+
 def import_from_dicts(data, samples=DEFAULT_SAMPLE_ROWS, *args, **kwargs):
     """Import data from a iterable of dicts
 
@@ -37,10 +38,7 @@ def import_from_dicts(data, samples=DEFAULT_SAMPLE_ROWS, *args, **kwargs):
         if samples and index == samples:
             break
 
-    data_rows = (
-        [row.get(header, None) for header in headers]
-        for row in chain(cached_rows, data)
-    )
+    data_rows = ([row.get(header, None) for header in headers] for row in chain(cached_rows, data))
 
     kwargs["samples"] = samples
     meta = {"imported_from": "dicts"}

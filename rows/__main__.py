@@ -12,7 +12,6 @@
 
 from __future__ import unicode_literals
 
-
 if __name__ == "__main__":
     from rows.cli import cli
 

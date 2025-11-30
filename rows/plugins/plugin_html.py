@@ -17,6 +17,7 @@ from rows.utils import Source
 
 if PYTHON_VERSION < (3, 0, 0):
     from HTMLParser import HTMLParser  # noqa
+
     unescape = HTMLParser().unescape
 else:
     from html import unescape  # noqa
@@ -61,9 +62,7 @@ def import_from_html(
 
     from rows.plugins.utils import create_table
 
-    source = Source.from_file(
-        filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding
-    )
+    source = Source.from_file(filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding)
 
     html = source.fobj.read()
     if b"<?xml" not in html[:1024] or b"encoding" not in html[: html.find(b"?>") + 2]:
@@ -108,6 +107,7 @@ def import_from_html(
 def export_to_html(table, filename_or_fobj=None, encoding="utf-8", caption=False, *args, **kwargs):
     """Export and return rows.Table data to HTML file."""
     from io import BytesIO
+
     if PYTHON_VERSION < (3, 0, 0):
         from cgi import escape  # noqa
     else:
@@ -167,9 +167,7 @@ def export_to_html(table, filename_or_fobj=None, encoding="utf-8", caption=False
 def _extract_node_text(node):
     """Extract text from a given lxml node."""
 
-    texts = map(
-        TEXT_TYPE.strip, map(TEXT_TYPE, map(unescape, node.xpath(".//text()")))
-    )
+    texts = map(TEXT_TYPE.strip, map(TEXT_TYPE, map(unescape, node.xpath(".//text()"))))
     return " ".join(text for text in texts if text)
 
 
@@ -177,9 +175,7 @@ def count_tables(filename_or_fobj, encoding="utf-8", table_tag="table"):
     """Read a file passed by arg and return your table HTML tag count."""
     from lxml.html import document_fromstring
 
-    source = Source.from_file(
-        filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding
-    )
+    source = Source.from_file(filename_or_fobj, plugin_name="html", mode="rb", encoding=encoding)
     html = source.fobj.read().decode(source.encoding)
     html_tree = document_fromstring(html)
     tables = html_tree.xpath("//{}".format(table_tag))

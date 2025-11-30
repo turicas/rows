@@ -44,8 +44,8 @@ class FieldsTestCase(unittest.TestCase):
         deserialized = "Álvaro".encode("utf-8")
         serialized = b64encode(deserialized).decode("ascii")
 
-        assert type(deserialized) == BINARY_TYPE
-        assert type(serialized) == TEXT_TYPE
+        assert type(deserialized) is BINARY_TYPE
+        assert type(serialized) is TEXT_TYPE
 
         assert fields.BinaryField.TYPE == (bytes,)
         assert fields.BinaryField.serialize(None) == ""
@@ -173,7 +173,7 @@ class FieldsTestCase(unittest.TestCase):
         assert fields.DecimalField.deserialize(None) is None
 
         with rows.locale_context(locale_name):
-            assert TEXT_TYPE == type(fields.DecimalField.serialize(deserialized))
+            assert TEXT_TYPE is type(fields.DecimalField.serialize(deserialized))
             assert fields.DecimalField.serialize(Decimal("4200")) == "4200"
             assert fields.DecimalField.serialize(Decimal("42.0")), "42 == 0"
             assert fields.DecimalField.serialize(Decimal("42000.0")), "42000 == 0"
@@ -304,9 +304,9 @@ class FieldsTestCase(unittest.TestCase):
         assert fields.JSONField.deserialize(serialized) == deserialized
 
     def test_UUIDField(self):
-        with self.assertRaises(ValueError) as exception_context:
+        with self.assertRaises(ValueError):
             fields.UUIDField.deserialize("not an UUID value")
-        with self.assertRaises(ValueError) as exception_context:
+        with self.assertRaises(ValueError):
             # "z" not hex
             fields.UUIDField.deserialize("z" * 32)
 
@@ -405,18 +405,13 @@ class FieldUtilsTestCase(unittest.TestCase):
 
         # first, try values as (`bytes`/`str`)
         expected = {key: fields.BinaryField for key in self.expected.keys()}
-        values = [
-            [b"some binary data" for _ in range(len(self.data[0]))] for __ in range(20)
-        ]
+        values = [[b"some binary data" for _ in range(len(self.data[0]))] for __ in range(20)]
         result = fields.detect_types(self.fields, values)
         self.assertDictEqual(dict(result), expected)
 
         # second, try base64-encoded values (as `str`/`unicode`)
         expected = {key: fields.TextField for key in self.expected.keys()}
-        values = [
-            [b64encode(value.encode("utf-8")).decode("ascii") for value in row]
-            for row in self.data
-        ]
+        values = [[b64encode(value.encode("utf-8")).decode("ascii") for value in row] for row in self.data]
         result = fields.detect_types(self.fields, values)
         self.assertDictEqual(dict(result), expected)
 
@@ -474,10 +469,7 @@ class FieldUtilsTestCase(unittest.TestCase):
         self.assertDictEqual(dict(result), dict(field_types))
 
     def test_detect_types_integer_with_leading_zeroes(self):
-        result = fields.detect_types(
-            ["month", "document"],
-            [["%02d" % x, "%09d" % (x * 1000)] for x in range(1, 13)]
-        )
+        result = fields.detect_types(["month", "document"], [["%02d" % x, "%09d" % (x * 1000)] for x in range(1, 13)])
         expected = {
             "month": fields.IntegerField,
             "document": fields.IntegerField,
@@ -486,6 +478,7 @@ class FieldUtilsTestCase(unittest.TestCase):
 
     def test_type_deserialize_cache(self):
         from rows.fields import _deserialization_error, cached_type_deserialize
+
         fields._deserialization_cache = {}
         len_before = 0
 
@@ -512,9 +505,8 @@ class FieldUtilsTestCase(unittest.TestCase):
             for other_type, other_value in types_values:
                 if type_ == other_type or value == other_value:  # Skip equal types and 0 vs 0.0
                     continue
-                assert (
-                    cached_type_deserialize(type_, value, true_behavior=False) !=
-                    cached_type_deserialize(type_, other_value, true_behavior=False)
+                assert cached_type_deserialize(type_, value, true_behavior=False) != cached_type_deserialize(
+                    type_, other_value, true_behavior=False
                 )
 
 

@@ -33,8 +33,10 @@ encoding = "iso-8859-1"
 content_encoded = content.encode(encoding)
 
 if PYTHON_VERSION < (3, 0, 0):
+
     def gzip_decompress(data):
         return gzip.GzipFile(fileobj=io.BytesIO(data)).read()
+
 else:
     gzip_decompress = gzip.decompress
 
@@ -76,7 +78,10 @@ def assert_cfopen_str_filename_text_content(suffix, decompress):
 
 
 def test_cfopen_no_compression():
-    same_content = lambda data: data
+
+    def same_content(data):
+        return data
+
     assert_cfopen_str_filename_binary_content(suffix="", decompress=same_content)
     assert_cfopen_str_filename_text_content(suffix="", decompress=same_content)
     assert_cfopen_path_filename_binary_content(suffix="", decompress=same_content)

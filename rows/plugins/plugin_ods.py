@@ -56,14 +56,7 @@ def sheet_names(filename_or_fobj):
 
 
 def import_from_ods(
-    filename_or_fobj,
-    index=0,
-    start_row=None,
-    start_column=None,
-    end_row=None,
-    end_column=None,
-    *args,
-    **kwargs
+    filename_or_fobj, index=0, start_row=None, start_column=None, end_row=None, end_column=None, *args, **kwargs
 ):
     from rows.plugins.utils import create_table, is_binary_file, is_fobj
 

@@ -21,7 +21,6 @@ def main():
     input_filename = "../all-field-types.csv"
     output_filename = "../all-field-types.sqlite"
 
-
     field_types = OrderedDict(
         [
             ("bool_column", "INTEGER"),

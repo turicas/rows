@@ -27,9 +27,8 @@ except ImportError:
 import pytest
 
 import rows
-import rows.fields as fields
+from rows import EagerTable, FlexibleTable, Table, fields
 from rows.compat import BINARY_TYPE
-from rows.table import FlexibleTable, Table
 from rows.utils import Source
 
 binary_type_name = BINARY_TYPE.__name__
@@ -37,9 +36,7 @@ binary_type_name = BINARY_TYPE.__name__
 
 class TableTestCase(unittest.TestCase):
     def setUp(self):
-        self.table = Table(
-            fields=OrderedDict([("name", fields.TextField), ("birthdate", fields.DateField)])
-        )
+        self.table = Table(fields=OrderedDict([("name", fields.TextField), ("birthdate", fields.DateField)]))
         self.first_row = {
             "name": "Álvaro Justen",
             "birthdate": datetime.date(1987, 4, 29),
@@ -49,11 +46,7 @@ class TableTestCase(unittest.TestCase):
         self.table.append({"name": "Douglas Adams", "birthdate": "1952-03-11"})
 
     def test_table_init_slug_creation_on_fields(self):
-        table = Table(
-            fields=OrderedDict(
-                [('Query Occurrence"( % ),"First Seen', fields.FloatField)]
-            )
-        )
+        table = Table(fields=OrderedDict([('Query Occurrence"( % ),"First Seen', fields.FloatField)]))
 
         assert "query_occurrence_first_seen" in table.fields
 
@@ -80,26 +73,22 @@ class TableTestCase(unittest.TestCase):
     def test_table_slicing_error(self):
         with self.assertRaises(ValueError) as context_manager:
             self.table[[1]]
-        assert type(context_manager.exception) == ValueError
+        assert type(context_manager.exception) is ValueError
 
     def test_table_insert_row(self):
-        self.table.insert(
-            1, {"name": "Grace Hopper", "birthdate": datetime.date(1909, 12, 9)}
-        )
+        self.table.insert(1, {"name": "Grace Hopper", "birthdate": datetime.date(1909, 12, 9)})
         assert self.table[1].name == "Grace Hopper"
 
     def test_table_append_error(self):
         # TODO: may mock these validations and test only on *Field tests
         with self.assertRaises(ValueError) as context_manager:
-            self.table.append(
-                {"name": "Álvaro Justen".encode("utf-8"), "birthdate": "1987-04-29"}
-            )
-        assert type(context_manager.exception) == ValueError
+            self.table.append({"name": "Álvaro Justen".encode("utf-8"), "birthdate": "1987-04-29"})
+        assert type(context_manager.exception) is ValueError
         assert context_manager.exception.args[0] == "Binary is not supported"
 
         with self.assertRaises(ValueError) as context_manager:
             self.table.append({"name": "Álvaro Justen", "birthdate": "WRONG"})
-        assert type(context_manager.exception) == ValueError
+        assert type(context_manager.exception) is ValueError
         assert "does not match format" in context_manager.exception.args[0]
 
     def test_table_getitem_invalid_type(self):
@@ -234,15 +223,9 @@ class TableTestCase(unittest.TestCase):
         assert len(self.table) == 3  # should not del any row
         assert len(self.table.fields) == len(fields) - 1
 
-        self.assertDictEqual(
-            dict(self.table[0]._asdict()), {"birthdate": datetime.date(1987, 4, 29)}
-        )
-        self.assertDictEqual(
-            dict(self.table[1]._asdict()), {"birthdate": datetime.date(1990, 2, 1)}
-        )
-        self.assertDictEqual(
-            dict(self.table[2]._asdict()), {"birthdate": datetime.date(1952, 3, 11)}
-        )
+        self.assertDictEqual(dict(self.table[0]._asdict()), {"birthdate": datetime.date(1987, 4, 29)})
+        self.assertDictEqual(dict(self.table[1]._asdict()), {"birthdate": datetime.date(1990, 2, 1)})
+        self.assertDictEqual(dict(self.table[2]._asdict()), {"birthdate": datetime.date(1952, 3, 11)})
 
     def test_table_delitem_column_invalid_type(self):
         fields = self.table.fields.copy()
@@ -305,12 +288,8 @@ class TableTestCase(unittest.TestCase):
         assert expected == repr(self.table)
 
     def test_table_add_should_not_iterate_over_rows(self):
-        table1 = Table(
-            fields=OrderedDict([("f1", fields.IntegerField), ("f2", fields.FloatField)])
-        )
-        table2 = Table(
-            fields=OrderedDict([("f1", fields.IntegerField), ("f2", fields.FloatField)])
-        )
+        table1 = Table(fields=OrderedDict([("f1", fields.IntegerField), ("f2", fields.FloatField)]))
+        table2 = Table(fields=OrderedDict([("f1", fields.IntegerField), ("f2", fields.FloatField)]))
         table1._rows = mock.Mock()
         table1._rows.__add__ = mock.Mock()
         table1._rows.__iter__ = mock.Mock()
@@ -334,7 +313,7 @@ class TableTestCase(unittest.TestCase):
             meta={"name": "my table"},
         )
         for i in range(5):
-            table.append({"f1": i, "f2": i ** 2})
+            table.append({"f1": i, "f2": i**2})
 
         result = table._repr_html_()
         expected = (
@@ -393,7 +372,7 @@ class TableTestCase(unittest.TestCase):
             meta={"name": "my table"},
         )
         for i in range(50):
-            table.append({"f1": i, "f2": i ** 2})
+            table.append({"f1": i, "f2": i**2})
 
         result = table._repr_html_()
         expected = (
@@ -581,12 +560,10 @@ class TestFlexibleTable(unittest.TestCase):
         self.table.append({"a": 8687, "b": 834798})
         with self.assertRaises(ValueError) as context_manager:
             self.table[[1]]
-        assert type(context_manager.exception) == ValueError
+        assert type(context_manager.exception) is ValueError
 
     def test_table_iadd(self):
-        table = FlexibleTable(
-            fields=OrderedDict([("f1", fields.IntegerField), ("f2", fields.FloatField)])
-        )
+        table = FlexibleTable(fields=OrderedDict([("f1", fields.IntegerField), ("f2", fields.FloatField)]))
         table.append({"f1": 1, "f2": 2})
         table.append({"f1": 3, "f2": 4})
 
@@ -603,17 +580,13 @@ class TestFlexibleTable(unittest.TestCase):
         assert "name" not in table.meta
         assert table.name == "table1"
 
-        table.meta["source"] = Source(
-            uri=Path("This is THE name.csv"), plugin_name="csv", encoding="utf-8"
-        )
+        table.meta["source"] = Source(uri=Path("This is THE name.csv"), plugin_name="csv", encoding="utf-8")
         assert table.name == "this_is_the_name"
 
     def test_head(self):
-        table = FlexibleTable(
-            fields=OrderedDict([("f1", fields.IntegerField), ("f2", fields.IntegerField)])
-        )
+        table = FlexibleTable(fields=OrderedDict([("f1", fields.IntegerField), ("f2", fields.IntegerField)]))
         for i in range(50):
-            table.append({"f1": i, "f2": i ** 2})
+            table.append({"f1": i, "f2": i**2})
         t2 = table.head()
         assert len(t2) == 10
         t2 = table.head(n=15)
@@ -621,11 +594,9 @@ class TestFlexibleTable(unittest.TestCase):
         assert list(t2) == list(table[:15])
 
     def test_tail(self):
-        table = FlexibleTable(
-            fields=OrderedDict([("f1", fields.IntegerField), ("f2", fields.IntegerField)])
-        )
+        table = FlexibleTable(fields=OrderedDict([("f1", fields.IntegerField), ("f2", fields.IntegerField)]))
         for i in range(50):
-            table.append({"f1": i, "f2": i ** 2})
+            table.append({"f1": i, "f2": i**2})
         t2 = table.tail()
         assert len(t2) == 10
         t2 = table.tail(n=15)
@@ -643,7 +614,7 @@ def test_fields_with_python_keywords():
 def test_replacing_column_must_use_slug():
     table = Table(fields=OrderedDict([(key, fields.IntegerField) for key in ("f1", "f2", "f3")]))
     for i in range(10):
-        table.append({"f1": i, "f2": i * 2, "f3": i ** 2})
+        table.append({"f1": i, "f2": i * 2, "f3": i**2})
     new_values = list(range(10))
     table["F2!!!"] = new_values
     assert table.field_names == ["f1", "f2", "f3"]
@@ -652,15 +623,18 @@ def test_replacing_column_must_use_slug():
 
 def row_source(n):
     for i in range(n):
-        yield [i, random.choice(["Bob", "Álvaro", "Alice"]), i ** 2]
+        yield [i, random.choice(["Bob", "Álvaro", "Alice"]), i**2]
 
 
-@pytest.mark.parametrize("mode,filled", [
-    ("eager", True),
-    ("incremental", False),
-    ("incremental", True),
-    ("stream", None),
-])
+@pytest.mark.parametrize(
+    "mode,filled",
+    [
+        ("eager", True),
+        ("incremental", False),
+        ("incremental", True),
+        ("stream", None),
+    ],
+)
 def test_repr_html_modes(mode, filled):
     table_rows = row_source(25)
     table_fields = OrderedDict([("f1", fields.IntegerField), ("f2", fields.TextField), ("f3", fields.IntegerField)])
@@ -715,19 +689,15 @@ def test_repr_html_stream():
     assert "out of ?" not in html3
 
 
-from collections import OrderedDict
-
-import pytest
-
-from rows import EagerTable, FlexibleTable, Table, fields
-
-
 @pytest.fixture
 def fields_():
-    return OrderedDict([
-        ("name", fields.TextField),
-        ("age", fields.IntegerField),
-    ])
+    return OrderedDict(
+        [
+            ("name", fields.TextField),
+            ("age", fields.IntegerField),
+        ]
+    )
+
 
 @pytest.fixture
 def tuples_data():
@@ -737,6 +707,7 @@ def tuples_data():
         ("Álvaro", 37),
     ]
 
+
 @pytest.fixture
 def dicts_data():
     return [
@@ -745,15 +716,18 @@ def dicts_data():
         {"name": "Álvaro", "age": 37},
     ]
 
+
 def test_eager_iteration(fields_, tuples_data):
     table = Table(fields=fields_, data=tuples_data, mode="eager")
     assert isinstance(table, EagerTable)
     assert [row.name for row in table] == ["Alice", "Bob", "Álvaro"]
 
+
 def test_eager_getitem_setitem(fields_, tuples_data):
     table = Table(fields=fields_, data=tuples_data, mode="eager")
     table[1] = {"name": "João", "age": 99}
     assert table[1].name == "João"
+
 
 def test_eager_slice(fields_, tuples_data):
     table = Table(fields=fields_, data=tuples_data, mode="eager")
@@ -762,15 +736,18 @@ def test_eager_slice(fields_, tuples_data):
     assert isinstance(table2, EagerTable)
     assert len(table2) == 2
 
+
 def test_incremental_iteration(fields_, tuples_data):
     table = Table(fields=fields_, data=iter(tuples_data), mode="incremental")
     data = list(table)
     assert data[2].name == "Álvaro"
 
+
 def test_incremental_getitem(fields_, tuples_data):
     table = Table(fields=fields_, data=iter(tuples_data), mode="incremental")
     assert table[1].name == "Bob"
     assert not table._filled
+
 
 def test_incremental_append_extend(fields_):
     table = Table(fields=fields_, data=[], mode="incremental")
@@ -779,10 +756,12 @@ def test_incremental_append_extend(fields_):
     assert table[0].name == "X"
     assert table[1].name == "Y"
 
+
 def test_stream_iteration(fields_, tuples_data):
     table = Table(fields=fields_, data=iter(tuples_data), mode="stream")
     names = [row.name for row in table]
     assert names == ["Alice", "Bob", "Álvaro"]
+
 
 def test_stream_non_indexable(fields_, tuples_data):
     table = Table(fields=fields_, data=iter(tuples_data), mode="stream")
@@ -792,6 +771,7 @@ def test_stream_non_indexable(fields_, tuples_data):
         table.append({"name": "Z", "age": 9})
     with pytest.raises(TypeError):
         len(table)
+
 
 def test_flexible_dynamic_fields():
     data = [{"a": 1}, {"b": 2}]
@@ -804,6 +784,7 @@ def test_flexible_dynamic_fields():
     assert len(exported[0]) == len(exported[1]) == len(exported[2]) == 3
     assert exported[0][0] == 1
     assert exported[2][2] == 3
+
 
 def test_repr_and_mode(fields_, tuples_data, dicts_data):
     for mode in ("eager", "incremental", "stream", "flexible"):

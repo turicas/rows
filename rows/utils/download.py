@@ -19,7 +19,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from rows.compat import PYTHON_VERSION, TEXT_TYPE
-from rows.utils import subclasses
+from rows.utils import subclasses as list_subclasses
 from rows.version import as_string as rows_version
 
 REGEXP_VERSION = re.compile("([0-9][a-z0-9.+-]+)")
@@ -43,8 +43,15 @@ class Downloader(object):
     version_command = None
 
     def __init__(
-        self, path=None, user_agent=None, continue_paused=True, timeout=10,
-        max_tries=5, quiet=False, disable_ipv6=False, check_certificate=True,
+        self,
+        path=None,
+        user_agent=None,
+        continue_paused=True,
+        timeout=10,
+        max_tries=5,
+        quiet=False,
+        disable_ipv6=False,
+        check_certificate=True,
     ):
         # TODO: implement proxy support
         self.path = path
@@ -62,28 +69,20 @@ class Downloader(object):
         self._user_agent = user_agent
 
         if type(self).get_version() is None:
-            raise NotFoundError(
-                "Command not found: {}".format(self.version_command[0])
-            )
+            raise NotFoundError("Command not found: {}".format(self.version_command[0]))
 
     @property
     def user_agent(self):
         if self._user_agent is None:
             # TODO: implement
-            self._user_agent = "python/rows-{} ({} {})".format(
-                rows_version, self.name, type(self).get_version()
-            )
+            self._user_agent = "python/rows-{} ({} {})".format(rows_version, self.name, type(self).get_version())
         return self._user_agent
 
     @classmethod
     def subclasses(cls, available_only=False):
-        all_classes = {class_.name: class_ for class_ in subclasses(cls)}
+        all_classes = {class_.name: class_ for class_ in list_subclasses(cls)}
         if available_only:
-            all_classes = {
-                name: class_
-                for name, class_ in all_classes.items()
-                if class_.get_version() is not None
-            }
+            all_classes = {name: class_ for name, class_ in all_classes.items() if class_.get_version() is not None}
         return all_classes
 
     @classmethod
@@ -106,11 +105,7 @@ class Downloader(object):
 
     def _get_path_and_filename(self, download):
         current_directory = Path.cwd()
-        save_path = (
-            (current_directory / self.path)
-            if self.path is not None
-            else current_directory
-        )
+        save_path = (current_directory / self.path) if self.path is not None else current_directory
 
         if download.filename is None:
             filename = None
@@ -118,8 +113,10 @@ class Downloader(object):
             filename = download.filename
             if self.path is not None and filename.is_absolute():
                 warnings.warn(
-                    "filename {} cannot be absolute when downloader path is set (will be saved in downloader root path)".format(repr(TEXT_TYPE(filename)))
-                    , RuntimeWarning
+                    "filename {} cannot be absolute when downloader path is set (will be saved in downloader root path)".format(
+                        repr(TEXT_TYPE(filename))
+                    ),
+                    RuntimeWarning,
                 )
                 filename = filename.name
             full_filename = save_path / filename
@@ -248,13 +245,9 @@ class Aria2cDownloader(Downloader):
         if self._continue_paused:  # -c
             parameters.append("--continue")
         if self._max_concurrent_downloads is not None:  # -j
-            parameters.extend(
-                ["--max-concurrent-downloads", TEXT_TYPE(self._max_concurrent_downloads)]
-            )
+            parameters.extend(["--max-concurrent-downloads", TEXT_TYPE(self._max_concurrent_downloads)])
         if self._max_connections_per_download is not None:  # -x
-            parameters.extend(
-                ["--max-connection-per-server", TEXT_TYPE(self._max_connections_per_download)]
-            )
+            parameters.extend(["--max-connection-per-server", TEXT_TYPE(self._max_connections_per_download)])
         if self._split_download_parts is not None:  # -s
             parameters.extend(["--split", TEXT_TYPE(self._split_download_parts)])
         if self._max_tries is not None:
@@ -277,9 +270,7 @@ class Aria2cDownloader(Downloader):
     @property
     def commands(self):
         if self.method == "file":
-            tmp = NamedTemporaryFile(
-                delete=False, prefix="aria2c-download-", suffix=".txt"
-            )
+            tmp = NamedTemporaryFile(delete=False, prefix="aria2c-download-", suffix=".txt")
             with open(tmp.name, mode="w", encoding="utf-8") as output:
                 for url, path, filename in self._aria2c_downloads:
                     data = "{}\n".format(url) + "  dir={}\n".format(TEXT_TYPE(path))
@@ -323,15 +314,15 @@ if __name__ == "__main__":
 
     # TODO: add parameters: continue_paused, connections etc.
     # TODO: add logging
-    subclasses = Downloader.subclasses(available_only=True)
+    downloader_subclasses = Downloader.subclasses(available_only=True)
     parser = argparse.ArgumentParser()
-    parser.add_argument("downloader", choices=list(subclasses.keys()))
+    parser.add_argument("downloader", choices=list(downloader_subclasses.keys()))
     parser.add_argument("output_path")
     parser.add_argument("url", nargs="+")
     args = parser.parse_args()
     output_path = Path(args.output_path)
 
     links = [Download(url=url) for url in args.url]
-    downloader = subclasses[args.downloader](path=args.output_path)
+    downloader = downloader_subclasses[args.downloader](path=args.output_path)
     downloader.add_many(links)
     downloader.run()

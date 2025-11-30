@@ -49,6 +49,7 @@ else:
     TEST_DATABASE_URL = None
 exported_utils_table = list(rows.plugins.utils.prepare_to_export(utils.table))
 
+
 @unittest.skipIf(TEST_DATABASE_URL is None, "postgres service is not running")
 @unittest.skipIf(not PSQL_FOUND, "command psql not installed")
 class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -119,7 +120,10 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_imports(self):
         # Force the plugin to load
-        original_import, original_export = rows.plugins.postgresql.import_from_postgresql, rows.plugins.postgresql.export_to_postgresql
+        original_import, original_export = (
+            rows.plugins.postgresql.import_from_postgresql,
+            rows.plugins.postgresql.export_to_postgresql,
+        )
         assert id(ALIAS_IMPORT) != id(original_import)
         assert id(ALIAS_EXPORT) != id(original_export)
         new_alias_import, new_alias_export = rows.import_from_postgresql, rows.export_to_postgresql
@@ -150,23 +154,17 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
     @mock.patch("rows.plugins.utils.create_table")
     def test_import_from_postgresql_retrieve_desired_data(self, mocked_create_table):
         mocked_create_table.return_value = 42
-        connection, table_name = rows.export_to_postgresql(
-            utils.table, TEST_DATABASE_URL, table_name="rows_2"
-        )
+        connection, table_name = rows.export_to_postgresql(utils.table, TEST_DATABASE_URL, table_name="rows_2")
         assert connection.closed
 
         # import using uri
-        table_1 = rows.import_from_postgresql(
-            TEST_DATABASE_URL, close_connection=True, table_name="rows_2"
-        )
+        rows.import_from_postgresql(TEST_DATABASE_URL, close_connection=True, table_name="rows_2")
         call_args = mocked_create_table.call_args_list[0]
         self.assert_create_table_data(call_args, expected_meta=self.expected_meta)
 
         # import using connection
         connection = pgconnect(TEST_DATABASE_URL)
-        table_2 = rows.import_from_postgresql(
-            connection, close_connection=False, table_name="rows_2"
-        )
+        rows.import_from_postgresql(connection, close_connection=False, table_name="rows_2")
         self.assertFalse(connection.closed)
         connection_type = type(connection)
         connection.close()
@@ -179,14 +177,10 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_postgresql_injection(self):
         with self.assertRaises(ValueError):
-            rows.import_from_postgresql(
-                TEST_DATABASE_URL, table_name=('table1","postgresql_master')
-            )
+            rows.import_from_postgresql(TEST_DATABASE_URL, table_name=('table1","postgresql_master'))
 
         with self.assertRaises(ValueError):
-            rows.export_to_postgresql(
-                utils.table, TEST_DATABASE_URL, table_name='table1", "postgresql_master'
-            )
+            rows.export_to_postgresql(utils.table, TEST_DATABASE_URL, table_name='table1", "postgresql_master')
 
     @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
     def test_export_to_postgresql_uri(self):
@@ -198,9 +192,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
     @unittest.skipIf(PYTHON_VERSION < (3, 0, 0), "psycopg2 on Python2 returns binary, skippging test")
     def test_export_to_postgresql_connection(self):
         connection = pgconnect(TEST_DATABASE_URL)
-        rows.export_to_postgresql(
-            utils.table, connection, close_connection=True, table_name="rows_4"
-        )
+        rows.export_to_postgresql(utils.table, connection, close_connection=True, table_name="rows_4")
 
         table = rows.import_from_postgresql(TEST_DATABASE_URL, table_name="rows_4")
         self.assert_table_equal(table, utils.table)
@@ -212,13 +204,9 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         second_table = utils.table + utils.table
 
         table_names_before = self.get_table_names()
-        rows.export_to_postgresql(
-            first_table, TEST_DATABASE_URL, table_name_format="rows_{index}"
-        )
+        rows.export_to_postgresql(first_table, TEST_DATABASE_URL, table_name_format="rows_{index}")
         table_names_after = self.get_table_names()
-        rows.export_to_postgresql(
-            second_table, TEST_DATABASE_URL, table_name_format="rows_{index}"
-        )
+        rows.export_to_postgresql(second_table, TEST_DATABASE_URL, table_name_format="rows_{index}")
         table_names_final = self.get_table_names()
 
         diff_1 = list(set(table_names_after) - set(table_names_before))
@@ -228,12 +216,8 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         new_table_1 = diff_1[0]
         new_table_2 = diff_2[0]
 
-        result_first_table = rows.import_from_postgresql(
-            TEST_DATABASE_URL, table_name=new_table_1
-        )
-        result_second_table = rows.import_from_postgresql(
-            TEST_DATABASE_URL, table_name=new_table_2
-        )
+        result_first_table = rows.import_from_postgresql(TEST_DATABASE_URL, table_name=new_table_1)
+        result_second_table = rows.import_from_postgresql(TEST_DATABASE_URL, table_name=new_table_2)
         self.assert_table_equal(result_first_table, first_table)
         self.assert_table_equal(result_second_table, second_table)
 
@@ -256,9 +240,7 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         encoding = "iso-8859-15"
         kwargs = {"test": 123, "parameter": 3.14}
         mocked_prepare_to_export.return_value = iter(exported_utils_table)
-        rows.export_to_postgresql(
-            utils.table, TEST_DATABASE_URL, encoding=encoding, table_name="rows_8", **kwargs
-        )
+        rows.export_to_postgresql(utils.table, TEST_DATABASE_URL, encoding=encoding, table_name="rows_8", **kwargs)
         assert mocked_prepare_to_export.called
         assert mocked_prepare_to_export.call_count == 1
         call = mocked_prepare_to_export.call_args

@@ -14,7 +14,6 @@ from __future__ import unicode_literals
 
 from setuptools import find_packages, setup
 
-
 utils_requirements = ["requests", "requests-cache", "tqdm"]
 pdfminer_requirements = [
     "cached-property",
@@ -22,7 +21,7 @@ pdfminer_requirements = [
     "pdfminer.six == 20201018; python_version == '3.5'",
     "pdfminer.six == 20221105; python_version == '3.6'",
     "pdfminer.six == 20221105; python_version == '3.7'",
-    "pdfminer.six; python_version >= '3.8'"
+    "pdfminer.six; python_version >= '3.8'",
 ]
 EXTRA_REQUIREMENTS = {
     "cli": ["click"],

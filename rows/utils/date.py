@@ -89,9 +89,7 @@ def last_month(date, semantic=True):
         # "Semantically" remove one month from the date (even if it means the
         # difference between current date and last is not 30-31 days).
         # Works differently from `next_month`.
-        last_day_last_month = (
-            LAST_DAY[month] if not isleap(year) else LAST_DAY_LEAP[month]
-        )
+        last_day_last_month = LAST_DAY[month] if not isleap(year) else LAST_DAY_LEAP[month]
         day = day if day <= last_day_last_month else last_day_last_month
 
         return datetime.date(year=year, month=month, day=day)
@@ -123,9 +121,7 @@ def next_month(date, semantic=True):
         month = date.month + 1 if date.month < 12 else 1
         day = date.day
 
-        last_day_this_month = (
-            LAST_DAY[date.month] if not isleap(date.year) else LAST_DAY_LEAP[date.month]
-        )
+        last_day_this_month = LAST_DAY[date.month] if not isleap(date.year) else LAST_DAY_LEAP[date.month]
         if date.day == last_day_this_month:
             day = LAST_DAY[month] if not isleap(year) else LAST_DAY_LEAP[month]
 
@@ -133,9 +129,7 @@ def next_month(date, semantic=True):
 
     else:
         # Just add the total number of days the current month has
-        days = (
-            LAST_DAY[date.month] if not isleap(date.year) else LAST_DAY_LEAP[date.month]
-        )
+        days = LAST_DAY[date.month] if not isleap(date.year) else LAST_DAY_LEAP[date.month]
         return date + datetime.timedelta(days=days)
 
 
@@ -191,19 +185,18 @@ def date_range(start, stop, step="daily"):
         next_value = next_func if start < stop else last_func
 
     else:
-        next_value = lambda date: date + step
+
+        def next_value(date):
+            return date + step
+
         if step > datetime.timedelta(days=0):
             check_operation = operator.lt
             if start > stop:
-                raise ValueError(
-                    "start cannot be greater than stop when step is positive"
-                )
+                raise ValueError("start cannot be greater than stop when step is positive")
         else:
             check_operation = operator.gt
             if start < stop:
-                raise ValueError(
-                    "start cannot be lower than stop when step is negative"
-                )
+                raise ValueError("start cannot be lower than stop when step is negative")
 
     current = start
     while check_operation(current, stop):

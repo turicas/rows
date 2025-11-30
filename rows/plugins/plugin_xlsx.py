@@ -83,7 +83,6 @@ def import_from_xlsx(
     """
     from rows.plugins.utils import create_table, is_fobj
 
-
     should_close = True
     if isinstance(filename_or_fobj, Path):
         filename_or_fobj = TEXT_TYPE(filename_or_fobj)
@@ -155,10 +154,7 @@ def _python_to_cell(field_types):
         return value, number_format
 
     def convert_row(row):
-        return [
-            convert_value(field_type, value)
-            for field_type, value in zip(field_types, row)
-        ]
+        return [convert_value(field_type, value) for field_type, value in zip(field_types, row)]
 
     return convert_row
 

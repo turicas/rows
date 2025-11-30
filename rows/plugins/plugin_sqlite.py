@@ -51,10 +51,7 @@ def _python_to_sqlite(field_types):
             return field_type.serialize(value)
 
     def convert_row(row):
-        return [
-            convert_value(field_type, value)
-            for field_type, value in zip(field_types, row)
-        ]
+        return [convert_value(field_type, value) for field_type, value in zip(field_types, row)]
 
     return convert_row
 
@@ -64,11 +61,11 @@ def get_source(filename_or_connection):
     if isinstance(filename_or_connection, (BINARY_TYPE, TEXT_TYPE, Path)):
         connection = sqlite3.connect(filename_or_connection)
         uri = filename_or_connection
-        input_is_uri = should_close = True
+        should_close = True
 
     else:  # already a connection
         connection = filename_or_connection
-        input_is_uri = should_close = False
+        should_close = False
         uri = None
         # Try to get filename inspecting the database
         cursor = connection.cursor()
@@ -91,14 +88,7 @@ def get_source(filename_or_connection):
     return source
 
 
-def import_from_sqlite(
-    filename_or_connection,
-    table_name="table1",
-    query=None,
-    query_args=None,
-    *args,
-    **kwargs
-):
+def import_from_sqlite(filename_or_connection, table_name="table1", query=None, query_args=None, *args, **kwargs):
     """Return a rows.Table with data from SQLite database."""
     from itertools import chain
 
@@ -180,9 +170,7 @@ def export_to_sqlite(
         for field_name, field_type in zip(field_names, field_types)
     ]
     SQL_CREATE_TABLE = 'CREATE TABLE IF NOT EXISTS "{table_name}" ({field_types})'
-    cursor.execute(
-        SQL_CREATE_TABLE.format(table_name=table_name, field_types=", ".join(columns))
-    )
+    cursor.execute(SQL_CREATE_TABLE.format(table_name=table_name, field_types=", ".join(columns)))
 
     SQL_INSERT = 'INSERT INTO "{table_name}" ({field_names}) VALUES ({placeholders})'
     insert_sql = SQL_INSERT.format(

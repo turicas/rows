@@ -25,12 +25,11 @@ from rows.compat import PYTHON_VERSION
 
 ALIAS_IMPORT = rows.import_from_pdf
 
-import rows.plugins.plugin_pdf as pdf
-
+import rows.plugins.plugin_pdf as pdf  # noqa
 
 if PYTHON_VERSION >= (3, 7, 0):
     try:
-        import fitz as pymupdf
+        import fitz as pymupdf  # noqa
 
         pymupdf_imported = True
     except ImportError:
@@ -126,9 +125,7 @@ class PDFTestCase(utils.RowsTestMixIn):
         expected_start = (
             "Boletim de Balneabilidade\nCoordenação de Monitoramento – COMON/DIFIM\nCosta: Salvador\nBoletim N°: 26/2010 / Emitido em: 02/01/1970\nPonto - Código\nLocal da Coleta\nCategoria\nSão Tomé de Paripe - SSA IN 100",
         )
-        reader = rows.plugins.pdf.pdf_to_text(
-            filename, backend=self.backend, page_numbers=(1,)
-        )
+        reader = rows.plugins.pdf.pdf_to_text(filename, backend=self.backend, page_numbers=(1,))
         first_page = next(reader)
         assert first_page.startswith(expected_start)
 
@@ -171,11 +168,8 @@ class HelperFunctionsTestCase(unittest.TestCase):
             pdf.TextObject(x0=11, x1=13, y0=9, y1=10, text="obj8"),
             pdf.TextObject(x0=11, x1=12, y0=10, y1=11, text="obj9"),
         ]
-        objects_by_text = {obj.text: obj for obj in dataset}
         x_groups = pdf.group_objects("x", dataset, threshold=0)
-        groups_text = [
-            sorted([obj.text for obj in group.objects]) for group in x_groups
-        ]
+        groups_text = [sorted([obj.text for obj in group.objects]) for group in x_groups]
         expected_groups_text = [
             sorted(["obj1", "obj2", "obj4", "obj5"]),
             sorted(["obj3", "obj6", "obj7", "obj8", "obj9"]),
@@ -183,9 +177,7 @@ class HelperFunctionsTestCase(unittest.TestCase):
         assert groups_text == expected_groups_text
 
         y_groups = pdf.group_objects("y", dataset, threshold=0)
-        groups_text = [
-            sorted([obj.text for obj in group.objects]) for group in y_groups
-        ]
+        groups_text = [sorted([obj.text for obj in group.objects]) for group in y_groups]
         expected_groups_text = [
             ["obj1"],
             ["obj2", "obj6"],

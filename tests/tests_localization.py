@@ -25,6 +25,7 @@ if platform.system() == "Windows":
 else:
     LOCALE_NAME = "pt_BR.UTF-8"
 
+
 def test_locale_context_present_in_main_namespace():
     assert "locale_context" in dir(rows)
     assert locale_context is rows.locale_context

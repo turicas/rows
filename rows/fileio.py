@@ -16,8 +16,8 @@ import io
 
 from rows.compat import PYTHON_VERSION, TEXT_TYPE
 
-
 COMPRESSED_EXTENSIONS = ("bz2", "gz", "xz")
+
 
 def _fobj_xz(filename, mode, *args, **kwargs):
     import lzma  # noqa
@@ -29,6 +29,7 @@ def _fobj_gz(filename, mode, *args, **kwargs):
     import gzip  # noqa
 
     return gzip.GzipFile(filename=str(filename), mode=mode, *args, **kwargs)
+
 
 # TODO: check https://pypi.org/project/xopen/
 
@@ -47,6 +48,7 @@ if PY2:
             def writable(self):
                 mode = self.mode
                 return "w" in mode or "a" in mode or "+" in mode
+
             def seekable(self):
                 return False
 
@@ -55,15 +57,18 @@ if PY2:
 
         fobj = BZ2FileWrapper(filename=str(filename), mode=mode, *args, **kwargs)
         return fobj
+
 else:
+
     def _fobj_bz2(filename, mode, *args, **kwargs):
         import bz2  # noqa
 
         return bz2.BZ2File(filename=str(filename), mode=mode, *args, **kwargs)
 
 
-def cfopen(file, mode="r", buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None,
-           *args, **kwargs):
+def cfopen(
+    file, mode="r", buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None, *args, **kwargs
+):
     """Compressed-file open - return a compression-aware file object based on file extension
 
     Works with uncompressed files too.
@@ -120,7 +125,7 @@ def cfopen(file, mode="r", buffering=-1, encoding=None, errors=None, newline=Non
                 buffering=buffering,
                 newline=newline,
                 closefd=closefd,
-                opener=opener
+                opener=opener,
             )
     else:
         if extension == "bz2":

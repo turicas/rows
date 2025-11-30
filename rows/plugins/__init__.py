@@ -77,7 +77,9 @@ else:
     pdf = None
 
 if _library_installed("psycopg2"):
-    _define_lazy_module("postgresql", "rows.plugins.plugin_postgresql", ("import_from_postgresql", "export_to_postgresql"))
+    _define_lazy_module(
+        "postgresql", "rows.plugins.plugin_postgresql", ("import_from_postgresql", "export_to_postgresql")
+    )
 else:
     postgresql = None
 

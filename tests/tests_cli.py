@@ -26,18 +26,19 @@ from rows.cli import cli, create_complete_query, remove_sql_comments
 from rows.compat import PYTHON_VERSION, TEXT_TYPE
 from tests.utils import PSQL_FOUND
 
-
 if PYTHON_VERSION < (3, 0, 0):
     from urlparse import urlparse, urlunparse
 else:
     from urllib.parse import urlparse, urlunparse
 
-sample_csv_content = dedent("""
+sample_csv_content = dedent(
+    """
     Name  , Age!
     Alice,30
     Bob,25
     Álvaro,37
-""").strip()
+"""
+).strip()
 tests_data_path = Path(__file__).parent / "data"
 QUERY_WITH_COMMENTS = dedent(
     """
@@ -128,7 +129,8 @@ def test_convert_fields_exclude(runner, tmp_path, sample_csv):
         cli,
         [
             "convert",
-            "--fields-exclude", "age",
+            "--fields-exclude",
+            "age",
             str(sample_csv),
             str(out_file),
         ],
@@ -140,19 +142,29 @@ def test_convert_fields_exclude(runner, tmp_path, sample_csv):
 
 def test_join_two_csvs(runner, tmp_path):
     csv1 = tmp_path / "left.csv"
-    csv1.write_text(dedent("""
+    csv1.write_text(
+        dedent(
+            """
         id,name
         1,Alice
         2,Bob
         3,Álvaro
-    """).strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     csv2 = tmp_path / "right.csv"
-    csv2.write_text(dedent("""
+    csv2.write_text(
+        dedent(
+            """
         id,score
         1,9.5
         2,7.0
         3,10.0
-    """).strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     output_file = tmp_path / "joined.csv"
     result = runner.invoke(
         cli,
@@ -171,16 +183,26 @@ def test_join_two_csvs(runner, tmp_path):
 
 def test_sum_two_csvs(runner, tmp_path):
     csv1 = tmp_path / "part1.csv"
-    csv1.write_text(dedent("""
+    csv1.write_text(
+        dedent(
+            """
         Name   , Age!!
         Alice,30
         Álvaro,37
-    """).strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     csv2 = tmp_path / "part2.csv"
-    csv2.write_text(dedent("""
+    csv2.write_text(
+        dedent(
+            """
         name,age
         Bob,25
-    """).strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     output_file = tmp_path / "total.csv"
     result = runner.invoke(
         cli,
@@ -200,7 +222,8 @@ def test_sum_two_csvs(runner, tmp_path):
 def test_print_command(runner, sample_csv):
     result = runner.invoke(cli, ["print", str(sample_csv)], catch_exceptions=False)
     assert result.exit_code == 0
-    expected = dedent("""
+    expected = dedent(
+        """
         +--------+-----+
         |  name  | age |
         +--------+-----+
@@ -208,22 +231,19 @@ def test_print_command(runner, sample_csv):
         |    Bob |  25 |
         | Álvaro |  37 |
         +--------+-----+
-    """).strip()
+    """
+    ).strip()
     assert result.output.strip() == expected
 
 
 def test_print_fields_exclude_no_frame(runner, sample_csv):
     result = runner.invoke(
         cli,
-        [
-            "print",
-            "--fields-exclude", "age",
-            "--frame-style", "double",
-            str(sample_csv)
-        ],
+        ["print", "--fields-exclude", "age", "--frame-style", "double", str(sample_csv)],
     )
     assert result.exit_code == 0
-    expected = dedent("""
+    expected = dedent(
+        """
         ╔════════╗
         ║  name  ║
         ╠════════╣
@@ -231,7 +251,8 @@ def test_print_fields_exclude_no_frame(runner, sample_csv):
         ║    Bob ║
         ║ Álvaro ║
         ╚════════╝
-    """).strip()
+    """
+    ).strip()
     assert result.output.strip() == expected
 
 
@@ -241,59 +262,70 @@ def test_query_where_clause(runner, sample_csv):
         ["query", "age > 25 AND age < 35", str(sample_csv)],
     )
     assert result.exit_code == 0
-    expected = dedent("""
+    expected = dedent(
+        """
         +-------+-----+
         |  name | age |
         +-------+-----+
         | Alice |  30 |
         +-------+-----+
-    """).strip()
+    """
+    ).strip()
     assert result.output.strip() == expected
 
 
 def test_schema_txt(runner, sample_csv, tmp_path):
     output_file = tmp_path / "schema.txt"
-    result = runner.invoke(
+    _ = runner.invoke(
         cli,
         ["schema", "--format", "txt", str(sample_csv), str(output_file)],
     )
     assert output_file.exists()
     result_data = output_file.read_text(encoding="utf-8")
-    expected = dedent("""
+    expected = dedent(
+        """
         +------------+------------+-------+-----+-----+----------+----------------+------------+------------+---------------------------------+
         | field_name | field_type |  null | min | max | subtype  | decimal_places | max_digits | max_length |             choices             |
         +------------+------------+-------+-----+-----+----------+----------------+------------+------------+---------------------------------+
         |       name |       text | false |     |     |  VARCHAR |                |            |          6 | ["Alice", "Bob", "\\u00c1lvaro"] |
         |        age |    integer | false |  25 |  37 | SMALLINT |                |            |            |                            null |
         +------------+------------+-------+-----+-----+----------+----------------+------------+------------+---------------------------------+
-    """).strip()
+    """
+    ).strip()
     assert result_data.strip() == expected
 
 
 def test_schema_max_samples(runner, tmp_path):
     csvfile = tmp_path / "wrong-types.csv"
-    csvfile.write_text(dedent("""
+    csvfile.write_text(
+        dedent(
+            """
         name,age
         Alice,30
         Bob,25
         Álvaro,37
         Somebody,Not a number
-    """).strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     output_file = tmp_path / "schema.txt"
-    result = runner.invoke(
+    _ = runner.invoke(
         cli,
         ["schema", "--format", "txt", "--samples", "3", str(csvfile), str(output_file)],
     )
     assert output_file.exists()
     result_data = output_file.read_text(encoding="utf-8")
-    expected = dedent("""
+    expected = dedent(
+        """
         +------------+------------+-------+-----+-----+----------+----------------+------------+------------+---------------------------------+
         | field_name | field_type |  null | min | max | subtype  | decimal_places | max_digits | max_length |             choices             |
         +------------+------------+-------+-----+-----+----------+----------------+------------+------------+---------------------------------+
         |       name |       text | false |     |     |  VARCHAR |                |            |          6 | ["Alice", "Bob", "\\u00c1lvaro"] |
         |        age |    integer | false |  25 |  37 | SMALLINT |                |            |            |                            null |
         +------------+------------+-------+-----+-----+----------+----------------+------------+------------+---------------------------------+
-    """).strip()
+    """
+    ).strip()
     assert result_data.strip() == expected
 
 
@@ -303,7 +335,6 @@ def test_schema_csv_detect_all_types(runner, sample_csv):
         ["schema", "--format", "csv", "--exclude-choices", "name", str(sample_csv), "-"],
     )
     assert result.exit_code == 0
-    header = result.output.splitlines()[0]
     expected = [
         {
             "field_name": "name",
@@ -328,7 +359,7 @@ def test_schema_csv_detect_all_types(runner, sample_csv):
             "max_digits": "",
             "max_length": "",
             "choices": "",
-        }
+        },
     ]
     assert list(csv.DictReader(io.StringIO(result.output))) == expected
 
@@ -336,7 +367,8 @@ def test_schema_csv_detect_all_types(runner, sample_csv):
 def test_csv_inspect_encoding(runner, sample_csv, sample_csv_iso_885915):
     result = runner.invoke(cli, ["csv-inspect", str(sample_csv)])
     assert result.exit_code == 0
-    expected = dedent("""
+    expected = dedent(
+        """
         encoding = 'utf-8'
         dialect.delimiter = ','
         dialect.doublequote = True
@@ -346,7 +378,8 @@ def test_csv_inspect_encoding(runner, sample_csv, sample_csv_iso_885915):
         dialect.quoting = csv.QUOTE_MINIMAL
         dialect.skipinitialspace = True
         dialect.strict = False
-    """).strip()
+    """
+    ).strip()
     # We don't test encoding here since the detection could go wrong (needs to enhance the encoding detection part)
     encoding_line = result.output.strip().splitlines()[0]
     assert encoding_line.startswith("encoding = ")
@@ -363,11 +396,16 @@ def test_csv_inspect_encoding(runner, sample_csv, sample_csv_iso_885915):
 def test_csv_fix_basic(runner, tmp_path):
     # TODO: test csv with more empty fields (only in header) and other dirty cases
     bad_csv = tmp_path / "bad.csv"
-    bad_csv.write_text(dedent('''
+    bad_csv.write_text(
+        dedent(
+            """
         Name  , Age!
         Alice,30
         Bob,25
-    ''').strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     fixed_csv = tmp_path / "fixed.csv"
     result = runner.invoke(
         cli,
@@ -381,7 +419,6 @@ def test_csv_fix_basic(runner, tmp_path):
         {"name": "Bob", "age": "25"},
     ]
     assert expected == data
-
 
 
 def test_csv_to_sqlite_and_back(runner, tmp_path, sample_csv):
@@ -411,14 +448,24 @@ def test_csv_to_sqlite_and_back(runner, tmp_path, sample_csv):
 def test_csv_merge(runner, tmp_path):
     a = tmp_path / "a.csv"
     b = tmp_path / "b.csv"
-    a.write_text(dedent("""
+    a.write_text(
+        dedent(
+            """
         id,name
         1,Alice
-    """).strip(), encoding="utf-8")
-    b.write_text(dedent("""
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
+    b.write_text(
+        dedent(
+            """
         id,score
         1,10
-    """).strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     merged = tmp_path / "merged.csv"
     result = runner.invoke(
         cli,
@@ -437,23 +484,28 @@ def test_csv_merge(runner, tmp_path):
 def test_csv_merge_no_strip(runner, tmp_path):
     a = tmp_path / "a.csv"
     b = tmp_path / "b.csv"
-    a.write_text(dedent("""
+    a.write_text(
+        dedent(
+            """
         id , txt
         1 ,"  foo"
-    """).strip(), encoding="utf-8")
-    b.write_text(dedent("""
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
+    b.write_text(
+        dedent(
+            """
         id , txt
         1 ,"  bar"
-    """).strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     merged = tmp_path / "merged.csv"
     result = runner.invoke(
         cli,
-        [
-            "csv-merge",
-            "--no-strip",
-            "--no-remove-empty-lines",
-            str(a), str(b), str(merged)
-        ],
+        ["csv-merge", "--no-strip", "--no-remove-empty-lines", str(a), str(b), str(merged)],
     )
     assert result.exit_code == 0
     expected = [
@@ -462,13 +514,19 @@ def test_csv_merge_no_strip(runner, tmp_path):
     ]
     assert read_csv(merged) == expected
 
+
 def test_csv_clean(tmp_path, runner):
     dirty = tmp_path / "dirty.csv"
-    dirty.write_text(dedent("""
+    dirty.write_text(
+        dedent(
+            """
          id ,name ,
         1 , Alice ,
 
-    """).strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     cleaned = tmp_path / "cleaned.csv"
     result = runner.invoke(
         cli,
@@ -482,11 +540,16 @@ def test_csv_clean(tmp_path, runner):
 
 def test_csv_clean_in_place(tmp_path, runner):
     dirty = tmp_path / "dirty.csv"
-    dirty.write_text(dedent("""
+    dirty.write_text(
+        dedent(
+            """
          id ,name ,
         1 , Alice ,
 
-    """).strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     result = runner.invoke(cli, ["csv-clean", "--in-place", str(dirty)])
     assert result.exit_code == 0, result.output
     expected = [{"id": "1", "name": "Alice"}]
@@ -501,7 +564,9 @@ def test_csv_row_count(runner, sample_csv):
 
 def test_csv_split(runner, tmp_path):
     csvfile = tmp_path / "big.csv"
-    csvfile.write_text(dedent("""
+    csvfile.write_text(
+        dedent(
+            """
         id
         0
         1
@@ -513,7 +578,10 @@ def test_csv_split(runner, tmp_path):
         7
         8
         9
-    """).strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     result = runner.invoke(cli, ["csv-split", str(csvfile), "3"])
     assert result.exit_code == 0
     parts = sorted(tmp_path.glob("big-*.csv"))
@@ -526,16 +594,20 @@ def test_csv_split(runner, tmp_path):
 
 def test_csv_split_with_pattern(runner, tmp_path):
     csvfile = tmp_path / "data.csv"
-    csvfile.write_text(dedent("""
+    csvfile.write_text(
+        dedent(
+            """
         id
         0
         1
         2
         3
-    """).strip(), encoding="utf-8")
+    """
+        ).strip(),
+        encoding="utf-8",
+    )
     result = runner.invoke(
-        cli,
-        ["csv-split", "--destination-pattern", str(tmp_path / "part-{part:02d}.csv"), str(csvfile), "2"]
+        cli, ["csv-split", "--destination-pattern", str(tmp_path / "part-{part:02d}.csv"), str(csvfile), "2"]
     )
     assert result.exit_code == 0
     parts = sorted([str(filename) for filename in tmp_path.glob("part-*.csv")])

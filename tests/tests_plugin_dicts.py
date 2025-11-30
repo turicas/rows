@@ -27,6 +27,7 @@ import tests.utils as utils
 
 ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_dicts, rows.export_to_dicts  # Lazy functions (just aliases)
 
+
 class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = "dicts"
@@ -75,14 +76,14 @@ class PluginDictTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert table[0].name == "Álvaro"
         assert table[0].ids == "123"
         assert table[0].number == 3
-        assert table[0].other == None
+        assert table[0].other is None
         assert table[1].name == "Test"
         assert table[1].ids == "456"
-        assert table[1].number == None
-        assert table[1].other == None
+        assert table[1].number is None
+        assert table[1].other is None
         assert table[2].name == "Python"
         assert table[2].ids == "123, 456"
-        assert table[2].number == None
+        assert table[2].number is None
         assert table[2].other == 3.14
 
     def test_import_from_dicts_accepts_generator(self):

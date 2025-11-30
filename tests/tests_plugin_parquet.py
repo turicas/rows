@@ -27,9 +27,8 @@ import pytest
 
 import rows
 
-
 try:
-    import parquet
+    import parquet  # noqa
 
     parquet_imported = True
 except ImportError:

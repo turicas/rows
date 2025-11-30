@@ -79,8 +79,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_import_from_xhtml(self):
         fobj = io.BytesIO(
-            b'<?xml version="1.0" encoding="UTF-8"?>'
-            b"<table> <tr><td>f1</td></tr> <tr><td>42</td></tr> </table>"
+            b'<?xml version="1.0" encoding="UTF-8"?>' b"<table> <tr><td>f1</td></tr> <tr><td>42</td></tr> </table>"
         )
         table = rows.import_from_html(fobj, encoding=self.encoding)
         assert table.field_names == ["f1"]
@@ -315,15 +314,14 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         </html>
         """
         ).encode("utf-8")
-        table = rows.import_from_html(
-            io.BytesIO(html), encoding="utf-8", preserve_html=True
-        )
-        table2 = rows.import_from_html(
-            io.BytesIO(html), encoding="utf-8", preserve_html=False
-        )
-        assert table[0].f1 == "<i>r0f1</i>"
-        assert table[0].f2 == "<i>r0f2</i>"
-        assert table[0].f3 == "<i>r0f3</i>"
+        table_1 = rows.import_from_html(io.BytesIO(html), encoding="utf-8", preserve_html=True)
+        table_2 = rows.import_from_html(io.BytesIO(html), encoding="utf-8", preserve_html=False)
+        assert table_1[0].f1 == "<i>r0f1</i>"
+        assert table_1[0].f2 == "<i>r0f2</i>"
+        assert table_1[0].f3 == "<i>r0f3</i>"
+        assert table_2[0].f1 == "r0f1"
+        assert table_2[0].f2 == "r0f2"
+        assert table_2[0].f3 == "r0f3"
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_preserve_html_and_not_skip_header(self, mocked_create_table):
@@ -331,7 +329,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         # If `import_from_html` needs to identify field names, then it
         # should not preserve HTML inside first row
-        table_1 = rows.import_from_html(filename, index=1, preserve_html=True)
+        _ = rows.import_from_html(filename, index=1, preserve_html=True)
         call_args = mocked_create_table.call_args_list.pop()
         data = list(call_args[0][0])
         kwargs = call_args[1]
@@ -355,9 +353,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 ("fourth", rows.fields.TextField),
             ]
         )
-        table_2 = rows.import_from_html(
-            filename, index=1, fields=fields, preserve_html=True, skip_header=False
-        )
+        _ = rows.import_from_html(filename, index=1, fields=fields, preserve_html=True, skip_header=False)
         call_args = mocked_create_table.call_args_list.pop()
         data = list(call_args[0][0])
         kwargs = call_args[1]
@@ -423,9 +419,7 @@ class PluginHtmlTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self.assert_table_equal(table, table2)
 
     def test_export_to_html_unescaped_content(self):
-        table = rows.Table(
-            fields=OrderedDict([("unescaped_content", rows.fields.TextField)])
-        )
+        table = rows.Table(fields=OrderedDict([("unescaped_content", rows.fields.TextField)]))
         table.append({"unescaped_content": "<&>"})
         output = rows.export_to_html(table)
         assert b"<td> &lt;&amp;&gt; </td>" in output

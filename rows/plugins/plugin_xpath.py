@@ -37,13 +37,7 @@ def _get_row_data(fields_xpath):
         for field_name, field_xpath in fields:
             result = row.xpath(field_xpath)
             if result:
-                result = " ".join(
-                    text
-                    for text in map(
-                        TEXT_TYPE.strip, map(TEXT_TYPE, map(unescape, result))
-                    )
-                    if text
-                )
+                result = " ".join(text for text in map(TEXT_TYPE.strip, map(TEXT_TYPE, map(unescape, result))) if text)
             else:
                 result = None
             data.append(result)

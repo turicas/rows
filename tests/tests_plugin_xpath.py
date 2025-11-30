@@ -38,9 +38,7 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
     expected_data = "tests/data/ecuador-medios-radiodifusoras.csv"
 
     def setUp(self):
-        rows_xpath = (
-            '//*[@class="entry-container"]/*[@class="row-fluid"]/*[@class="span6"]'
-        )
+        rows_xpath = '//*[@class="entry-container"]/*[@class="row-fluid"]/*[@class="span6"]'
         fields_xpath = OrderedDict(
             [
                 ("url", ".//h2/a/@href"),
@@ -73,7 +71,7 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
         fobj = temp.file
-        fobj2 = rows.export_to_csv(table, fobj)
+        rows.export_to_csv(table, fobj)
         fobj.seek(0)
         table = rows.import_from_csv(fobj)
         self.assert_table_equal(table, self.expected_table)
@@ -96,7 +94,9 @@ class PluginXPathTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_import_from_xpath_fobj_binary_without_encoding(self):
         with open(self.filename, mode="rb") as fobj:
-            with pytest.raises(ValueError, match="import_from_xpath must receive an encoding when file is in binary mode"):
+            with pytest.raises(
+                ValueError, match="import_from_xpath must receive an encoding when file is in binary mode"
+            ):
                 rows.import_from_xpath(fobj, encoding=None, **self.kwargs)
 
     def test_import_from_xpath_fobj_text(self):

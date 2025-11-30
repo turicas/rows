@@ -138,7 +138,7 @@ class LazyGenerator(object):
         yield ["number", "number_sq", "number_double"]
         for number in range(self.max_number):
             self.last = number
-            yield [self.last, self.last ** 2, self.last * 2]
+            yield [self.last, self.last**2, self.last * 2]
 
 
 class LazyDictGenerator(LazyGenerator):
@@ -146,7 +146,7 @@ class LazyDictGenerator(LazyGenerator):
         header = ("number", "number_sq", "number_double")
         for number in range(self.max_number):
             self.last = number
-            data = (self.last, self.last ** 2, self.last * 2)
+            data = (self.last, self.last**2, self.last * 2)
             yield dict(zip(header, data))
 
 
@@ -181,9 +181,7 @@ class RowsTestMixIn(object):
                 value = first_row[field_name]
                 expected_value = second_row[field_name]
                 if field_name in override_fields:
-                    expected_value = override_fields[field_name].deserialize(
-                        expected_value
-                    )
+                    expected_value = override_fields[field_name].deserialize(expected_value)
                 if float not in (type(value), type(expected_value)):
                     assert value == expected_value
                 else:
@@ -196,9 +194,7 @@ class RowsTestMixIn(object):
             second = fobj.read()
         assert first == second
 
-    def assert_create_table_data(
-        self, call_args, field_ordering=True, filename=None, expected_meta=None
-    ):
+    def assert_create_table_data(self, call_args, field_ordering=True, filename=None, expected_meta=None):
 
         if filename is None and getattr(self, "name", None):
             filename = self.filename
@@ -206,9 +202,7 @@ class RowsTestMixIn(object):
         if expected_meta is None:
             expected_meta = {
                 "imported_from": self.plugin_name,
-                "name": slug(os.path.splitext(Path(filename).name)[0])
-                if filename
-                else "table1",
+                "name": slug(os.path.splitext(Path(filename).name)[0]) if filename else "table1",
             }
         else:
             expected_meta = expected_meta.copy()
@@ -232,9 +226,7 @@ class RowsTestMixIn(object):
 
         self.assertDictEqual(meta, expected_meta)
         del kwargs["meta"]
-        self.assert_table_data(
-            call_args[0][0], args=[], kwargs=kwargs, field_ordering=field_ordering
-        )
+        self.assert_table_data(call_args[0][0], args=[], kwargs=kwargs, field_ordering=field_ordering)
 
     def assert_table_data(self, data, args, kwargs, field_ordering):
         data = list(data)
@@ -246,18 +238,14 @@ class RowsTestMixIn(object):
                 for column_index, value in enumerate(row):
                     field_name = FIELD_NAMES[column_index]
                     expected_value = EXPECTED_ROWS[row_index][field_name]
-                    self.field_assert(
-                        field_name, expected_value, value, *args, **kwargs
-                    )
+                    self.field_assert(field_name, expected_value, value, *args, **kwargs)
         else:
             assert set(data[0]) == set(FIELD_NAMES)
             for row_index, row in enumerate(data[1:]):
                 for column_index, value in enumerate(row):
                     field_name = data[0][column_index]
                     expected_value = EXPECTED_ROWS[row_index][field_name]
-                    self.field_assert(
-                        field_name, expected_value, value, *args, **kwargs
-                    )
+                    self.field_assert(field_name, expected_value, value, *args, **kwargs)
 
     # Fields asserts: input values we expect from plugins
 
@@ -298,7 +286,7 @@ class RowsTestMixIn(object):
     def assert_FloatField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
-        elif type(value) != type(expected_value):
+        elif type(value) is not type(expected_value):
             assert TEXT_TYPE(value) == TEXT_TYPE(expected_value)
         else:
             self.assertAlmostEqual(expected_value, value, places=5)
@@ -346,10 +334,7 @@ class RowsTestMixIn(object):
     def assert_DatetimeField(self, expected_value, value, *args, **kwargs):
         if expected_value is None:
             assert value is None or value.lower() in NONE_VALUES
-        elif (
-            type(value) is datetime.datetime
-            and type(expected_value) is datetime.datetime
-        ):
+        elif type(value) is datetime.datetime and type(expected_value) is datetime.datetime:
             # if both types are datetime, check delta
             # XLSX plugin has not a good precision and will change milliseconds
             delta_1 = expected_value - value

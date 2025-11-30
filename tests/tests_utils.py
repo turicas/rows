@@ -64,7 +64,7 @@ class UtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         result = rows.utils.local_file(temp.name)
         assert result.uri == temp.name
         self.assert_encoding(result.encoding, encoding)
-        assert result.should_delete == False
+        assert not result.should_delete
 
 
 class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -118,12 +118,14 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_generate_schema_txt_choices(self):
         table = self._create_table()
         export_fields = list(table.fields.keys())
-        result = rows.utils.generate_schema(table=table, export_fields=export_fields, output_format="txt", max_choices=10)
+        result = rows.utils.generate_schema(
+            table=table, export_fields=export_fields, output_format="txt", max_choices=10
+        )
         lines = result.strip().splitlines()
-        assert 'choices' in lines[1]
+        assert "choices" in lines[1]
         selected_line = None
         for line in lines:
-            if ' unicode_column |' in line:
+            if " unicode_column |" in line:
                 selected_line = line
                 break
         assert selected_line is not None
@@ -234,9 +236,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             +-------------+------------+-------+-----+-----+---------+----------------+------------+------------+---------+
         """
         )
-        self.assert_generate_schema(
-            "txt", expected, export_fields=["bool_column", "json_column"]
-        )
+        self.assert_generate_schema("txt", expected, export_fields=["bool_column", "json_column"])
 
         expected = dedent(
             """
@@ -246,9 +246,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         );
         """
         )
-        self.assert_generate_schema(
-            "sql", expected, export_fields=["bool_column", "json_column"]
-        )
+        self.assert_generate_schema("sql", expected, export_fields=["bool_column", "json_column"])
 
         expected = dedent(
             """
@@ -260,9 +258,7 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
             json_column = models.JSONField(null=False, blank=False)
         """
         )
-        self.assert_generate_schema(
-            "django", expected, export_fields=["bool_column", "json_column"]
-        )
+        self.assert_generate_schema("django", expected, export_fields=["bool_column", "json_column"])
 
     def test_load_schema(self):
         temp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
@@ -342,14 +338,9 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
 class PgUtilsTestCase(unittest.TestCase):
     def test_pg_create_table_sql(self):
-        schema = OrderedDict(
-            [("id", rows.fields.IntegerField), ("name", rows.fields.TextField)]
-        )
+        schema = OrderedDict([("id", rows.fields.IntegerField), ("name", rows.fields.TextField)])
         sql = rows.utils.pg_create_table_sql(schema, "testtable")
-        assert (
-            sql
-            == """CREATE TABLE IF NOT EXISTS "testtable" ("id" BIGINT, "name" TEXT)"""
-        )
+        assert sql == """CREATE TABLE IF NOT EXISTS "testtable" ("id" BIGINT, "name" TEXT)"""
 
 
 def test_scale_number():
