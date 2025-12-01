@@ -13,11 +13,10 @@
 from __future__ import unicode_literals
 
 import csv
-from io import BytesIO, TextIOWrapper, StringIO
+from io import BytesIO, StringIO, TextIOWrapper
 
-from rows.utils import Source
 from rows.compat import BINARY_TYPE, DEFAULT_SAMPLE_ROWS, PYTHON_VERSION, TEXT_TYPE
-
+from rows.utils import Source
 
 PY2 = PYTHON_VERSION < (3, 0, 0)
 
@@ -60,6 +59,7 @@ if PY2:
 
         fix_dialect(dialect)
         return dialect
+
 else:
     csv_reader = csv.reader
 
@@ -149,7 +149,11 @@ def fix_file(csv_reader, csv_writer, logger=None):
             if len(row) > 1:
                 tmp += row[1:]
             if logger is not None:
-                logger.warning("Merging last row ({} cols) with current one ({} cols) - new row has {} cols.".format(len(last_row), len(row), len(tmp)))
+                logger.warning(
+                    "Merging last row ({} cols) with current one ({} cols) - new row has {} cols.".format(
+                        len(last_row), len(row), len(tmp)
+                    )
+                )
             row, last_row = tmp, None
         if len(row) != n_col:
             if logger is not None:
@@ -180,14 +184,7 @@ def read_sample(fobj, sample):
     return data
 
 
-def import_from_csv(
-    filename_or_fobj,
-    encoding="utf-8",
-    dialect=None,
-    sample_size=262144,
-    *args,
-    **kwargs
-):
+def import_from_csv(filename_or_fobj, encoding="utf-8", dialect=None, sample_size=262144, *args, **kwargs):
     """Import data from a CSV file (automatically detects dialect).
 
     If a file-like object is provided it MUST be in binary mode, like in
@@ -215,14 +212,7 @@ def import_from_csv(
 
 
 def export_to_csv(
-    table,
-    filename_or_fobj=None,
-    encoding="utf-8",
-    dialect=csv.excel,
-    batch_size=100,
-    callback=None,
-    *args,
-    **kwargs
+    table, filename_or_fobj=None, encoding="utf-8", dialect=csv.excel, batch_size=100, callback=None, *args, **kwargs
 ):
     """Export a `rows.Table` to a CSV file.
 
@@ -233,6 +223,7 @@ def export_to_csv(
     contents.
     """
     from rows.plugins.utils import ipartition, is_binary_file, is_fobj, serialize
+
     # TODO: will work only if table.fields is OrderedDict
     # TODO: should use fobj? What about creating a method like json.dumps?
 
@@ -295,7 +286,12 @@ def export_to_csv(
 
 class CsvInspector(object):
     def __init__(
-        self, filename, encoding=None, dialect=None, schema=None, chunk_size=1 * 1024 * 1024,
+        self,
+        filename,
+        encoding=None,
+        dialect=None,
+        schema=None,
+        chunk_size=1 * 1024 * 1024,
         max_samples=DEFAULT_SAMPLE_ROWS,
     ):
         self.filename = filename

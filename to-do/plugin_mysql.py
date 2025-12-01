@@ -39,11 +39,7 @@ MYSQL_TYPE = {
     bool: "BOOL",
 }
 # 'BOOL' on MySQL is a shortcut to TINYINT(1)
-MYSQLDB_TYPE = {
-    getattr(MySQLdb.FIELD_TYPE, x): x
-    for x in dir(MySQLdb.FIELD_TYPE)
-    if not x.startswith("_")
-}
+MYSQLDB_TYPE = {getattr(MySQLdb.FIELD_TYPE, x): x for x in dir(MySQLdb.FIELD_TYPE) if not x.startswith("_")}
 MYSQLDB_TO_PYTHON = {
     "ENUM": str,
     "STRING": str,
@@ -111,9 +107,7 @@ def import_from_mysql(connection_string, limit=None, order_by=None, query=""):
     cursor.execute(sql)
     column_info = [(x[0], x[1]) for x in cursor.description]
     table = Table(fields=[x[0] for x in cursor.description])
-    table.types = {
-        name: MYSQLDB_TO_PYTHON[MYSQLDB_TYPE[type_]] for name, type_ in column_info
-    }
+    table.types = {name: MYSQLDB_TO_PYTHON[MYSQLDB_TYPE[type_]] for name, type_ in column_info}
     table_rows = [list(row) for row in cursor.fetchall()]
 
     encoding = connection.character_set_name()
@@ -144,12 +138,8 @@ def export_to_mysql(
     fields, types = table.fields, table.types
     field_slugs = [slug(field) for field in fields]
     field_types = [MYSQL_TYPE[types[field]] for field in fields]
-    columns_definition = [
-        "{} {}".format(field, type_) for field, type_ in zip(field_slugs, field_types)
-    ]
-    sql = "CREATE TABLE IF NOT EXISTS {} ({})".format(
-        table_name, ", ".join(columns_definition)
-    )
+    columns_definition = ["{} {}".format(field, type_) for field, type_ in zip(field_slugs, field_types)]
+    sql = "CREATE TABLE IF NOT EXISTS {} ({})".format(table_name, ", ".join(columns_definition))
     cursor.execute(sql)
 
     # Insert items
@@ -158,9 +148,7 @@ def export_to_mysql(
     #                for field in fields]
     # TODO: fix this string/formatting problem
     placeholders = ["%s" for field in fields]
-    sql = "INSERT INTO {} ({}) VALUES ({})".format(
-        table_name, columns, ", ".join(placeholders)
-    )
+    sql = "INSERT INTO {} ({}) VALUES ({})".format(table_name, columns, ", ".join(placeholders))
 
     total = last_commit = last_callback = 0
     for rows in ipartition(iter(table), batch_size):

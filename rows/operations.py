@@ -35,7 +35,9 @@ def join(keys, tables, ignore_repeated_fields=False):
         if table_index == 0:
             selected_field_names.extend([(table_index, field_name) for field_name in table.field_names])
         elif not ignore_repeated_fields:
-            selected_field_names.extend([(table_index, field_name) for field_name in table.field_names if field_name not in keys])
+            selected_field_names.extend(
+                [(table_index, field_name) for field_name in table.field_names if field_name not in keys]
+            )
         else:
             current_field_names = [field_name for _, field_name in selected_field_names]
             selected_field_names.extend(
@@ -69,10 +71,12 @@ def join(keys, tables, ignore_repeated_fields=False):
             continue
         for row_ids in product(*(rows_by_table[i] for i in range(n_tables))):
             tuples.append(
-                tuple([
-                    getattr(tables[table_index][row_ids[table_index]], field_name)
-                    for table_index, field_name in selected_field_names
-                ])
+                tuple(
+                    [
+                        getattr(tables[table_index][row_ids[table_index]], field_name)
+                        for table_index, field_name in selected_field_names
+                    ]
+                )
             )
     return create_table(data=tuples, fields=fields, skip_header=False, mode="eager")
 

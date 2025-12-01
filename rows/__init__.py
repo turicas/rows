@@ -16,7 +16,7 @@ from rows import plugins
 from rows.fileio import cfopen  # noqa
 from rows.localization import locale_context  # noqa
 from rows.operations import join, transform, transpose  # noqa
-from rows.table import EagerTable, FlexibleTable, IncrementalTable, Table, StreamTable  # noqa
+from rows.table import EagerTable, FlexibleTable, IncrementalTable, StreamTable, Table  # noqa
 from rows.version import as_string as __version__  # noqa
 
 
@@ -32,14 +32,15 @@ def _set_lazy_function(plugin_name, function_name):
     if hasattr(sys.modules[__name__], function_name):
         return
 
-    docstring = (
-        "Function to be called from a lazy loaded module. See `rows.plugins.{}.{}`".format(plugin_name, function_name)
+    docstring = "Function to be called from a lazy loaded module. See `rows.plugins.{}.{}`".format(
+        plugin_name, function_name
     )
 
     def func(*args, **kwargs):
         plugin = getattr(plugins, plugin_name)
         func = getattr(plugin, function_name)
         return func(*args, **kwargs)
+
     func.__doc__ = docstring
 
     setattr(sys.modules[__name__], function_name, func)

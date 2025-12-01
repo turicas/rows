@@ -16,8 +16,8 @@ from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
 
-from rows.utils import Source
 from rows.compat import TEXT_TYPE
+from rows.utils import Source
 
 
 def _cell_to_python(cell):
@@ -82,7 +82,6 @@ def import_from_xlsx(
     workbook_kwargs will be passed to openpyxl.load_workbook
     """
     from rows.plugins.utils import create_table, is_fobj
-
 
     should_close = True
     if isinstance(filename_or_fobj, Path):
@@ -155,10 +154,7 @@ def _python_to_cell(field_types):
         return value, number_format
 
     def convert_row(row):
-        return [
-            convert_value(field_type, value)
-            for field_type, value in zip(field_types, row)
-        ]
+        return [convert_value(field_type, value) for field_type, value in zip(field_types, row)]
 
     return convert_row
 
@@ -195,7 +191,7 @@ def export_to_xlsx(table, filename_or_fobj=None, sheet_name=None, *args, **kwarg
     """Export the rows.Table to XLSX file and return the saved file."""
     from io import BytesIO
 
-    from rows.plugins.utils import is_fobj, is_binary_file, prepare_to_export
+    from rows.plugins.utils import is_binary_file, is_fobj, prepare_to_export
 
     if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
         raise ValueError("export_to_xlsx must receive a file-object open in binary mode")

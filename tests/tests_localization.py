@@ -17,14 +17,14 @@ import platform
 
 import rows
 import rows.fields
-from rows.localization import locale_context
 from rows.compat import TEXT_TYPE
-
+from rows.localization import locale_context
 
 if platform.system() == "Windows":
     LOCALE_NAME = TEXT_TYPE("ptb_bra")
 else:
     LOCALE_NAME = "pt_BR.UTF-8"
+
 
 def test_locale_context_present_in_main_namespace():
     assert "locale_context" in dir(rows)

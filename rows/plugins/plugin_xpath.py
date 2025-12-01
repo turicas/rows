@@ -14,9 +14,9 @@ from __future__ import unicode_literals
 
 from lxml.html import fromstring as tree_from_string
 
+from rows.compat import PYTHON_VERSION, TEXT_TYPE
 from rows.plugins.utils import create_table
 from rows.utils import Source
-from rows.compat import PYTHON_VERSION, TEXT_TYPE
 
 if PYTHON_VERSION < (3, 0, 0):
     from HTMLParser import HTMLParser  # noqa
@@ -37,13 +37,7 @@ def _get_row_data(fields_xpath):
         for field_name, field_xpath in fields:
             result = row.xpath(field_xpath)
             if result:
-                result = " ".join(
-                    text
-                    for text in map(
-                        TEXT_TYPE.strip, map(TEXT_TYPE, map(unescape, result))
-                    )
-                    if text
-                )
+                result = " ".join(text for text in map(TEXT_TYPE.strip, map(TEXT_TYPE, map(unescape, result))) if text)
             else:
                 result = None
             data.append(result)

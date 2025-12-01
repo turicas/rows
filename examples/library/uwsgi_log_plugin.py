@@ -47,9 +47,7 @@ def import_from_uwsgi_log(filename, encoding):
                 data[2] = strptime(data[2], UWSGI_DATETIME_FORMAT)
                 # Convert generation time (micros -> seconds)
                 data[5] = float(data[5]) / 1000000
-                table.append(
-                    {field_name: value for field_name, value in zip(field_names, data)}
-                )
+                table.append({field_name: value for field_name, value in zip(field_names, data)})
 
     return table
 

@@ -16,7 +16,6 @@ from __future__ import unicode_literals
 
 import csv
 
-
 data = b"""f1,f2,f3
 1,1,test
 2,2,"<NUL>\x00</NUL>"
@@ -30,6 +29,7 @@ data = b"""f1,f2,f3
 11,5,"<cr quoted escaped-literal>\\r</cr>"
 13,6,"<crnl quoted>\r\n</crnl>"
 """
+
 
 def main():
     filename_1, filename_2 = "bad-csv-1.csv", "bad-csv-2.csv"

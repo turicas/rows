@@ -17,12 +17,12 @@ from collections import namedtuple
 from operator import itemgetter
 from pathlib import Path
 
-from rows.compat import BINARY_TYPE, ORDERED_DICT, PYTHON_VERSION, TEXT_TYPE
+from rows.compat import ORDERED_DICT, PYTHON_VERSION, TEXT_TYPE
 
 if PYTHON_VERSION < (3, 0, 0):
     from collections import Iterable, MutableSequence, Sized  # noqa
 else:
-    from collections.abc import Iterable, MutableSequence, Sized
+    from collections.abc import Iterable, MutableSequence
 
 
 class Table(MutableSequence):
@@ -48,6 +48,7 @@ class Table(MutableSequence):
 
     def __init__(self, fields, meta=None, mode=None, data=None):
         from collections import namedtuple
+
         from rows.fields import make_header
 
         # TODO: what if `fields` is None but `data` is not? Run the detection algorithm here instead of inside
@@ -67,10 +68,7 @@ class Table(MutableSequence):
         # TODO: should use slug/make_header on each field name automatically or inside each plugin?
         header = make_header(fields.keys())
         self.fields = ORDERED_DICT(
-            [
-                (header_name, field_type)
-                for (header_name, (_, field_type)) in zip(header, fields.items())
-            ]
+            [(header_name, field_type) for (header_name, (_, field_type)) in zip(header, fields.items())]
         )
         # TODO: should be able to customize row return type (namedtuple, dict etc.)
         self.Row = namedtuple("Row", self.field_names)
@@ -86,20 +84,21 @@ class Table(MutableSequence):
 
         # Python tuple creation from list comprehesion is faster than from generator expression:
         # <https://gist.github.com/turicas/f28c110d931c437f5b952040ec2c1da1>
-        return tuple([
-            cached_type_deserialize(field_type, row[index])
-            for index, field_type in enumerate(self.fields.values())
-        ])
+        return tuple(
+            [cached_type_deserialize(field_type, row[index]) for index, field_type in enumerate(self.fields.values())]
+        )
 
     def _make_row_from_dict(self, row):
         from rows.fields import cached_type_deserialize
 
         # Python tuple creation from list comprehesion is faster than from generator expression:
         # <https://gist.github.com/turicas/f28c110d931c437f5b952040ec2c1da1>
-        return tuple([
-            cached_type_deserialize(field_type, row.get(field_name, None))
-            for field_name, field_type in self.fields.items()
-        ])
+        return tuple(
+            [
+                cached_type_deserialize(field_type, row.get(field_name, None))
+                for field_name, field_type in self.fields.items()
+            ]
+        )
 
     def _add_or_replace_column(self, name, values):
         from rows.fields import cached_type_deserialize, detect_types, slug
@@ -107,8 +106,7 @@ class Table(MutableSequence):
         values = list(values)  # I'm not lazy, sorry
         if len(values) != len(self):
             raise ValueError(
-                "Values length ({}) should be the same as "
-                "Table length ({})".format(len(values), len(self))
+                "Values length ({}) should be the same as " "Table length ({})".format(len(values), len(self))
             )
 
         field_name = slug(name)
@@ -156,8 +154,7 @@ class Table(MutableSequence):
 
     def _serialize_to_dict(self, row):
         return {
-            field_name: field_type.serialize(getattr(row, field_name))
-            for field_name, field_type in self.fields.items()
+            field_name: field_type.serialize(getattr(row, field_name)) for field_name, field_type in self.fields.items()
         }
 
     def _repr_html_(self):
@@ -225,7 +222,11 @@ class Table(MutableSequence):
         return "table1"
 
     def __repr__(self):
-        length = len(self._rows) if self._mode in ("eager", "flexible") or (self._mode == "incremental" and self._filled) else "?"
+        length = (
+            len(self._rows)
+            if self._mode in ("eager", "flexible") or (self._mode == "incremental" and self._filled)
+            else "?"
+        )
         imported = ""
         imported_from = self.meta.get("imported_from")
         if imported_from:
@@ -465,7 +466,8 @@ class IncrementalTable(Table):
                 self._fill_all()
             self._del_column(name=key)
         elif isinstance(key, slice):
-            start, stop, step = key.start, key.stop, key.step
+            start, stop = key.start, key.stop
+            # TODO: what to do with `key.step`?
             if stop is None or (start is not None and start < 0) or (stop is not None and stop < 0):
                 if not self._filled:
                     self._fill_all()

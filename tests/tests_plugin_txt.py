@@ -28,10 +28,11 @@ import pytest
 
 import rows
 import tests.utils as utils
-from rows.utils import Source
 from rows.compat import TEXT_TYPE
+from rows.utils import Source
 
 ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_txt, rows.export_to_txt  # Lazy functions (just aliases)
+
 
 class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
@@ -172,14 +173,12 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     def test_export_to_text_should_return_unicode(self):
         result = rows.export_to_txt(utils.table)
-        assert type(result) == TEXT_TYPE
+        assert type(result) is TEXT_TYPE
 
     def _test_export_to_txt_frame_style(self, frame_style, chars, positive=True):
         temp = tempfile.NamedTemporaryFile(delete=False)
         self.files_to_delete.append(temp.name)
-        rows.export_to_txt(
-            utils.table, temp.file, encoding="utf-8", frame_style=frame_style
-        )
+        rows.export_to_txt(utils.table, temp.file, encoding="utf-8", frame_style=frame_style)
 
         if sys.version_info.major < 3:
             from io import open as open_
@@ -204,16 +203,12 @@ class PluginTxtTestCase(utils.RowsTestMixIn, unittest.TestCase):
         self._test_export_to_txt_frame_style(frame_style="double", chars="╣║╗╝╚╔╩╦╠═╬")
 
     def test_export_to_txt_frame_style_none(self):
-        self._test_export_to_txt_frame_style(
-            frame_style="None", chars="|│┤┐└┬├─┼┘┌╣║╗╝╚╔╩╦╠═╬", positive=False
-        )
+        self._test_export_to_txt_frame_style(frame_style="None", chars="|│┤┐└┬├─┼┘┌╣║╗╝╚╔╩╦╠═╬", positive=False)
 
     def _test_import_from_txt_works_with_custom_frame(self, frame_style):
         temp = tempfile.NamedTemporaryFile(delete=False)
         original_data = rows.import_from_txt(self.filename)
-        rows.export_to_txt(
-            utils.table, temp.file, encoding="utf-8", frame_style=frame_style
-        )
+        rows.export_to_txt(utils.table, temp.file, encoding="utf-8", frame_style=frame_style)
         new_data = rows.import_from_txt(temp.name)
         assert list(new_data) == list(original_data)
 

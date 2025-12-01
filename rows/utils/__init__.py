@@ -14,13 +14,14 @@ from __future__ import unicode_literals
 
 from io import BufferedReader
 
-from rows.fileio import COMPRESSED_EXTENSIONS, cfopen
 from rows.compat import BINARY_TYPE, DEFAULT_SAMPLE_ROWS, PYTHON_VERSION, TEXT_TYPE
-
+from rows.fileio import COMPRESSED_EXTENSIONS, cfopen
 
 if PYTHON_VERSION < (3, 0, 0):
+
     def str_repr(string):
         return (b"'" + string.replace("'", "\\'").encode("utf-8") + b"'").decode("utf-8")
+
 else:
     str_repr = repr
 
@@ -124,9 +125,7 @@ def estimate_gzip_uncompressed_size(filename):
 def subclasses(cls):
     """Return all subclasses of a class, recursively"""
     children = cls.__subclasses__()
-    return set(children).union(
-        set(grandchild for child in children for grandchild in subclasses(child))
-    )
+    return set(children).union(set(grandchild for child in children for grandchild in subclasses(child)))
 
 
 class ProgressBar(object):
@@ -134,9 +133,7 @@ class ProgressBar(object):
         from tqdm import tqdm
 
         self.prefix = prefix
-        self.progress = tqdm(
-            desc=pre_prefix, total=total, unit=unit, unit_scale=True, dynamic_ncols=True
-        )
+        self.progress = tqdm(desc=pre_prefix, total=total, unit=unit, unit_scale=True, dynamic_ncols=True)
         self.started = False
 
     def __enter__(self):
@@ -185,8 +182,18 @@ class ProgressBar(object):
 class Source(object):
     "Define a source to import a `rows.Table`"
 
-    def __init__(self, uri, plugin_name, encoding, fobj=None, compressed=None, should_delete=None, should_close=None,
-                 is_file=None, local=None):
+    def __init__(
+        self,
+        uri,
+        plugin_name,
+        encoding,
+        fobj=None,
+        compressed=None,
+        should_delete=None,
+        should_close=None,
+        is_file=None,
+        local=None,
+    ):
         self.uri = uri  # str, Path
         self.plugin_name = plugin_name  # str
         self.encoding = encoding  # str
@@ -232,9 +239,7 @@ class Source(object):
         else:  # Don't know exactly what is, assume file-like object
             fobj = filename_or_fobj
             filename = getattr(fobj, "name", None)
-            if not isinstance(
-                filename, (BINARY_TYPE, TEXT_TYPE)
-            ):  # BytesIO object
+            if not isinstance(filename, (BINARY_TYPE, TEXT_TYPE)):  # BytesIO object
                 filename = None
             should_close = False if should_close is None else should_close
 
@@ -323,9 +328,8 @@ def normalize_mime_type(mime_type, mime_name, file_extension):
 def plugin_name_by_mime_type(mime_type, mime_name, file_extension):
     "Return the plugin name based on the MIME type"
 
-    return MIME_TYPE_TO_PLUGIN_NAME.get(
-        normalize_mime_type(mime_type, mime_name, file_extension), None
-    )
+    return MIME_TYPE_TO_PLUGIN_NAME.get(normalize_mime_type(mime_type, mime_name, file_extension), None)
+
 
 def _try_to_import_file_magic():
     from rows.compat import library_installed
@@ -343,6 +347,7 @@ def _try_to_import_file_magic():
         return None
 
     if hasattr(magic, "MagicDetect"):
+
         def fixed__del__(self):
             if magic._close is None:
                 return
@@ -350,6 +355,7 @@ def _try_to_import_file_magic():
                 self.mime_magic.close()
             if self.none_magic is not None:
                 self.none_magic.close()
+
         magic.MagicDetect.__del__ = fixed__del__
         return magic
 
@@ -448,6 +454,7 @@ def local_file(path, sample_size=1048576):
         local=True,
     )
 
+
 def _disable_urllib3_warnings():
     try:
         import urllib3
@@ -460,9 +467,11 @@ def _disable_urllib3_warnings():
             # old versions of urllib3 or requests
             pass
 
+
 if PYTHON_VERSION < (3, 0, 0):
     from cgi import parse_header
 else:
+
     def parse_header(value):
         from email.message import Message
 
@@ -499,6 +508,7 @@ def response_exception_type(exception):
             return "timeout"
 
     return None  # Could not determine
+
 
 def _download_file_stdlib(
     uri,
@@ -779,9 +789,7 @@ def detect_source(uri, verify_ssl, progress, timeout=5):
     # TODO: should also supporte other schemes, like file://, sqlite:// etc.
 
     if uri.lower().startswith("http://") or uri.lower().startswith("https://"):
-        return download_file(
-            uri, verify_ssl=verify_ssl, timeout=timeout, progress=progress, detect=True
-        )
+        return download_file(uri, verify_ssl=verify_ssl, timeout=timeout, progress=progress, detect=True)
 
     elif uri.startswith("postgres://"):
         return Source(
@@ -803,9 +811,7 @@ def import_from_source(source, default_encoding, *args, **kwargs):
 
     # TODO: test cfopen
     plugin_name = source.plugin_name
-    kwargs["encoding"] = (
-        kwargs.get("encoding", None) or source.encoding or default_encoding
-    )
+    kwargs["encoding"] = kwargs.get("encoding", None) or source.encoding or default_encoding
 
     if not plugin_name or not hasattr(plugins, plugin_name):
         raise ValueError('Plugin (import) "{}" not found'.format(plugin_name))
@@ -819,9 +825,7 @@ def import_from_source(source, default_encoding, *args, **kwargs):
     return table
 
 
-def import_from_uri(
-    uri, default_encoding="utf-8", verify_ssl=True, progress=False, *args, **kwargs
-):
+def import_from_uri(uri, default_encoding="utf-8", verify_ssl=True, progress=False, *args, **kwargs):
     "Given an URI, detects plugin and encoding and imports into a `rows.Table`"
 
     # TODO: support '-' also
@@ -866,7 +870,6 @@ def csv_to_sqlite(
 ):
     "Export a CSV file to SQLite, based on field type detection from samples"
     import csv
-    from itertools import islice
 
     from rows.compat import ORDERED_DICT
     from rows.plugins.plugin_csv import CsvInspector
@@ -899,10 +902,8 @@ def csv_to_sqlite(
     original_header = next(csv_reader)
     header = make_header(original_header)
     table = Table(
-        fields=ORDERED_DICT([
-            (field, schema[original_field])
-            for field, original_field in zip(header, original_header)
-        ]))
+        fields=ORDERED_DICT([(field, schema[original_field]) for field, original_field in zip(header, original_header)])
+    )
     table._rows = csv_reader
 
     # Export to SQLite
@@ -991,9 +992,7 @@ class CsvLazyDictWriter(object):
             if getattr(self.filename_or_fobj, "read", None) is not None:
                 self._fobj = self.filename_or_fobj
             else:
-                self._fobj = cfopen(
-                    self.filename_or_fobj, mode="w", encoding=self.encoding
-                )
+                self._fobj = cfopen(self.filename_or_fobj, mode="w", encoding=self.encoding)
 
         return self._fobj
 
@@ -1002,10 +1001,7 @@ class CsvLazyDictWriter(object):
 
         if self.writer is None:
             self.writer = csv.DictWriter(
-                self.fobj,
-                fieldnames=list(row.keys()),
-                *self.writer_args,
-                **self.writer_kwargs
+                self.fobj, fieldnames=list(row.keys()), *self.writer_args, **self.writer_kwargs
             )
             self.writer.writeheader()
 
@@ -1024,6 +1020,7 @@ def execute_command(command, timeout=30.0, encoding="utf-8"):
     """Execute a command and return its output"""
     import shlex
     import subprocess
+
     from rows.compat import BINARY_TYPE, PYTHON_VERSION, TEXT_TYPE
 
     if PYTHON_VERSION < (3, 0, 0):
@@ -1163,6 +1160,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
 
     from rows import fields as rows_fields
     from rows.compat import ORDERED_DICT
+
     # Detect field features
     # TODO: move this code to detect algorithm and for each plugin (if possible), so we have this metadata available on
     # all tables
@@ -1244,18 +1242,20 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             if "choices" in metadata:
                 metadata["choices"] = json.dumps(sorted(metadata["choices"]))
             data.append(
-                ORDERED_DICT([
-                    ("field_name", field_name),
-                    ("field_type", metadata["type"].__name__.replace("Field", "").lower()),
-                    ("null", metadata.get("null")),
-                    ("min", metadata.get("min")),
-                    ("max", metadata.get("max")),
-                    ("subtype", metadata.get("subtype")),
-                    ("decimal_places", metadata.get("decimal_places")),
-                    ("max_digits", metadata.get("max_digits")),
-                    ("max_length", metadata.get("max_length")),
-                    ("choices", metadata.get("choices")),
-                ])
+                ORDERED_DICT(
+                    [
+                        ("field_name", field_name),
+                        ("field_type", metadata["type"].__name__.replace("Field", "").lower()),
+                        ("null", metadata.get("null")),
+                        ("min", metadata.get("min")),
+                        ("max", metadata.get("max")),
+                        ("subtype", metadata.get("subtype")),
+                        ("decimal_places", metadata.get("decimal_places")),
+                        ("max_digits", metadata.get("max_digits")),
+                        ("max_length", metadata.get("max_length")),
+                        ("choices", metadata.get("choices")),
+                    ]
+                )
             )
         if align:
             aligned = align_columns("rows", "postgres", [(obj["field_name"], obj["field_type"]) for obj in data])
@@ -1322,10 +1322,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             fields.append((field_name, sql_type + not_null))
         if align:
             fields = align_columns("postgres", "postgres", fields)
-        fields_str = [
-            '    "{}" {}'.format(field_name, sql_type)
-            for field_name, sql_type in fields
-        ]
+        fields_str = ['    "{}" {}'.format(field_name, sql_type) for field_name, sql_type in fields]
         sql = (
             dedent(
                 """
@@ -1375,10 +1372,12 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
             metadata = field_metadata[field_name]
             django_type_name = django_fields[metadata["type"]]
             comment = ORDERED_DICT()
-            options = ORDERED_DICT([
-                ("null", metadata["null"]),
-                ("blank", metadata["null"]),
-            ])
+            options = ORDERED_DICT(
+                [
+                    ("null", metadata["null"]),
+                    ("blank", metadata["null"]),
+                ]
+            )
             for key in ("max_length", "decimal_places", "max_digits"):
                 if key in metadata:
                     options[key] = metadata[key]
@@ -1399,7 +1398,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
                                 ",\n        ".join(
                                     "({}, {})".format(index, str_repr(value))
                                     for index, value in enumerate(sorted(field_choices))
-                                )
+                                ),
                             )
                         )
                     else:
@@ -1436,8 +1435,8 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
 
         # TODO: Add a method to create ORM object from a dict, mapping the choices
         # TODO: must convert all types (int, float etc.)
-        #lines.append("")
-        #lines.append(
+        # lines.append("")
+        # lines.append(
         #    indent(
         #        dedent(
         #            f"""
@@ -1453,7 +1452,7 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
         #        ),
         #        4
         #    )
-        #)
+        # )
         # TODO: implement to_dict also
         result = "\n".join(lines) + "\n"
         return result
@@ -1468,6 +1467,7 @@ def load_schema(filename, context=None):
     """
     from rows import fields as rows_fields
     from rows.compat import ORDERED_DICT
+
     # TODO: load_schema must support Path objects
 
     table = import_from_uri(filename)
@@ -1544,10 +1544,12 @@ def get_psql_copy_command(*args, **kwargs):
 def pg_create_table_sql(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
     from rows.plugins import postgresql
+
     return postgresql.pg_create_table_sql(*args, **kwargs)
 
 
 def pg_execute_sql(*args, **kwargs):
     # TODO: add warning (will remove this function from here in the future)
     from rows.plugins import postgresql
+
     return postgresql.pg_execute_sql(*args, **kwargs)

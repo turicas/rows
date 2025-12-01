@@ -32,6 +32,7 @@ from rows.utils import Source
 
 ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_xlsx, rows.export_to_xlsx  # Lazy functions (just aliases)
 
+
 class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = "xlsx"
@@ -143,9 +144,7 @@ class PluginXlsxTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_start_and_end_row(self, mocked_create_table):
-        rows.import_from_xlsx(
-            self.filename, start_row=6, end_row=8, start_column=4, end_column=7
-        )
+        rows.import_from_xlsx(self.filename, start_row=6, end_row=8, start_column=4, end_column=7)
         assert mocked_create_table.called
         assert mocked_create_table.call_count == 1
         call_args = mocked_create_table.call_args_list[0]

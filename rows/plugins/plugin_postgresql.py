@@ -14,7 +14,6 @@ from __future__ import unicode_literals
 
 import csv
 import io
-import itertools
 import subprocess
 from pathlib import Path
 
@@ -33,9 +32,7 @@ def get_psql_command(
 
     if database_uri is None:
         if None in (user, password, host, port, database_name):
-            raise ValueError(
-                "Need to specify either `database_uri` or the complete information"
-            )
+            raise ValueError("Need to specify either `database_uri` or the complete information")
 
         database_uri = "postgres://{user}:{password}@{host}:{port}/{name}".format(
             user=user, password=password, host=host, port=port, name=database_name
@@ -137,17 +134,17 @@ def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
         '"{}" {}'.format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
         for name, type_ in zip(field_names, field_types)
     ]
-    SQL_CREATE_TABLE = (
-        "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types}){post_fields}'
-    )
+    SQL_CREATE_TABLE = "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types}){post_fields}'
     return SQL_CREATE_TABLE.format(
         pre_table="" if not unlogged else "UNLOGGED ",
         post_table=" IF NOT EXISTS",
         table_name=table_name,
         field_types=", ".join(columns),
-        post_fields=" USING {}".format(access_method) if access_method and access_method != "heap" else ""
-        if access_method is not None
-        else "",
+        post_fields=(
+            " USING {}".format(access_method)
+            if access_method and access_method != "heap"
+            else "" if access_method is not None else ""
+        ),
     )
 
 
@@ -179,10 +176,7 @@ def _python_to_postgresql(field_types):
             return field_type.serialize(value)
 
     def convert_row(row):
-        return [
-            convert_value(field_type, value)
-            for field_type, value in zip(field_types, row)
-        ]
+        return [convert_value(field_type, value) for field_type, value in zip(field_types, row)]
 
     return convert_row
 
@@ -216,15 +210,10 @@ def get_source(connection_or_uri):
 
 
 def import_from_postgresql(
-    connection_or_uri,
-    table_name="table1",
-    query=None,
-    query_args=None,
-    close_connection=None,
-    *args,
-    **kwargs
+    connection_or_uri, table_name="table1", query=None, query_args=None, close_connection=None, *args, **kwargs
 ):
     from itertools import chain
+
     from rows.plugins.utils import create_table, valid_table_name
 
     if query is None:
@@ -315,6 +304,7 @@ def export_to_postgresql(
 
 def _convert_encoding(encoding):
     import codecs
+
     try:
         normalized = codecs.lookup(encoding).name
     except LookupError:
@@ -398,7 +388,7 @@ class PostgresCopy(object):
             is_query=False,
             has_header=has_header,
         )
-        rows_imported, error = 0, None
+        rows_imported = 0
         try:
             # TODO: use env instead of passing full database URI to
             # command-line? (other system users could see the process and its
@@ -515,13 +505,9 @@ class PostgresCopy(object):
                     )
                 )
             elif valid_csv_field_names:
-                field_names = [
-                    field for field in csv_field_names if field in field_names
-                ]
+                field_names = [field for field in csv_field_names if field in field_names]
             elif valid_cleaned_csv_field_names:
-                field_names = [
-                    field for field in cleaned_csv_field_names if field in field_names
-                ]
+                field_names = [field for field in cleaned_csv_field_names if field in field_names]
 
         if create_table:
             # If we need to create the table, it creates based on schema
@@ -575,9 +561,7 @@ class PostgresCopy(object):
             # on CSV directly (field order will be schema's field order).
             pg_execute_psql(
                 self.database_uri,
-                pg_create_table_sql(
-                    schema, table_name, unlogged=unlogged, access_method=access_method
-                ),
+                pg_create_table_sql(schema, table_name, unlogged=unlogged, access_method=access_method),
             )
 
         # TODO: if reading from fobj, the schema must be in the same order as
@@ -645,9 +629,7 @@ def pgimport(
     else:
         # File-object, so some fields are required
         if schema is None or encoding is None or dialect is None:
-            raise ValueError(
-                "File-object pgimport requires schema, encoding and dialect"
-            )
+            raise ValueError("File-object pgimport requires schema, encoding and dialect")
         return pgcopy.import_from_fobj(
             fobj=filename_or_fobj,
             table_name=table_name,
@@ -678,8 +660,8 @@ def pgexport(
     Required: psql command
     """
     from rows.fileio import cfopen
-    # TODO: integrate with PostgresCopy
 
+    # TODO: integrate with PostgresCopy
     # TODO: add logging to the process
     if isinstance(dialect, TEXT_TYPE):
         dialect = csv.get_dialect(dialect)
@@ -735,6 +717,7 @@ def get_create_table_from_query(database_uri, table_name_or_query, table_name):
     if " " in table_name_or_query:
         # Assume it's a query, but could be a table with space in the name also (if you're doing it, you're wrong)
         import random
+
         alias = "".join(random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(10))
         query = """SELECT * FROM ({}) AS "{}" LIMIT 0""".format(table_name_or_query, alias)
     else:
@@ -751,14 +734,13 @@ def get_create_table_from_query(database_uri, table_name_or_query, table_name):
     cursor.execute(query)
     header = [item[0] for item in cursor.description]
     type_name_by_oid = {
-        row["oid"]: row["typname"]
-        for row in [dict(zip(header, values)) for values in cursor.fetchall()]
+        row["oid"]: row["typname"] for row in [dict(zip(header, values)) for values in cursor.fetchall()]
     }
     cursor.close()
     conn.close()
 
     columns = [(column.name, type_name_by_oid[column.type_code]) for column in columns]
-    column_types = ['''"{}" {}'''.format(name, type) for name, type in columns]
+    column_types = [""""{}" {}""".format(name, type) for name, type in columns]
     return """CREATE TABLE IF NOT EXISTS "{}" ({})""".format(table_name, ", ".join(column_types))
 
 
@@ -768,6 +750,7 @@ if PYTHON_VERSION < (3, 0, 0):
 else:
     NotFoundError = FileNotFoundError
     BrokenError = BrokenPipeError
+
 
 def pg2pg(
     database_uri_from,
@@ -877,6 +860,7 @@ def pg2pg(
 
     else:
         return {"bytes_written": total_written, "rows_imported": rows_imported}
+
 
 # TODO: run `psql` with --filename=tempfile instead of -c (prevent other users
 # seeing the query). only current user must be able to read the temp file

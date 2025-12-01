@@ -13,8 +13,8 @@
 from __future__ import unicode_literals
 
 from rows import fields
-from rows.utils import Source
 from rows.compat import TEXT_TYPE
+from rows.utils import Source
 
 
 def _python_to_xls(field_types):
@@ -49,10 +49,7 @@ def _python_to_xls(field_types):
             return field_type.serialize(value), data
 
     def convert_row(row):
-        return [
-            convert_value(field_type, value)
-            for field_type, value in zip(field_types, row)
-        ]
+        return [convert_value(field_type, value) for field_type, value in zip(field_types, row)]
 
     return convert_row
 
@@ -126,7 +123,7 @@ def cell_value(sheet, row, col):
             else:
                 return None
 
-        elif type(value) == float and int(value) == value:
+        elif type(value) is float and int(value) == value:
             return int(value)
 
         else:
@@ -180,6 +177,7 @@ def import_from_xls(
     """Return a rows.Table created from imported XLS file."""
     import io
     import os
+
     import xlrd
 
     from rows.plugins.utils import create_table
@@ -208,16 +206,11 @@ def import_from_xls(
     # starting from `min_col`.
     start_row = max(start_row if start_row is not None else min_row, min_row)
     end_row = min(end_row if end_row is not None else max_row, max_row)
-    start_column = max(
-        start_column if start_column is not None else min_column, min_column
-    )
+    start_column = max(start_column if start_column is not None else min_column, min_column)
     end_column = min(end_column if end_column is not None else max_column, max_column)
 
     table_rows = (
-        [
-            cell_value(sheet, row_index, column_index)
-            for column_index in range(start_column, end_column + 1)
-        ]
+        [cell_value(sheet, row_index, column_index) for column_index in range(start_column, end_column + 1)]
         for row_index in range(start_row, end_row + 1)
     )
 
@@ -232,7 +225,7 @@ def export_to_xls(table, filename_or_fobj=None, sheet_name="Sheet1", *args, **kw
 
     import xlwt
 
-    from rows.plugins.utils import is_fobj, is_binary_file, prepare_to_export
+    from rows.plugins.utils import is_binary_file, is_fobj, prepare_to_export
 
     if is_fobj(filename_or_fobj) and not is_binary_file(filename_or_fobj):
         raise ValueError("export_to_xls must receive a file-object open in binary mode")

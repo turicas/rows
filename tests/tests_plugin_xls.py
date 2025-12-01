@@ -144,9 +144,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     @mock.patch("rows.plugins.utils.create_table")
     def test_start_and_end_row(self, mocked_create_table):
-        rows.import_from_xls(
-            self.filename, start_row=6, end_row=8, start_column=6, end_column=8
-        )
+        rows.import_from_xls(self.filename, start_row=6, end_row=8, start_column=6, end_column=8)
         assert mocked_create_table.called
         assert mocked_create_table.call_count == 1
         call_args = mocked_create_table.call_args_list[0]
@@ -158,9 +156,7 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert expected_data == list(call_args[0][0])
 
     def test_zero_date(self):
-        table = rows.import_from_xls(
-            "tests/data/empty-date.xls", force_types={"date": rows.fields.DateField}
-        )
+        table = rows.import_from_xls("tests/data/empty-date.xls", force_types={"date": rows.fields.DateField})
 
         assert len(table) == 5
         assert table[0].date == datetime.date(2000, 2, 3)

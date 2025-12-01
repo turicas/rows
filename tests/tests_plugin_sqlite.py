@@ -31,6 +31,7 @@ from rows.utils import Source
 ALIAS_IMPORT, ALIAS_EXPORT = rows.import_from_sqlite, rows.export_to_sqlite  # Lazy functions (just aliases)
 exported_utils_table = list(rows.plugins.utils.prepare_to_export(utils.table))
 
+
 class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     plugin_name = "sqlite"
@@ -95,9 +96,7 @@ class PluginSqliteTestCase(utils.RowsTestMixIn, unittest.TestCase):
             rows.import_from_sqlite(connection, table_name='table1", "sqlite_master')
 
         with self.assertRaises(ValueError):
-            rows.export_to_sqlite(
-                utils.table, ":memory:", table_name='table1", "sqlite_master'
-            )
+            rows.export_to_sqlite(utils.table, ":memory:", table_name='table1", "sqlite_master')
 
     def test_export_to_sqlite_filename(self):
         # TODO: may test file contents

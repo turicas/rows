@@ -17,7 +17,7 @@ from itertools import chain
 
 from rows import fields
 from rows.compat import ORDERED_DICT
-from rows.plugins.utils import create_table, is_fobj, is_binary_file
+from rows.plugins.utils import create_table, is_binary_file, is_fobj
 from rows.utils import Source
 
 
@@ -25,7 +25,9 @@ class NullHandler(logging.Handler):
     def emit(self, record):
         pass
 
+
 logging.getLogger("parquet").addHandler(NullHandler())
+
 
 def import_from_parquet(filename_or_fobj, *args, **kwargs):
     """Import data from a Parquet file and return with rows.Table."""
@@ -59,6 +61,4 @@ def import_from_parquet(filename_or_fobj, *args, **kwargs):
     header = list(types.keys())
     table_rows = parquet.reader(source.fobj)
     meta = {"imported_from": "parquet", "source": source}
-    return create_table(
-        chain([header], table_rows), meta=meta, force_types=types, *args, **kwargs
-    )
+    return create_table(chain([header], table_rows), meta=meta, force_types=types, *args, **kwargs)

@@ -50,9 +50,7 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
                 return None  # discard this row
 
             new = row._asdict()
-            new["meta"] = ", ".join(
-                ["{} => {}".format(key, value) for key, value in table._meta.items()]
-            )
+            new["meta"] = ", ".join(["{} => {}".format(key, value) for key, value in table._meta.items()])
             return new
 
         fields = utils.table.fields.copy()
@@ -60,9 +58,7 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         tables = [utils.table] * 3
         result = rows.transform(fields, transformation_function, *tables)
         assert result.fields == fields
-        not_discarded = [
-            transformation_function(row, utils.table) for row in utils.table
-        ] * 3
+        not_discarded = [transformation_function(row, utils.table) for row in utils.table] * 3
         not_discarded = [row for row in not_discarded if row is not None]
         assert len(result) == len(not_discarded)
 
@@ -81,14 +77,10 @@ class OperationsTestCase(utils.RowsTestMixIn, unittest.TestCase):
             ]
         )
         table = rows.Table(fields=new_fields)
-        table.append(
-            {"key": "first_key", "value_1": "first_value_1", "value_2": "first_value_2"}
-        )
+        table.append({"key": "first_key", "value_1": "first_value_1", "value_2": "first_value_2"})
         table.append({"key": "second_key", "value_1": 1, "value_2": 2})
         table.append({"key": "third_key", "value_1": 3.14, "value_2": 2.71})
-        table.append(
-            {"key": "fourth_key", "value_1": "2015-09-04", "value_2": "2015-08-29"}
-        )
+        table.append({"key": "fourth_key", "value_1": "2015-09-04", "value_2": "2015-08-29"})
 
         new_table = rows.transpose(table, fields_column="key")
 

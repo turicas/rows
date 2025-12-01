@@ -24,7 +24,6 @@ from unicodedata import normalize
 
 from rows.compat import BINARY_TYPE, ORDERED_DICT, PYTHON_KEYWORDS_LOWER, PYTHON_VERSION, TEXT_TYPE
 
-
 # Order matters here
 __all__ = [
     "BinaryField",
@@ -57,6 +56,7 @@ _max_cache_size = 32000
 _deserialization_cache = {}
 _deserialization_error = object()
 
+
 def cached_type_deserialize(type_, value, true_behavior=True):
     """
     LFU cache for type deserialization
@@ -66,6 +66,7 @@ def cached_type_deserialize(type_, value, true_behavior=True):
     Will only cache values that can be hashed and on `_cacheable_types`.
     """
     from locale import getlocale
+
     global _deserialization_cache
 
     should_cache = isinstance(value, _cacheable_types)
@@ -81,7 +82,11 @@ def cached_type_deserialize(type_, value, true_behavior=True):
             if should_cache:
                 _deserialization_cache[cache_key] = [result, 1]
                 if len(_deserialization_cache) == _max_cache_size:
-                    min_freq = _deserialization_cache[sorted(_deserialization_cache.keys(), key=lambda key: _deserialization_cache[key][1])[_cache_resize_len]][1]
+                    min_freq = _deserialization_cache[
+                        sorted(_deserialization_cache.keys(), key=lambda key: _deserialization_cache[key][1])[
+                            _cache_resize_len
+                        ]
+                    ][1]
                     _deserialization_cache = {k: v for k, v in _deserialization_cache.items() if v[1] > min_freq}
     else:
         result, _ = _deserialization_cache[cache_key]
@@ -345,27 +350,21 @@ class DecimalField(Field):
                 "positive_sign",
                 "thousands_sep",
             )
-            chars = (
-                locale_vars[x].replace(".", r"\.").replace("-", r"\-")
-                for x in interesting_vars
-            )
+            chars = (locale_vars[x].replace(".", r"\.").replace("-", r"\-") for x in interesting_vars)
             interesting_chars = "".join(set(chars))
             regexp = re.compile(r"[^0-9{} ]".format(interesting_chars))
             value = as_string(value)
             if regexp.findall(value):
                 value_error(value, cls)
 
-            parts = [
-                REGEXP_ONLY_NUMBERS.subn("", number)[0]
-                for number in value.split(decimal_separator)
-            ]
+            parts = [REGEXP_ONLY_NUMBERS.subn("", number)[0] for number in value.split(decimal_separator)]
             if len(parts) > 2:
                 raise ValueError("Can't deserialize with this locale.")
             try:
                 value = Decimal(parts[0])
                 if len(parts) == 2:
                     decimal_places = len(parts[1])
-                    value = value + (Decimal(parts[1]) / (10 ** decimal_places))
+                    value = value + (Decimal(parts[1]) / (10**decimal_places))
             except InvalidOperation:
                 value_error(value, cls)
             return value
@@ -438,9 +437,7 @@ class DatetimeField(Field):
     """
 
     TYPE = (datetime.datetime,)
-    DATETIME_REGEXP = re.compile(
-        "^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]" "([0-9]{2}):([0-9]{2}):([0-9]{2})$"
-    )
+    DATETIME_REGEXP = re.compile("^([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]" "([0-9]{2}):([0-9]{2}):([0-9]{2})$")
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -486,9 +483,7 @@ class EmailField(TextField):
     Is not locale-aware (does not need to be)
     """
 
-    EMAIL_REGEXP = re.compile(
-        r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]+$", flags=re.IGNORECASE
-    )
+    EMAIL_REGEXP = re.compile(r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]+$", flags=re.IGNORECASE)
 
     @classmethod
     def serialize(cls, value, *args, **kwargs):
@@ -567,9 +562,7 @@ def get_items(*indexes):
     Similar to `operator.itemgetter`, but will insert `None` when the object
     does not have the desired index (instead of raising IndexError).
     """
-    return lambda obj: tuple(
-        obj[index] if len(obj) > index else None for index in indexes
-    )
+    return lambda obj: tuple(obj[index] if len(obj) > index else None for index in indexes)
 
 
 def slug(text, separator="_", permitted_chars=SLUG_CHARS):
@@ -597,11 +590,9 @@ def slug(text, separator="_", permitted_chars=SLUG_CHARS):
 
     # Remove double occurrencies of separator
     # Example: u'_alvaro__justen_' -> u'_alvaro_justen_'
-    text = (
-        REGEXP_SEPARATOR
-        if separator == "_"
-        else re.compile("(" + re.escape(separator) + "+)")
-    ).sub(separator, text)
+    text = (REGEXP_SEPARATOR if separator == "_" else re.compile("(" + re.escape(separator) + "+)")).sub(
+        separator, text
+    )
 
     # Strip separators
     # Example: u'_alvaro_justen_' -> u'alvaro_justen'
@@ -613,9 +604,7 @@ def camel_to_snake(value):
     if not value:
         return ""
     # Adapted from <https://stackoverflow.com/a/1176023/1299446>
-    return slug(
-        REGEXP_CAMELCASE_2.sub(r"\1_\2", REGEXP_CAMELCASE_1.sub(r"\1_\2", value))
-    )
+    return slug(REGEXP_CAMELCASE_2.sub(r"\1_\2", REGEXP_CAMELCASE_1.sub(r"\1_\2", value)))
 
 
 def make_unique_name(name, existing_names, name_format="{name}_{index}", start=2, max_size=None):
@@ -625,7 +614,7 @@ def make_unique_name(name, existing_names, name_format="{name}_{index}", start=2
     while new_name in existing_names:
         new_name = name_format.format(name=name, index=index)
         if max_size is not None and len(new_name) > max_size:
-            new_name = name_format.format(name=name[:-(len(new_name) - max_size)], index=index)
+            new_name = name_format.format(name=name[: -(len(new_name) - max_size)], index=index)
         index += 1
 
     return new_name
@@ -635,14 +624,9 @@ def make_header(field_names, permit_not=False, max_size=None, prefix="field_"):
     """Return unique and slugged field names."""
     slug_chars = SLUG_CHARS if not permit_not else SLUG_CHARS + "^"
 
-    header = [
-        slug(field_name, permitted_chars=slug_chars) for field_name in field_names
-    ]
+    header = [slug(field_name, permitted_chars=slug_chars) for field_name in field_names]
     if max_size is not None:
-        header = [
-            slug(field_name[:max_size], permitted_chars=slug_chars)
-            for field_name in header
-        ]
+        header = [slug(field_name[:max_size], permitted_chars=slug_chars) for field_name in header]
     result = []
     for index, field_name in enumerate(header):
         if not field_name:
@@ -654,9 +638,7 @@ def make_header(field_names, permit_not=False, max_size=None, prefix="field_"):
                 name=field_name, existing_names=[field_name] + result, start=1, max_size=max_size
             )
         if field_name in result:
-            field_name = make_unique_name(
-                name=field_name, existing_names=result, start=2, max_size=max_size
-            )
+            field_name = make_unique_name(name=field_name, existing_names=result, start=2, max_size=max_size)
         result.append(field_name)
 
     return result
@@ -675,6 +657,7 @@ DEFAULT_TYPES = (
     TextField,
     BinaryField,
 )
+
 
 def _unique_list_values(values):
     result = []
@@ -725,7 +708,7 @@ class TypeDetector(object):
         if not indices:
             return
 
-        skip, possible_types, is_empty = self._skip, self._possible_types, self._is_empty
+        possible_types, is_empty = self._possible_types, self._is_empty
         while data:
             for col_index in indices:
                 col_values = _unique_list_values(row[col_index] for row in data[:batch_size])

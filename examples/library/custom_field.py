@@ -4,7 +4,6 @@ import rows
 
 
 class MyIntegerField(rows.fields.IntegerField):
-
     """Weird integer represetation, having a `#` just before the number"""
 
     @classmethod
@@ -27,9 +26,7 @@ data = [
     ["joao", "#17", "01/02/2000"],
 ]
 
-table = rows.plugins.utils.create_table(
-    data, force_types={"age": MyIntegerField, "birthdate": PtBrDateField}
-)
+table = rows.plugins.utils.create_table(data, force_types={"age": MyIntegerField, "birthdate": PtBrDateField})
 print(type(table[0].age))  # `<class 'int'>`
 print(type(table[0].birthdate))  # `<class 'datetime.date'>`
 print(rows.export_to_txt(table))  # "age" values will start with "#"

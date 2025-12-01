@@ -25,12 +25,11 @@ from rows.compat import PYTHON_VERSION
 
 ALIAS_IMPORT = rows.import_from_pdf
 
-import rows.plugins.plugin_pdf as pdf
-
+import rows.plugins.plugin_pdf as pdf  # noqa
 
 if PYTHON_VERSION >= (3, 7, 0):
     try:
-        import fitz as pymupdf
+        import fitz as pymupdf  # noqa
 
         pymupdf_imported = True
     except ImportError:
@@ -126,9 +125,7 @@ class PDFTestCase(utils.RowsTestMixIn):
         expected_start = (
             "Boletim de Balneabilidade\nCoordenação de Monitoramento – COMON/DIFIM\nCosta: Salvador\nBoletim N°: 26/2010 / Emitido em: 02/01/1970\nPonto - Código\nLocal da Coleta\nCategoria\nSão Tomé de Paripe - SSA IN 100",
         )
-        reader = rows.plugins.pdf.pdf_to_text(
-            filename, backend=self.backend, page_numbers=(1,)
-        )
+        reader = rows.plugins.pdf.pdf_to_text(filename, backend=self.backend, page_numbers=(1,))
         first_page = next(reader)
         assert first_page.startswith(expected_start)
 
@@ -171,11 +168,8 @@ class HelperFunctionsTestCase(unittest.TestCase):
             pdf.TextObject(x0=11, x1=13, y0=9, y1=10, text="obj8"),
             pdf.TextObject(x0=11, x1=12, y0=10, y1=11, text="obj9"),
         ]
-        objects_by_text = {obj.text: obj for obj in dataset}
         x_groups = pdf.group_objects("x", dataset, threshold=0)
-        groups_text = [
-            sorted([obj.text for obj in group.objects]) for group in x_groups
-        ]
+        groups_text = [sorted([obj.text for obj in group.objects]) for group in x_groups]
         expected_groups_text = [
             sorted(["obj1", "obj2", "obj4", "obj5"]),
             sorted(["obj3", "obj6", "obj7", "obj8", "obj9"]),
@@ -183,9 +177,7 @@ class HelperFunctionsTestCase(unittest.TestCase):
         assert groups_text == expected_groups_text
 
         y_groups = pdf.group_objects("y", dataset, threshold=0)
-        groups_text = [
-            sorted([obj.text for obj in group.objects]) for group in y_groups
-        ]
+        groups_text = [sorted([obj.text for obj in group.objects]) for group in y_groups]
         expected_groups_text = [
             ["obj1"],
             ["obj2", "obj6"],
@@ -196,3 +188,143 @@ class HelperFunctionsTestCase(unittest.TestCase):
             ["obj9"],
         ]
         assert groups_text == expected_groups_text
+
+    def test_closest_same_line_basic(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 15, "A"),
+            pdf.TextObject(30, 10, 40, 15, "B"),
+            pdf.TextObject(50, 10, 60, 15, "C"),
+            pdf.TextObject(10, 30, 20, 35, "D"),
+        ]
+        result = pdf.closest_same_line(objects, "A")
+        assert result is not None
+        assert result.text == "B"
+
+    def test_closest_same_line_multiple_objects(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 15, "Target"),
+            pdf.TextObject(25, 10, 35, 15, "Close"),
+            pdf.TextObject(100, 10, 110, 15, "Far"),
+            pdf.TextObject(10, 30, 20, 35, "Other"),
+        ]
+        result = pdf.closest_same_line(objects, "Target")
+        assert result.text == "Close"
+
+    def test_closest_same_line_left_side(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 15, "Left"),
+            pdf.TextObject(50, 10, 60, 15, "Target"),
+            pdf.TextObject(100, 10, 110, 15, "Right"),
+        ]
+        result = pdf.closest_same_line(objects, "Target")
+        assert result.text == "Left"
+
+    def test_closest_same_line_with_threshold(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 15, "A"),
+            pdf.TextObject(30, 12, 40, 17, "B"),
+            pdf.TextObject(10, 30, 20, 35, "C"),
+        ]
+        result = pdf.closest_same_line(objects, "A", threshold=5)
+        assert result is not None
+        assert result.text == "B"
+
+    def test_closest_same_line_not_found(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 15, "A"),
+            pdf.TextObject(30, 10, 40, 15, "B"),
+        ]
+        result = pdf.closest_same_line(objects, "NotFound")
+        assert result is None
+
+    def test_closest_same_line_only_one_object(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 15, "Alone"),
+            pdf.TextObject(10, 30, 20, 35, "Other"),
+        ]
+        with pytest.raises(ValueError):
+            pdf.closest_same_line(objects, "Alone")
+
+    def test_closest_same_line_with_regex(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 15, "Item 1"),
+            pdf.TextObject(30, 10, 40, 15, "Item 2"),
+            pdf.TextObject(60, 10, 70, 15, "Item 3"),
+        ]
+        result = pdf.closest_same_line(objects, re.compile("Item 1"))
+        assert result.text == "Item 2"
+
+    def test_closest_same_column_basic(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 15, "A"),
+            pdf.TextObject(10, 30, 20, 35, "B"),
+            pdf.TextObject(10, 50, 20, 55, "C"),
+            pdf.TextObject(40, 10, 50, 15, "D"),
+        ]
+        result = pdf.closest_same_column(objects, "A")
+        assert result is not None
+        assert result.text == "B"
+
+    def test_closest_same_column_multiple_objects(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 20, "Target"),
+            pdf.TextObject(10, 25, 20, 35, "Close"),
+            pdf.TextObject(10, 100, 20, 110, "Far"),
+            pdf.TextObject(40, 10, 50, 20, "Other"),
+        ]
+        result = pdf.closest_same_column(objects, "Target")
+        assert result.text == "Close"
+
+    def test_closest_same_column_above(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 20, "Top"),
+            pdf.TextObject(10, 50, 20, 60, "Target"),
+            pdf.TextObject(10, 100, 20, 110, "Bottom"),
+        ]
+        result = pdf.closest_same_column(objects, "Target")
+        assert result.text in ["Top", "Bottom"]
+        assert result.text == "Top"
+
+    def test_closest_same_column_with_threshold(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 20, "A"),
+            pdf.TextObject(12, 30, 22, 40, "B"),
+            pdf.TextObject(40, 10, 50, 20, "C"),
+        ]
+        result = pdf.closest_same_column(objects, "A", threshold=5)
+        assert result is not None
+        assert result.text == "B"
+
+    def test_closest_same_column_not_found(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 20, "A"),
+            pdf.TextObject(10, 30, 20, 40, "B"),
+        ]
+        result = pdf.closest_same_column(objects, "NotFound")
+        assert result is None
+
+    def test_closest_same_column_only_one_object(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 20, "Alone"),
+            pdf.TextObject(40, 10, 50, 20, "Other"),
+        ]
+        with pytest.raises(ValueError):
+            pdf.closest_same_column(objects, "Alone")
+
+    def test_closest_same_column_with_regex(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 20, "Row 1"),
+            pdf.TextObject(10, 30, 20, 40, "Row 2"),
+            pdf.TextObject(10, 60, 20, 70, "Row 3"),
+        ]
+        result = pdf.closest_same_column(objects, re.compile("Row 1"))
+        assert result.text == "Row 2"
+
+    def test_closest_same_column_with_callable(self):
+        objects = [
+            pdf.TextObject(10, 10, 20, 20, "AAA"),
+            pdf.TextObject(10, 30, 20, 40, "BBB"),
+            pdf.TextObject(10, 60, 20, 70, "CCC"),
+        ]
+        result = pdf.closest_same_column(objects, lambda obj: obj.text == "AAA")
+        assert result.text == "BBB"

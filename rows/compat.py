@@ -18,20 +18,20 @@ import platform
 import sys
 from collections import OrderedDict
 
-
 DEFAULT_SAMPLE_ROWS = 20480  # Number of rows to sample from files when no schema is provided
 
 PYTHON_VERSION = (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
 PYTHON_IMPLEMENTATION = platform.python_implementation()
 
 if PYTHON_VERSION < (3, 0, 0):
-    TEXT_TYPE = unicode
+    TEXT_TYPE = unicode  # noqa
     BINARY_TYPE = str
 
     def lru_cache(user_func):
         # Actually NOT LRU, just a dummy cache for Python 2. This is only used in this module.
 
         internal_cache = {}
+
         def func(*args, **kwargs):
             cache_key = hash(tuple(list(args) + sorted(kwargs.items())))
             if cache_key not in internal_cache:
@@ -57,11 +57,44 @@ else:
     ORDERED_DICTS = (OrderedDict,)
 
 PYTHON_KEYWORDS_LOWER = {
-    "false", "none", "true", "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del",
-    "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal",
-    "not", "or", "pass", "raise", "return", "try", "while", "with", "yield"
+    "false",
+    "none",
+    "true",
+    "and",
+    "as",
+    "assert",
+    "async",
+    "await",
+    "break",
+    "class",
+    "continue",
+    "def",
+    "del",
+    "elif",
+    "else",
+    "except",
+    "finally",
+    "for",
+    "from",
+    "global",
+    "if",
+    "import",
+    "in",
+    "is",
+    "lambda",
+    "nonlocal",
+    "not",
+    "or",
+    "pass",
+    "raise",
+    "return",
+    "try",
+    "while",
+    "with",
+    "yield",
 }
 # Take from: `import keyword; set(key.lower() for key in keyword.kwlist)`
+
 
 def _library_installed(module_name):
     if PYTHON_VERSION >= (3, 0, 0):
@@ -78,6 +111,7 @@ def _library_installed(module_name):
             return False
         else:
             return True
+
 
 if PYTHON_VERSION < (3, 0, 0):
     library_installed = lru_cache(_library_installed)

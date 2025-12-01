@@ -23,12 +23,10 @@ try:
 except ImportError:
     from unittest import mock
 
-import pytest
-
 import rows
 import tests.utils as utils
-from rows.utils import Source
 from rows.compat import TEXT_TYPE
+from rows.utils import Source
 
 
 class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
@@ -62,25 +60,19 @@ class PluginJsonTestCase(utils.RowsTestMixIn, unittest.TestCase):
         # import using filename
         rows.import_from_json(self.filename)
         call_args = mocked_create_table.call_args_list[0]
-        self.assert_create_table_data(
-            call_args, field_ordering=False, expected_meta=self.expected_meta
-        )
+        self.assert_create_table_data(call_args, field_ordering=False, expected_meta=self.expected_meta)
 
         # import using fobj - binary
         with open(self.filename, mode="rb") as fobj:
             rows.import_from_json(fobj)
             call_args = mocked_create_table.call_args_list[1]
-            self.assert_create_table_data(
-                call_args, field_ordering=False, expected_meta=self.expected_meta
-            )
+            self.assert_create_table_data(call_args, field_ordering=False, expected_meta=self.expected_meta)
 
         # import using fobj - text
         with open(self.filename, mode="r", encoding="utf-8") as fobj:
             rows.import_from_json(fobj)
             call_args = mocked_create_table.call_args_list[1]
-            self.assert_create_table_data(
-                call_args, field_ordering=False, expected_meta=self.expected_meta
-            )
+            self.assert_create_table_data(call_args, field_ordering=False, expected_meta=self.expected_meta)
 
     @mock.patch("rows.plugins.utils.prepare_to_export")
     def test_export_to_json_uses_prepare_to_export(self, mocked_prepare_to_export):

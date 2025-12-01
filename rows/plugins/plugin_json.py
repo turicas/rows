@@ -26,9 +26,7 @@ def import_from_json(filename_or_fobj, encoding="utf-8", *args, **kwargs):
     """
     from rows.plugins.utils import create_table, is_binary_file
 
-    source = Source.from_file(
-        filename_or_fobj, mode="r", plugin_name="json", encoding=encoding
-    )
+    source = Source.from_file(filename_or_fobj, mode="r", plugin_name="json", encoding=encoding)
     fobj = source.fobj
     if is_binary_file(fobj):
         fobj = TextIOWrapper(fobj, encoding=encoding)
@@ -72,8 +70,8 @@ def export_to_json(table, filename_or_fobj=None, encoding="utf-8", indent=None, 
     If a file-like object is provided it MUST be open in binary mode (like in
     `open('myfile.json', mode='wb')`).
     """
-    from rows.plugins.utils import is_binary_file, is_fobj, prepare_to_export
     from rows.compat import BINARY_TYPE
+    from rows.plugins.utils import is_binary_file, is_fobj, prepare_to_export
 
     orig_filename_or_fobj = filename_or_fobj
     return_data, should_close = False, None

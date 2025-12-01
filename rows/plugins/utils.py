@@ -52,9 +52,8 @@ def valid_table_name(name):
     - Letters can be capitalized or not
     - Acceps letters, numbers and _
     """
-    return (
-        name[0] in "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        and set(name).issubset(set("_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))
+    return name[0] in "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" and set(name).issubset(
+        set("_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
     )
 
 
@@ -82,11 +81,9 @@ def create_table(
     - `fields` must always be in the same order as the data
     """
     from itertools import chain, islice
-    from os import unlink
-    from pathlib import Path
 
     from rows.compat import ORDERED_DICT, ORDERED_DICTS
-    from rows.fields import TextField, cached_type_deserialize, detect_types, get_items, make_header
+    from rows.fields import TextField, cached_type_deserialize, detect_types
     from rows.table import Table
 
     table_rows = iter(data)
@@ -125,18 +122,11 @@ def create_table(
             **kwargs
         )
         # Check if any field was added during detecting process
-        new_fields = [
-            field_name
-            for field_name in detected_fields.keys()
-            if field_name not in header
-        ]
+        new_fields = [field_name for field_name in detected_fields.keys() if field_name not in header]
         # Finally create the `fields` with both header and new field names,
         # based on detected fields `and force_types`
         fields = ORDERED_DICT(
-            [
-                (field_name, detected_fields.get(field_name, TextField))
-                for field_name in header + new_fields
-            ]
+            [(field_name, detected_fields.get(field_name, TextField)) for field_name in header + new_fields]
         )
         fields.update(force_types)
 
@@ -158,9 +148,7 @@ def create_table(
         if import_fields is None:
             import_fields = header
 
-        fields = ORDERED_DICT(
-            [(field_name, fields[key]) for field_name, key in zip(header, fields)]
-        )
+        fields = ORDERED_DICT([(field_name, fields[key]) for field_name, key in zip(header, fields)])
     if max_rows is not None and max_rows > 0:
         # TODO: transform in list if data is already read
         table_rows = islice(table_rows, max_rows)
@@ -169,27 +157,24 @@ def create_table(
     if diff:
         field_names = ", ".join('"{}"'.format(field) for field in diff)
         raise ValueError("Invalid field names: {}".format(field_names))
-    fields = ORDERED_DICT(
-        [(field_name, fields[field_name]) for field_name in import_fields]
-    )
+    fields = ORDERED_DICT([(field_name, fields[field_name]) for field_name in import_fields])
     field_types = list(fields.values())
 
     # What if we deserialize only when the data is read from the Table (not from the plugin)?
     if list(header) == list(import_fields):  # Add rows directly, no need to get specific indices
         table_rows = (
-            tuple([
-                cached_type_deserialize(field_type, value)
-                for field_type, value in zip(field_types, row)
-            ])
+            tuple([cached_type_deserialize(field_type, value) for field_type, value in zip(field_types, row)])
             for row in table_rows
         )
     else:
         field_indices = list(map(header.index, import_fields))
         table_rows = (
-            tuple([
-                cached_type_deserialize(field_type, row[index])
-                for index, field_type in zip(field_indices, field_types)
-            ])
+            tuple(
+                [
+                    cached_type_deserialize(field_type, row[index])
+                    for index, field_type in zip(field_indices, field_types)
+                ]
+            )
             for row in table_rows
         )
     table = Table(fields=fields, meta=meta, data=table_rows, mode=mode)
@@ -197,7 +182,6 @@ def create_table(
 
 
 def prepare_to_export(table, export_fields=None, *args, **kwargs):
-    from rows.fields import make_header
     from rows.table import Table
 
     # TODO: optimize for more used cases (export_fields=None)
@@ -230,10 +214,8 @@ def serialize(table, *args, **kwargs):
 
     field_types = [table.fields[field_name] for field_name in field_names]
     for row in prepared_table:
-        yield [
-            field_type.serialize(value, *args, **kwargs)
-            for value, field_type in zip(row, field_types)
-        ]
+        yield [field_type.serialize(value, *args, **kwargs) for value, field_type in zip(row, field_types)]
+
 
 def is_binary_file(fobj):
     from gzip import GzipFile

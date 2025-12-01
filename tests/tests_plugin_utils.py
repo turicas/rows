@@ -34,36 +34,27 @@ class GenericUtilsTestCase(unittest.TestCase):
     def test_ipartition(self):
         iterable = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         result = plugins_utils.ipartition(iterable, 3)
-        assert type(result) == types.GeneratorType
+        assert type(result) is types.GeneratorType
         assert list(result) == [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]]
 
         result = plugins_utils.ipartition(iterable, 2)
-        assert type(result) == types.GeneratorType
+        assert type(result) is types.GeneratorType
         assert list(result) == [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
 
 
 def possible_field_names_errors(error_fields):
     error_fields = ['"{}"'.format(field_name) for field_name in error_fields]
     fields_permutations = itertools.permutations(error_fields, len(error_fields))
-    fields_permutations_str = [
-        ", ".join(field_names) for field_names in fields_permutations
-    ]
-    return [
-        "Invalid field names: {}".format(field_names)
-        for field_names in fields_permutations_str
-    ]
+    fields_permutations_str = [", ".join(field_names) for field_names in fields_permutations]
+    return ["Invalid field names: {}".format(field_names) for field_names in fields_permutations_str]
 
 
 class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
     def test_create_table_skip_header(self):
-        field_types = OrderedDict(
-            [("integer", fields.IntegerField), ("string", fields.TextField)]
-        )
+        field_types = OrderedDict([("integer", fields.IntegerField), ("string", fields.TextField)])
         data = [["1", "Álvaro"], ["2", "turicas"], ["3", "Justen"]]
         table_1 = plugins_utils.create_table(data, fields=field_types, skip_header=True)
-        table_2 = plugins_utils.create_table(
-            data, fields=field_types, skip_header=False
-        )
+        table_2 = plugins_utils.create_table(data, fields=field_types, skip_header=False)
 
         assert field_types == table_1.fields
         assert table_1.fields == table_2.fields
@@ -93,9 +84,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert table[0].field3 == "Álvaro"
 
         import_fields = ["field3", "field2"]
-        table = plugins_utils.create_table(
-            [header] + table_rows, import_fields=import_fields
-        )
+        table = plugins_utils.create_table([header] + table_rows, import_fields=import_fields)
         assert list(table.fields.keys()) == import_fields
         assert table[0]._asdict() == OrderedDict([("field3", "Álvaro"), ("field2", 3.14)])
 
@@ -126,9 +115,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
         # Special case: `import_fields` has different order from `fields`
         import_fields = ["textfield", "intfield"]
-        table = plugins_utils.create_table(
-            data, fields=fields, import_fields=import_fields, skip_header=True
-        )
+        table = plugins_utils.create_table(data, fields=fields, import_fields=import_fields, skip_header=True)
         assert list(table.fields.keys()) == import_fields
         for row, row_data in zip(table, data[1:]):
             assert row_data[1] == row.textfield
@@ -145,9 +132,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         error_fields = ["doesnt_exist", "ruby"]
         import_fields = list(header)[:-1] + error_fields
         with self.assertRaises(ValueError) as exception_context:
-            plugins_utils.create_table(
-                [header] + table_rows, import_fields=import_fields
-            )
+            plugins_utils.create_table([header] + table_rows, import_fields=import_fields)
 
         assert exception_context.exception.args[0] in possible_field_names_errors(error_fields)
 
@@ -192,9 +177,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         ]
         force_types = {"field2": rows.fields.DecimalField}
 
-        table = plugins_utils.create_table(
-            [header] + table_rows, force_types=force_types
-        )
+        table = plugins_utils.create_table([header] + table_rows, force_types=force_types)
         for field_name, field_type in force_types.items():
             assert table.fields[field_name] == field_type
 
@@ -274,9 +257,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         field_names = list(utils.table.fields.keys())
         error_fields = ["does_not_exist", "java"]
         export_fields = field_names + error_fields
-        result = plugins_utils.prepare_to_export(
-            utils.table, export_fields=export_fields
-        )
+        result = plugins_utils.prepare_to_export(utils.table, export_fields=export_fields)
         with self.assertRaises(ValueError) as exception_context:
             next(result)
 
@@ -300,15 +281,11 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         for row in utils.table:
             # convertion to text_type is needed on Python 2 since namedtuples'
             # keys are bytes, not unicode
-            flexible.append(
-                {TEXT_TYPE(key): value for key, value in row._asdict().items()}
-            )
+            flexible.append({TEXT_TYPE(key): value for key, value in row._asdict().items()})
 
         field_names = list(flexible.fields.keys())
         export_fields = tuple(field_names[: len(field_names) // 2])
-        prepared = plugins_utils.prepare_to_export(
-            flexible, export_fields=export_fields
-        )
+        prepared = plugins_utils.prepare_to_export(flexible, export_fields=export_fields)
         assert next(prepared) == export_fields
 
         for row, expected_row in zip(prepared, flexible._rows):
@@ -336,7 +313,8 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         kwargs = {"export_fields": 123, "other_parameter": 3.14}
         result = plugins_utils.serialize(table, **kwargs)
         self.assertFalse(mocked_prepare_to_export.called)
-        field_names, table_rows = next(result), list(result)
+        _ = next(result)
+        _ = list(result)
         assert mocked_prepare_to_export.called
         assert mocked_prepare_to_export.call_count == 1
         assert mock.call(table, **kwargs) == mocked_prepare_to_export.call_args
@@ -347,10 +325,7 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert next(result) == tuple(utils.table.fields.keys())
 
         for row, expected_row in zip(result, utils.table._rows):
-            values = [
-                field_type.serialize(value)
-                for field_type, value in zip(field_types, expected_row)
-            ]
+            values = [field_type.serialize(value) for field_type, value in zip(field_types, expected_row)]
             assert values == row
 
     def test_make_unique_name(self):
