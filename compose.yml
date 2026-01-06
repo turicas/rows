@@ -136,7 +136,7 @@ services:
         required: false
     user: "${UID:-1000}:${GID:-1000}"
     shm_size: "4g"
-    image: "postgres:17.4-bookworm"
+    image: "postgres:17.7-trixie"
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
     volumes:
       - ${PWD}/docker/data/postgres/:/data/
