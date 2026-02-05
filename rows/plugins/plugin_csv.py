@@ -45,6 +45,9 @@ if PY2:
     class excel_semicolon(csv.excel):
         delimiter = BINARY_TYPE(";")
 
+    class tsv_dialect(csv.excel):
+        delimiter = BINARY_TYPE("\t")
+
     def discover_dialect(sample, encoding=None, delimiters=(b",", b";", b"\t", b"|")):
         """Discover a CSV dialect based on a sample size.
 
@@ -65,6 +68,9 @@ else:
 
     class excel_semicolon(csv.excel):
         delimiter = ";"
+
+    class tsv_dialect(csv.excel):
+        delimiter = "\t"
 
     def discover_dialect(sample, encoding, delimiters=(",", ";", "\t", "|")):
         """Discover a CSV dialect based on a sample size.
@@ -108,6 +114,7 @@ else:
 # TODO: may add option to change it by passing a parameter to import/export.
 csv.field_size_limit(16777216)
 csv.register_dialect("excel-semicolon", excel_semicolon)
+csv.register_dialect("tsv", tsv_dialect)
 
 
 def fix_dialect(dialect):
