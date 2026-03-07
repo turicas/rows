@@ -1716,5 +1716,236 @@ def list_sheets(source):
         click.echo(sheet_name)
 
 
+_PREMISE_VALID_TYPES = frozenset([
+    "test-count", "test-zero", "test-gt", "test-gte", "test-lt", "test-lte",
+    "test-error", "info", "info-count",
+])
+_PREMISE_REQUIRED_FIELDS = ["id", "type", "title", "query", "expected"]
+_PREMISE_STATUS_OK = "OK"
+_PREMISE_STATUS_ERR = "ERR"
+_PREMISE_STATUS_INFO = "INFO"
+_PREMISE_DEFAULT_TIMEOUT = 60
+
+
+def _premise_first_numeric_value(row):
+    """Return the first numeric value found in a dict, or None.
+
+    Handles int, float and Decimal (returned by psycopg2 for PostgreSQL
+    numeric/decimal columns).
+    """
+    from decimal import Decimal
+
+    for value in row.values():
+        if isinstance(value, (int, float, Decimal)):
+            return value
+    return None
+
+
+def _premise_execute_sql(connection, sql):
+    """Execute a SQL query and return (header, rows). Always closes the cursor."""
+    cursor = connection.cursor()
+    try:
+        cursor.execute(sql)
+        header = [item[0] for item in cursor.description]
+        return header, cursor.fetchall()
+    finally:
+        cursor.close()
+
+
+def _premise_evaluate_result(check_type, row_data, expected_raw):
+    """Given a result row and the test type, return (status, display_value)."""
+    if check_type == "info":
+        return _PREMISE_STATUS_INFO, row_data
+
+    if check_type == "info-count":
+        return _PREMISE_STATUS_INFO, row_data.get("count", row_data)
+
+    if check_type == "test-zero":
+        value = row_data.get("count")
+        if value is None:
+            return _PREMISE_STATUS_ERR, "No 'count' column in result"
+        return (_PREMISE_STATUS_OK if value == 0 else _PREMISE_STATUS_ERR), value
+
+    if check_type == "test-count":
+        value = row_data.get("count")
+        if value is None:
+            return _PREMISE_STATUS_ERR, "No 'count' column in result"
+        expected = int(expected_raw)
+        return (_PREMISE_STATUS_OK if value == expected else _PREMISE_STATUS_ERR), value
+
+    if check_type in ("test-gt", "test-gte", "test-lt", "test-lte"):
+        value = _premise_first_numeric_value(row_data)
+        if value is None:
+            return _PREMISE_STATUS_ERR, "No numeric column in result"
+        expected = float(expected_raw)
+        comparisons = {
+            "test-gt": value > expected,
+            "test-gte": value >= expected,
+            "test-lt": value < expected,
+            "test-lte": value <= expected,
+        }
+        return (_PREMISE_STATUS_OK if comparisons[check_type] else _PREMISE_STATUS_ERR), value
+
+    return _PREMISE_STATUS_ERR, "Unknown type: {}".format(check_type)
+
+
+def _premise_run_test(connection, test):
+    """Execute a single premise test and return a result dict."""
+    import time
+
+    import psycopg2
+
+    check_type = test["type"].strip().lower()
+    sql = test["query"].strip()
+    result = {
+        "id": test["id"],
+        "type": check_type,
+        "title": test["title"],
+        "query": sql,
+        "expected": test["expected"],
+        "status": _PREMISE_STATUS_ERR,
+        "result": "",
+        "duration_ms": 0,
+    }
+
+    start = time.time()
+    try:
+        if check_type == "test-error":
+            try:
+                _premise_execute_sql(connection, sql)
+                result["result"] = "Expected SQL error but query succeeded"
+            except psycopg2.Error:
+                result["status"] = _PREMISE_STATUS_OK
+                result["result"] = "Query raised error as expected"
+            return result
+
+        header, rows_result = _premise_execute_sql(connection, sql)
+
+        if len(rows_result) != 1:
+            result["result"] = "Expected 1 row, got {}".format(len(rows_result))
+            return result
+
+        row_data = dict(zip(header, rows_result[0]))
+        result["status"], result["result"] = _premise_evaluate_result(
+            check_type, row_data, test["expected"],
+        )
+
+    except psycopg2.Error as exc:
+        # A SQL error on a non-test-error query: the implicit transaction (autocommit mode) is already rolled back by
+        # PostgreSQL, so the connection remains usable for subsequent tests.
+        error_message = getattr(exc, "pgerror", None) or TEXT_TYPE(exc)
+        result["status"] = _PREMISE_STATUS_ERR
+        result["result"] = "SQL error: {}".format(error_message.strip())
+    except Exception as exc:
+        result["status"] = _PREMISE_STATUS_ERR
+        result["result"] = "Error: {}".format(exc)
+    finally:
+        elapsed = time.time() - start
+        result["duration_ms"] = round(elapsed * 1000, 1)
+
+    return result
+
+
+@cli.command(
+    name="validate-premises",
+    help=(
+        "Validate data premises by running SQL queries from a CSV file against a PostgreSQL database.\n\n"
+        "The CSV file must have columns: id, type, title, query, expected.\n\n"
+        "Supported types: test-count, test-zero, test-gt, test-gte, test-lt, test-lte, test-error, info, info-count.\n\n"
+        "Exit code is 1 if any test fails, 0 otherwise."
+    ),
+)
+@click.option(
+    "--timeout",
+    type=int,
+    default=_PREMISE_DEFAULT_TIMEOUT,
+    help="Statement timeout in seconds (default: {})".format(_PREMISE_DEFAULT_TIMEOUT),
+)
+@click.option("--quiet", "-q", is_flag=True, help="Do not show progress bar")
+@click.argument("csv_filename", required=True)
+@click.argument("database_uri", required=False, default=None)
+def command_validate_premises(timeout, quiet, csv_filename, database_uri):
+    import csv
+    from collections import Counter
+
+    import psycopg2
+
+    import rows as rows_lib
+    from rows.fileio import cfopen
+
+    if database_uri is None:
+        database_uri = os.environ.get("DATABASE_URL")
+    if not database_uri:
+        click.echo("ERROR: database URI not provided and DATABASE_URL env var is not set.", err=True)
+        sys.exit(1)
+    if not Path(csv_filename).exists():
+        click.echo("ERROR: file '{}' not found.".format(csv_filename), err=True)
+        sys.exit(3)
+
+    table = rows_lib.import_from_csv(csv_filename)
+    missing = set(_PREMISE_REQUIRED_FIELDS) - set(table.field_names or [])
+    if missing:
+        click.echo("ERROR: missing columns in CSV: {}".format(sorted(missing)), err=True)
+        sys.exit(1)
+    tests = [row._asdict() for row in table]
+
+    found_types = set(row["type"].strip().lower() for row in tests)
+    invalid_types = found_types - _PREMISE_VALID_TYPES
+    if invalid_types:
+        click.echo("ERROR: unknown test types: {}".format(sorted(invalid_types)), err=True)
+        click.echo("Valid types: {}".format(sorted(_PREMISE_VALID_TYPES)), err=True)
+        sys.exit(1)
+
+    connection = psycopg2.connect(database_uri)
+    connection.autocommit = True
+    cursor = connection.cursor()
+    cursor.execute("SET statement_timeout TO %s", (timeout * 1000,))
+    cursor.close()
+
+    results = []
+    progress = not quiet and _tqdm_available
+    iterator = _tqdm_if_available(tests, desc="Running premises") if progress else tests
+    try:
+        for test in iterator:
+            results.append(_premise_run_test(connection, test))
+            if progress:
+                counter = Counter(r["status"] for r in results)
+                stats = {
+                    "ok": counter.get(_PREMISE_STATUS_OK, 0),
+                    "err": counter.get(_PREMISE_STATUS_ERR, 0),
+                    "info": counter.get(_PREMISE_STATUS_INFO, 0),
+                }
+                iterator.set_postfix(**stats)
+    except KeyboardInterrupt:
+        click.echo("\nInterrupted by user.", err=True)
+    finally:
+        connection.close()
+
+    if results:
+        display_keys = ["status", "id", "title", "result", "expected", "duration_ms"]
+        display_rows = [{key: row[key] for key in display_keys} for row in results]
+        table = rows_lib.import_from_dicts(display_rows)
+        click.echo("")
+        click.echo(rows_lib.export_to_txt(table))
+
+        counter = Counter(r["status"] for r in results)
+        total = len(results)
+        ok = counter.get(_PREMISE_STATUS_OK, 0)
+        err = counter.get(_PREMISE_STATUS_ERR, 0)
+        info = counter.get(_PREMISE_STATUS_INFO, 0)
+        click.echo("")
+        click.echo("Total: {} | OK: {} | ERR: {} | INFO: {}".format(total, ok, err, info))
+
+        failed = [r for r in results if r["status"] == _PREMISE_STATUS_ERR]
+        if failed:
+            click.echo("")
+            click.echo("Failed tests:")
+            for r in failed:
+                click.echo("  [{}] {}: got {}, expected {}".format(r["id"], r["title"], r["result"], r["expected"]))
+
+        if any(r["status"] == _PREMISE_STATUS_ERR for r in results):
+            sys.exit(1)
+
+
 if __name__ == "__main__":
     cli()
