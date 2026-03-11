@@ -41,6 +41,7 @@ DEFAULT_OUTPUT_ENCODING = "utf-8"
 DEFAULT_SAMPLE_SIZE = 8 * 1024 * 1024
 HOME_PATH = Path(os.path.expanduser("~"))
 CACHE_PATH = HOME_PATH / ".cache" / "rows" / "http"
+_SAMPLES_HELP = "Number of rows to determine the field types. 0 = none (all field types are set to 'text'), -1 = all rows (use with care - consumes a lot of memory)"
 
 
 def parse_options(options):
@@ -184,12 +185,7 @@ def cli(http_cache, http_cache_path):
 @click.option("--order-by")
 @click.option("--fields", help="A comma-separated list of fields to import")
 @click.option("--fields-exclude", help="A comma-separated list of fields to exclude")
-@click.option(
-    "--samples",
-    type=int,
-    default=DEFAULT_SAMPLE_ROWS,
-    help="Number of rows to determine the field types (0 = all)",
-)
+@click.option("--samples", type=int, default=DEFAULT_SAMPLE_ROWS, help=_SAMPLES_HELP)
 @click.option(
     "--input-option",
     "-i",
@@ -291,12 +287,7 @@ def convert(
     "--fields-exclude",
     help="A comma-separated list of fields to exclude when exporting",
 )
-@click.option(
-    "--samples",
-    type=int,
-    default=DEFAULT_SAMPLE_ROWS,
-    help="Number of rows to determine the field types (0 = all)",
-)
+@click.option("--samples", type=int, default=DEFAULT_SAMPLE_ROWS, help=_SAMPLES_HELP)
 @click.argument("keys")
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("destination")
@@ -386,12 +377,7 @@ def join(
 @click.option("--order-by")
 @click.option("--fields", help="A comma-separated list of fields to import")
 @click.option("--fields-exclude", help="A comma-separated list of fields to exclude")
-@click.option(
-    "--samples",
-    type=int,
-    default=DEFAULT_SAMPLE_ROWS,
-    help="Number of rows to determine the field types (0 = all)",
-)
+@click.option("--samples", type=int, default=DEFAULT_SAMPLE_ROWS, help=_SAMPLES_HELP)
 @click.argument("sources", nargs=-1, required=True)
 @click.argument("destination")
 def sum_(
@@ -478,12 +464,7 @@ def sum_(
 )
 @click.option("--output-locale")
 @click.option("--frame-style", default="ascii", help="Options: ascii, single, double, none")
-@click.option(
-    "--samples",
-    type=int,
-    default=DEFAULT_SAMPLE_ROWS,
-    help="Number of rows to determine the field types (0 = all)",
-)
+@click.option("--samples", type=int, default=DEFAULT_SAMPLE_ROWS, help=_SAMPLES_HELP)
 @click.option("--table-index", default=0)
 @click.option("--verify-ssl", type=bool, default=True)
 @click.option("--timeout", type=int, default=10)
@@ -628,12 +609,7 @@ def create_complete_query(query, table_names):
 @click.option("--output-locale")
 @click.option("--verify-ssl", type=bool, default=True)
 @click.option("--timeout", type=int, default=10)
-@click.option(
-    "--samples",
-    type=int,
-    default=DEFAULT_SAMPLE_ROWS,
-    help="Number of rows to determine the field types (0 = all)",
-)
+@click.option("--samples", type=int, default=DEFAULT_SAMPLE_ROWS, help=_SAMPLES_HELP)
 @click.option(
     "--input-option",
     "-i",
@@ -671,7 +647,6 @@ def query(
     input_encoding = input_encoding or DEFAULT_INPUT_ENCODING
     progress = not quiet and _tqdm_available
 
-    samples = samples if samples > 0 else None
     table_names = ["table{}".format(index) for index in range(1, len(sources) + 1)]
     query = create_complete_query(query, table_names)
 
@@ -778,12 +753,7 @@ def parse_comma_separated(ctx, param, value):
     "--fields-exclude",
     help="A comma-separated list of fields to exclude from inspection",
 )
-@click.option(
-    "--samples",
-    type=int,
-    default=DEFAULT_SAMPLE_ROWS,
-    help="Number of rows to determine the field types (0 = all)",
-)
+@click.option("--samples", type=int, default=DEFAULT_SAMPLE_ROWS, help=_SAMPLES_HELP)
 @click.option(
     "--max-choices",
     type=int,
@@ -832,7 +802,6 @@ def command_schema(
     source_info = detect_source(uri=source, verify_ssl=verify_ssl, progress=progress)
     input_encoding = input_encoding or input_options.get("encoding", None) or source_info.encoding
 
-    samples = samples if samples > 0 else None
     import_fields = _get_import_fields(field_names, fields_exclude)
 
     if detect_all_types:
@@ -853,7 +822,7 @@ def command_schema(
                 encoding=input_encoding,
                 samples=samples,
                 import_fields=import_fields,
-                max_rows=samples,
+                max_rows=samples,  # TODO: change according to the new samples behavior
                 mode="eager",
                 field_types=field_types,
                 **input_options
@@ -865,7 +834,7 @@ def command_schema(
             encoding=input_encoding,
             samples=samples,
             import_fields=import_fields,
-            max_rows=samples,
+            max_rows=samples,  # TODO: change according to the new samples behavior
             mode="eager",
             field_types=field_types,
             **input_options
@@ -888,18 +857,14 @@ def command_schema(
 @cli.command(name="csv-inspect", help="Identifies encoding, dialect and schema")
 @click.option("--encoding", default=None)
 @click.option("--dialect")
-@click.option(
-    "--samples",
-    type=int,
-    default=DEFAULT_SAMPLE_ROWS,
-    help="Number of rows to determine the field types (0 = all)",
-)
+@click.option("--samples", type=int, default=DEFAULT_SAMPLE_ROWS, help=_SAMPLES_HELP)
 @click.argument("source", required=True)
 def csv_inspect(encoding, dialect, samples, source):
     import csv
 
     from rows.plugins import csv as rows_csv
 
+    # TODO: change according to the new samples behavior
     inspector = rows_csv.CsvInspector(source, encoding=encoding, dialect=dialect, max_samples=samples)
 
     click.echo("encoding = {}".format(repr(inspector.encoding)))
@@ -993,12 +958,7 @@ def command_csv_fix(
 
 @cli.command(name="csv-to-sqlite", help="Convert one or more CSV files to SQLite")
 @click.option("--batch-size", default=10000)
-@click.option(
-    "--samples",
-    type=int,
-    default=DEFAULT_SAMPLE_ROWS,
-    help="Number of rows to determine the field types (0 = all)",
-)
+@click.option("--samples", type=int, default=DEFAULT_SAMPLE_ROWS, help=_SAMPLES_HELP)
 @click.option("--input-encoding", default=None)
 @click.option("--dialect", default=None)
 @click.option("--schemas", default=None)
@@ -1022,6 +982,7 @@ def command_csv_to_sqlite(batch_size, samples, input_encoding, dialect, schemas,
         prefix = "[{filename} -> {db_filename}#{tablename}]".format(
             db_filename=output.name, tablename=table_name, filename=filename.name
         )
+        # TODO: change according to the new samples behavior
         inspector = rows_csv.CsvInspector(
             TEXT_TYPE(filename), encoding=input_encoding, dialect=dialect, schema=schema, max_samples=samples
         )

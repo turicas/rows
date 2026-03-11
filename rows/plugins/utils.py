@@ -73,8 +73,9 @@ def create_table(
     """Create a rows.Table object based on data rows and some configurations
 
     - `skip_header` is only used if `fields` is set
-    - `samples` is only used if `fields` is `None`. If samples=None, all data
-      is filled in memory - use with caution.
+    - `samples` is only used if `fields` is `None`:
+      - If samples=-1, all data is filled in memory - use with caution
+      - If samples=0, all columns will be set as TextField
     - `force_types` is only used if `fields` is `None`
     - `import_fields` can be used either if `fields` is set or not, the
       resulting fields will seek its order
@@ -98,11 +99,16 @@ def create_table(
         header = make_header(next(table_rows))
 
         if samples is not None:
-            sample_rows = list(islice(table_rows, 0, samples))
-            if len(sample_rows) < samples:  # Read all the data
-                table_rows = sample_rows
+            if samples == 0:  # No samples, everything as text
+                sample_rows = []
+            elif samples == -1:  # ALL rows are used as samples on type inference
+                sample_rows = table_rows = list(table_rows)
             else:
-                table_rows = chain(sample_rows, table_rows)
+                sample_rows = list(islice(table_rows, 0, samples))
+                if len(sample_rows) < samples:  # Read all the data
+                    table_rows = sample_rows
+                else:
+                    table_rows = chain(sample_rows, table_rows)
         else:  # Read the whole table
             if max_rows is not None and max_rows > 0:
                 sample_rows = table_rows = list(islice(table_rows, max_rows))

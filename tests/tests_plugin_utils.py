@@ -354,3 +354,17 @@ class PluginUtilsTestCase(utils.RowsTestMixIn, unittest.TestCase):
 
     # TODO: test all features of create_table
     # TODO: test if error is raised if len(row) != len(fields)
+
+    def test_create_table_samples(self):
+        data = [["f1", "f2"], ["1", "Álvaro"], ["2", "turicas"], ["3.2", "Justen"]]
+
+        table_1 = plugins_utils.create_table(data, samples=0)
+        expected_field_types_1 = OrderedDict([("f1", fields.TextField), ("f2", fields.TextField)])
+        assert expected_field_types_1 == table_1.fields
+
+        with self.assertRaises(ValueError):  # Will try to convert third row value "3.2" to integer and fail
+            table_2 = plugins_utils.create_table(data, samples=2)
+
+        table_3 = plugins_utils.create_table(data, samples=-1)
+        expected_field_types_3 = OrderedDict([("f1", fields.FloatField), ("f2", fields.TextField)])
+        assert expected_field_types_3 == table_3.fields
