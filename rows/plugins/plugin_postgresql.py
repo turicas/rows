@@ -118,6 +118,16 @@ def _schema_positive_integer(field_name, metadata, key):
     return value
 
 
+def _schema_non_negative_integer(field_name, metadata, key):
+    try:
+        value = int(metadata[key])
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("Field '{}' requires a non-negative '{}' metadata value".format(field_name, key))
+    if value < 0:
+        raise ValueError("Field '{}' requires a non-negative '{}' metadata value".format(field_name, key))
+    return value
+
+
 def _postgresql_field_type(field_name, field_type, metadata):
     from rows import fields
 
@@ -143,6 +153,19 @@ def _postgresql_field_type(field_name, field_type, metadata):
             return subtype
         elif subtype:
             raise ValueError("Field '{}' has invalid integer subtype '{}'".format(field_name, subtype))
+    elif field_type is fields.DecimalField:
+        has_max_digits = "max_digits" in metadata
+        has_decimal_places = "decimal_places" in metadata
+        if has_max_digits != has_decimal_places:
+            raise ValueError(
+                "Field '{}' requires both 'max_digits' and 'decimal_places' metadata values".format(field_name)
+            )
+        if has_max_digits:
+            max_digits = _schema_positive_integer(field_name, metadata, "max_digits")
+            decimal_places = _schema_non_negative_integer(field_name, metadata, "decimal_places")
+            if decimal_places > max_digits:
+                raise ValueError("Field '{}' has decimal_places greater than max_digits".format(field_name))
+            return "NUMERIC({}, {})".format(max_digits, decimal_places)
     elif field_type is fields.TextField:
         if subtype == "VARCHAR":
             return "VARCHAR({})".format(_schema_positive_integer(field_name, metadata, "max_length"))
@@ -162,10 +185,13 @@ def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None, 
     field_names = list(schema.keys())
     field_types = list(schema.values())
 
-    columns = [
-        '"{}" {}'.format(name, _postgresql_field_type(name, type_, schema_metadata.get(name, {})))
-        for name, type_ in zip(field_names, field_types)
-    ]
+    columns = []
+    for name, type_ in zip(field_names, field_types):
+        metadata = schema_metadata.get(name, {})
+        column = '"{}" {}'.format(name, _postgresql_field_type(name, type_, metadata))
+        if metadata.get("null") is False:
+            column += " NOT NULL"
+        columns.append(column)
     SQL_CREATE_TABLE = "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types}){post_fields}'
     return SQL_CREATE_TABLE.format(
         pre_table="" if not unlogged else "UNLOGGED ",

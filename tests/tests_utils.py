@@ -398,11 +398,39 @@ class PgUtilsTestCase(unittest.TestCase):
             '"name" VARCHAR(42), "description" TEXT)'
         )
 
+    def test_pg_create_table_sql_uses_null_and_decimal_metadata(self):
+        schema = OrderedDict(
+            [
+                ("amount", rows.fields.DecimalField),
+                ("optional_amount", rows.fields.DecimalField),
+                ("name", rows.fields.TextField),
+            ]
+        )
+        metadata = {
+            "amount": {"max_digits": 10, "decimal_places": 2, "null": False},
+            "optional_amount": {"max_digits": 5, "decimal_places": 0, "null": True},
+            "name": {"null": False},
+        }
+
+        sql = rows.utils.pg_create_table_sql(schema, "testtable", schema_metadata=metadata)
+
+        assert sql == (
+            'CREATE TABLE IF NOT EXISTS "testtable" ('
+            '"amount" NUMERIC(10, 2) NOT NULL, "optional_amount" NUMERIC(5, 0), "name" TEXT NOT NULL)'
+        )
+
     def test_pg_create_table_sql_rejects_invalid_subtype(self):
         schema = OrderedDict([("name", rows.fields.TextField)])
 
         with self.assertRaises(ValueError):
             rows.utils.pg_create_table_sql(schema, "testtable", schema_metadata={"name": {"subtype": "SMALLINT"}})
+
+        with self.assertRaises(ValueError):
+            rows.utils.pg_create_table_sql(
+                OrderedDict([("amount", rows.fields.DecimalField)]),
+                "testtable",
+                schema_metadata={"amount": {"max_digits": 2}},
+            )
 
 
 def test_scale_number():
