@@ -108,15 +108,26 @@ def get_psql_copy_command(
     )
 
 
-def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
+def _schema_positive_integer(field_name, metadata, key):
+    try:
+        value = int(metadata[key])
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("Field '{}' requires a positive '{}' metadata value".format(field_name, key))
+    if value <= 0:
+        raise ValueError("Field '{}' requires a positive '{}' metadata value".format(field_name, key))
+    return value
+
+
+def _postgresql_field_type(field_name, field_type, metadata):
     from rows import fields
 
-    POSTGRESQL_TYPES = {
+    postgresql_types = {
         fields.BinaryField: "BYTEA",
         fields.BoolField: "BOOLEAN",
         fields.DateField: "DATE",
         fields.DatetimeField: "TIMESTAMP(0) WITHOUT TIME ZONE",
         fields.DecimalField: "NUMERIC",
+        fields.EmailField: "TEXT",
         fields.FloatField: "REAL",
         fields.IntegerField: "BIGINT",  # TODO: detect when it's really needed
         fields.JSONField: "JSONB",
@@ -124,14 +135,35 @@ def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None):
         fields.TextField: "TEXT",
         fields.UUIDField: "UUID",
     }
-    DEFAULT_POSTGRESQL_TYPE = "BYTEA"
+    default_postgresql_type = "BYTEA"
+    subtype = TEXT_TYPE(metadata.get("subtype") or "").upper()
 
+    if field_type is fields.IntegerField:
+        if subtype in ("SMALLINT", "INTEGER", "BIGINT"):
+            return subtype
+        elif subtype:
+            raise ValueError("Field '{}' has invalid integer subtype '{}'".format(field_name, subtype))
+    elif field_type is fields.TextField:
+        if subtype == "VARCHAR":
+            return "VARCHAR({})".format(_schema_positive_integer(field_name, metadata, "max_length"))
+        elif subtype == "TEXT" or not subtype:
+            return postgresql_types[field_type]
+        else:
+            raise ValueError("Field '{}' has invalid text subtype '{}'".format(field_name, subtype))
+    elif subtype:
+        raise ValueError("Field '{}' has subtype '{}' but its field type does not support subtypes".format(field_name, subtype))
+
+    return postgresql_types.get(field_type, default_postgresql_type)
+
+
+def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None, schema_metadata=None):
+    schema_metadata = schema_metadata or {}
     access_method = TEXT_TYPE(access_method or "").strip().lower()
     field_names = list(schema.keys())
     field_types = list(schema.values())
 
     columns = [
-        '"{}" {}'.format(name, POSTGRESQL_TYPES.get(type_, DEFAULT_POSTGRESQL_TYPE))
+        '"{}" {}'.format(name, _postgresql_field_type(name, type_, schema_metadata.get(name, {})))
         for name, type_ in zip(field_names, field_types)
     ]
     SQL_CREATE_TABLE = "CREATE {pre_table}TABLE{post_table} " '"{table_name}" ({field_types}){post_fields}'
@@ -476,6 +508,7 @@ class PostgresCopy(object):
         unlogged=False,
         access_method=None,
         callback=None,
+        schema_metadata=None,
     ):
         from rows.fields import make_header
         from rows.fileio import cfopen
@@ -518,6 +551,7 @@ class PostgresCopy(object):
                 table_name,
                 unlogged=unlogged,
                 access_method=access_method,
+                schema_metadata=schema_metadata,
             )
             # TODO: we may check if the server has support to the selected
             # access method with the following query:
@@ -549,6 +583,7 @@ class PostgresCopy(object):
         unlogged=False,
         access_method=None,
         callback=None,
+        schema_metadata=None,
     ):
         if isinstance(dialect, TEXT_TYPE):
             dialect = csv.get_dialect(dialect)
@@ -561,7 +596,13 @@ class PostgresCopy(object):
             # on CSV directly (field order will be schema's field order).
             pg_execute_psql(
                 self.database_uri,
-                pg_create_table_sql(schema, table_name, unlogged=unlogged, access_method=access_method),
+                pg_create_table_sql(
+                    schema,
+                    table_name,
+                    unlogged=unlogged,
+                    access_method=access_method,
+                    schema_metadata=schema_metadata,
+                ),
             )
 
         # TODO: if reading from fobj, the schema must be in the same order as
@@ -596,6 +637,7 @@ def pgimport(
     unlogged=False,
     access_method=None,
     callback=None,
+    schema_metadata=None,
 ):
     """Import data from CSV into PostgreSQL using the fastest method
 
@@ -619,6 +661,7 @@ def pgimport(
             encoding=encoding,
             dialect=dialect,
             schema=schema,
+            schema_metadata=schema_metadata,
             has_header=has_header,
             skip_rows=skip_rows,
             create_table=create_table,
@@ -636,6 +679,7 @@ def pgimport(
             encoding=encoding,
             dialect=dialect,
             schema=schema,
+            schema_metadata=schema_metadata,
             has_header=has_header,
             skip_rows=skip_rows,
             create_table=create_table,

@@ -288,6 +288,36 @@ class SchemaTestCase(utils.RowsTestMixIn, unittest.TestCase):
         )
         assert schema == expected
 
+    def test_load_schema_with_metadata(self):
+        temp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
+        self.files_to_delete.append(temp.name)
+        temp.file.write(
+            dedent(
+                """
+        field_name,field_type,subtype,max_length
+        id,integer,SMALLINT,
+        name,text,VARCHAR,42
+        description,text,TEXT,
+        """
+            )
+            .strip()
+            .encode("utf-8")
+        )
+        temp.file.close()
+
+        schema, metadata = rows.utils.load_schema(temp.name, include_metadata=True)
+
+        assert schema == OrderedDict(
+            [("id", fields.IntegerField), ("name", fields.TextField), ("description", fields.TextField)]
+        )
+        assert metadata == OrderedDict(
+            [
+                ("id", {"subtype": "SMALLINT"}),
+                ("name", {"subtype": "VARCHAR", "max_length": 42}),
+                ("description", {"subtype": "TEXT"}),
+            ]
+        )
+
     def test_load_schema_with_context(self):
         temp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
         self.files_to_delete.append(temp.name)
@@ -341,6 +371,38 @@ class PgUtilsTestCase(unittest.TestCase):
         schema = OrderedDict([("id", rows.fields.IntegerField), ("name", rows.fields.TextField)])
         sql = rows.utils.pg_create_table_sql(schema, "testtable")
         assert sql == """CREATE TABLE IF NOT EXISTS "testtable" ("id" BIGINT, "name" TEXT)"""
+
+    def test_pg_create_table_sql_uses_subtypes_from_schema(self):
+        schema = OrderedDict(
+            [
+                ("small", rows.fields.IntegerField),
+                ("integer", rows.fields.IntegerField),
+                ("big", rows.fields.IntegerField),
+                ("name", rows.fields.TextField),
+                ("description", rows.fields.TextField),
+            ]
+        )
+        metadata = {
+            "small": {"subtype": "SMALLINT"},
+            "integer": {"subtype": "INTEGER"},
+            "big": {"subtype": "BIGINT"},
+            "name": {"subtype": "VARCHAR", "max_length": 42},
+            "description": {"subtype": "TEXT"},
+        }
+
+        sql = rows.utils.pg_create_table_sql(schema, "testtable", schema_metadata=metadata)
+
+        assert sql == (
+            'CREATE TABLE IF NOT EXISTS "testtable" ('
+            '"small" SMALLINT, "integer" INTEGER, "big" BIGINT, '
+            '"name" VARCHAR(42), "description" TEXT)'
+        )
+
+    def test_pg_create_table_sql_rejects_invalid_subtype(self):
+        schema = OrderedDict([("name", rows.fields.TextField)])
+
+        with self.assertRaises(ValueError):
+            rows.utils.pg_create_table_sql(schema, "testtable", schema_metadata={"name": {"subtype": "SMALLINT"}})
 
 
 def test_scale_number():

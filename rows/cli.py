@@ -132,7 +132,7 @@ def _get_export_fields(table_field_names, fields_exclude):
         return None
 
 
-def _get_schemas_for_inputs(schemas, inputs):
+def _get_schemas_for_inputs(schemas, inputs, include_metadata=False):
     from rows.utils import load_schema
 
     if schemas is None:
@@ -147,7 +147,7 @@ def _get_schemas_for_inputs(schemas, inputs):
             for _ in range(diff):
                 schemas.append(None)
 
-    return [load_schema(schema) if schema else None for schema in schemas]
+    return [load_schema(schema, include_metadata=include_metadata) if schema else None for schema in schemas]
 
 
 class AliasedGroup(click.Group):
@@ -1200,25 +1200,33 @@ def command_pgimport(
             progress_bar.description = "Reading schema"
         if schema == ":text:":
             schemas = [
-                ORDERED_DICT(
-                    [(field_name, TextField) for field_name in make_header(inspector.field_names, max_size=63)]
+                (
+                    ORDERED_DICT(
+                        [(field_name, TextField) for field_name in make_header(inspector.field_names, max_size=63)]
+                    ),
+                    None,
                 )
             ]
             no_header = True
             skip_rows += 1
         else:
-            schemas = _get_schemas_for_inputs(schema, [source])
+            schemas = _get_schemas_for_inputs(schema, [source], include_metadata=True)
     else:
         if _tqdm_available:
             progress_bar.description = "Detecting schema"
-        schemas = [inspector.schema]
-    _, schema = schema, schemas[0]
+        schemas = [(inspector.schema, None)]
+    _, (schema, schema_metadata) = schema, schemas[0]
 
     if not original_field_names:
-        header = make_header(schema.keys())
+        field_names = list(schema.keys())
+        header = make_header(field_names)
         schema = ORDERED_DICT(
             [(header_name, field_type) for (header_name, (_, field_type)) in zip(header, schema.items())]
         )
+        if schema_metadata is not None:
+            schema_metadata = ORDERED_DICT(
+                [(header_name, schema_metadata.get(field_name, {})) for header_name, field_name in zip(header, field_names)]
+            )
 
     # So we can finally import it!
     import_meta = pgimport(
@@ -1231,6 +1239,7 @@ def command_pgimport(
         create_table=not no_create_table,
         table_name=table_name,
         schema=schema,
+        schema_metadata=schema_metadata,
         unlogged=unlogged,
         access_method=access_method,
         callback=progress_bar_update,

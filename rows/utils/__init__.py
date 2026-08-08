@@ -1458,12 +1458,15 @@ def generate_schema(table, export_fields, output_format, max_choices=100, exclud
         return result
 
 
-def load_schema(filename, context=None):
+def load_schema(filename, context=None, include_metadata=False):
     """Load schema from file in any of the supported formats
 
     The table must have at least the fields `field_name` and `field_type`.
     `context` is a `dict` with field_type as key pointing to field class, like:
         {"text": rows.fields.TextField, "value": MyCustomField}
+
+    When `include_metadata` is true, returns a tuple with the fields mapping and
+    the remaining columns of the schema file, indexed by field name.
     """
     from rows import fields as rows_fields
     from rows.compat import ORDERED_DICT
@@ -1480,7 +1483,19 @@ def load_schema(filename, context=None):
         for key in dir(rows_fields)
         if "Field" in key and key != "Field"
     }
-    return ORDERED_DICT([(row.field_name, context[row.field_type]) for row in table])
+    schema = ORDERED_DICT()
+    metadata = ORDERED_DICT()
+    metadata_fields = [field_name for field_name in field_names if field_name not in ("field_name", "field_type")]
+    for row in table:
+        schema[row.field_name] = context[row.field_type]
+        if include_metadata:
+            metadata[row.field_name] = {
+                field_name: getattr(row, field_name) for field_name in metadata_fields if getattr(row, field_name) is not None
+            }
+
+    if include_metadata:
+        return schema, metadata
+    return schema
 
 
 def scale_number(n, divider=1000, suffix=None, multipliers="KMGTPEZ", decimal_places=2):
