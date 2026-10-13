@@ -25,6 +25,21 @@ else:
     from collections.abc import Iterable, MutableSequence
 
 
+def _restore_row(field_names, values):
+    return _make_row_type(field_names)(*values)
+
+
+def _reduce_row(row):
+    # Row types are created per table, so pickle cannot look them up by name.
+    return _restore_row, (row._fields, tuple(row))
+
+
+def _make_row_type(field_names):
+    row_type = namedtuple("Row", field_names)
+    row_type.__reduce__ = _reduce_row
+    return row_type
+
+
 class Table(MutableSequence):
 
     def __new__(cls, *args, **kwargs):
@@ -47,8 +62,6 @@ class Table(MutableSequence):
         return super(Table, subclass).__new__(subclass)
 
     def __init__(self, fields, meta=None, mode=None, data=None):
-        from collections import namedtuple
-
         from rows.fields import make_header
 
         # TODO: what if `fields` is None but `data` is not? Run the detection algorithm here instead of inside
@@ -71,7 +84,7 @@ class Table(MutableSequence):
             [(header_name, field_type) for (header_name, (_, field_type)) in zip(header, fields.items())]
         )
         # TODO: should be able to customize row return type (namedtuple, dict etc.)
-        self.Row = namedtuple("Row", self.field_names)
+        self.Row = _make_row_type(self.field_names)
         self.meta = dict(meta) if meta is not None else {}
         self._rows = []
         self.__post_init__()
@@ -114,7 +127,7 @@ class Table(MutableSequence):
         field_type = detect_types([field_name], [[value] for value in values])[field_name]
         # TODO: this type detection would benefit of having `TypeDetector.feed_column` implemented
         self.fields[field_name] = field_type
-        self.Row = namedtuple("Row", self.field_names)
+        self.Row = _make_row_type(self.field_names)
 
         if is_new_field:
             for (row_index, row), value in zip(enumerate(self._rows), values):
@@ -136,7 +149,7 @@ class Table(MutableSequence):
             raise KeyError(name)
 
         del self.fields[name]
-        self.Row = namedtuple("Row", self.field_names)
+        self.Row = _make_row_type(self.field_names)
         for index, row in enumerate(self._rows):
             self._rows[index] = tuple([value for col_index, value in enumerate(row) if col_index != field_index])
 
@@ -567,7 +580,7 @@ class FlexibleTable(EagerTable):
 
     def _add_field(self, field_name, field_type):
         self.fields[field_name] = field_type
-        self.Row = namedtuple("Row", self.field_names)
+        self.Row = _make_row_type(self.field_names)
 
     def _make_row_from_dict(self, row):
         from rows.fields import cached_type_deserialize, identify_type
