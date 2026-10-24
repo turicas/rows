@@ -29,6 +29,7 @@ else:
 
 
 def _get_row_data(fields_xpath):
+    """Return a function that extracts one row of values for fields_xpath from a row element."""
 
     fields = list(fields_xpath.items())
 
@@ -48,6 +49,13 @@ def _get_row_data(fields_xpath):
 
 
 def import_from_xpath(filename_or_fobj, rows_xpath, fields_xpath, encoding=None, *args, **kwargs):
+    """Import an HTML/XML document into a rows.Table using XPath.
+
+    rows_xpath selects the row elements; fields_xpath maps field names to
+    xpaths, whose text is stripped, unescaped and joined, or None when empty.
+    Accepts a filename or file object; binary file objects require encoding.
+    Extra arguments are passed to create_table.
+    """
     from rows.plugins.utils import is_binary_file, is_fobj
 
     types = set([type(rows_xpath)] + [type(xpath) for xpath in fields_xpath.values()])
