@@ -13,6 +13,7 @@
 from __future__ import unicode_literals
 
 import datetime
+import pickle
 import random
 import unittest
 from collections import OrderedDict
@@ -32,6 +33,57 @@ from rows.compat import BINARY_TYPE
 from rows.utils import Source
 
 binary_type_name = BINARY_TYPE.__name__
+
+
+@pytest.mark.parametrize("protocol", range(pickle.HIGHEST_PROTOCOL + 1))
+@pytest.mark.parametrize("mode", ["eager", "incremental", "stream", "flexible"])
+def test_row_pickle(mode, protocol):
+    values = ("Álvaro", datetime.date(1987, 4, 29))
+    table = Table(
+        fields=OrderedDict([("name", fields.TextField), ("birthdate", fields.DateField)]),
+        data=[dict(zip(("name", "birthdate"), values)) if mode == "flexible" else values],
+        mode=mode,
+    )
+    row = next(iter(table))
+    restored = pickle.loads(pickle.dumps(row, protocol=protocol))
+
+    assert restored == row
+    assert restored._fields == row._fields
+    assert restored._asdict() == row._asdict()
+    assert restored.name == "Álvaro"
+    assert restored.birthdate == datetime.date(1987, 4, 29)
+    assert restored._replace(name="Other").name == "Other"
+    assert pickle.loads(pickle.dumps(restored, protocol=protocol)) == row
+
+
+def test_row_pickle_after_column_changes():
+    table = Table(fields={"name": fields.TextField}, data=[("Álvaro",)])
+    original = table[0]
+    table["age"] = [30]
+    added = table[0]
+    del table["name"]
+    deleted = table[0]
+
+    restored = pickle.loads(pickle.dumps([original, added, deleted]))
+    assert restored == [original, added, deleted]
+    assert [row._fields for row in restored] == [("name",), ("name", "age"), ("age",)]
+    assert restored[0].name == restored[1].name == "Álvaro"
+    assert restored[1].age == restored[2].age == 30
+
+
+def test_row_pickle_after_flexible_field_changes():
+    table = FlexibleTable()
+    table.append({"name": "Álvaro"})
+    original = table[0]
+    table.append({"age": 30})
+    added = table[1]
+
+    restored = pickle.loads(pickle.dumps([original, added]))
+    assert restored == [original, added]
+    assert restored[0]._fields == ("name",)
+    assert restored[1]._fields == ("name", "age")
+    assert restored[1].name is None
+    assert restored[1].age == 30
 
 
 class TableTestCase(unittest.TestCase):
