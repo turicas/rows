@@ -206,7 +206,9 @@ def import_from_csv(filename_or_fobj, encoding="utf-8", dialect=None, sample_siz
 
     fobj = source.fobj
     if not PY2:
-        if is_binary_file(fobj):
+        # Binary file proxies may have neither a mode nor a BytesIO type.
+        # A zero-length read identifies them without consuming CSV content.
+        if is_binary_file(fobj) or isinstance(fobj.read(0), BINARY_TYPE):
             fobj = TextIOWrapper(fobj, encoding=encoding)
             # TODO: how to detach in this case, so we preventing from having the file object closed when TextIOWrapper
             # is garbage-collected?

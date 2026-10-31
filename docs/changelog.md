@@ -24,6 +24,9 @@ to).
 
 ### Plugins
 
+- Read binary CSV file proxies without a `mode` attribute, including Django
+  in-memory uploads, using the requested encoding.
+
 - Add param `max_rows` to `create_table` (import only part of a table, all
   plugins are supported)
 - Add `start_row`, `end_row`, `start_column` and `end_column` to ODS plugin
