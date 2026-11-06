@@ -24,6 +24,7 @@ else:
 
 
 def _get_content(element):
+    """Return element's text plus the serialized HTML of its children."""
     from lxml.etree import tostring as to_string
 
     return (element.text if element.text is not None else "") + "".join(
@@ -32,6 +33,12 @@ def _get_content(element):
 
 
 def _get_row(row, column_tag, preserve_html, properties):
+    """Return one table row's cell values from a row element.
+
+    When preserve_html is False, cell text is extracted as plain text;
+    otherwise the raw HTML of each cell is kept. When properties is True,
+    the row element's attributes are appended as a dict.
+    """
     if not preserve_html:
         data = list(map(_extract_node_text, row.xpath(column_tag)))
     else:
