@@ -207,6 +207,16 @@ class FieldsTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             fields.PercentField.deserialize(42)
 
+    def test_PercentField_serialize_integer_values(self):
+        """Issue #384: integer percentages were serialized 100x too small."""
+        assert fields.PercentField.serialize(Decimal("1")) == "100%"
+        assert fields.PercentField.serialize(Decimal("2")) == "200%"
+        assert fields.PercentField.serialize(Decimal("0.5")) == "50%"
+        # round-trip: serialize -> deserialize must return the original value
+        assert fields.PercentField.deserialize(
+            fields.PercentField.serialize(Decimal("1"))
+        ) == Decimal("1")
+
     def test_DateField(self):
         # TODO: test timezone-aware datetime.date
         serialized = "2015-05-27"

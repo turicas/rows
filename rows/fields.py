@@ -383,7 +383,11 @@ class PercentField(DecimalField):
         elif value == Decimal("0"):
             return "0.00%"
 
-        value = Decimal(TEXT_TYPE(value * 100)[:-2])
+        value_as_string = TEXT_TYPE(value * 100)
+        if "." in value_as_string:
+            # the * 100 shift leaves two extra digits after the decimal point
+            value_as_string = value_as_string[:-2]
+        value = Decimal(value_as_string)
         value = super(PercentField, cls).serialize(value, *args, **kwargs)
         return "{}%".format(value)
 
