@@ -67,3 +67,30 @@ def test_locale_context_and_deserialization_cache():
         assert len(fields._deserialization_cache) == start_length + 2
         assert fields.cached_type_deserialize(fields.FloatField, "1,23", true_behavior=False) == 1.23
         assert len(fields._deserialization_cache) == start_length + 3
+
+
+def test_decimal_field_deserialize_negative_numbers():
+    """Issue #383: the fractional part must keep the sign of the integer part."""
+    from decimal import Decimal
+
+    with locale_context(LOCALE_NAME):
+        from rows import fields
+
+        decimal_point = locale.localeconv()["decimal_point"]
+        assert fields.DecimalField.deserialize("-42") == Decimal("-42")
+        assert (
+            fields.DecimalField.deserialize("-42{}5".format(decimal_point))
+            == Decimal("-42.5")
+        )
+        assert (
+            fields.DecimalField.deserialize("-0{}75".format(decimal_point))
+            == Decimal("-0.75")
+        )
+        assert (
+            fields.DecimalField.deserialize("0{}75".format(decimal_point))
+            == Decimal("0.75")
+        )
+        assert (
+            fields.PercentField.deserialize("-42{}5%".format(decimal_point))
+            == Decimal("-0.425")
+        )
