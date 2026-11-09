@@ -364,7 +364,11 @@ class DecimalField(Field):
                 value = Decimal(parts[0])
                 if len(parts) == 2:
                     decimal_places = len(parts[1])
-                    value = value + (Decimal(parts[1]) / (10**decimal_places))
+                    fraction = Decimal(parts[1]) / (10**decimal_places)
+                    if "-" in parts[0]:
+                        # integer part carries the sign ("-0" would lose it)
+                        fraction = -fraction
+                    value = value + fraction
             except InvalidOperation:
                 value_error(value, cls)
             return value
