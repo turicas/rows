@@ -20,11 +20,19 @@ from rows.utils import Source
 
 
 def _python_to_sqlite(field_types):
+    """Return a function that converts a row of Python values to SQLite values.
+
+    Binary, boolean, float, integer and text values are passed through
+    unchanged; dates and datetimes become ISO-format strings; decimals and
+    percents become floats (or None when null); any other field type is
+    serialized by the field itself.
+    """
     import datetime
 
     from rows import fields
 
     def convert_value(field_type, value):
+        """Convert one value to its SQLite representation for field_type."""
         if field_type in (
             fields.BinaryField,
             fields.BoolField,
@@ -51,12 +59,19 @@ def _python_to_sqlite(field_types):
             return field_type.serialize(value)
 
     def convert_row(row):
+        """Convert one row of Python values to SQLite values, in field order."""
         return [convert_value(field_type, value) for field_type, value in zip(field_types, row)]
 
     return convert_row
 
 
 def get_source(filename_or_connection):
+    """Return a rows Source for a SQLite filename or an open connection.
+
+    A filename (or path) is opened with sqlite3.connect and closed when the
+    source is closed; an existing connection is used as-is and its filename
+    is recovered from PRAGMA database_list when available.
+    """
 
     if isinstance(filename_or_connection, (BINARY_TYPE, TEXT_TYPE, Path)):
         connection = sqlite3.connect(filename_or_connection)
@@ -128,6 +143,13 @@ def export_to_sqlite(
     *args,
     **kwargs
 ):
+    """Write a rows.Table to a SQLite database and return the connection.
+
+    Creates the table if needed (naming it table1, table2, ... when no name
+    is given), maps each field type to a SQLite column type and inserts rows
+    in batches of batch_size, calling callback(written, total_written) after
+    each batch when given.
+    """
     from rows import fields
     from rows.plugins.utils import ipartition, prepare_to_export, valid_table_name
 
