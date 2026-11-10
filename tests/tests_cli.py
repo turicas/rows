@@ -97,6 +97,14 @@ def sample_csv_iso_885915(tmp_path):
     return file_path
 
 
+def test_convert_input_option_without_equal_sign(runner, tmp_path, sample_csv):
+    out_file = tmp_path / "out.csv"
+    result = runner.invoke(cli, ["convert", "-i", "foo", str(sample_csv), str(out_file)])
+    assert result.exit_code == 2, result.output
+    assert "Equal sign not found" in result.output
+    assert not out_file.exists()
+
+
 def test_convert_csv_to_csv(runner, tmp_path, sample_csv):
     output_file = tmp_path / "out.csv"
     result = runner.invoke(cli, ["convert", str(sample_csv), str(output_file)])

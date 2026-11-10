@@ -48,7 +48,7 @@ def parse_options(options):
     for option in options:
         equal_position = option.find("=")
         if equal_position == -1:
-            raise ValueError("Equal sign not found for {}".format(repr(option)))
+            raise click.BadParameter("Equal sign not found for {}".format(repr(option)))
         else:
             options_dict[option[:equal_position]] = option[equal_position + 1 :]
     return options_dict
