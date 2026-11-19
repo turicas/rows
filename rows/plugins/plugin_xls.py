@@ -28,7 +28,6 @@ def _python_to_xls(field_types):
         fields.PercentField: xlwt.easyxf(num_format_str="0.00%"),
     }
     KNOWN_TYPES = (
-        fields.BinaryField,
         fields.BoolField,
         fields.DateField,
         fields.DatetimeField,
