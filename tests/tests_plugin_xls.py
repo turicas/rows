@@ -142,6 +142,21 @@ class PluginXlsTestCase(utils.RowsTestMixIn, unittest.TestCase):
         table2 = rows.import_from_xls(filename)
         self.assert_table_equal(table, table2)
 
+    def test_issue_213_binary_field(self):
+        temp = tempfile.NamedTemporaryFile(suffix=".xls", delete=False)
+        filename = temp.name
+        temp.close()
+        self.files_to_delete.append(filename)
+
+        table = rows.Table(fields=OrderedDict([("bin", rows.fields.BinaryField)]))
+        table.append({"bin": b""})
+        table.append({"bin": b"\x00\xffbinary"})
+
+        rows.export_to_xls(table, filename)
+        imported = rows.import_from_xls(filename, force_types={"bin": rows.fields.BinaryField})
+
+        assert [row.bin for row in imported] == [b"", b"\x00\xffbinary"]
+
     @mock.patch("rows.plugins.utils.create_table")
     def test_start_and_end_row(self, mocked_create_table):
         rows.import_from_xls(self.filename, start_row=6, end_row=8, start_column=6, end_column=8)
