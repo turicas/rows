@@ -52,6 +52,11 @@ def _cell_to_python(cell):
 
 
 def sheet_names(filename_or_fobj, workbook_kwargs=None):
+    """Return the names of the sheets in an XLSX file.
+
+    The workbook is opened in read-only mode and closed before returning,
+    so only the sheet names are read, not the cell contents.
+    """
     # TODO: setup/teardown must be methods of a class so we can reuse them
     workbook_kwargs = workbook_kwargs or {}
     workbook_kwargs["read_only"] = workbook_kwargs.get("read_only", True)
@@ -129,6 +134,14 @@ def import_from_xlsx(
 
 
 def _python_to_cell(field_types):
+    """Return a function converting table rows to XLSX cell values.
+
+    The returned function maps each value to a (value, number_format) pair:
+    date, datetime and percent fields get an Excel number format, other
+    known field types are written as-is and unknown field types (such as
+    BinaryField or JSONField) are serialized with the field type's
+    serialize method.
+    """
     from rows import fields
 
     FORMATTING_STYLES = {
@@ -160,6 +173,11 @@ def _python_to_cell(field_types):
 
 
 def define_sheet_name(existing_names):
+    """Return the first unused default sheet name for a workbook.
+
+    Names are tried in order ("Sheet1", "Sheet2", ...) and the first one
+    not already in existing_names is returned.
+    """
     for counter in range(1, 1024 * 1024):
         new_name = "Sheet{}".format(counter)
         if new_name not in existing_names:
@@ -167,6 +185,12 @@ def define_sheet_name(existing_names):
 
 
 def is_existing_spreadsheet(source):
+    """Return True if source holds an existing spreadsheet.
+
+    A file is considered an existing spreadsheet when it already contains
+    data starting with the "PK" zip magic bytes. An empty or missing file,
+    or a file open in write-only mode, returns False.
+    """
     from io import UnsupportedOperation
 
     if source.uri is not None:  # filename was given
