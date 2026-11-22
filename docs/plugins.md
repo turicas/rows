@@ -23,6 +23,7 @@ see the plugins in action. :)
 Current implemented plugins:
 
 - [CSV][section-csv]
+- [Feather][section-feather]
 - [List of dicts][section-dicts]
 - [HTML][section-html]
 - [JSON][section-json]
@@ -57,6 +58,18 @@ Helper functions:
   command-line version of this function is pretty useful -- see more by running
   `rows csv2sqlite --help`). The CSV can be optionally compressed (`.csv`,
   `.csv.gz` and `.csv.xz`).
+
+
+## Feather
+[See code reference][reference-feather]
+
+Use `rows.import_from_feather` and `rows.export_to_feather` (dependencies must
+be installed with `pip install rows[feather]`, which installs
+[pyarrow][pyarrow]). Column types stored in the [Feather file][feather-format]
+are used (boolean, integer, floating point, decimal, string, binary, date and
+timestamp); other column types are detected automatically. When exporting,
+field types without a native Arrow equivalent (like `JSONField` and
+`UUIDField`) are stored as strings.
 
 
 ## List of dicts
@@ -296,9 +309,12 @@ Learn by example:
 [example-radiodifusoras]: https://github.com/turicas/rows/blob/master/examples/library/ecuador_radiodifusoras.py
 [example-slip-opinions]: https://github.com/turicas/rows/blob/master/examples/library/slip_opinions.py
 [examples]: https://github.com/turicas/rows/tree/master/examples/library
+[feather-format]: https://arrow.apache.org/docs/python/feather.html
 [plugins-source]: https://github.com/turicas/rows/tree/master/rows/plugins
+[pyarrow]: https://pypi.org/project/pyarrow/
 [reference-csv]: reference/plugins/plugin_csv.html
 [reference-dicts]: reference/plugins/dicts.html
+[reference-feather]: reference/plugins/plugin_feather.html
 [reference-html]: reference/plugins/plugin_html.html
 [reference-json]: reference/plugins/plugin_json.html
 [reference-ods]: reference/plugins/ods.html
@@ -313,6 +329,7 @@ Learn by example:
 [rows-lazyness]: https://github.com/turicas/rows/issues/45
 [section-csv]: #csv
 [section-dicts]: #list-of-dicts
+[section-feather]: #feather
 [section-html]: #html
 [section-json]: #json
 [section-ods]: #ods

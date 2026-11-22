@@ -38,6 +38,8 @@ to).
 - PDF now supports `page_numbers` as string (range of numbers)
 - Add support to export to multiple sheets on the same XLSX file
 - Optimize row reading on XLSX files
+- Add Feather plugin (`import_from_feather` and `export_to_feather`, using
+  `pyarrow`)
 - Fix date convertion on XLS files
 - Fix sheet boundaries values if out of bound
 - Remove XLSX/openpyxl warning by forcing defusedxml version
