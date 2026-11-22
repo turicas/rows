@@ -80,6 +80,10 @@ if plugins.xlsx is not None:
     _set_lazy_function("xlsx", "import_from_xlsx")
     _set_lazy_function("xlsx", "export_to_xlsx")
 
+if plugins.feather is not None:
+    _set_lazy_function("feather", "import_from_feather")
+    _set_lazy_function("feather", "export_to_feather")
+
 if plugins.parquet is not None:
     _set_lazy_function("parquet", "import_from_parquet")
 

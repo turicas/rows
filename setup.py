@@ -28,6 +28,7 @@ EXTRA_REQUIREMENTS = {
     "cli-extra": ["click"] + utils_requirements,
     "csv": [],
     "detect": ["file-magic; python_version >= '3.0'", "charset-normalizer; python_version >= '3.7'"],
+    "feather": ["pyarrow"],
     "html": ["lxml"],  # apt: libxslt-dev libxml2-dev
     "ods": ["lxml"],
     "parquet": ["parquet"],

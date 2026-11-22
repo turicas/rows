@@ -66,6 +66,11 @@ else:
     ods = None
     xpath = None
 
+if _library_installed("pyarrow"):
+    _define_lazy_module("feather", "rows.plugins.plugin_feather", ("import_from_feather", "export_to_feather"))
+else:
+    feather = None
+
 if _library_installed("parquet"):
     _define_lazy_module("parquet", "rows.plugins.plugin_parquet", ("import_from_parquet",))
 else:
