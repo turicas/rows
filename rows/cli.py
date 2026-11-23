@@ -1107,6 +1107,12 @@ def command_sqlite_to_csv(batch_size, dialect, source, table_name, output):
     default=DEFAULT_SAMPLE_SIZE,
     help="Number of bytes to read from CSV to define encoding, dialect and field types",
 )
+@click.option(
+    "--keep-autovacuum",
+    is_flag=True,
+    help="Do not disable autovacuum on the table during import (by default it's disabled when creating the table)",
+)
+@click.option("--vacuum-analyze", is_flag=True, help="Run `VACUUM ANALYZE` on the table after import")
 @click.argument("source", required=True)
 @click.argument("database_uri", required=True)
 @click.argument("table_name", required=True)
@@ -1121,6 +1127,8 @@ def command_pgimport(
     unlogged,
     access_method,
     sample_size,
+    keep_autovacuum,
+    vacuum_analyze,
     source,
     database_uri,
     table_name,
@@ -1243,6 +1251,8 @@ def command_pgimport(
         unlogged=unlogged,
         access_method=access_method,
         callback=progress_bar_update,
+        disable_autovacuum=False if keep_autovacuum else None,
+        vacuum_analyze=vacuum_analyze,
     )
     if _tqdm_available:
         rows_imported = import_meta["rows_imported"]

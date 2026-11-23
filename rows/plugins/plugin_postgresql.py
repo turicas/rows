@@ -206,10 +206,22 @@ def pg_create_table_sql(schema, table_name, unlogged=False, access_method=None, 
     )
 
 
-def pg_execute_psql(database_uri, sql):
+def pg_execute_psql(database_uri, sql, timeout=30.0):
     from rows.utils import execute_command
 
-    return execute_command(get_psql_command(sql, database_uri=database_uri))
+    return execute_command(get_psql_command(sql, database_uri=database_uri), timeout=timeout)
+
+
+def pg_disable_autovacuum_sql(table_name):
+    return 'ALTER TABLE "{}" SET (autovacuum_enabled = off)'.format(table_name)
+
+
+def pg_reset_autovacuum_sql(table_name):
+    return 'ALTER TABLE "{}" RESET (autovacuum_enabled)'.format(table_name)
+
+
+def pg_vacuum_analyze_sql(table_name):
+    return 'VACUUM ANALYZE "{}"'.format(table_name)
 
 
 def _python_to_postgresql(field_types):
@@ -521,6 +533,20 @@ class PostgresCopy(object):
                 "rows_imported": rows_imported,
             }
 
+    def _import_with_maintenance(self, table_name, disable_autovacuum=False, vacuum_analyze=False, **kwargs):
+        """Run `_import`, optionally disabling autovacuum during it and running `VACUUM ANALYZE` after it"""
+        if disable_autovacuum:
+            pg_execute_psql(self.database_uri, pg_disable_autovacuum_sql(table_name))
+        try:
+            result = self._import(table_name=table_name, **kwargs)
+        finally:
+            if disable_autovacuum:
+                pg_execute_psql(self.database_uri, pg_reset_autovacuum_sql(table_name))
+        if vacuum_analyze:
+            # VACUUM may take a long time on big tables, so don't use a timeout
+            pg_execute_psql(self.database_uri, pg_vacuum_analyze_sql(table_name), timeout=None)
+        return result
+
     def import_from_filename(
         self,
         filename,
@@ -535,6 +561,8 @@ class PostgresCopy(object):
         access_method=None,
         callback=None,
         schema_metadata=None,
+        disable_autovacuum=None,
+        vacuum_analyze=False,
     ):
         from rows.fields import make_header
         from rows.fileio import cfopen
@@ -584,8 +612,10 @@ class PostgresCopy(object):
             # `SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_am WHERE amname = %s)`
             pg_execute_psql(self.database_uri, create_table_sql)
 
+        if disable_autovacuum is None:
+            disable_autovacuum = create_table
         fobj = cfopen(filename, mode="rb")
-        return self._import(
+        return self._import_with_maintenance(
             fobj=fobj,
             encoding=encoding,
             dialect=dialect,
@@ -594,6 +624,8 @@ class PostgresCopy(object):
             has_header=has_header,
             skip_rows=skip_rows,
             callback=callback,
+            disable_autovacuum=disable_autovacuum,
+            vacuum_analyze=vacuum_analyze,
         )
 
     def import_from_fobj(
@@ -610,6 +642,8 @@ class PostgresCopy(object):
         access_method=None,
         callback=None,
         schema_metadata=None,
+        disable_autovacuum=None,
+        vacuum_analyze=False,
     ):
         if isinstance(dialect, TEXT_TYPE):
             dialect = csv.get_dialect(dialect)
@@ -636,7 +670,9 @@ class PostgresCopy(object):
 
         # TODO: check if the file is open in binary mode
 
-        return self._import(
+        if disable_autovacuum is None:
+            disable_autovacuum = create_table
+        return self._import_with_maintenance(
             fobj=fobj,
             encoding=encoding,
             dialect=dialect,
@@ -645,6 +681,8 @@ class PostgresCopy(object):
             has_header=has_header,
             skip_rows=skip_rows,
             callback=callback,
+            disable_autovacuum=disable_autovacuum,
+            vacuum_analyze=vacuum_analyze,
         )
 
 
@@ -664,10 +702,18 @@ def pgimport(
     access_method=None,
     callback=None,
     schema_metadata=None,
+    disable_autovacuum=None,
+    vacuum_analyze=False,
 ):
     """Import data from CSV into PostgreSQL using the fastest method
 
     Required: `psql` command installed.
+
+    If `disable_autovacuum` is `True`, autovacuum is disabled for the table
+    during the import and restored after it (`ALTER TABLE ... RESET
+    (autovacuum_enabled)`). If `None` (default), autovacuum is disabled during
+    the import only when `create_table` is `True`. If `vacuum_analyze` is `True`, `VACUUM ANALYZE`
+    is executed on the table after the import.
     """
 
     # TODO: add warning if table already exists and create_table=True
@@ -694,6 +740,8 @@ def pgimport(
             unlogged=unlogged,
             access_method=access_method,
             callback=callback,
+            disable_autovacuum=disable_autovacuum,
+            vacuum_analyze=vacuum_analyze,
         )
     else:
         # File-object, so some fields are required
@@ -712,6 +760,8 @@ def pgimport(
             unlogged=unlogged,
             access_method=access_method,
             callback=callback,
+            disable_autovacuum=disable_autovacuum,
+            vacuum_analyze=vacuum_analyze,
         )
 
 

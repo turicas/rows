@@ -288,3 +288,89 @@ class PluginPostgreSQLTestCase(utils.RowsTestMixIn, unittest.TestCase):
         assert table[0].field2 == 4
         assert table[1].field1 is None
         assert table[1].field2 == 2
+
+    def test_pgimport_vacuum_analyze(self):
+        temp = tempfile.NamedTemporaryFile()
+        filename = "{}.csv".format(temp.name)
+        temp.close()
+        self.files_to_delete.append(filename)
+        with open(filename, mode="wb") as fobj:
+            fobj.write(b"field1,field2\na,1\nb,2\n")
+        result = rows.utils.pgimport(
+            filename=filename,
+            database_uri=TEST_DATABASE_URL,
+            table_name="rows_vacuum_analyze",
+            vacuum_analyze=True,
+        )
+        assert result["rows_imported"] == 2
+
+        connection = pgconnect(TEST_DATABASE_URL)
+        cursor = connection.cursor()
+        cursor.execute("SELECT reloptions FROM pg_class WHERE relname = 'rows_vacuum_analyze'")
+        reloptions = cursor.fetchone()[0]
+        cursor.close()
+        connection.close()
+        assert not reloptions  # autovacuum setting must be restored
+
+
+class PgImportMaintenanceTestCase(unittest.TestCase):
+    def _import(self, **kwargs):
+        from rows.plugins import plugin_postgresql
+
+        executed = []
+        with mock.patch.object(
+            plugin_postgresql, "pg_execute_psql", side_effect=lambda uri, sql, timeout=30.0: executed.append(sql)
+        ), mock.patch.object(plugin_postgresql.PostgresCopy, "_import", return_value={"rows_imported": 1}):
+            result = plugin_postgresql.pgimport(
+                filename_or_fobj=mock.Mock(),
+                database_uri="postgres://localhost/test",
+                table_name="mytable",
+                encoding="utf-8",
+                dialect="excel",
+                schema={"field1": fields.TextField},
+                **kwargs
+            )
+        assert result == {"rows_imported": 1}
+        return executed
+
+    def test_default_disables_autovacuum_when_creating_table(self):
+        executed = self._import()
+        assert len(executed) == 3
+        assert executed[0].startswith("CREATE TABLE")
+        assert executed[1] == 'ALTER TABLE "mytable" SET (autovacuum_enabled = off)'
+        assert executed[2] == 'ALTER TABLE "mytable" RESET (autovacuum_enabled)'
+
+    def test_default_keeps_autovacuum_when_not_creating_table(self):
+        assert self._import(create_table=False) == []
+
+    def test_force_disable_autovacuum_and_vacuum_analyze(self):
+        executed = self._import(create_table=False, disable_autovacuum=True, vacuum_analyze=True)
+        assert executed == [
+            'ALTER TABLE "mytable" SET (autovacuum_enabled = off)',
+            'ALTER TABLE "mytable" RESET (autovacuum_enabled)',
+            'VACUUM ANALYZE "mytable"',
+        ]
+
+    def test_autovacuum_restored_on_error(self):
+        from rows.plugins import plugin_postgresql
+
+        executed = []
+        with mock.patch.object(
+            plugin_postgresql, "pg_execute_psql", side_effect=lambda uri, sql, timeout=30.0: executed.append(sql)
+        ), mock.patch.object(plugin_postgresql.PostgresCopy, "_import", side_effect=RuntimeError("error")):
+            with self.assertRaises(RuntimeError):
+                plugin_postgresql.pgimport(
+                    filename_or_fobj=mock.Mock(),
+                    database_uri="postgres://localhost/test",
+                    table_name="mytable",
+                    encoding="utf-8",
+                    dialect="excel",
+                    schema={"field1": fields.TextField},
+                    create_table=False,
+                    disable_autovacuum=True,
+                    vacuum_analyze=True,
+                )
+        assert executed == [
+            'ALTER TABLE "mytable" SET (autovacuum_enabled = off)',
+            'ALTER TABLE "mytable" RESET (autovacuum_enabled)',
+        ]
