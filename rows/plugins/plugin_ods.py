@@ -36,6 +36,11 @@ def complete_with_None(lists, size):
 
 
 def sheet_names(filename_or_fobj):
+    """Return the names of the sheets in an ODS file.
+
+    The file is opened and closed before returning, and only the sheet
+    names are extracted, no cell is converted into a table row.
+    """
     # TODO: setup/teardown must be methods of a class so we can reuse them
     source = Source.from_file(filename_or_fobj, plugin_name="ods")
     ods_file = zipfile.ZipFile(source.fobj)
@@ -58,6 +63,13 @@ def sheet_names(filename_or_fobj):
 def import_from_ods(
     filename_or_fobj, index=0, start_row=None, start_column=None, end_row=None, end_column=None, *args, **kwargs
 ):
+    """Return a rows.Table created from imported ODS file.
+
+`index` selects which sheet to import (0-based). `start_row`,
+`start_column`, `end_row` and `end_column` select a range of rows and
+columns (0-based, inclusive). A file-like object open in text mode
+raises ValueError.
+"""
     from rows.plugins.utils import create_table, is_binary_file, is_fobj
 
     # TODO: unescape values
