@@ -131,6 +131,14 @@ def cell_value(sheet, row, col):
 
 
 def get_table_start(sheet):
+    """Return the position of the first non-empty cell in a sheet.
+
+    The sheet is scanned for the first column and the first row containing
+    a non-empty cell, and their indexes are returned as
+    ``(start_row, start_column)`` (0-based). This allows tables which do
+    not start at the top-left corner of the sheet to be imported from the
+    right place.
+    """
     import xlrd
 
     empty_cell_type = xlrd.empty_cell.ctype
@@ -147,6 +155,11 @@ def get_table_start(sheet):
 
 
 def sheet_names(filename_or_fobj):
+    """Return the names of the sheets in an XLS file.
+
+    The file is opened with xlrd and closed before returning, and only the
+    sheet names are extracted, no cell is converted into a table row.
+    """
     import io
     import os
 
