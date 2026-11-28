@@ -118,6 +118,13 @@ csv.register_dialect("tsv", tsv_dialect)
 
 
 def fix_dialect(dialect):
+    """Normalise a sniffed CSV dialect.
+
+    Forces ``doublequote`` when there is no escape character, fixes a
+    wrong single-quote quote character detected by the sniffer when
+    quoting is minimal, and defaults ``strict`` to False when the
+    dialect does not define it.
+    """
     if not dialect.doublequote and dialect.escapechar is None:
         dialect.doublequote = True
 
@@ -292,6 +299,13 @@ def export_to_csv(
 
 
 class CsvInspector(object):
+    """Inspect a CSV file from a sample of its contents.
+
+    Lazily detects the file's encoding, dialect, field names and schema
+    by reading a sample of the file, so importing a CSV does not need to
+    read it fully up front.
+    """
+
     def __init__(
         self,
         filename,
@@ -301,6 +315,13 @@ class CsvInspector(object):
         chunk_size=1 * 1024 * 1024,
         max_samples=DEFAULT_SAMPLE_ROWS,
     ):
+                """Store the file to inspect and the optional sampling settings.
+
+        `encoding`, `dialect` and `schema` may be given up front; when
+        they are None they are detected lazily from a sample of the file.
+        `chunk_size` is how many bytes are read for sampling and
+        `max_samples` is how many rows are used to detect the schema.
+        """
         self.filename = filename
         self._encoding = encoding
         self._field_names = None
@@ -332,6 +353,10 @@ class CsvInspector(object):
 
     @property
     def encoding(self):
+        """Return the encoding of the file, detecting it from a sample when it was not given.
+
+        Defaults to ``utf-8`` when detection finds no encoding.
+        """
         if self._encoding is None:
             from rows.utils import detect_local_source
 
@@ -343,6 +368,7 @@ class CsvInspector(object):
 
     @property
     def dialect(self):
+        """Return the dialect of the file, sniffing it from a sample when it was not given."""
         if self._dialect is None:
             sample = self._read_sample(binary=False)
             self._dialect = discover_dialect(sample.encode(self.encoding), encoding=self.encoding)
@@ -350,6 +376,7 @@ class CsvInspector(object):
 
     @property
     def field_names(self):
+        """Return the names of the fields (the first row), read from a sample of the file."""
         if self._field_names is None:
             reader = csv.reader(
                 StringIO(self._read_sample(binary=False)),
@@ -360,6 +387,13 @@ class CsvInspector(object):
 
     @property
     def schema(self):
+        """Return the detected schema of the file, inferred from a sample of its rows.
+
+        The field names are read from the first row and the field types
+        are detected from up to `max_samples` following rows; the last
+        sampled row is discarded since it may be cut in the middle of a
+        cell.
+        """
         if self._schema is None:
             import itertools
 
